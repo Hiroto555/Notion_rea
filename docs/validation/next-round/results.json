@@ -1,0 +1,1444 @@
+{
+  "acceptanceStatus": "PARTIAL",
+  "remainingFailures": [
+    {
+      "run": "acceptance-full-3",
+      "test": "F11 editing during move and delayed load",
+      "observation": "mousedown recorded; no dragstart/drop or move IPC. Page-tree input path, not the top-level block regression. Root cause unresolved.",
+      "status": "FAIL"
+    },
+    {
+      "run": "dev-dialog-smoke",
+      "test": "Development startup before link regression",
+      "observation": "Initial page-title wait timed out while Vite dependency optimization/reload was logged. Subsequent diagnostic startup and warm dev-dialog-smoke-v2 passed; cold-start reliability not established.",
+      "status": "FAIL"
+    }
+  ],
+  "reviewHead": "7759906dbbc905a4dc79d01b97aaff6471e51eb3",
+  "implementationHead": "0bf710eec16d065535674e41196312141e2d0233",
+  "lastApplicationSourceCommit": "a4c9abf94baaf726669d0c058626d23db446c8cd",
+  "retries": 0,
+  "finalVerification": [
+    {
+      "label": "acceptance-check-v2",
+      "status": "PASS",
+      "sourceDifferencesFromCurrent": [],
+      "buildMatchesCurrent": true
+    },
+    {
+      "label": "acceptance-unit-v2",
+      "status": "PASS",
+      "sourceDifferencesFromCurrent": [],
+      "buildMatchesCurrent": true
+    },
+    {
+      "label": "acceptance-build-v2",
+      "status": "PASS",
+      "sourceDifferencesFromCurrent": [],
+      "buildMatchesCurrent": true
+    },
+    {
+      "label": "acceptance-drag20",
+      "status": "PASS",
+      "sourceDifferencesFromCurrent": [
+        "tests/e2e/gate-a.spec.ts"
+      ],
+      "buildMatchesCurrent": true
+    },
+    {
+      "label": "acceptance-full-1",
+      "status": "PASS",
+      "sourceDifferencesFromCurrent": [],
+      "buildMatchesCurrent": true
+    },
+    {
+      "label": "acceptance-full-2",
+      "status": "PASS",
+      "sourceDifferencesFromCurrent": [],
+      "buildMatchesCurrent": true
+    },
+    {
+      "label": "acceptance-full-3",
+      "status": "FAIL",
+      "sourceDifferencesFromCurrent": [],
+      "buildMatchesCurrent": true
+    },
+    {
+      "label": "dev-dialog-smoke-v2",
+      "status": "PASS",
+      "sourceDifferencesFromCurrent": [],
+      "buildMatchesCurrent": true
+    }
+  ],
+  "commands": [
+    {
+      "label": "r1-red-check",
+      "command": [
+        "npm",
+        "run",
+        "check"
+      ],
+      "head": "7759906dbbc905a4dc79d01b97aaff6471e51eb3",
+      "start": "2026-10-26T13:41:03.750Z",
+      "end": "2026-10-26T13:41:14.963Z",
+      "exitCode": 0,
+      "signal": null,
+      "status": "PASS",
+      "result": {},
+      "unitSummary": null,
+      "record": "r1-red-check.json",
+      "log": "r1-red-check.txt"
+    },
+    {
+      "label": "baseline-unit",
+      "command": [
+        "npm",
+        "test",
+        "--",
+        "--exclude",
+        "tests/recovery.test.ts"
+      ],
+      "head": "7759906dbbc905a4dc79d01b97aaff6471e51eb3",
+      "start": "2026-10-26T13:41:15.079Z",
+      "end": "2026-10-26T13:41:17.061Z",
+      "exitCode": 0,
+      "signal": null,
+      "status": "PASS",
+      "result": {},
+      "unitSummary": "32 passed (32)",
+      "record": "baseline-unit.json",
+      "log": "baseline-unit.txt"
+    },
+    {
+      "label": "baseline-build",
+      "command": [
+        "npm",
+        "run",
+        "build"
+      ],
+      "head": "7759906dbbc905a4dc79d01b97aaff6471e51eb3",
+      "start": "2026-10-26T13:41:17.118Z",
+      "end": "2026-10-26T13:41:23.552Z",
+      "exitCode": 0,
+      "signal": null,
+      "status": "PASS",
+      "result": {},
+      "unitSummary": null,
+      "record": "baseline-build.json",
+      "log": "baseline-build.txt"
+    },
+    {
+      "label": "r1-red-electron",
+      "command": [
+        "npx",
+        "playwright",
+        "test",
+        "tests/e2e/recovery.spec.ts",
+        "--retries=0",
+        "--output=output/next-round/r1-red"
+      ],
+      "head": "7759906dbbc905a4dc79d01b97aaff6471e51eb3",
+      "start": "2026-10-26T13:41:26.937Z",
+      "end": "2026-10-26T13:41:35.241Z",
+      "exitCode": 1,
+      "signal": null,
+      "status": "FAIL",
+      "result": {
+        "failed": 2
+      },
+      "unitSummary": null,
+      "record": "r1-red-electron.json",
+      "log": "r1-red-electron.txt"
+    },
+    {
+      "label": "r1-red-unit",
+      "command": [
+        "npm",
+        "test",
+        "--",
+        "tests/recovery.test.ts"
+      ],
+      "head": "7759906dbbc905a4dc79d01b97aaff6471e51eb3",
+      "start": "2026-10-26T13:41:26.937Z",
+      "end": "2026-10-26T13:41:29.296Z",
+      "exitCode": 1,
+      "signal": null,
+      "status": "FAIL",
+      "result": {},
+      "unitSummary": "4 failed | 1 passed (5)",
+      "record": "r1-red-unit.json",
+      "log": "r1-red-unit.txt"
+    },
+    {
+      "label": "r1-red-ipc-confirm",
+      "command": [
+        "npx",
+        "playwright",
+        "test",
+        "tests/e2e/recovery.spec.ts",
+        "--grep",
+        "30.3MB",
+        "--retries=0",
+        "--output=output/next-round/r1-red-confirm"
+      ],
+      "head": "7759906dbbc905a4dc79d01b97aaff6471e51eb3",
+      "start": "2026-10-26T13:41:48.961Z",
+      "end": "2026-10-26T13:41:53.956Z",
+      "exitCode": 1,
+      "signal": null,
+      "status": "FAIL",
+      "result": {
+        "failed": 1
+      },
+      "unitSummary": null,
+      "record": "r1-red-ipc-confirm.json",
+      "log": "r1-red-ipc-confirm.txt"
+    },
+    {
+      "label": "r1-check",
+      "command": [
+        "npm",
+        "run",
+        "check"
+      ],
+      "head": "7759906dbbc905a4dc79d01b97aaff6471e51eb3",
+      "start": "2026-10-26T13:43:48.879Z",
+      "end": "2026-10-26T13:43:55.322Z",
+      "exitCode": 0,
+      "signal": null,
+      "status": "PASS",
+      "result": {},
+      "unitSummary": null,
+      "record": "r1-check.json",
+      "log": "r1-check.txt"
+    },
+    {
+      "label": "r1-unit",
+      "command": [
+        "npm",
+        "test"
+      ],
+      "head": "7759906dbbc905a4dc79d01b97aaff6471e51eb3",
+      "start": "2026-10-26T13:43:55.571Z",
+      "end": "2026-10-26T13:44:10.322Z",
+      "exitCode": 0,
+      "signal": null,
+      "status": "PASS",
+      "result": {},
+      "unitSummary": "48 passed (48)",
+      "record": "r1-unit.json",
+      "log": "r1-unit.txt"
+    },
+    {
+      "label": "r1-build",
+      "command": [
+        "npm",
+        "run",
+        "build"
+      ],
+      "head": "7759906dbbc905a4dc79d01b97aaff6471e51eb3",
+      "start": "2026-10-26T13:44:10.379Z",
+      "end": "2026-10-26T13:44:19.606Z",
+      "exitCode": 0,
+      "signal": null,
+      "status": "PASS",
+      "result": {},
+      "unitSummary": null,
+      "record": "r1-build.json",
+      "log": "r1-build.txt"
+    },
+    {
+      "label": "r1-electron",
+      "command": [
+        "npx",
+        "playwright",
+        "test",
+        "tests/e2e/recovery.spec.ts",
+        "tests/e2e/gate-a.spec.ts",
+        "--retries=0",
+        "--output=output/next-round/r1-green"
+      ],
+      "head": "7759906dbbc905a4dc79d01b97aaff6471e51eb3",
+      "start": "2026-10-26T13:44:19.688Z",
+      "end": "2026-10-26T13:46:10.764Z",
+      "exitCode": 0,
+      "signal": null,
+      "status": "PASS",
+      "result": {
+        "passed": 21
+      },
+      "unitSummary": null,
+      "record": "r1-electron.json",
+      "log": "r1-electron.txt"
+    },
+    {
+      "label": "r2-observe-original",
+      "command": [
+        "npx",
+        "playwright",
+        "test",
+        "tests/e2e/drag.spec.ts",
+        "--repeat-each=5",
+        "--retries=0",
+        "--output=output/next-round/r2-observe"
+      ],
+      "head": "1034364e73725d8eb558958d6d22a723440d8a95",
+      "start": "2026-10-26T13:47:14.190Z",
+      "end": "2026-10-26T13:47:57.005Z",
+      "exitCode": 1,
+      "signal": null,
+      "status": "FAIL",
+      "result": {
+        "failed": 5
+      },
+      "unitSummary": null,
+      "record": "r2-observe-original.json",
+      "log": "r2-observe-original.txt"
+    },
+    {
+      "label": "r2-corrected-observe",
+      "command": [
+        "npx",
+        "playwright",
+        "test",
+        "tests/e2e/drag.spec.ts",
+        "--retries=0",
+        "--output=output/next-round/r2-matrix-red"
+      ],
+      "head": "1034364e73725d8eb558958d6d22a723440d8a95",
+      "start": "2026-10-26T13:48:51.883Z",
+      "end": "2026-10-26T13:49:07.839Z",
+      "exitCode": 1,
+      "signal": null,
+      "status": "FAIL",
+      "result": {
+        "failed": 1,
+        "passed": 1
+      },
+      "unitSummary": null,
+      "record": "r2-corrected-observe.json",
+      "log": "r2-corrected-observe.txt"
+    },
+    {
+      "label": "r2-real-pointer-red",
+      "command": [
+        "npx",
+        "playwright",
+        "test",
+        "tests/e2e/drag.spec.ts",
+        "--grep",
+        "matrix",
+        "--retries=0",
+        "--output=output/next-round/r2-real-pointer-red"
+      ],
+      "head": "1034364e73725d8eb558958d6d22a723440d8a95",
+      "start": "2026-10-26T13:50:28.509Z",
+      "end": "2026-10-26T13:50:42.439Z",
+      "exitCode": 1,
+      "signal": null,
+      "status": "FAIL",
+      "result": {
+        "failed": 1
+      },
+      "unitSummary": null,
+      "record": "r2-real-pointer-red.json",
+      "log": "r2-real-pointer-red.txt"
+    },
+    {
+      "label": "r2-check",
+      "command": [
+        "npm",
+        "run",
+        "check"
+      ],
+      "head": "1034364e73725d8eb558958d6d22a723440d8a95",
+      "start": "2026-10-26T13:51:47.862Z",
+      "end": "2026-10-26T13:51:50.713Z",
+      "exitCode": 0,
+      "signal": null,
+      "status": "PASS",
+      "result": {},
+      "unitSummary": null,
+      "record": "r2-check.json",
+      "log": "r2-check.txt"
+    },
+    {
+      "label": "r2-unit",
+      "command": [
+        "npm",
+        "test"
+      ],
+      "head": "1034364e73725d8eb558958d6d22a723440d8a95",
+      "start": "2026-10-26T13:51:50.768Z",
+      "end": "2026-10-26T13:52:01.213Z",
+      "exitCode": 0,
+      "signal": null,
+      "status": "PASS",
+      "result": {},
+      "unitSummary": "48 passed (48)",
+      "record": "r2-unit.json",
+      "log": "r2-unit.txt"
+    },
+    {
+      "label": "r2-build",
+      "command": [
+        "npm",
+        "run",
+        "build"
+      ],
+      "head": "1034364e73725d8eb558958d6d22a723440d8a95",
+      "start": "2026-10-26T13:52:01.274Z",
+      "end": "2026-10-26T13:52:06.032Z",
+      "exitCode": 0,
+      "signal": null,
+      "status": "PASS",
+      "result": {},
+      "unitSummary": null,
+      "record": "r2-build.json",
+      "log": "r2-build.txt"
+    },
+    {
+      "label": "r2-electron",
+      "command": [
+        "npx",
+        "playwright",
+        "test",
+        "tests/e2e/drag.spec.ts",
+        "tests/e2e/desktop.spec.ts",
+        "--retries=0",
+        "--output=output/next-round/r2-green"
+      ],
+      "head": "1034364e73725d8eb558958d6d22a723440d8a95",
+      "start": "2026-10-26T13:52:06.087Z",
+      "end": "2026-10-26T13:52:51.611Z",
+      "exitCode": 1,
+      "signal": null,
+      "status": "FAIL",
+      "result": {
+        "failed": 1,
+        "passed": 8
+      },
+      "unitSummary": null,
+      "record": "r2-electron.json",
+      "log": "r2-electron.txt"
+    },
+    {
+      "label": "r2-repeat20",
+      "command": [
+        "npx",
+        "playwright",
+        "test",
+        "tests/e2e/drag.spec.ts",
+        "--repeat-each=20",
+        "--retries=0",
+        "--output=output/next-round/r2-repeat20"
+      ],
+      "head": "1034364e73725d8eb558958d6d22a723440d8a95",
+      "start": "2026-10-26T13:53:25.305Z",
+      "end": "2026-10-26T13:57:21.199Z",
+      "exitCode": 1,
+      "signal": null,
+      "status": "FAIL",
+      "result": {
+        "failed": 4,
+        "passed": 36
+      },
+      "unitSummary": null,
+      "record": "r2-repeat20.json",
+      "log": "r2-repeat20.txt"
+    },
+    {
+      "label": "r3-red-electron",
+      "command": [
+        "npx",
+        "playwright",
+        "test",
+        "tests/e2e/dialogs.spec.ts",
+        "--retries=0",
+        "--output=output/next-round/r3-red"
+      ],
+      "head": "1034364e73725d8eb558958d6d22a723440d8a95",
+      "start": "2026-10-26T13:57:50.268Z",
+      "end": "2026-10-26T13:58:22.768Z",
+      "exitCode": 1,
+      "signal": null,
+      "status": "FAIL",
+      "result": {
+        "failed": 4
+      },
+      "unitSummary": null,
+      "record": "r3-red-electron.json",
+      "log": "r3-red-electron.txt"
+    },
+    {
+      "label": "r2-final-check",
+      "command": [
+        "npm",
+        "run",
+        "check"
+      ],
+      "head": "1034364e73725d8eb558958d6d22a723440d8a95",
+      "start": "2026-10-26T13:58:23.789Z",
+      "end": "2026-10-26T13:58:26.442Z",
+      "exitCode": 0,
+      "signal": null,
+      "status": "PASS",
+      "result": {},
+      "unitSummary": null,
+      "record": "r2-final-check.json",
+      "log": "r2-final-check.txt"
+    },
+    {
+      "label": "r2-final-unit",
+      "command": [
+        "npm",
+        "test"
+      ],
+      "head": "1034364e73725d8eb558958d6d22a723440d8a95",
+      "start": "2026-10-26T13:58:26.493Z",
+      "end": "2026-10-26T13:58:36.334Z",
+      "exitCode": 0,
+      "signal": null,
+      "status": "PASS",
+      "result": {},
+      "unitSummary": "48 passed (48)",
+      "record": "r2-final-unit.json",
+      "log": "r2-final-unit.txt"
+    },
+    {
+      "label": "r2-final-build",
+      "command": [
+        "npm",
+        "run",
+        "build"
+      ],
+      "head": "1034364e73725d8eb558958d6d22a723440d8a95",
+      "start": "2026-10-26T13:58:49.567Z",
+      "end": "2026-10-26T13:58:54.432Z",
+      "exitCode": 0,
+      "signal": null,
+      "status": "PASS",
+      "result": {},
+      "unitSummary": null,
+      "record": "r2-final-build.json",
+      "log": "r2-final-build.txt"
+    },
+    {
+      "label": "r2-final-repeat20",
+      "command": [
+        "npx",
+        "playwright",
+        "test",
+        "tests/e2e/drag.spec.ts",
+        "--repeat-each=20",
+        "--retries=0",
+        "--output=output/next-round/r2-final-repeat20"
+      ],
+      "head": "1034364e73725d8eb558958d6d22a723440d8a95",
+      "start": "2026-10-26T13:58:54.492Z",
+      "end": "2026-10-26T14:01:48.047Z",
+      "exitCode": 1,
+      "signal": null,
+      "status": "FAIL",
+      "result": {
+        "failed": 1,
+        "passed": 39
+      },
+      "unitSummary": null,
+      "record": "r2-final-repeat20.json",
+      "log": "r2-final-repeat20.txt"
+    },
+    {
+      "label": "r3-check",
+      "command": [
+        "npm",
+        "run",
+        "check"
+      ],
+      "head": "1034364e73725d8eb558958d6d22a723440d8a95",
+      "start": "2026-10-26T14:00:56.365Z",
+      "end": "2026-10-26T14:01:01.387Z",
+      "exitCode": 0,
+      "signal": null,
+      "status": "PASS",
+      "result": {},
+      "unitSummary": null,
+      "record": "r3-check.json",
+      "log": "r3-check.txt"
+    },
+    {
+      "label": "r3-check-v2",
+      "command": [
+        "npm",
+        "run",
+        "check"
+      ],
+      "head": "1034364e73725d8eb558958d6d22a723440d8a95",
+      "start": "2026-10-26T14:02:45.644Z",
+      "end": "2026-10-26T14:02:48.359Z",
+      "exitCode": 0,
+      "signal": null,
+      "status": "PASS",
+      "result": {},
+      "unitSummary": null,
+      "record": "r3-check-v2.json",
+      "log": "r3-check-v2.txt"
+    },
+    {
+      "label": "r3-unit",
+      "command": [
+        "npm",
+        "test"
+      ],
+      "head": "1034364e73725d8eb558958d6d22a723440d8a95",
+      "start": "2026-10-26T14:02:48.411Z",
+      "end": "2026-10-26T14:02:58.342Z",
+      "exitCode": 0,
+      "signal": null,
+      "status": "PASS",
+      "result": {},
+      "unitSummary": "48 passed (48)",
+      "record": "r3-unit.json",
+      "log": "r3-unit.txt"
+    },
+    {
+      "label": "r3-build",
+      "command": [
+        "npm",
+        "run",
+        "build"
+      ],
+      "head": "1034364e73725d8eb558958d6d22a723440d8a95",
+      "start": "2026-10-26T14:02:58.401Z",
+      "end": "2026-10-26T14:03:02.685Z",
+      "exitCode": 0,
+      "signal": null,
+      "status": "PASS",
+      "result": {},
+      "unitSummary": null,
+      "record": "r3-build.json",
+      "log": "r3-build.txt"
+    },
+    {
+      "label": "r3-electron",
+      "command": [
+        "npx",
+        "playwright",
+        "test",
+        "tests/e2e/dialogs.spec.ts",
+        "tests/e2e/drag.spec.ts",
+        "tests/e2e/desktop.spec.ts",
+        "--retries=0",
+        "--output=output/next-round/r3-green"
+      ],
+      "head": "c631aa1c0324b939f856f23ef8e4cd95b83982cb",
+      "start": "2026-10-26T14:03:02.738Z",
+      "end": "2026-10-26T14:03:43.819Z",
+      "exitCode": 0,
+      "signal": null,
+      "status": "PASS",
+      "result": {
+        "passed": 13
+      },
+      "unitSummary": null,
+      "record": "r3-electron.json",
+      "log": "r3-electron.txt"
+    },
+    {
+      "label": "r3-final-check",
+      "command": [
+        "npm",
+        "run",
+        "check"
+      ],
+      "head": "c631aa1c0324b939f856f23ef8e4cd95b83982cb",
+      "start": "2026-10-26T14:05:19.597Z",
+      "end": "2026-10-26T14:05:21.971Z",
+      "exitCode": 0,
+      "signal": null,
+      "status": "PASS",
+      "result": {},
+      "unitSummary": null,
+      "record": "r3-final-check.json",
+      "log": "r3-final-check.txt"
+    },
+    {
+      "label": "r3-final-unit",
+      "command": [
+        "npm",
+        "test"
+      ],
+      "head": "c631aa1c0324b939f856f23ef8e4cd95b83982cb",
+      "start": "2026-10-26T14:05:22.024Z",
+      "end": "2026-10-26T14:05:32.079Z",
+      "exitCode": 0,
+      "signal": null,
+      "status": "PASS",
+      "result": {},
+      "unitSummary": "48 passed (48)",
+      "record": "r3-final-unit.json",
+      "log": "r3-final-unit.txt"
+    },
+    {
+      "label": "r3-final-build",
+      "command": [
+        "npm",
+        "run",
+        "build"
+      ],
+      "head": "c631aa1c0324b939f856f23ef8e4cd95b83982cb",
+      "start": "2026-10-26T14:05:32.147Z",
+      "end": "2026-10-26T14:05:36.547Z",
+      "exitCode": 0,
+      "signal": null,
+      "status": "PASS",
+      "result": {},
+      "unitSummary": null,
+      "record": "r3-final-build.json",
+      "log": "r3-final-build.txt"
+    },
+    {
+      "label": "r3-final-electron",
+      "command": [
+        "npx",
+        "playwright",
+        "test",
+        "tests/e2e/dialogs.spec.ts",
+        "--retries=0",
+        "--output=output/next-round/r3-final"
+      ],
+      "head": "c631aa1c0324b939f856f23ef8e4cd95b83982cb",
+      "start": "2026-10-26T14:05:36.600Z",
+      "end": "2026-10-26T14:06:01.740Z",
+      "exitCode": 1,
+      "signal": null,
+      "status": "FAIL",
+      "result": {
+        "failed": 1,
+        "passed": 6
+      },
+      "unitSummary": null,
+      "record": "r3-final-electron.json",
+      "log": "r3-final-electron.txt"
+    },
+    {
+      "label": "r3-native-picker-observe",
+      "command": [
+        "npx",
+        "playwright",
+        "test",
+        "tests/e2e/dialogs.spec.ts",
+        "--grep",
+        "nested native",
+        "--retries=0",
+        "--output=output/next-round/r3-native-picker"
+      ],
+      "head": "c631aa1c0324b939f856f23ef8e4cd95b83982cb",
+      "start": "2026-10-26T14:06:39.896Z",
+      "end": "2026-10-26T14:06:49.881Z",
+      "exitCode": 1,
+      "signal": null,
+      "status": "FAIL",
+      "result": {
+        "failed": 1
+      },
+      "unitSummary": null,
+      "record": "r3-native-picker-observe.json",
+      "log": "r3-native-picker-observe.txt"
+    },
+    {
+      "label": "r3-native-key-events",
+      "command": [
+        "npx",
+        "playwright",
+        "test",
+        "tests/e2e/dialogs.spec.ts",
+        "--grep",
+        "nested native",
+        "--retries=0",
+        "--output=output/next-round/r3-native-keys"
+      ],
+      "head": "c631aa1c0324b939f856f23ef8e4cd95b83982cb",
+      "start": "2026-10-26T14:07:22.973Z",
+      "end": "2026-10-26T14:07:32.372Z",
+      "exitCode": 1,
+      "signal": null,
+      "status": "FAIL",
+      "result": {
+        "failed": 1
+      },
+      "unitSummary": null,
+      "record": "r3-native-key-events.json",
+      "log": "r3-native-key-events.txt"
+    },
+    {
+      "label": "r3-picker-check",
+      "command": [
+        "npm",
+        "run",
+        "check"
+      ],
+      "head": "c631aa1c0324b939f856f23ef8e4cd95b83982cb",
+      "start": "2026-10-26T14:08:46.500Z",
+      "end": "2026-10-26T14:08:49.363Z",
+      "exitCode": 2,
+      "signal": null,
+      "status": "FAIL",
+      "result": {},
+      "unitSummary": null,
+      "record": "r3-picker-check.json",
+      "log": "r3-picker-check.txt"
+    },
+    {
+      "label": "r3-picker-check-v2",
+      "command": [
+        "npm",
+        "run",
+        "check"
+      ],
+      "head": "c631aa1c0324b939f856f23ef8e4cd95b83982cb",
+      "start": "2026-10-26T14:09:57.960Z",
+      "end": "2026-10-26T14:10:02.499Z",
+      "exitCode": 0,
+      "signal": null,
+      "status": "PASS",
+      "result": {},
+      "unitSummary": null,
+      "record": "r3-picker-check-v2.json",
+      "log": "r3-picker-check-v2.txt"
+    },
+    {
+      "label": "r3-picker-unit-v2",
+      "command": [
+        "npm",
+        "test"
+      ],
+      "head": "c631aa1c0324b939f856f23ef8e4cd95b83982cb",
+      "start": "2026-10-26T14:10:02.706Z",
+      "end": "2026-10-26T14:10:14.327Z",
+      "exitCode": 0,
+      "signal": null,
+      "status": "PASS",
+      "result": {},
+      "unitSummary": "48 passed (48)",
+      "record": "r3-picker-unit-v2.json",
+      "log": "r3-picker-unit-v2.txt"
+    },
+    {
+      "label": "r3-picker-build-v2",
+      "command": [
+        "npm",
+        "run",
+        "build"
+      ],
+      "head": "c631aa1c0324b939f856f23ef8e4cd95b83982cb",
+      "start": "2026-10-26T14:10:14.450Z",
+      "end": "2026-10-26T14:10:22.360Z",
+      "exitCode": 0,
+      "signal": null,
+      "status": "PASS",
+      "result": {},
+      "unitSummary": null,
+      "record": "r3-picker-build-v2.json",
+      "log": "r3-picker-build-v2.txt"
+    },
+    {
+      "label": "r3-picker-electron-v2",
+      "command": [
+        "npx",
+        "playwright",
+        "test",
+        "tests/e2e/dialogs.spec.ts",
+        "--retries=0",
+        "--output=output/next-round/r3-picker-fixed-v2"
+      ],
+      "head": "c631aa1c0324b939f856f23ef8e4cd95b83982cb",
+      "start": "2026-10-26T14:10:22.426Z",
+      "end": "2026-10-26T14:10:48.699Z",
+      "exitCode": 0,
+      "signal": null,
+      "status": "PASS",
+      "result": {
+        "passed": 7
+      },
+      "unitSummary": null,
+      "record": "r3-picker-electron-v2.json",
+      "log": "r3-picker-electron-v2.txt"
+    },
+    {
+      "label": "final-check",
+      "command": [
+        "npm",
+        "run",
+        "check"
+      ],
+      "head": "a4c9abf94baaf726669d0c058626d23db446c8cd",
+      "start": "2026-10-26T14:11:27.347Z",
+      "end": "2026-10-26T14:11:29.794Z",
+      "exitCode": 0,
+      "signal": null,
+      "status": "PASS",
+      "result": {},
+      "unitSummary": null,
+      "record": "final-check.json",
+      "log": "final-check.txt"
+    },
+    {
+      "label": "final-unit",
+      "command": [
+        "npm",
+        "test"
+      ],
+      "head": "a4c9abf94baaf726669d0c058626d23db446c8cd",
+      "start": "2026-10-26T14:11:29.846Z",
+      "end": "2026-10-26T14:11:40.927Z",
+      "exitCode": 0,
+      "signal": null,
+      "status": "PASS",
+      "result": {},
+      "unitSummary": "48 passed (48)",
+      "record": "final-unit.json",
+      "log": "final-unit.txt"
+    },
+    {
+      "label": "final-build",
+      "command": [
+        "npm",
+        "run",
+        "build"
+      ],
+      "head": "a4c9abf94baaf726669d0c058626d23db446c8cd",
+      "start": "2026-10-26T14:11:40.996Z",
+      "end": "2026-10-26T14:11:46.400Z",
+      "exitCode": 0,
+      "signal": null,
+      "status": "PASS",
+      "result": {},
+      "unitSummary": null,
+      "record": "final-build.json",
+      "log": "final-build.txt"
+    },
+    {
+      "label": "acceptance-drag20",
+      "command": [
+        "npx",
+        "playwright",
+        "test",
+        "tests/e2e/drag.spec.ts",
+        "--repeat-each=20",
+        "--retries=0",
+        "--output=output/next-round/acceptance-drag20"
+      ],
+      "head": "a4c9abf94baaf726669d0c058626d23db446c8cd",
+      "start": "2026-10-26T14:11:46.463Z",
+      "end": "2026-10-26T14:15:46.520Z",
+      "exitCode": 0,
+      "signal": null,
+      "status": "PASS",
+      "result": {
+        "passed": 40
+      },
+      "unitSummary": null,
+      "record": "acceptance-drag20.json",
+      "log": "acceptance-drag20.txt"
+    },
+    {
+      "label": "verified-check",
+      "command": [
+        "npm",
+        "run",
+        "check"
+      ],
+      "head": "917efa6dda13faf644a8b13b4650748cd4c00c90",
+      "start": "2026-10-26T14:16:28.592Z",
+      "end": "2026-10-26T14:16:31.563Z",
+      "exitCode": 0,
+      "signal": null,
+      "status": "PASS",
+      "result": {},
+      "unitSummary": null,
+      "record": "verified-check.json",
+      "log": "verified-check.txt"
+    },
+    {
+      "label": "verified-unit",
+      "command": [
+        "npm",
+        "test"
+      ],
+      "head": "917efa6dda13faf644a8b13b4650748cd4c00c90",
+      "start": "2026-10-26T14:16:31.620Z",
+      "end": "2026-10-26T14:16:41.174Z",
+      "exitCode": 0,
+      "signal": null,
+      "status": "PASS",
+      "result": {},
+      "unitSummary": "48 passed (48)",
+      "record": "verified-unit.json",
+      "log": "verified-unit.txt"
+    },
+    {
+      "label": "verified-build",
+      "command": [
+        "npm",
+        "run",
+        "build"
+      ],
+      "head": "917efa6dda13faf644a8b13b4650748cd4c00c90",
+      "start": "2026-10-26T14:16:41.232Z",
+      "end": "2026-10-26T14:16:45.524Z",
+      "exitCode": 0,
+      "signal": null,
+      "status": "PASS",
+      "result": {},
+      "unitSummary": null,
+      "record": "verified-build.json",
+      "log": "verified-build.txt"
+    },
+    {
+      "label": "full-e2e-1",
+      "command": [
+        "npx",
+        "playwright",
+        "test",
+        "--retries=0",
+        "--output=output/next-round/full-e2e-1"
+      ],
+      "head": "917efa6dda13faf644a8b13b4650748cd4c00c90",
+      "start": "2026-10-26T14:16:45.577Z",
+      "end": "2026-10-26T14:19:50.441Z",
+      "exitCode": 0,
+      "signal": null,
+      "status": "PASS",
+      "result": {
+        "passed": 37
+      },
+      "unitSummary": null,
+      "record": "full-e2e-1.json",
+      "log": "full-e2e-1.txt"
+    },
+    {
+      "label": "full-e2e-2",
+      "command": [
+        "npx",
+        "playwright",
+        "test",
+        "--retries=0",
+        "--output=output/next-round/full-e2e-2"
+      ],
+      "head": "917efa6dda13faf644a8b13b4650748cd4c00c90",
+      "start": "2026-10-26T14:19:50.595Z",
+      "end": "2026-10-26T14:22:41.310Z",
+      "exitCode": 1,
+      "signal": null,
+      "status": "FAIL",
+      "result": {
+        "failed": 1,
+        "passed": 36
+      },
+      "unitSummary": null,
+      "record": "full-e2e-2.json",
+      "log": "full-e2e-2.txt"
+    },
+    {
+      "label": "full-e2e-3",
+      "command": [
+        "npx",
+        "playwright",
+        "test",
+        "--retries=0",
+        "--output=output/next-round/full-e2e-3"
+      ],
+      "head": "917efa6dda13faf644a8b13b4650748cd4c00c90",
+      "start": "2026-10-26T14:22:41.635Z",
+      "end": "2026-10-26T14:24:48.825Z",
+      "exitCode": 1,
+      "signal": null,
+      "status": "FAIL",
+      "result": {
+        "failed": 1,
+        "passed": 36
+      },
+      "unitSummary": null,
+      "record": "full-e2e-3.json",
+      "log": "full-e2e-3.txt"
+    },
+    {
+      "label": "f11-f02-observe-check",
+      "command": [
+        "npm",
+        "run",
+        "check"
+      ],
+      "head": "917efa6dda13faf644a8b13b4650748cd4c00c90",
+      "start": "2026-10-26T14:25:52.918Z",
+      "end": "2026-10-26T14:26:04.771Z",
+      "exitCode": 0,
+      "signal": null,
+      "status": "PASS",
+      "result": {},
+      "unitSummary": null,
+      "record": "f11-f02-observe-check.json",
+      "log": "f11-f02-observe-check.txt"
+    },
+    {
+      "label": "f11-f02-observe",
+      "command": [
+        "npx",
+        "playwright",
+        "test",
+        "tests/e2e/gate-a.spec.ts",
+        "--grep",
+        "F11 editing|F02 full-text",
+        "--repeat-each=10",
+        "--retries=0",
+        "--output=output/next-round/f11-f02-observe"
+      ],
+      "head": "917efa6dda13faf644a8b13b4650748cd4c00c90",
+      "start": "2026-10-26T14:26:05.079Z",
+      "end": "2026-10-26T14:27:52.713Z",
+      "exitCode": 1,
+      "signal": null,
+      "status": "FAIL",
+      "result": {
+        "failed": 3,
+        "passed": 17
+      },
+      "unitSummary": null,
+      "record": "f11-f02-observe.json",
+      "log": "f11-f02-observe.txt"
+    },
+    {
+      "label": "acceptance-check",
+      "command": [
+        "npm",
+        "run",
+        "check"
+      ],
+      "head": "917efa6dda13faf644a8b13b4650748cd4c00c90",
+      "start": "2026-10-26T14:28:29.107Z",
+      "end": "2026-10-26T14:28:31.627Z",
+      "exitCode": 0,
+      "signal": null,
+      "status": "PASS",
+      "result": {},
+      "unitSummary": null,
+      "record": "acceptance-check.json",
+      "log": "acceptance-check.txt"
+    },
+    {
+      "label": "acceptance-unit",
+      "command": [
+        "npm",
+        "test"
+      ],
+      "head": "917efa6dda13faf644a8b13b4650748cd4c00c90",
+      "start": "2026-10-26T14:28:31.686Z",
+      "end": "2026-10-26T14:28:42.449Z",
+      "exitCode": 0,
+      "signal": null,
+      "status": "PASS",
+      "result": {},
+      "unitSummary": "48 passed (48)",
+      "record": "acceptance-unit.json",
+      "log": "acceptance-unit.txt"
+    },
+    {
+      "label": "acceptance-build",
+      "command": [
+        "npm",
+        "run",
+        "build"
+      ],
+      "head": "917efa6dda13faf644a8b13b4650748cd4c00c90",
+      "start": "2026-10-26T14:28:42.517Z",
+      "end": "2026-10-26T14:28:47.390Z",
+      "exitCode": 0,
+      "signal": null,
+      "status": "PASS",
+      "result": {},
+      "unitSummary": null,
+      "record": "acceptance-build.json",
+      "log": "acceptance-build.txt"
+    },
+    {
+      "label": "f11-f02-green",
+      "command": [
+        "npx",
+        "playwright",
+        "test",
+        "tests/e2e/gate-a.spec.ts",
+        "--grep",
+        "F11 editing|F02 full-text",
+        "--repeat-each=10",
+        "--retries=0",
+        "--output=output/next-round/f11-f02-green"
+      ],
+      "head": "917efa6dda13faf644a8b13b4650748cd4c00c90",
+      "start": "2026-10-26T14:28:47.443Z",
+      "end": "2026-10-26T14:30:33.718Z",
+      "exitCode": 1,
+      "signal": null,
+      "status": "FAIL",
+      "result": {
+        "failed": 10,
+        "passed": 10
+      },
+      "unitSummary": null,
+      "record": "f11-f02-green.json",
+      "log": "f11-f02-green.txt"
+    },
+    {
+      "label": "acceptance-check-v2",
+      "command": [
+        "npm",
+        "run",
+        "check"
+      ],
+      "head": "917efa6dda13faf644a8b13b4650748cd4c00c90",
+      "start": "2026-10-26T14:31:19.361Z",
+      "end": "2026-10-26T14:31:21.638Z",
+      "exitCode": 0,
+      "signal": null,
+      "status": "PASS",
+      "result": {},
+      "unitSummary": null,
+      "record": "acceptance-check-v2.json",
+      "log": "acceptance-check-v2.txt"
+    },
+    {
+      "label": "acceptance-unit-v2",
+      "command": [
+        "npm",
+        "test"
+      ],
+      "head": "917efa6dda13faf644a8b13b4650748cd4c00c90",
+      "start": "2026-10-26T14:31:21.690Z",
+      "end": "2026-10-26T14:31:33.817Z",
+      "exitCode": 0,
+      "signal": null,
+      "status": "PASS",
+      "result": {},
+      "unitSummary": "48 passed (48)",
+      "record": "acceptance-unit-v2.json",
+      "log": "acceptance-unit-v2.txt"
+    },
+    {
+      "label": "acceptance-build-v2",
+      "command": [
+        "npm",
+        "run",
+        "build"
+      ],
+      "head": "917efa6dda13faf644a8b13b4650748cd4c00c90",
+      "start": "2026-10-26T14:31:33.895Z",
+      "end": "2026-10-26T14:31:41.506Z",
+      "exitCode": 0,
+      "signal": null,
+      "status": "PASS",
+      "result": {},
+      "unitSummary": null,
+      "record": "acceptance-build-v2.json",
+      "log": "acceptance-build-v2.txt"
+    },
+    {
+      "label": "f11-f02-green-v2",
+      "command": [
+        "npx",
+        "playwright",
+        "test",
+        "tests/e2e/gate-a.spec.ts",
+        "--grep",
+        "F11 editing|F02 full-text",
+        "--retries=0",
+        "--output=output/next-round/f11-f02-green-v2"
+      ],
+      "head": "917efa6dda13faf644a8b13b4650748cd4c00c90",
+      "start": "2026-10-26T14:31:41.629Z",
+      "end": "2026-10-26T14:31:49.854Z",
+      "exitCode": 0,
+      "signal": null,
+      "status": "PASS",
+      "result": {
+        "passed": 2
+      },
+      "unitSummary": null,
+      "record": "f11-f02-green-v2.json",
+      "log": "f11-f02-green-v2.txt"
+    },
+    {
+      "label": "acceptance-full-1",
+      "command": [
+        "npx",
+        "playwright",
+        "test",
+        "--retries=0",
+        "--output=output/next-round/acceptance-full-1"
+      ],
+      "head": "0bf710eec16d065535674e41196312141e2d0233",
+      "start": "2026-10-26T14:32:10.481Z",
+      "end": "2026-10-26T14:34:17.240Z",
+      "exitCode": 0,
+      "signal": null,
+      "status": "PASS",
+      "result": {
+        "passed": 37
+      },
+      "unitSummary": null,
+      "record": "acceptance-full-1.json",
+      "log": "acceptance-full-1.txt"
+    },
+    {
+      "label": "acceptance-full-2",
+      "command": [
+        "npx",
+        "playwright",
+        "test",
+        "--retries=0",
+        "--output=output/next-round/acceptance-full-2"
+      ],
+      "head": "0bf710eec16d065535674e41196312141e2d0233",
+      "start": "2026-10-26T14:34:17.426Z",
+      "end": "2026-10-26T14:36:24.944Z",
+      "exitCode": 0,
+      "signal": null,
+      "status": "PASS",
+      "result": {
+        "passed": 37
+      },
+      "unitSummary": null,
+      "record": "acceptance-full-2.json",
+      "log": "acceptance-full-2.txt"
+    },
+    {
+      "label": "acceptance-full-3",
+      "command": [
+        "npx",
+        "playwright",
+        "test",
+        "--retries=0",
+        "--output=output/next-round/acceptance-full-3"
+      ],
+      "head": "0bf710eec16d065535674e41196312141e2d0233",
+      "start": "2026-10-26T14:36:25.106Z",
+      "end": "2026-10-26T14:39:02.724Z",
+      "exitCode": 1,
+      "signal": null,
+      "status": "FAIL",
+      "result": {
+        "failed": 1,
+        "passed": 36
+      },
+      "unitSummary": null,
+      "record": "acceptance-full-3.json",
+      "log": "acceptance-full-3.txt"
+    },
+    {
+      "label": "dev-dialog-smoke",
+      "command": [
+        "env",
+        "FOLIO_DEV_URL=http://127.0.0.1:54117/",
+        "npx",
+        "playwright",
+        "test",
+        "tests/e2e/dialogs.spec.ts",
+        "--grep",
+        "selected text link",
+        "--retries=0",
+        "--output=output/next-round/dev-dialog-smoke"
+      ],
+      "head": "0bf710eec16d065535674e41196312141e2d0233",
+      "start": "2026-10-26T14:39:40.725Z",
+      "end": "2026-10-26T14:40:14.473Z",
+      "exitCode": 1,
+      "signal": null,
+      "status": "FAIL",
+      "result": {
+        "failed": 1
+      },
+      "unitSummary": null,
+      "record": "dev-dialog-smoke.json",
+      "log": "dev-dialog-smoke.txt"
+    },
+    {
+      "label": "dev-diagnostic",
+      "command": [
+        "node",
+        "output/next-round/dev-debug.mjs"
+      ],
+      "head": "0bf710eec16d065535674e41196312141e2d0233",
+      "start": "2026-10-26T14:41:14.581Z",
+      "end": "2026-10-26T14:41:17.635Z",
+      "exitCode": 0,
+      "signal": null,
+      "status": "PASS",
+      "result": {},
+      "unitSummary": null,
+      "record": "dev-diagnostic.json",
+      "log": "dev-diagnostic.txt"
+    },
+    {
+      "label": "dev-dialog-smoke-v2",
+      "command": [
+        "env",
+        "FOLIO_DEV_URL=http://127.0.0.1:54117/",
+        "npx",
+        "playwright",
+        "test",
+        "tests/e2e/dialogs.spec.ts",
+        "--grep",
+        "selected text link",
+        "--retries=0",
+        "--output=output/next-round/dev-dialog-smoke-v2"
+      ],
+      "head": "0bf710eec16d065535674e41196312141e2d0233",
+      "start": "2026-10-26T14:41:55.422Z",
+      "end": "2026-10-26T14:42:00.613Z",
+      "exitCode": 0,
+      "signal": null,
+      "status": "PASS",
+      "result": {
+        "passed": 1
+      },
+      "unitSummary": null,
+      "record": "dev-dialog-smoke-v2.json",
+      "log": "dev-dialog-smoke-v2.txt"
+    },
+    {
+      "label": "sharing-scan",
+      "command": [
+        "npm",
+        "run",
+        "review:scan"
+      ],
+      "head": "0bf710eec16d065535674e41196312141e2d0233",
+      "start": "2026-10-26T14:43:26.537Z",
+      "end": "2026-10-26T14:43:36.107Z",
+      "exitCode": 0,
+      "signal": null,
+      "status": "PASS",
+      "result": {},
+      "unitSummary": null,
+      "record": "sharing-scan.json",
+      "log": "sharing-scan.txt"
+    }
+  ],
+  "notRun": [
+    {
+      "item": "N01–N08 actual Notion comparison",
+      "reason": "No authorized test workspace; official documented references only",
+      "comparison": "UNKNOWN"
+    },
+    {
+      "item": "N08 physical Japanese IME",
+      "reason": "Physical conversion/reconversion/candidate choice not executed; manual procedure in baseline",
+      "comparison": "UNKNOWN"
+    }
+  ],
+  "notes": [
+    "48 unit tests; 37 distinct Electron tests. The previous 15 Gate A tests are included in the previous 22; this round adds 6 recovery, 2 drag, 7 dialog tests.",
+    "acceptance-drag20 ran at a4c9abf; subsequent changes are limited to N02/F11 assertions and diagnostics in tests/e2e/gate-a.spec.ts. Application, drag tests and dist hashes match.",
+    "Intermediate red tests and erroneous initial expectations remain in command records. No historical result is reassigned to current code.",
+    "Final success is bounded to these conditions, not absolute stability, full Gate A closure, or Notion MATCH."
+  ]
+}

@@ -75,3 +75,18 @@ README、SPEC、ARCHITECTURE、FEATURES、TEST-RESULTS、EVIDENCE、MCP-CONNECTI
 - `review/2026-10-26` の監査原本はハッシュ照合のうえ配置。原本の68ケースは変更せず、補足の `gate-a-results.json` にPASS/PARTIAL/NOT_RUNを記録。
 - 物理日本語IMEとNotion比較は未実施。次はこの手動確認とドラッグの不安定性の調査を行い、Gate Bへ進む。Gate C〜Eの大機能は追加していない。
 - 検証終了時点では未コミット。その後のユーザー指示により、GitHub反映対象の修正コミットは `754430158ee1de811bebdcc5a66602a13f3d3cb9` に固定した。[Git記録](validation/gate-a/git-state.json)を参照。次回はこのコミットとmanifestのハッシュを照合する。公開設定変更・履歴書き換えは行わない。
+
+## 次ラウンド R1/R2/R3 — 2026-10-26
+
+- レビューHEAD`7759906`と開始HEADは一致、開始時の作業ツリーはclean。旧監査/検証manifestを照合してからR1→R2→R3の順で実装した。今回の原本はreview/next-round-7759906へ保存。
+- R1: 原題500文字を保持し、復旧識別を別メタデータへ。退避v2のUTF-8 30MB上限と読み戻し検査を統一し、変更ページだけを一度格納。v1互換、別ページ復旧、取消・失敗時のpending保持を確認。
+- R2: 同位置dropの不要TransactionとUndo区切り/カーソル位置を修正。実ポインターのイベント・文書・ACKを記録し、短い回帰と境界matrixを追加。最終対象反復は40/40。旧成功3/3だけを原因解決の証拠にしない。
+- R3: 検索/ページリンク/DBレコードを共通native Modalへ。focus、Tab周回、Escape、内側select、リンク選択保持と別ページ誤挿入防止を検証。物理IMEは未実施。
+- 単体48/48、check/build成功。最終全体37件×3回の結果は[今回の結果](validation/next-round/results.json)。途中の失敗と試験側の修正も全件保持。[対応報告](NEXT-ROUND-RESPONSE.md)に変更単位と限界を記載。
+- Notionの最小8シナリオを実装前に固定し、公式文書/推定/未確認を区別した。実Notion操作はNOT_RUN、比較は全てUNKNOWN。[比較基準](NOTION-PARITY-BASELINE.md)。
+- 旧F11の移動待機開始前の停止は、診断付き元入力10回では未再現。過去の停止を解決済みとはしない。追加テストではnative dropとmove ACKを観測する。
+- R1/R2/R3を分けてローカルコミット。GitHub push・公開設定変更・履歴書き換えなし。既存データ/lockfileは保持し、既存起動アプリは終了していない。新しいdistは起動・保存・再起動を検証済み。大機能への拡張は行っていない。
+
+最終受入の確定結果: check・単体48/48・buildはPASS。トップレベルドラッグは40/40。全体Electronはacceptance-full-1 **37/37**、acceptance-full-2 **37/37**、acceptance-full-3 **36/37**で、全体受入はPARTIAL。最後のF11はcapture記録がmousedownのみ、dragstart/dropなし、move IPCなし。ページツリー操作の入力開始に残件があり、根本原因は未特定。保存不具合を再現したという判定ではないが、全体成功にも数えない。対象ブロック操作の20反復が通ったこととは区別する。
+
+開発モードの初回起動待ちはFAIL（Vite依存最適化/reloadのログあり）。別の診断起動で画面表示を確認し、同じサーバーでリンク確定/取消の回帰は1/1 PASS。StrictMode下の選択・書式・focus保持の限定確認で、cold startの安定性を証明していない。production distの起動・保存・再起動は全体試験で確認済み。

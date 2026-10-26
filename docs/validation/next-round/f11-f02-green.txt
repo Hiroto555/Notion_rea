@@ -1,0 +1,387 @@
+
+Running 20 tests using 1 worker
+
+  ✘   1 tests/e2e/gate-a.spec.ts:204:1 › F11 editing during move and delayed load keeps local patch and durable revision (6.9s)
+  ✓   2 tests/e2e/gate-a.spec.ts:284:1 › F02 full-text search, preview, count and in-page selection cross inline marks (2.3s)
+  ✘   3 tests/e2e/gate-a.spec.ts:204:1 › F11 editing during move and delayed load keeps local patch and durable revision (6.7s)
+  ✓   4 tests/e2e/gate-a.spec.ts:284:1 › F02 full-text search, preview, count and in-page selection cross inline marks (2.2s)
+  ✘   5 tests/e2e/gate-a.spec.ts:204:1 › F11 editing during move and delayed load keeps local patch and durable revision (5.8s)
+  ✓   6 tests/e2e/gate-a.spec.ts:284:1 › F02 full-text search, preview, count and in-page selection cross inline marks (2.7s)
+  ✘   7 tests/e2e/gate-a.spec.ts:204:1 › F11 editing during move and delayed load keeps local patch and durable revision (6.9s)
+  ✓   8 tests/e2e/gate-a.spec.ts:284:1 › F02 full-text search, preview, count and in-page selection cross inline marks (2.5s)
+  ✘   9 tests/e2e/gate-a.spec.ts:204:1 › F11 editing during move and delayed load keeps local patch and durable revision (6.0s)
+  ✓  10 tests/e2e/gate-a.spec.ts:284:1 › F02 full-text search, preview, count and in-page selection cross inline marks (2.3s)
+  ✘  11 tests/e2e/gate-a.spec.ts:204:1 › F11 editing during move and delayed load keeps local patch and durable revision (6.6s)
+  ✓  12 tests/e2e/gate-a.spec.ts:284:1 › F02 full-text search, preview, count and in-page selection cross inline marks (3.4s)
+  ✘  13 tests/e2e/gate-a.spec.ts:204:1 › F11 editing during move and delayed load keeps local patch and durable revision (6.7s)
+  ✓  14 tests/e2e/gate-a.spec.ts:284:1 › F02 full-text search, preview, count and in-page selection cross inline marks (2.3s)
+  ✘  15 tests/e2e/gate-a.spec.ts:204:1 › F11 editing during move and delayed load keeps local patch and durable revision (6.9s)
+  ✓  16 tests/e2e/gate-a.spec.ts:284:1 › F02 full-text search, preview, count and in-page selection cross inline marks (2.3s)
+  ✘  17 tests/e2e/gate-a.spec.ts:204:1 › F11 editing during move and delayed load keeps local patch and durable revision (7.0s)
+  ✓  18 tests/e2e/gate-a.spec.ts:284:1 › F02 full-text search, preview, count and in-page selection cross inline marks (2.5s)
+  ✘  19 tests/e2e/gate-a.spec.ts:204:1 › F11 editing during move and delayed load keeps local patch and durable revision (6.9s)
+  ✓  20 tests/e2e/gate-a.spec.ts:284:1 › F02 full-text search, preview, count and in-page selection cross inline marks (2.6s)
+
+
+  1) tests/e2e/gate-a.spec.ts:204:1 › F11 editing during move and delayed load keeps local patch and durable revision 
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: true
+    Received: false
+
+    Call Log:
+    - Timeout 5000ms exceeded while waiting on the predicate
+
+       at real-drag.ts:51
+
+      49 |   await expect
+      50 |     .poll(() => page.evaluate(() => (globalThis as any).pointerDropped))
+    > 51 |     .toBe(true);
+         |      ^
+      52 | }
+      53 |
+        at realDrag (<repo>/tests/e2e/real-drag.ts:51:6)
+        at <repo>/tests/e2e/gate-a.spec.ts:236:3
+
+    Error Context: output/next-round/f11-f02-green/gate-a-F11-editing-during--c372d--patch-and-durable-revision/error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    output/next-round/f11-f02-green/gate-a-F11-editing-during--c372d--patch-and-durable-revision/trace.zip
+    Usage:
+
+        npx playwright show-trace output/next-round/f11-f02-green/gate-a-F11-editing-during--c372d--patch-and-durable-revision/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  2) tests/e2e/gate-a.spec.ts:204:1 › F11 editing during move and delayed load keeps local patch and durable revision 
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: true
+    Received: false
+
+    Call Log:
+    - Timeout 5000ms exceeded while waiting on the predicate
+
+       at real-drag.ts:51
+
+      49 |   await expect
+      50 |     .poll(() => page.evaluate(() => (globalThis as any).pointerDropped))
+    > 51 |     .toBe(true);
+         |      ^
+      52 | }
+      53 |
+        at realDrag (<repo>/tests/e2e/real-drag.ts:51:6)
+        at <repo>/tests/e2e/gate-a.spec.ts:236:3
+
+    Error Context: output/next-round/f11-f02-green/gate-a-F11-editing-during--c372d--patch-and-durable-revision-repeat1/error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    output/next-round/f11-f02-green/gate-a-F11-editing-during--c372d--patch-and-durable-revision-repeat1/trace.zip
+    Usage:
+
+        npx playwright show-trace output/next-round/f11-f02-green/gate-a-F11-editing-during--c372d--patch-and-durable-revision-repeat1/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  3) tests/e2e/gate-a.spec.ts:204:1 › F11 editing during move and delayed load keeps local patch and durable revision 
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: true
+    Received: false
+
+    Call Log:
+    - Timeout 5000ms exceeded while waiting on the predicate
+
+       at real-drag.ts:51
+
+      49 |   await expect
+      50 |     .poll(() => page.evaluate(() => (globalThis as any).pointerDropped))
+    > 51 |     .toBe(true);
+         |      ^
+      52 | }
+      53 |
+        at realDrag (<repo>/tests/e2e/real-drag.ts:51:6)
+        at <repo>/tests/e2e/gate-a.spec.ts:236:3
+
+    Error Context: output/next-round/f11-f02-green/gate-a-F11-editing-during--c372d--patch-and-durable-revision-repeat2/error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    output/next-round/f11-f02-green/gate-a-F11-editing-during--c372d--patch-and-durable-revision-repeat2/trace.zip
+    Usage:
+
+        npx playwright show-trace output/next-round/f11-f02-green/gate-a-F11-editing-during--c372d--patch-and-durable-revision-repeat2/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  4) tests/e2e/gate-a.spec.ts:204:1 › F11 editing during move and delayed load keeps local patch and durable revision 
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: true
+    Received: false
+
+    Call Log:
+    - Timeout 5000ms exceeded while waiting on the predicate
+
+       at real-drag.ts:51
+
+      49 |   await expect
+      50 |     .poll(() => page.evaluate(() => (globalThis as any).pointerDropped))
+    > 51 |     .toBe(true);
+         |      ^
+      52 | }
+      53 |
+        at realDrag (<repo>/tests/e2e/real-drag.ts:51:6)
+        at <repo>/tests/e2e/gate-a.spec.ts:236:3
+
+    Error Context: output/next-round/f11-f02-green/gate-a-F11-editing-during--c372d--patch-and-durable-revision-repeat3/error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    output/next-round/f11-f02-green/gate-a-F11-editing-during--c372d--patch-and-durable-revision-repeat3/trace.zip
+    Usage:
+
+        npx playwright show-trace output/next-round/f11-f02-green/gate-a-F11-editing-during--c372d--patch-and-durable-revision-repeat3/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  5) tests/e2e/gate-a.spec.ts:204:1 › F11 editing during move and delayed load keeps local patch and durable revision 
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: true
+    Received: false
+
+    Call Log:
+    - Timeout 5000ms exceeded while waiting on the predicate
+
+       at real-drag.ts:51
+
+      49 |   await expect
+      50 |     .poll(() => page.evaluate(() => (globalThis as any).pointerDropped))
+    > 51 |     .toBe(true);
+         |      ^
+      52 | }
+      53 |
+        at realDrag (<repo>/tests/e2e/real-drag.ts:51:6)
+        at <repo>/tests/e2e/gate-a.spec.ts:236:3
+
+    Error Context: output/next-round/f11-f02-green/gate-a-F11-editing-during--c372d--patch-and-durable-revision-repeat4/error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    output/next-round/f11-f02-green/gate-a-F11-editing-during--c372d--patch-and-durable-revision-repeat4/trace.zip
+    Usage:
+
+        npx playwright show-trace output/next-round/f11-f02-green/gate-a-F11-editing-during--c372d--patch-and-durable-revision-repeat4/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  6) tests/e2e/gate-a.spec.ts:204:1 › F11 editing during move and delayed load keeps local patch and durable revision 
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: true
+    Received: false
+
+    Call Log:
+    - Timeout 5000ms exceeded while waiting on the predicate
+
+       at real-drag.ts:51
+
+      49 |   await expect
+      50 |     .poll(() => page.evaluate(() => (globalThis as any).pointerDropped))
+    > 51 |     .toBe(true);
+         |      ^
+      52 | }
+      53 |
+        at realDrag (<repo>/tests/e2e/real-drag.ts:51:6)
+        at <repo>/tests/e2e/gate-a.spec.ts:236:3
+
+    Error Context: output/next-round/f11-f02-green/gate-a-F11-editing-during--c372d--patch-and-durable-revision-repeat5/error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    output/next-round/f11-f02-green/gate-a-F11-editing-during--c372d--patch-and-durable-revision-repeat5/trace.zip
+    Usage:
+
+        npx playwright show-trace output/next-round/f11-f02-green/gate-a-F11-editing-during--c372d--patch-and-durable-revision-repeat5/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  7) tests/e2e/gate-a.spec.ts:204:1 › F11 editing during move and delayed load keeps local patch and durable revision 
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: true
+    Received: false
+
+    Call Log:
+    - Timeout 5000ms exceeded while waiting on the predicate
+
+       at real-drag.ts:51
+
+      49 |   await expect
+      50 |     .poll(() => page.evaluate(() => (globalThis as any).pointerDropped))
+    > 51 |     .toBe(true);
+         |      ^
+      52 | }
+      53 |
+        at realDrag (<repo>/tests/e2e/real-drag.ts:51:6)
+        at <repo>/tests/e2e/gate-a.spec.ts:236:3
+
+    Error Context: output/next-round/f11-f02-green/gate-a-F11-editing-during--c372d--patch-and-durable-revision-repeat6/error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    output/next-round/f11-f02-green/gate-a-F11-editing-during--c372d--patch-and-durable-revision-repeat6/trace.zip
+    Usage:
+
+        npx playwright show-trace output/next-round/f11-f02-green/gate-a-F11-editing-during--c372d--patch-and-durable-revision-repeat6/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  8) tests/e2e/gate-a.spec.ts:204:1 › F11 editing during move and delayed load keeps local patch and durable revision 
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: true
+    Received: false
+
+    Call Log:
+    - Timeout 5000ms exceeded while waiting on the predicate
+
+       at real-drag.ts:51
+
+      49 |   await expect
+      50 |     .poll(() => page.evaluate(() => (globalThis as any).pointerDropped))
+    > 51 |     .toBe(true);
+         |      ^
+      52 | }
+      53 |
+        at realDrag (<repo>/tests/e2e/real-drag.ts:51:6)
+        at <repo>/tests/e2e/gate-a.spec.ts:236:3
+
+    Error Context: output/next-round/f11-f02-green/gate-a-F11-editing-during--c372d--patch-and-durable-revision-repeat7/error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    output/next-round/f11-f02-green/gate-a-F11-editing-during--c372d--patch-and-durable-revision-repeat7/trace.zip
+    Usage:
+
+        npx playwright show-trace output/next-round/f11-f02-green/gate-a-F11-editing-during--c372d--patch-and-durable-revision-repeat7/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  9) tests/e2e/gate-a.spec.ts:204:1 › F11 editing during move and delayed load keeps local patch and durable revision 
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: true
+    Received: false
+
+    Call Log:
+    - Timeout 5000ms exceeded while waiting on the predicate
+
+       at real-drag.ts:51
+
+      49 |   await expect
+      50 |     .poll(() => page.evaluate(() => (globalThis as any).pointerDropped))
+    > 51 |     .toBe(true);
+         |      ^
+      52 | }
+      53 |
+        at realDrag (<repo>/tests/e2e/real-drag.ts:51:6)
+        at <repo>/tests/e2e/gate-a.spec.ts:236:3
+
+    Error Context: output/next-round/f11-f02-green/gate-a-F11-editing-during--c372d--patch-and-durable-revision-repeat8/error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    output/next-round/f11-f02-green/gate-a-F11-editing-during--c372d--patch-and-durable-revision-repeat8/trace.zip
+    Usage:
+
+        npx playwright show-trace output/next-round/f11-f02-green/gate-a-F11-editing-during--c372d--patch-and-durable-revision-repeat8/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  10) tests/e2e/gate-a.spec.ts:204:1 › F11 editing during move and delayed load keeps local patch and durable revision 
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: true
+    Received: false
+
+    Call Log:
+    - Timeout 5000ms exceeded while waiting on the predicate
+
+       at real-drag.ts:51
+
+      49 |   await expect
+      50 |     .poll(() => page.evaluate(() => (globalThis as any).pointerDropped))
+    > 51 |     .toBe(true);
+         |      ^
+      52 | }
+      53 |
+        at realDrag (<repo>/tests/e2e/real-drag.ts:51:6)
+        at <repo>/tests/e2e/gate-a.spec.ts:236:3
+
+    Error Context: output/next-round/f11-f02-green/gate-a-F11-editing-during--c372d--patch-and-durable-revision-repeat9/error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    output/next-round/f11-f02-green/gate-a-F11-editing-during--c372d--patch-and-durable-revision-repeat9/trace.zip
+    Usage:
+
+        npx playwright show-trace output/next-round/f11-f02-green/gate-a-F11-editing-during--c372d--patch-and-durable-revision-repeat9/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  10 failed
+    tests/e2e/gate-a.spec.ts:204:1 › F11 editing during move and delayed load keeps local patch and durable revision 
+    tests/e2e/gate-a.spec.ts:204:1 › F11 editing during move and delayed load keeps local patch and durable revision 
+    tests/e2e/gate-a.spec.ts:204:1 › F11 editing during move and delayed load keeps local patch and durable revision 
+    tests/e2e/gate-a.spec.ts:204:1 › F11 editing during move and delayed load keeps local patch and durable revision 
+    tests/e2e/gate-a.spec.ts:204:1 › F11 editing during move and delayed load keeps local patch and durable revision 
+    tests/e2e/gate-a.spec.ts:204:1 › F11 editing during move and delayed load keeps local patch and durable revision 
+    tests/e2e/gate-a.spec.ts:204:1 › F11 editing during move and delayed load keeps local patch and durable revision 
+    tests/e2e/gate-a.spec.ts:204:1 › F11 editing during move and delayed load keeps local patch and durable revision 
+    tests/e2e/gate-a.spec.ts:204:1 › F11 editing during move and delayed load keeps local patch and durable revision 
+    tests/e2e/gate-a.spec.ts:204:1 › F11 editing during move and delayed load keeps local patch and durable revision 
+  10 passed (1.8m)
+(node:34668) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:34798) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:34905) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:35038) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:35134) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:35304) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:35410) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:35568) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:35671) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:35808) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:35905) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:36043) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:36190) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:36334) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:36441) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:36571) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:36673) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:36846) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:36949) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:37130) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)

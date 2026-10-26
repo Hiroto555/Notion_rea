@@ -1,0 +1,128 @@
+
+Running 20 tests using 1 worker
+
+  ✓   1 tests/e2e/gate-a.spec.ts:185:1 › F11 editing during move and delayed load keeps local patch and durable revision (8.9s)
+  ✓   2 tests/e2e/gate-a.spec.ts:251:1 › F02 full-text search, preview, count and in-page selection cross inline marks (5.0s)
+  ✓   3 tests/e2e/gate-a.spec.ts:185:1 › F11 editing during move and delayed load keeps local patch and durable revision (6.0s)
+  ✘   4 tests/e2e/gate-a.spec.ts:251:1 › F02 full-text search, preview, count and in-page selection cross inline marks (4.4s)
+  ✓   5 tests/e2e/gate-a.spec.ts:185:1 › F11 editing during move and delayed load keeps local patch and durable revision (11.7s)
+  ✓   6 tests/e2e/gate-a.spec.ts:251:1 › F02 full-text search, preview, count and in-page selection cross inline marks (10.8s)
+  ✓   7 tests/e2e/gate-a.spec.ts:185:1 › F11 editing during move and delayed load keeps local patch and durable revision (13.4s)
+  ✘   8 tests/e2e/gate-a.spec.ts:251:1 › F02 full-text search, preview, count and in-page selection cross inline marks (3.0s)
+  ✓   9 tests/e2e/gate-a.spec.ts:185:1 › F11 editing during move and delayed load keeps local patch and durable revision (3.2s)
+  ✓  10 tests/e2e/gate-a.spec.ts:251:1 › F02 full-text search, preview, count and in-page selection cross inline marks (2.7s)
+  ✓  11 tests/e2e/gate-a.spec.ts:185:1 › F11 editing during move and delayed load keeps local patch and durable revision (3.1s)
+  ✓  12 tests/e2e/gate-a.spec.ts:251:1 › F02 full-text search, preview, count and in-page selection cross inline marks (2.0s)
+  ✓  13 tests/e2e/gate-a.spec.ts:185:1 › F11 editing during move and delayed load keeps local patch and durable revision (3.2s)
+  ✘  14 tests/e2e/gate-a.spec.ts:251:1 › F02 full-text search, preview, count and in-page selection cross inline marks (2.4s)
+  ✓  15 tests/e2e/gate-a.spec.ts:185:1 › F11 editing during move and delayed load keeps local patch and durable revision (3.6s)
+  ✓  16 tests/e2e/gate-a.spec.ts:251:1 › F02 full-text search, preview, count and in-page selection cross inline marks (2.2s)
+  ✓  17 tests/e2e/gate-a.spec.ts:185:1 › F11 editing during move and delayed load keeps local patch and durable revision (3.3s)
+  ✓  18 tests/e2e/gate-a.spec.ts:251:1 › F02 full-text search, preview, count and in-page selection cross inline marks (2.1s)
+  ✓  19 tests/e2e/gate-a.spec.ts:185:1 › F11 editing during move and delayed load keeps local patch and durable revision (3.0s)
+  ✓  20 tests/e2e/gate-a.spec.ts:251:1 › F02 full-text search, preview, count and in-page selection cross inline marks (2.0s)
+
+
+  1) tests/e2e/gate-a.spec.ts:251:1 › F02 full-text search, preview, count and in-page selection cross inline marks 
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: "software"
+    Received: ""
+
+      313 |     expect(
+      314 |       await window.evaluate(() => globalThis.getSelection()?.toString()),
+    > 315 |     ).toBe(word);
+          |       ^
+      316 |   }
+      317 |   const loaded = await window.evaluate(
+      318 |     (id) =>
+        at <repo>/tests/e2e/gate-a.spec.ts:315:7
+
+    Error Context: output/next-round/f11-f02-observe/gate-a-F02-full-text-searc-5e112-election-cross-inline-marks-repeat1/error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    output/next-round/f11-f02-observe/gate-a-F02-full-text-searc-5e112-election-cross-inline-marks-repeat1/trace.zip
+    Usage:
+
+        npx playwright show-trace output/next-round/f11-f02-observe/gate-a-F02-full-text-searc-5e112-election-cross-inline-marks-repeat1/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  2) tests/e2e/gate-a.spec.ts:251:1 › F02 full-text search, preview, count and in-page selection cross inline marks 
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: "software"
+    Received: ""
+
+      313 |     expect(
+      314 |       await window.evaluate(() => globalThis.getSelection()?.toString()),
+    > 315 |     ).toBe(word);
+          |       ^
+      316 |   }
+      317 |   const loaded = await window.evaluate(
+      318 |     (id) =>
+        at <repo>/tests/e2e/gate-a.spec.ts:315:7
+
+    Error Context: output/next-round/f11-f02-observe/gate-a-F02-full-text-searc-5e112-election-cross-inline-marks-repeat3/error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    output/next-round/f11-f02-observe/gate-a-F02-full-text-searc-5e112-election-cross-inline-marks-repeat3/trace.zip
+    Usage:
+
+        npx playwright show-trace output/next-round/f11-f02-observe/gate-a-F02-full-text-searc-5e112-election-cross-inline-marks-repeat3/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  3) tests/e2e/gate-a.spec.ts:251:1 › F02 full-text search, preview, count and in-page selection cross inline marks 
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: "software"
+    Received: ""
+
+      313 |     expect(
+      314 |       await window.evaluate(() => globalThis.getSelection()?.toString()),
+    > 315 |     ).toBe(word);
+          |       ^
+      316 |   }
+      317 |   const loaded = await window.evaluate(
+      318 |     (id) =>
+        at <repo>/tests/e2e/gate-a.spec.ts:315:7
+
+    Error Context: output/next-round/f11-f02-observe/gate-a-F02-full-text-searc-5e112-election-cross-inline-marks-repeat6/error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    output/next-round/f11-f02-observe/gate-a-F02-full-text-searc-5e112-election-cross-inline-marks-repeat6/trace.zip
+    Usage:
+
+        npx playwright show-trace output/next-round/f11-f02-observe/gate-a-F02-full-text-searc-5e112-election-cross-inline-marks-repeat6/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  3 failed
+    tests/e2e/gate-a.spec.ts:251:1 › F02 full-text search, preview, count and in-page selection cross inline marks 
+    tests/e2e/gate-a.spec.ts:251:1 › F02 full-text search, preview, count and in-page selection cross inline marks 
+    tests/e2e/gate-a.spec.ts:251:1 › F02 full-text search, preview, count and in-page selection cross inline marks 
+  17 passed (1.8m)
+(node:31002) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:31271) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:31567) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:31957) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:32289) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:32542) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:32774) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:33046) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:33312) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:33571) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)

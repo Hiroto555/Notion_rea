@@ -1,0 +1,19 @@
+{
+  "reviewHead": "7759906dbbc905a4dc79d01b97aaff6471e51eb3",
+  "implementationHead": "0bf710eec16d065535674e41196312141e2d0233",
+  "lastApplicationSourceCommit": "a4c9abf94baaf726669d0c058626d23db446c8cd",
+  "branch": "master",
+  "originMasterTrackingRef": "7759906dbbc905a4dc79d01b97aaff6471e51eb3",
+  "localCommits": [
+    "0bf710eec16d065535674e41196312141e2d0233 Observe page-move events and await completed search selection in E2E",
+    "917efa6dda13faf644a8b13b4650748cd4c00c90 Exercise both formatted search terms in parity scenario N02",
+    "a4c9abf94baaf726669d0c058626d23db446c8cd Unify R3 search link and record dialog focus and dismissal",
+    "85990275e5a4733f6b97591a84ae727c9f15ab74 Verify R2 cancellation starts and ends a native pointer drag",
+    "c631aa1c0324b939f856f23ef8e4cd95b83982cb Fix R2 block drag history and focus, instrument real pointer regressions",
+    "1034364e73725d8eb558958d6d22a723440d8a95 Fix R1 recovery title and UTF-8 roundtrip boundaries"
+  ],
+  "pushPerformed": false,
+  "visibilityChanged": false,
+  "historyRewritten": false,
+  "note": "Local implementation commits only. Final evidence commit is the enclosing Git commit, avoiding a self-referential hash."
+}

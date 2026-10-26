@@ -24,7 +24,7 @@ post-writeのloadが失敗した際もパッチを捨てないよう、再読込
 
 本番側は内容が同じdropでTransactionを作らず、ブロック操作をcloseHistoryで区切り、全文置換で文末へ写像されていたカーソルを操作したブロック近傍へ置く。pointer操作後は不要なscrollIntoViewを起こさない。永続IDやネスト粒度の移行は行わない。
 
-反復の途中結果: r2-repeat20は36/40、r2-final-repeat20は39/40。失敗は残しており、その成功分だけで安定済みとはしない。2回目の残件もmousedown後のdragstart未発火だったため、入力経路の移動幅をさらに明確化した。変更後の最終反復・全体3回の結果は後段に追記する。これは前回失敗の全てを単一原因で説明できたという主張ではない。
+反復の途中結果: r2-repeat20は36/40、r2-final-repeat20は39/40。失敗は残しており、その成功分だけで安定済みとはしない。2回目の残件もmousedown後のdragstart未発火だったため、入力経路の移動幅をさらに明確化した。変更後の最終反復acceptance-drag20は40/40（2ケース×20、retries=0）。最終の全体結果は後段を参照。これは前回失敗の全てを単一原因で説明できたという主張ではない。
 
 ## R3 ダイアログ
 
@@ -37,3 +37,38 @@ r3-picker-electron-v2は7/7。追加のnative select試験は最初FAIL、修正
 ## 証拠
 
 docs/validation/next-roundの各実行JSONにcommand/exitCode/HEAD/source hash/build hashを記録。失敗ログを上書きせず保持。生trace・画面・巨大fixtureはローカルoutput/next-roundへ保存する。Notion比較はNOTION-PARITY-BASELINE.mdでFolio結果と別判定。物理IME/Notion実測はNOT_RUN。
+
+## 全体試験で検出した試験側の残件
+
+最初の全体3回はfull-e2e-1が37/37、full-e2e-2が36/37（F11の移動後load待機に入らず）、full-e2e-3が36/37（F02のsoftware選択範囲を即時取得すると空）だった。追加R1/R2/R3の15件はこの3回とも通過した。失敗ログは削除していない。
+
+F02は診断付き10回で3回再現。失敗直後の画面にはsoftware全体の選択があり、使用中のTiptap `focus.ts` がrequestAnimationFrameでfocusするコードとも一致する。表示ボタン直後の即時取得を、エディタへのフォーカスと同じ完全一致の選択文字列に対する条件待ちへ変更した。語句・書式・件数の期待値は変更していない。
+
+F11は診断付き10回では未再現。先の1件は詳細なネイティブイベントが未取得のため原因未特定であり、保存不具合の解決済みとはしない。ページツリー移動の前提を明示するため、既存の実マウスヘルパーでdragstart/dropを確認し、move/load/updateのIPC、ACK、画面、traceを保存するよう試験だけを修正した。保持中のloadへ入力→解放→保存→再起動という元の検証は維持。ツリー本体の挙動や保存処理には追加変更していない。
+
+これらの診断と修正は全体受入を成立させる局所的なテスト変更であり、今回の製品機能範囲を増やすものではない。初期の失敗、診断付き再現、変更後の実行は別ラベル・別source hashで記録する。
+
+F11へ実マウス操作を組み込んだ最初の診断（f11-f02-green）は10/20で、F02は10/10、F11は10件とも試験のdrop検知で失敗した。captureログにはnative drop、move ACK、heldLoad=trueがすべて記録されていた。ページツリーの既存onDropがstopPropagationするため、documentのbubble監視では拾えないという試験側の問題だった。F11だけcapture journalで実dropを検証するよう変更した。アプリ、ブロックDnDヘルパー、保存ACKの期待値には変更なし。名称にgreenを含む実行でも、結果はFAILのまま保存する。
+
+## レビューする変更単位
+
+| 対象 | ローカルコミット | 主なファイル |
+| --- | --- | --- |
+| R1 | `1034364` | shared/recovery・limits、persistence/recovery-file・store、main、App、recovery単体/E2E |
+| R2 | `c631aa1`、`8599027` | editor/Editor、drag-observer・real-drag・drag回帰、既存desktop E2E |
+| R3 | `a4c9abf` | renderer/Modal・App・styles、database/Database、dialogs回帰 |
+| 比較・受入試験の局所修正 | `917efa6`、`0bf710e` | gate-a.spec.tsの両語検索、入力完了待ち、ページ移動の診断 |
+
+最終アプリソースは`a4c9abf94baaf726669d0c058626d23db446c8cd`、テストを含む実装HEADは`0bf710eec16d065535674e41196312141e2d0233`。各実行はその時点のsource/build hashを持つ。証拠集約コミットはこれらを包含するローカルコミットで特定できる。GitHubへのpush・公開設定変更・履歴書き換えはしていない。
+
+## 今回の未実施・制限
+
+- Notion実測は全8件NOT_RUN、比較は全てUNKNOWN。公式資料・推定と実観測を混ぜない。物理日本語IMEもNOT_RUNで手順を残した。
+- 既存F11の初回停止の原因は未特定。診断付きの元入力では10回未再現。追加観測下の成功だけで、過去の停止が解決済みとはしない。
+- トップレベルDnDのみ。永続block ID、ネスト全面対応、DB行ページ化、独立View、Relation/Rollup/Formula、同期、AI、全面UI改装は実装範囲外。
+- 退避は同一ワークスペース内。30MB超の自動分割、添付同梱ZIP、物理ディスク故障、電源断、別OSの検証は行っていない。
+- `dist`を新規ビルドし、実Electronで起動・保存・再起動を検証する。既存の起動中ユーザーアプリを終了・置換しない。パッケージ済み.appの再生成・配布は今回の成果に含めない。
+
+最終受入の確定結果: check・単体48/48・buildはPASS。トップレベルドラッグは40/40。全体Electronはacceptance-full-1 **37/37**、acceptance-full-2 **37/37**、acceptance-full-3 **36/37**で、全体受入はPARTIAL。最後のF11はcapture記録がmousedownのみ、dragstart/dropなし、move IPCなし。ページツリー操作の入力開始に残件があり、根本原因は未特定。保存不具合を再現したという判定ではないが、全体成功にも数えない。対象ブロック操作の20反復が通ったこととは区別する。
+
+開発モードの初回起動待ちはFAIL（Vite依存最適化/reloadのログあり）。別の診断起動で画面表示を確認し、同じサーバーでリンク確定/取消の回帰は1/1 PASS。StrictMode下の選択・書式・focus保持の限定確認で、cold startの安定性を証明していない。production distの起動・保存・再起動は全体試験で確認済み。

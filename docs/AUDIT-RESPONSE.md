@@ -66,3 +66,24 @@ SQLite v1→v2の初回変換前には `workspace.sqlite.pre-v2.sqlite` を保�
 ## 最終試験の残件
 
 単体は32/32、Gate A追加の実Electronは15/15成功。最新の全体実行は21/22で、既存の「real Electron: page edit…」内のブロックドラッグが1回、並べ替わらず失敗した。同じコード・同じテストを3回再実行すると3/3成功した。原因は未特定のため、修正済み・安定済みとは扱わない。失敗ログ `verified-e2e.txt` と再確認ログ `drag-recheck.txt` を両方保持する。Gate Bでドラッグイベントとレイアウトの観測を増やす対象。
+
+## 次ラウンドの追補 — 2026-10-26（基準7759906）
+
+上記は前回Gate A時点の記録として保持する。今回の変更・証拠は[NEXT-ROUND-RESPONSE](NEXT-ROUND-RESPONSE.md)、[TEST-RESULTSの追記](TEST-RESULTS.md)、[結果JSON](validation/next-round/results.json)。最後のアプリソース変更は`a4c9abf`、テストを含む実装HEADは`0bf710e`。各結果の対象をsource/build hashで区別する。
+
+| 既存指摘との関係 | 今回の局所対応 |
+| --- | --- |
+| F11/F12 → R1 | 491〜500文字タイトルの復旧拒否と、30.3MB日本語退避のexport成功/recover拒否を実コード/IPCで再現。上限をUTF-8 30MBへ統一、原題を切らず別メタデータで識別。v2は変更ページの最終状態だけ、v1も読み戻せる。元ページと未保存内容を保護 |
+| F09/F15 → R2 | 既存トップレベル範囲で同位置drop、Undo、カーソル/scrollを修正。実ポインター回帰を2ケース×20回実行し40/40。永続IDやネスト全面対応は未実装。初期失敗は全て保持 |
+| F06/F13 → R3 | 検索/ページリンク/DBレコードだけ共通Modalへ。native select/IME合成イベント優先、focus/Tab/Escape、リンク範囲/文書/ページの保持を検証。物理IMEはNOT_RUN |
+| F14 → 比較基準 | N01〜N08を事前固定。Notion実測NOT_RUN、比較はUNKNOWN。WAI指針への適合をNotionとの実測一致としない |
+
+単体48/48とcheck/buildを今回実行。全体37件には旧22件と新15件を含み、旧Gate A追加15件を再加算しない。最終全体3回の結果・途中の失敗・ソース照合は今回の結果JSONに記載。最初の全体試験で起きたF11待機前の停止は、元入力の診断付き10回では未再現で原因未特定。F02の非同期focusと試験期待値の時点、F11のcapture/bubble監視の差は試験側で修正した。単なる再実行成功で旧失敗を解決済み扱いしない。
+
+前回の「[復旧]をタイトルに付ける」「pages/persistedPages/pendingPatchesを全収録する」は旧v1の記録。今回v2では原題をそのまま保持し、recoveredFromと画面の復旧ラベルで区別し、変更ページの最終状態を一度だけ収録する。既存v1ファイルと既存ページ名は変更しない。SQLite schema migrationなし。添付は同一ワークスペース参照で、ポータブルZIPや強制終了時の永続ジャーナルは未実装。
+
+既存SQLite/WAL/SHM計6ファイルとlockfileは前後hash一致、ユーザーの起動アプリは終了していない。全試験は専用FOLIO_DATA_DIR、既定パス試験は隔離appData。今回のGitHub push、公開設定変更、履歴書換えはない。Gate A全体完了やNotion全体一致を宣言しない。
+
+最終受入の確定結果: check・単体48/48・buildはPASS。トップレベルドラッグは40/40。全体Electronはacceptance-full-1 **37/37**、acceptance-full-2 **37/37**、acceptance-full-3 **36/37**で、全体受入はPARTIAL。最後のF11はcapture記録がmousedownのみ、dragstart/dropなし、move IPCなし。ページツリー操作の入力開始に残件があり、根本原因は未特定。保存不具合を再現したという判定ではないが、全体成功にも数えない。対象ブロック操作の20反復が通ったこととは区別する。
+
+開発モードの初回起動待ちはFAIL（Vite依存最適化/reloadのログあり）。別の診断起動で画面表示を確認し、同じサーバーでリンク確定/取消の回帰は1/1 PASS。StrictMode下の選択・書式・focus保持の限定確認で、cold startの安定性を証明していない。production distの起動・保存・再起動は全体試験で確認済み。

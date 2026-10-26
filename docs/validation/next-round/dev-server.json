@@ -1,0 +1,19 @@
+{
+  "command": [
+    "node_modules/.bin/vite",
+    "--host",
+    "127.0.0.1",
+    "--port",
+    "54117",
+    "--strictPort"
+  ],
+  "ready": "VITE v7.3.7 ready in 245 ms",
+  "observedLogExcerpts": [
+    "11:39:44 PM [vite] (client) new dependencies optimized: @tiptap/pm/history, @tiptap/pm/state",
+    "11:39:44 PM [vite] (client) optimized dependencies changed. reloading"
+  ],
+  "stopped": "Only this task-owned Vite session stopped with Ctrl-C; observed exit code 1.",
+  "diagnosticScriptSource": "dev-diagnostic-script.mjs",
+  "diagnosticScriptSHA256": "0e0d804cf278123966b05e473532d7112d99cd92974a643e3264769a973d50f1",
+  "note": "Initial dev-dialog-smoke failed before running the scenario. dev-diagnostic reported ready=true; dev-dialog-smoke-v2 passed the selected-text link scenario on the warm server. No timeout increase or application source change."
+}

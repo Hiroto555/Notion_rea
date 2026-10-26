@@ -1,0 +1,34 @@
+{
+  "main": {
+    "version": "45.0.0",
+    "electron": "45.0.0",
+    "chromium": "156.0.8078.48",
+    "platform": "darwin",
+    "arch": "arm64",
+    "locale": "ja",
+    "zoom": 1
+  },
+  "renderer": {
+    "width": 1440,
+    "height": 907,
+    "devicePixelRatio": 2,
+    "language": "ja",
+    "theme": "light"
+  },
+  "input": "Playwright pointer/keyboard; synthetic composition only; physical IME NOT_RUN",
+  "os": "macOS 26.6.2 arm64",
+  "packageVersion": "0.1.0",
+  "sourceArtifact": "output/next-round/acceptance-full-1/dialogs-N04-slash-arrow-co-9e89e-text-and-cursor-Folio-only-/environment.json",
+  "notion": {
+    "status": "NOT_RUN",
+    "version": "UNKNOWN",
+    "os": "UNKNOWN",
+    "language": "UNKNOWN",
+    "theme": "UNKNOWN",
+    "viewport": "UNKNOWN",
+    "zoom": "UNKNOWN",
+    "input": "UNKNOWN",
+    "reason": "No authorized test workspace provided"
+  },
+  "physicalJapaneseIME": "NOT_RUN"
+}

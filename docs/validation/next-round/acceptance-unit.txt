@@ -1,0 +1,24 @@
+
+> folio-desktop@0.1.0 test
+> vitest run
+
+
+ RUN  v3.2.7 <repo>
+
+ ✓ tests/pending-edits.test.ts (3 tests) 5ms
+ ✓ tests/gate-a.test.ts (11 tests) 72ms
+ ✓ tests/workspace.test.ts (5 tests) 61ms
+ ✓ tests/store.test.ts (13 tests) 254ms
+ ✓ tests/recovery.test.ts (16 tests) 9135ms
+   ✓ R1 x UTF-8 boundary -1: schema/file/store/reopen  1521ms
+   ✓ R1 x UTF-8 boundary 0: schema/file/store/reopen  1566ms
+   ✓ R1 あ UTF-8 boundary -1: schema/file/store/reopen  1212ms
+   ✓ R1 あ UTF-8 boundary 0: schema/file/store/reopen  1190ms
+   ✓ R1 😀 UTF-8 boundary -1: schema/file/store/reopen  1526ms
+   ✓ R1 😀 UTF-8 boundary 0: schema/file/store/reopen  1532ms
+
+ Test Files  5 passed (5)
+      Tests  48 passed (48)
+   Start at  23:28:32
+   Duration  9.88s (transform 308ms, setup 0ms, collect 2.06s, tests 9.53s, environment 0ms, prepare 500ms)
+

@@ -1,0 +1,40 @@
+
+Running 1 test using 1 worker
+
+  ✘  1 tests/e2e/dialogs.spec.ts:113:1 › R3 selected text link cancel/confirm restores exact range, wording and marks (32.0s)
+
+
+  1) tests/e2e/dialogs.spec.ts:113:1 › R3 selected text link cancel/confirm restores exact range, wording and marks 
+
+    TimeoutError: page.waitForSelector: Timeout 30000ms exceeded.
+    Call log:
+      - waiting for locator('.page-title') to be visible
+        - waiting for navigation to finish...
+
+
+       at next-round-fixture.ts:29
+
+      27 |         .context()
+      28 |         .tracing.start({ screenshots: true, snapshots: true, sources: true });
+    > 29 |       await window.waitForSelector(".page-title");
+         |                    ^
+      30 |       const main = await app.evaluate(({ app, BrowserWindow }) => ({
+      31 |         version: app.getVersion(),
+      32 |         electron: process.versions.electron,
+        at start (<repo>/tests/e2e/next-round-fixture.ts:29:20)
+        at Object.folio (<repo>/tests/e2e/next-round-fixture.ts:60:5)
+
+    Error Context: output/next-round/dev-dialog-smoke/dialogs-R3-selected-text-l-9f56b-act-range-wording-and-marks/error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    output/next-round/dev-dialog-smoke/dialogs-R3-selected-text-l-9f56b-act-range-wording-and-marks/trace.zip
+    Usage:
+
+        npx playwright show-trace output/next-round/dev-dialog-smoke/dialogs-R3-selected-text-l-9f56b-act-range-wording-and-marks/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  1 failed
+    tests/e2e/dialogs.spec.ts:113:1 › R3 selected text link cancel/confirm restores exact range, wording and marks 
+(node:49474) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)

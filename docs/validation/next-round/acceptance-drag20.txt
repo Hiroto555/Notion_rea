@@ -1,0 +1,85 @@
+
+Running 40 tests using 1 worker
+
+  ✓   1 tests/e2e/drag.spec.ts:4:1 › R2 short original regression: checkbox edit then real handle drag (3.4s)
+  ✓   2 tests/e2e/drag.spec.ts:41:1 › R2 top-level matrix: single/multiple/start/end/same/cancel/scroll/undo/redo/restart (5.4s)
+  ✓   3 tests/e2e/drag.spec.ts:4:1 › R2 short original regression: checkbox edit then real handle drag (2.3s)
+  ✓   4 tests/e2e/drag.spec.ts:41:1 › R2 top-level matrix: single/multiple/start/end/same/cancel/scroll/undo/redo/restart (7.2s)
+  ✓   5 tests/e2e/drag.spec.ts:4:1 › R2 short original regression: checkbox edit then real handle drag (3.9s)
+  ✓   6 tests/e2e/drag.spec.ts:41:1 › R2 top-level matrix: single/multiple/start/end/same/cancel/scroll/undo/redo/restart (10.6s)
+  ✓   7 tests/e2e/drag.spec.ts:4:1 › R2 short original regression: checkbox edit then real handle drag (3.2s)
+  ✓   8 tests/e2e/drag.spec.ts:41:1 › R2 top-level matrix: single/multiple/start/end/same/cancel/scroll/undo/redo/restart (7.6s)
+  ✓   9 tests/e2e/drag.spec.ts:4:1 › R2 short original regression: checkbox edit then real handle drag (3.1s)
+  ✓  10 tests/e2e/drag.spec.ts:41:1 › R2 top-level matrix: single/multiple/start/end/same/cancel/scroll/undo/redo/restart (8.1s)
+  ✓  11 tests/e2e/drag.spec.ts:4:1 › R2 short original regression: checkbox edit then real handle drag (2.7s)
+  ✓  12 tests/e2e/drag.spec.ts:41:1 › R2 top-level matrix: single/multiple/start/end/same/cancel/scroll/undo/redo/restart (6.8s)
+  ✓  13 tests/e2e/drag.spec.ts:4:1 › R2 short original regression: checkbox edit then real handle drag (2.8s)
+  ✓  14 tests/e2e/drag.spec.ts:41:1 › R2 top-level matrix: single/multiple/start/end/same/cancel/scroll/undo/redo/restart (6.1s)
+  ✓  15 tests/e2e/drag.spec.ts:4:1 › R2 short original regression: checkbox edit then real handle drag (4.7s)
+  ✓  16 tests/e2e/drag.spec.ts:41:1 › R2 top-level matrix: single/multiple/start/end/same/cancel/scroll/undo/redo/restart (15.9s)
+  ✓  17 tests/e2e/drag.spec.ts:4:1 › R2 short original regression: checkbox edit then real handle drag (6.6s)
+  ✓  18 tests/e2e/drag.spec.ts:41:1 › R2 top-level matrix: single/multiple/start/end/same/cancel/scroll/undo/redo/restart (9.8s)
+  ✓  19 tests/e2e/drag.spec.ts:4:1 › R2 short original regression: checkbox edit then real handle drag (6.4s)
+  ✓  20 tests/e2e/drag.spec.ts:41:1 › R2 top-level matrix: single/multiple/start/end/same/cancel/scroll/undo/redo/restart (16.2s)
+  ✓  21 tests/e2e/drag.spec.ts:4:1 › R2 short original regression: checkbox edit then real handle drag (3.1s)
+  ✓  22 tests/e2e/drag.spec.ts:41:1 › R2 top-level matrix: single/multiple/start/end/same/cancel/scroll/undo/redo/restart (8.3s)
+  ✓  23 tests/e2e/drag.spec.ts:4:1 › R2 short original regression: checkbox edit then real handle drag (2.6s)
+  ✓  24 tests/e2e/drag.spec.ts:41:1 › R2 top-level matrix: single/multiple/start/end/same/cancel/scroll/undo/redo/restart (7.2s)
+  ✓  25 tests/e2e/drag.spec.ts:4:1 › R2 short original regression: checkbox edit then real handle drag (2.3s)
+  ✓  26 tests/e2e/drag.spec.ts:41:1 › R2 top-level matrix: single/multiple/start/end/same/cancel/scroll/undo/redo/restart (6.7s)
+  ✓  27 tests/e2e/drag.spec.ts:4:1 › R2 short original regression: checkbox edit then real handle drag (2.2s)
+  ✓  28 tests/e2e/drag.spec.ts:41:1 › R2 top-level matrix: single/multiple/start/end/same/cancel/scroll/undo/redo/restart (6.8s)
+  ✓  29 tests/e2e/drag.spec.ts:4:1 › R2 short original regression: checkbox edit then real handle drag (2.2s)
+  ✓  30 tests/e2e/drag.spec.ts:41:1 › R2 top-level matrix: single/multiple/start/end/same/cancel/scroll/undo/redo/restart (6.2s)
+  ✓  31 tests/e2e/drag.spec.ts:4:1 › R2 short original regression: checkbox edit then real handle drag (2.7s)
+  ✓  32 tests/e2e/drag.spec.ts:41:1 › R2 top-level matrix: single/multiple/start/end/same/cancel/scroll/undo/redo/restart (6.3s)
+  ✓  33 tests/e2e/drag.spec.ts:4:1 › R2 short original regression: checkbox edit then real handle drag (2.4s)
+  ✓  34 tests/e2e/drag.spec.ts:41:1 › R2 top-level matrix: single/multiple/start/end/same/cancel/scroll/undo/redo/restart (6.0s)
+  ✓  35 tests/e2e/drag.spec.ts:4:1 › R2 short original regression: checkbox edit then real handle drag (2.2s)
+  ✓  36 tests/e2e/drag.spec.ts:41:1 › R2 top-level matrix: single/multiple/start/end/same/cancel/scroll/undo/redo/restart (7.0s)
+  ✓  37 tests/e2e/drag.spec.ts:4:1 › R2 short original regression: checkbox edit then real handle drag (2.4s)
+  ✓  38 tests/e2e/drag.spec.ts:41:1 › R2 top-level matrix: single/multiple/start/end/same/cancel/scroll/undo/redo/restart (6.5s)
+  ✓  39 tests/e2e/drag.spec.ts:4:1 › R2 short original regression: checkbox edit then real handle drag (2.5s)
+  ✓  40 tests/e2e/drag.spec.ts:41:1 › R2 top-level matrix: single/multiple/start/end/same/cancel/scroll/undo/redo/restart (6.4s)
+
+  40 passed (4.0m)
+(node:11472) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:11685) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:11888) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:12220) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:12433) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:12681) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:12912) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:13102) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:13540) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:13854) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:14279) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:14514) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:14713) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:14894) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:15066) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:15235) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:15436) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:15621) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:15810) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:15991) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)

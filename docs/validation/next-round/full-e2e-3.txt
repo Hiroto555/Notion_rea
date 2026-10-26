@@ -1,0 +1,75 @@
+
+Running 37 tests using 1 worker
+
+  ✓   1 tests/e2e/desktop.spec.ts:41:1 › real Electron: page edit, slash, undo, blocks, search, clone, trash and restart (5.1s)
+  ✓   2 tests/e2e/desktop.spec.ts:145:1 › database table edits, filters, sorts, board drop and calendar persistence (3.8s)
+  ✓   3 tests/e2e/desktop.spec.ts:192:1 › security boundary, page hierarchy, cycle error and versions (2.1s)
+  ✓   4 tests/e2e/desktop.spec.ts:248:1 › native rich HTML paste, Markdown shortcuts, toggle, links and block drag (3.4s)
+  ✓   5 tests/e2e/desktop.spec.ts:318:1 › real import/export, image/file attachments and complete backup (2.1s)
+  ✓   6 tests/e2e/desktop.spec.ts:399:1 › reproducible load: 150 pages, 1000 blocks, input and reopen (3.9s)
+  ✓   7 tests/e2e/desktop.spec.ts:478:1 › stale-write recovery preserves unsaved edits before reload (1.8s)
+  ✓   8 tests/e2e/dialogs.spec.ts:16:1 › R3 DB Escape closes the record and saves the latest input through restart (2.9s)
+  ✓   9 tests/e2e/dialogs.spec.ts:31:1 › R3 search/link/record share initial focus, modal tab cycle, close button and background isolation (2.5s)
+  ✓  10 tests/e2e/dialogs.spec.ts:113:1 › R3 selected text link cancel/confirm restores exact range, wording and marks (1.9s)
+  ✓  11 tests/e2e/dialogs.spec.ts:140:1 › R3 synthetic composition, prevented Escape and inner menus take priority (not physical IME) (2.0s)
+  ✓  12 tests/e2e/dialogs.spec.ts:178:1 › R3 nested native UI consumes one Escape; search navigation focuses destination (1.8s)
+  ✓  13 tests/e2e/dialogs.spec.ts:243:1 › R3 stale link document is rejected and switching page leaves both pages unchanged (2.0s)
+  ✓  14 tests/e2e/dialogs.spec.ts:284:1 › N04 slash arrow/confirm/cancel retains text and cursor (Folio only) (2.1s)
+  ✓  15 tests/e2e/drag.spec.ts:4:1 › R2 short original regression: checkbox edit then real handle drag (2.4s)
+  ✓  16 tests/e2e/drag.spec.ts:41:1 › R2 top-level matrix: single/multiple/start/end/same/cancel/scroll/undo/redo/restart (5.2s)
+  ✓  17 tests/e2e/gate-a.spec.ts:59:1 › F01 same-page sidebar/search reselection keeps editor, attachment, link and exports (2.1s)
+  ✓  18 tests/e2e/gate-a.spec.ts:122:3 › F05 attachment roundtrip LICENSE (1.2s)
+  ✓  19 tests/e2e/gate-a.spec.ts:122:3 › F05 attachment roundtrip 資料.日本語 (1.4s)
+  ✓  20 tests/e2e/gate-a.spec.ts:122:3 › F05 attachment roundtrip file.abcdefghijklmnop (1.1s)
+  ✓  21 tests/e2e/gate-a.spec.ts:122:3 › F05 attachment roundtrip archive.tar.gz (1.9s)
+  ✓  22 tests/e2e/gate-a.spec.ts:122:3 › F05 attachment roundtrip IMAGE.PNG (1.6s)
+  ✓  23 tests/e2e/gate-a.spec.ts:139:1 › F06 synthetic composing Enter does not navigate search or link (not physical IME) (1.9s)
+  ✓  24 tests/e2e/gate-a.spec.ts:169:1 › F11 editing during move and delayed load keeps local patch and durable revision (2.9s)
+  ✘  25 tests/e2e/gate-a.spec.ts:226:1 › F02 full-text search, preview, count and in-page selection cross inline marks (1.7s)
+  ✓  26 tests/e2e/gate-a.spec.ts:301:1 › F04 DB delete Undo, restart history restore and property history retain IDs and values (3.6s)
+  ✓  27 tests/e2e/gate-a.spec.ts:370:1 › F06 editor selection Cmd+K sets page link without replacing text; modal and prevented keys win (1.6s)
+  ✓  28 tests/e2e/gate-a.spec.ts:408:1 › F07 invalid IPC is rejected and unknown stored schema is read-only with exact source export (1.5s)
+  ✓  29 tests/e2e/gate-a.spec.ts:451:1 › F11 failed write exports pending patch and persisted state, then recovers a separate page (2.7s)
+  ✓  30 tests/e2e/gate-a.spec.ts:506:1 › F03 default userData path and pre-ready directory failure are observable without touching user data (3.5s)
+  ✓  31 tests/e2e/gate-a.spec.ts:563:1 › F07 malformed JSON opens an error screen with backup, and null doc never mounts editor (3.6s)
+  ✓  32 tests/e2e/recovery.spec.ts:12:1 › R1 legacy export file → recovery → restart preserves a 500 character title (3.2s)
+  ✓  33 tests/e2e/recovery.spec.ts:57:3 › R1 real IPC v2 byte boundary -1 with escaping → file → restart (13.8s)
+  ✓  34 tests/e2e/recovery.spec.ts:57:3 › R1 real IPC v2 byte boundary 0 with escaping → file → restart (13.7s)
+  ✓  35 tests/e2e/recovery.spec.ts:57:3 › R1 real IPC v2 byte boundary 1 with escaping → file → restart (8.8s)
+  ✓  36 tests/e2e/recovery.spec.ts:102:1 › R1 multiple pending pages survive cancel/write/reload failures; copies retain original and attachment (5.5s)
+  ✓  37 tests/e2e/recovery.spec.ts:262:1 › R1 real IPC rejects the 30.3MB Japanese export previously accepted (2.1s)
+
+
+  1) tests/e2e/gate-a.spec.ts:226:1 › F02 full-text search, preview, count and in-page selection cross inline marks 
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: "software"
+    Received: ""
+
+      288 |     expect(
+      289 |       await window.evaluate(() => globalThis.getSelection()?.toString()),
+    > 290 |     ).toBe(word);
+          |       ^
+      291 |   }
+      292 |   const loaded = await window.evaluate(
+      293 |     (id) =>
+        at <repo>/tests/e2e/gate-a.spec.ts:290:7
+
+    Error Context: output/next-round/full-e2e-3/gate-a-F02-full-text-searc-5e112-election-cross-inline-marks/error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    output/next-round/full-e2e-3/gate-a-F02-full-text-searc-5e112-election-cross-inline-marks/trace.zip
+    Usage:
+
+        npx playwright show-trace output/next-round/full-e2e-3/gate-a-F02-full-text-searc-5e112-election-cross-inline-marks/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  1 failed
+    tests/e2e/gate-a.spec.ts:226:1 › F02 full-text search, preview, count and in-page selection cross inline marks 
+  36 passed (2.1m)
+(node:26522) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:28296) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)

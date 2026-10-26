@@ -77,3 +77,22 @@ OSクリップボードへHTML/テキストを書き、実際の⌘Vで見出し
 F01/F02/F04/F05/F06/F07/F11は失敗→成功の記録、F03は基準ソースのパス式の再現と修正後の既定保存先・移行/復元・起動失敗試験を残した。初回のテスト実装不備や中間build失敗は結果JSONで区別している。
 
 Gate Aの自動試験成功はNotionとの一致を意味しない。物理IME、実際の/Applications配置、全体のドラッグ安定性は未確認または残件。全22件の完全成功という結論にはしていない。
+
+## 次ラウンド R1/R2/R3 — 2026-10-26
+
+基準`7759906`からの新しい検証。アプリソースは`a4c9abf`、最終テストを含む実装HEADは`0bf710e`。旧Gate Aの32件/15件/21-of-22結果を新HEADに転用していない。[今回の全コマンド・終了コード](validation/next-round/results.json)、[source/build hash](validation/next-round/manifest.json)、[詳細](NEXT-ROUND-RESPONSE.md)。
+
+| 検証 | 今回の結果・記録 |
+| --- | --- |
+| check → unit → build | PASS、単体48/48。acceptance-check-v2 / unit-v2 / build-v2 |
+| 対象ドラッグの20反復、retries=0 | 40/40（2ケース×20）。acceptance-drag20。アプリ・drag回帰・distは最終版とhash一致、後続変更はgate-a.spec.tsのN02/F11試験だけ |
+| 全体Electron 3回、retries=0 | 37/37、37/37、36/37（最後はページツリーF11開始イベント未発火）。全体受入PARTIAL。既存22＋今回15件で、旧Gate A15件を再加算しない |
+| Notion実測 / 物理日本語IME | NOT_RUN。Notion比較は8件ともUNKNOWN |
+
+最初の全体3回は37/37、36/37、36/37。F11の移動後load待機前の停止は診断付き10回で未再現であり原因未特定。F02は選択取得がTiptapの非同期focusより早いことを失敗後画面と実装から確認し、同じ文字列の完全一致を条件待ちする試験へ修正した。F11の追加監視でbubble側のdropを拾えなかった試験実装不備も記録し、capture journalへ修正。これらを製品の保存不具合やNotion不一致と断定しない。
+
+R1はタイトル490/491/500/501、UTF-8上限直前/一致/直後、旧形式、複数ページ、取消・書込/再読込失敗・SQL rollback、実ファイル→復旧→再起動。R2は単一/複数/先頭/末尾/同位置/取消/スクロール、Undo/Redo、完全なdoc照合、ACK、再起動。R3は3ダイアログのfocus/Tab/Escape、native select優先、リンク範囲と書式、文書/ページ変更時の拒否、DB入力の再起動保持を検証する。
+
+旧データ6ファイルとlockfileの前後SHA-256一致。既存アプリを終了せず、全試験は専用データ、既定パス試験は隔離appDataを使用。[保護記録](validation/next-round/data-protection.json)。生trace・画面・巨大fixtureはローカルoutputに保持し、匿名化コマンドログとhash indexをGitに保存する。パッケージ済み.appの再生成は今回未実施。Gate A全体完了・絶対安定・Notion 100%一致は宣言しない。
+
+最終全体3回目のF11診断はmousedownのみ、dragstart/dropなし、move IPCなし。根本原因未特定で残件。詳細はacceptance-full-3のtrace/画面/drag-events/move-requests。開発モードの初回起動待ちもFAILとして保持し、Vite依存最適化後の診断起動PASSとリンク回帰1/1 PASS（dev-dialog-smoke-v2）を別記録にした。cold start安定性を確認済みとはしない。

@@ -1,0 +1,18 @@
+[
+  {
+    "console": "[vite] connecting..."
+  },
+  {
+    "console": "[vite] connected."
+  },
+  {
+    "console": "%cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold"
+  },
+  {
+    "ready": true
+  },
+  {
+    "url": "http://127.0.0.1:54117/",
+    "htmlLength": 47815
+  }
+]

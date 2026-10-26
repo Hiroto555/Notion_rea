@@ -1,0 +1,26 @@
+{
+  "before": {
+    "legacy/workspace.sqlite": "97e8d54f8a7255106f66cf1b213c4a4d7b558d21310b1c2bfedc3d0d526dddda",
+    "legacy/workspace.sqlite-shm": "9aa8051ae81341144658d533a6bf02f8c3b12d853dbd5d7097869494fdef860b",
+    "legacy/workspace.sqlite-wal": "1a464e39bc1e1f81dbf5b125897184879f7f8891f5d427a46818701087dd7cfa",
+    "release-legacy/workspace.sqlite": "97e8d54f8a7255106f66cf1b213c4a4d7b558d21310b1c2bfedc3d0d526dddda",
+    "release-legacy/workspace.sqlite-shm": "793e2b93f9c5f15103119c74c9d748fe04a7e0e50bc793261c888702d7cd2eb1",
+    "release-legacy/workspace.sqlite-wal": "9afb9cd35d24973d369abcce198e8444ebb236adb49e6e69b9eca62155a6314e"
+  },
+  "after": {
+    "legacy/workspace.sqlite": "97e8d54f8a7255106f66cf1b213c4a4d7b558d21310b1c2bfedc3d0d526dddda",
+    "legacy/workspace.sqlite-shm": "9aa8051ae81341144658d533a6bf02f8c3b12d853dbd5d7097869494fdef860b",
+    "legacy/workspace.sqlite-wal": "1a464e39bc1e1f81dbf5b125897184879f7f8891f5d427a46818701087dd7cfa",
+    "release-legacy/workspace.sqlite": "97e8d54f8a7255106f66cf1b213c4a4d7b558d21310b1c2bfedc3d0d526dddda",
+    "release-legacy/workspace.sqlite-shm": "793e2b93f9c5f15103119c74c9d748fe04a7e0e50bc793261c888702d7cd2eb1",
+    "release-legacy/workspace.sqlite-wal": "9afb9cd35d24973d369abcce198e8444ebb236adb49e6e69b9eca62155a6314e"
+  },
+  "changedOrMissing": [],
+  "added": [],
+  "lockfileBefore": "b08cddaa73f347443854288cec92b39927f2ea190714a555f1ec187cb8ca53de",
+  "lockfileAfter": "b08cddaa73f347443854288cec92b39927f2ea190714a555f1ec187cb8ca53de",
+  "originalUserAppProcessStillRunning": true,
+  "oldAuditFilesUnchanged": true,
+  "priorGateAEvidenceUnchanged": true,
+  "method": "SHA-256 comparison of workspace database/WAL/SHM, assets and backups. Chromium session caches excluded consistently with the before snapshot; no user database opened via Store and no user process stopped."
+}
