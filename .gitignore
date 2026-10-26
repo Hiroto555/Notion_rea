@@ -1,0 +1,16 @@
+node_modules/
+tools/rea/node_modules/
+.cache/
+dist/
+release/
+.folio-data/
+output/*
+!output/.gitkeep
+*.log
+.DS_Store
+.env
+.env.*
+!.env.example
+*.sqlite
+*.sqlite-*
+*.db

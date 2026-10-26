@@ -1,0 +1,55 @@
+{
+  "recordedAt": "2026-10-26T11:43:23.184Z",
+  "projectRoot": "/Users/shiroto/Documents/ChatGPT/Notion_rea",
+  "unitTests": 13,
+  "electronScenarios": 7,
+  "devSmoke": {
+    "ok": true,
+    "title": "ようこそ、Folioへ",
+    "origin": "http://127.0.0.1:5173/"
+  },
+  "packagedSmoke": {
+    "ok": true,
+    "executablePath": "/Users/shiroto/Documents/ChatGPT/Notion_rea/release/Folio-darwin-arm64/Folio.app/Contents/MacOS/Folio",
+    "persistence": true
+  },
+  "reaEvidenceId": "ev_2fcfb264f43fe334182be4d8afe662987959c53edc324c90553766a2fb10a86e",
+  "reaArtifact": {
+    "path": "/Users/shiroto/Documents/ChatGPT/Notion_rea/dist",
+    "sha256": "be041c7ea5e2ca62fec7905aa1c2661a08e01bdd3757bf793591aadbd7d39079"
+  },
+  "hashes": {
+    "src/database/Database.tsx": "bd24bfe963030a7a94ea2a6779a4b2366ff1bf66bdd9feda0b7a3032a5a7f7e9",
+    "src/database/model.ts": "b49c43aa0bbf8d3341eeb06a5e3a8af4eb4725f2f03b1597aa3bf4e4c0dc83e1",
+    "src/editor/Editor.tsx": "764200e82104fb9761d58c928df9d4468ffb75e69181c07f838fa5616e4f1e84",
+    "src/editor/blocks.ts": "1183175544d3ffdcd23cc36a1909c1cf4cc6dd1ccfdac61697ce9c498d658300",
+    "src/main/index.ts": "15812ebd1616ba1c4ca5f2a8a1bc2eafd7ddc213f754cd457862cbc302f5b664",
+    "src/persistence/seed.ts": "4fe798765c646d16eee83c207cac08051813675afc2b28367d56c8c4868b520f",
+    "src/persistence/store.ts": "812ec22eb8e321519f51e7d557eca670370298ef5dffd6fa6b1aca83fe11d6c9",
+    "src/preload/index.ts": "ceed7d251d97de04521afdc294b40c9889d915b77f78ad8b4100f8bf7cc2c3aa",
+    "src/renderer/App.tsx": "667fe0673d307c4f55340477dc51cf60cc6e4a8d7c7bafcb22ffca59be9cc96b",
+    "src/renderer/main.tsx": "9199bfba8182fe6921f500d9a9eb35618abb637bd2b6fa2829539a0dc5af554c",
+    "src/renderer/styles.css": "60707555ed502a21141652ad75a865ba2c1d9bbc6eb201320f635f07b999a30e",
+    "src/shared/types.ts": "7fb13a556bca6df79cc0dbe4b2c49e42dde6e8f39f998748eb0031815ce16d7c",
+    "tests/VALIDATION-PLAN.md": "5831e7afbe2917c3a7f46cd9bac947b6811a83693548c563509110047bbf7cda",
+    "tests/store.test.ts": "d9b2c29326eef33fbf53a8c6f3e34ee7e80da9481b90fd2e0cfcae3c057c6f96",
+    "tests/e2e/desktop.spec.ts": "e43d90649dfb1b0cd82e29d8e555edb1b0e93bccaf8cb06265b021c7d780872b",
+    "tests/fixtures/image.png": "7a0513b8149dee662f975b8778824bedccb12864f489ecf05a00f865c752f3ca",
+    "scripts/build-icon.py": "eeaceed0b44971483f334067a590d9217d341a36ebd1318c77a631ec8d1feadc",
+    "scripts/build.mjs": "434469ab9a580aa618a2bb762534dd9a063f97c6f16acf69b0c9188feda3776d",
+    "scripts/dev.mjs": "b38b01a8cf35e0f5834bfd733c92dc8879660577b8ff6228e999bcfb73b8a7f3",
+    "scripts/notices.mjs": "9c23697ba2a87b578a8051ca4ddcb90030cf27892681404cfa73b92675ee9789",
+    "scripts/package.mjs": "d382f14e96dcae49a9eb44d7ca165046274f0039d92a5ec9e24a248aa79ba825",
+    "scripts/setup.mjs": "1281d6148f158c92c55163b8eed8d348e17720ed28e1e584e4fde862cfce3c72",
+    "scripts/verify-dev.mjs": "f6206e8f4aba2256c01e41c12d59ed829c18fb8b029c4179ec067fa08f37bb17",
+    "scripts/verify-package.mjs": "03f2d2b32c01dba483cc847acb5dd08b71b6523dd56beefc9240dba43b231e16",
+    "scripts/write-evidence-manifest.mjs": "ca712e61021a5ae9cfb36f17d7b4b237b4d1e7c98dd61296e34f3840c97b4144",
+    "package-lock.json": "b08cddaa73f347443854288cec92b39927f2ea190714a555f1ec187cb8ca53de",
+    "dist/main.cjs": "8e5149456da6e97848c2fbdcff1c80cf4c75a4d014c4551d36d2944cbbc6257d",
+    "dist/preload.cjs": "3e39ba8560acf6abee58233896192a26f313dc2402abf82ad260650b42f1fc26",
+    "release/Folio-darwin-arm64/Folio.app/Contents/Resources/app.asar": "972116df7cae5d3f1900e55a851c7d1c586ec8278df68d990dd5ddad645f4fa6",
+    "output/unit-tests.log": "0397685542c3b54669af44f4e655dc684b76f2fcad94f388c45fdec45d4434c9",
+    "output/e2e-tests.log": "79f4ca8879f6c6077b8fed0448560b95aeb2ae770d9dd54361c2c86cfcb3a61d",
+    "output/benchmark.json": "befc72482fe03dc56e0b7288c9bebc1b54e26d2f9e3ece5542471f548dd78e54"
+  }
+}

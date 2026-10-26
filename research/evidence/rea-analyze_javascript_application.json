@@ -1,0 +1,331 @@
+{
+  "_meta": {
+    "provenance": {
+      "untrusted_content": true,
+      "source": "analysis_target"
+    }
+  },
+  "content": [
+    {
+      "type": "text",
+      "text": "{\"evidence_id\":\"ev_2fcfb264f43fe334182be4d8afe662987959c53edc324c90553766a2fb10a86e\",\"subject\":{\"name\":\"dist\",\"digest\":{\"sha256\":\"be041c7ea5e2ca62fec7905aa1c2661a08e01bdd3757bf793591aadbd7d39079\"},\"local_path\":\"/Users/shiroto/Documents/ChatGPT/Notion_rea/dist\",\"format\":\"directory\",\"architecture\":null},\"provider\":{\"id\":\"rea-analysis-view\",\"name\":\"REA analysis view projection\",\"version\":\"1\"},\"analysis_profile\":null,\"predicate_type\":\"rea.analysis-view\",\"operation\":\"inspect_analysis_view\",\"parameters\":{\"parent_evidence_id\":\"ev_67957e2edea54397c289171a5045ae9bf3969f433445d8697945105aba551b2c\",\"view\":{\"kind\":\"summary\"}},\"raw_result\":null,\"normalized_result\":{\"kind\":\"summary\",\"view\":{\"kind\":\"summary\"},\"parent_evidence_id\":\"ev_67957e2edea54397c289171a5045ae9bf3969f433445d8697945105aba551b2c\",\"parent_operation\":\"analyze_javascript_application\",\"parent_digest\":\"67957e2edea54397c289171a5045ae9bf3969f433445d8697945105aba551b2c\",\"view_digest\":\"e8a5dc8c9e3c5aff0619b0d4c13fcf8f06f43eef10086932c49c6a1a6a4168b3\",\"artifact\":{\"path\":\"/Users/shiroto/Documents/ChatGPT/Notion_rea/dist\",\"sha256\":\"be041c7ea5e2ca62fec7905aa1c2661a08e01bdd3757bf793591aadbd7d39079\"},\"coverage\":{\"status\":\"complete-within-view\",\"examined\":17,\"total\":17,\"next_offset\":null,\"exhausted\":true},\"limitations\":[\"Alias selection expansion was conservatively bounded (maximum 512 additional selector states); selected paths remain unknown.\",\"Boundary extraction covers unshadowed JSON/global coercions plus parse and validation method candidates.\",\"Caller-selected source analysis leaves 3 inventoried files outside analysis scope. Inventory identity covers the complete artifact; relationships through unselected sources remain unknown.\",\"Child-process extraction covers asynchronous node:child_process creation, literal argv/env/stdio options, exit/error listeners, and kill signals.\",\"CommonJS and ESM binding relationships were recovered from inert syntax and resolved only within the inventoried artifact container.\",\"Configuration extraction covers process.env, process.argv, node:fs reads, and direct logical defaults.\",\"Electron API identity follows proven lexical module aliases and structurally verified module-namespace interop. Other reassignments, dynamic selections, and visibly overwritten namespace members are unresolved; missing findings do not establish absence. Arbitrary call side effects and runtime registration are not evaluated.\",\"Electron relationships are derived from inert syntax; runtime registration, reachability, defaults, and enforcement remain unproven.\",\"Event extraction covers EventEmitter-style literal registrations, removals, and dispatch candidates; dynamic names remain unknown.\",\"Function fingerprints are static candidates; equal digests can remain ambiguous and do not prove behavioral equivalence.\",\"Graph coverage is incomplete; unavailable facts remain explicit and must not be read as absence.\",\"JavaScript and HTML were parsed as inert text; bundle bootstrap code was never executed.\",\"Local data flow does not claim control-flow-sensitive reaching definitions or arbitrary dynamic property resolution.\",\"Promise ownership covers explicit unshadowed Promise construction, static factories, aggregation, chaining, and await syntax only.\",\"Request extraction covers fetch, WebSocket, node:http/node:https construction, direct option fields, and exact local response consumers.\",\"Resource extraction covers built-in filesystem/network acquisition and exact local close/destroy/end handles.\",\"Sender, frame, URL, and origin checks are observations only; REA does not claim that they enforce a complete authorization policy.\",\"Static imports, entrypoints, workers, endpoints, and storage relationships do not prove runtime execution.\",\"Static paths and relationships may remain unresolved when expressions are dynamic or obfuscated.\",\"The semantic graph contains static syntax observations and conservative relationship candidates; it does not claim runtime execution.\",\"Timer extraction covers global or node:timers scheduling and exact local-handle cancellation.\",\"Webpack/Rspack factories were recovered from AST literals; REA did not invoke push handlers or bundle bootstrap code.\"],\"unknowns\":[\"3 application graph unknowns remain in the parent Evidence.\",\"5130 semantic graph unknowns remain in the parent Evidence.\",\"Alias selection expansion was conservatively bounded (maximum 512 additional selector states); selected paths remain unknown.\",\"Boundary extraction covers unshadowed JSON/global coercions plus parse and validation method candidates.\",\"Caller-selected source analysis leaves 3 inventoried files outside analysis scope. Inventory identity covers the complete artifact; relationships through unselected sources remain unknown.\",\"Child-process extraction covers asynchronous node:child_process creation, literal argv/env/stdio options, exit/error listeners, and kill signals.\",\"CommonJS and ESM binding relationships were recovered from inert syntax and resolved only within the inventoried artifact container.\",\"Configuration extraction covers process.env, process.argv, node:fs reads, and direct logical defaults.\",\"Electron API identity follows proven lexical module aliases and structurally verified module-namespace interop. Other reassignments, dynamic selections, and visibly overwritten namespace members are unresolved; missing findings do not establish absence. Arbitrary call side effects and runtime registration are not evaluated.\",\"Electron relationships are derived from inert syntax; runtime registration, reachability, defaults, and enforcement remain unproven.\",\"Event extraction covers EventEmitter-style literal registrations, removals, and dispatch candidates; dynamic names remain unknown.\",\"Function fingerprints are static candidates; equal digests can remain ambiguous and do not prove behavioral equivalence.\",\"Graph coverage is incomplete; unavailable facts remain explicit and must not be read as absence.\",\"JavaScript and HTML were parsed as inert text; bundle bootstrap code was never executed.\",\"Local data flow does not claim control-flow-sensitive reaching definitions or arbitrary dynamic property resolution.\",\"Promise ownership covers explicit unshadowed Promise construction, static factories, aggregation, chaining, and await syntax only.\",\"Request extraction covers fetch, WebSocket, node:http/node:https construction, direct option fields, and exact local response consumers.\",\"Resource extraction covers built-in filesystem/network acquisition and exact local close/destroy/end handles.\",\"Sender, frame, URL, and origin checks are observations only; REA does not claim that they enforce a complete authorization policy.\",\"Static imports, entrypoints, workers, endpoints, and storage relationships do not prove runtime execution.\",\"Static paths and relationships may remain unresolved when expressions are dynamic or obfuscated.\",\"The semantic graph contains static syntax observations and conservative relationship candidates; it does not claim runtime execution.\",\"Timer extraction covers global or node:timers scheduling and exact local-handle cancellation.\",\"Webpack/Rspack factories were recovered from AST literals; REA did not invoke push handlers or bundle bootstrap code.\",\"graph.coverage.status is partial\",\"semantic_graph.coverage.status is partial\"],\"summary\":{\"input_path\":\"/Users/shiroto/Documents/ChatGPT/Notion_rea/dist\",\"format\":\"directory\",\"root_artifact_sha256\":\"be041c7ea5e2ca62fec7905aa1c2661a08e01bdd3757bf793591aadbd7d39079\",\"source_selection\":{\"requested_paths\":[\"main.cjs\",\"preload.cjs\"],\"unselected_files\":3},\"statistics\":{\"relevant_files\":5,\"nested_asar_containers\":0,\"text_bytes_read\":148354,\"invalid_utf8_files\":0,\"parsed_javascript_files\":2,\"skipped_javascript_files\":0,\"visited_ast_nodes\":22361,\"findings\":21,\"modules\":0,\"parse_failures\":0},\"electron\":{\"browser_windows\":0,\"explicit_web_preferences\":0,\"preload_entrypoints\":0,\"context_bridge_apis\":1,\"exposed_api_members\":1,\"ipc\":{\"operations\":2,\"literal_channels\":1,\"dynamic_channel_operations\":0,\"renderer_transmissions\":1,\"renderer_listeners\":0,\"main_handlers\":1,\"paired_renderer_transmissions\":1,\"ambiguous_renderer_transmissions\":0,\"unpaired_literal_renderer_transmissions\":0},\"sender_validation_observations\":2,\"utility_processes\":0,\"resolved_utility_entrypoints\":0,\"native_addon_bindings\":0,\"resolved_native_addon_bindings\":0},\"coverage\":{\"static_sources\":{\"sources\":3,\"unmeasured_sources\":0,\"syntax\":{\"complete\":2,\"recovered\":0,\"failed\":0,\"not-examined\":1},\"semantics\":{\"unknown_sources\":1,\"unexamined_sources\":1},\"examination\":{\"complete\":1,\"limited\":1,\"not-examined\":1},\"electron_applicability\":{\"observed\":1,\"unknown\":2}},\"application\":{\"status\":\"partial\",\"truncated\":false,\"omitted_count\":null,\"limits\":[{\"name\":\"javascript_semantic_alias_selections\",\"value\":512,\"unit\":\"items\"}]},\"semantic\":{\"status\":\"partial\",\"truncated\":false,\"omitted_nodes\":null,\"omitted_relations\":null,\"limits\":[],\"families\":[{\"family\":\"boundary\",\"status\":\"partial\",\"retained_relations\":20,\"omitted_relations\":null,\"unknown_count\":9},{\"family\":\"call-flow\",\"status\":\"partial\",\"retained_relations\":1199,\"omitted_relations\":null,\"unknown_count\":1215},{\"family\":\"child-process\",\"status\":\"partial\",\"retained_relations\":0,\"omitted_relations\":null,\"unknown_count\":1},{\"family\":\"closure\",\"status\":\"partial\",\"retained_relations\":1120,\"omitted_relations\":null,\"unknown_count\":1},{\"family\":\"configuration\",\"status\":\"partial\",\"retained_relations\":6,\"omitted_relations\":null,\"unknown_count\":3},{\"family\":\"data-flow\",\"status\":\"partial\",\"retained_relations\":10052,\"omitted_relations\":null,\"unknown_count\":1206},{\"family\":\"event\",\"status\":\"partial\",\"retained_relations\":5,\"omitted_relations\":null,\"unknown_count\":6},{\"family\":\"object-flow\",\"status\":\"partial\",\"retained_relations\":1713,\"omitted_relations\":null,\"unknown_count\":2651},{\"family\":\"promise-ownership\",\"status\":\"partial\",\"retained_relations\":85,\"omitted_relations\":null,\"unknown_count\":35},{\"family\":\"request\",\"status\":\"partial\",\"retained_relations\":0,\"omitted_relations\":null,\"unknown_count\":1},{\"family\":\"resource-lifecycle\",\"status\":\"partial\",\"retained_relations\":0,\"omitted_relations\":null,\"unknown_count\":1},{\"family\":\"timer\",\"status\":\"partial\",\"retained_relations\":0,\"omitted_relations\":null,\"unknown_count\":1}]},\"application_unknowns\":3,\"semantic_unknowns\":5130},\"limitation_count\":22}},\"confidence\":\"derived\",\"authority\":\"shipped-artifact\",\"environment\":null,\"limitations\":[\"Alias selection expansion was conservatively bounded (maximum 512 additional selector states); selected paths remain unknown.\",\"Boundary extraction covers unshadowed JSON/global coercions plus parse and validation method candidates.\",\"Caller-selected source analysis leaves 3 inventoried files outside analysis scope. Inventory identity covers the complete artifact; relationships through unselected sources remain unknown.\",\"Child-process extraction covers asynchronous node:child_process creation, literal argv/env/stdio options, exit/error listeners, and kill signals.\",\"CommonJS and ESM binding relationships were recovered from inert syntax and resolved only within the inventoried artifact container.\",\"Configuration extraction covers process.env, process.argv, node:fs reads, and direct logical defaults.\",\"Electron API identity follows proven lexical module aliases and structurally verified module-namespace interop. Other reassignments, dynamic selections, and visibly overwritten namespace members are unresolved; missing findings do not establish absence. Arbitrary call side effects and runtime registration are not evaluated.\",\"Electron relationships are derived from inert syntax; runtime registration, reachability, defaults, and enforcement remain unproven.\",\"Event extraction covers EventEmitter-style literal registrations, removals, and dispatch candidates; dynamic names remain unknown.\",\"Function fingerprints are static candidates; equal digests can remain ambiguous and do not prove behavioral equivalence.\",\"Graph coverage is incomplete; unavailable facts remain explicit and must not be read as absence.\",\"JavaScript and HTML were parsed as inert text; bundle bootstrap code was never executed.\",\"Local data flow does not claim control-flow-sensitive reaching definitions or arbitrary dynamic property resolution.\",\"Promise ownership covers explicit unshadowed Promise construction, static factories, aggregation, chaining, and await syntax only.\",\"Request extraction covers fetch, WebSocket, node:http/node:https construction, direct option fields, and exact local response consumers.\",\"Resource extraction covers built-in filesystem/network acquisition and exact local close/destroy/end handles.\",\"Sender, frame, URL, and origin checks are observations only; REA does not claim that they enforce a complete authorization policy.\",\"Static imports, entrypoints, workers, endpoints, and storage relationships do not prove runtime execution.\",\"Static paths and relationships may remain unresolved when expressions are dynamic or obfuscated.\",\"The semantic graph contains static syntax observations and conservative relationship candidates; it does not claim runtime execution.\",\"Timer extraction covers global or node:timers scheduling and exact local-handle cancellation.\",\"Webpack/Rspack factories were recovered from AST literals; REA did not invoke push handlers or bundle bootstrap code.\"],\"relationship_coverage\":null,\"locations\":[{\"kind\":\"artifact-path\",\"path\":\"/Users/shiroto/Documents/ChatGPT/Notion_rea/dist\"}],\"evidence_links\":[\"ev_67957e2edea54397c289171a5045ae9bf3969f433445d8697945105aba551b2c\"]}"
+    }
+  ],
+  "structuredContent": {
+    "evidence_id": "ev_2fcfb264f43fe334182be4d8afe662987959c53edc324c90553766a2fb10a86e",
+    "subject": {
+      "name": "dist",
+      "digest": {
+        "sha256": "be041c7ea5e2ca62fec7905aa1c2661a08e01bdd3757bf793591aadbd7d39079"
+      },
+      "local_path": "/Users/shiroto/Documents/ChatGPT/Notion_rea/dist",
+      "format": "directory",
+      "architecture": null
+    },
+    "provider": {
+      "id": "rea-analysis-view",
+      "name": "REA analysis view projection",
+      "version": "1"
+    },
+    "analysis_profile": null,
+    "predicate_type": "rea.analysis-view",
+    "operation": "inspect_analysis_view",
+    "parameters": {
+      "parent_evidence_id": "ev_67957e2edea54397c289171a5045ae9bf3969f433445d8697945105aba551b2c",
+      "view": {
+        "kind": "summary"
+      }
+    },
+    "raw_result": null,
+    "normalized_result": {
+      "kind": "summary",
+      "view": {
+        "kind": "summary"
+      },
+      "parent_evidence_id": "ev_67957e2edea54397c289171a5045ae9bf3969f433445d8697945105aba551b2c",
+      "parent_operation": "analyze_javascript_application",
+      "parent_digest": "67957e2edea54397c289171a5045ae9bf3969f433445d8697945105aba551b2c",
+      "view_digest": "e8a5dc8c9e3c5aff0619b0d4c13fcf8f06f43eef10086932c49c6a1a6a4168b3",
+      "artifact": {
+        "path": "/Users/shiroto/Documents/ChatGPT/Notion_rea/dist",
+        "sha256": "be041c7ea5e2ca62fec7905aa1c2661a08e01bdd3757bf793591aadbd7d39079"
+      },
+      "coverage": {
+        "status": "complete-within-view",
+        "examined": 17,
+        "total": 17,
+        "next_offset": null,
+        "exhausted": true
+      },
+      "limitations": [
+        "Alias selection expansion was conservatively bounded (maximum 512 additional selector states); selected paths remain unknown.",
+        "Boundary extraction covers unshadowed JSON/global coercions plus parse and validation method candidates.",
+        "Caller-selected source analysis leaves 3 inventoried files outside analysis scope. Inventory identity covers the complete artifact; relationships through unselected sources remain unknown.",
+        "Child-process extraction covers asynchronous node:child_process creation, literal argv/env/stdio options, exit/error listeners, and kill signals.",
+        "CommonJS and ESM binding relationships were recovered from inert syntax and resolved only within the inventoried artifact container.",
+        "Configuration extraction covers process.env, process.argv, node:fs reads, and direct logical defaults.",
+        "Electron API identity follows proven lexical module aliases and structurally verified module-namespace interop. Other reassignments, dynamic selections, and visibly overwritten namespace members are unresolved; missing findings do not establish absence. Arbitrary call side effects and runtime registration are not evaluated.",
+        "Electron relationships are derived from inert syntax; runtime registration, reachability, defaults, and enforcement remain unproven.",
+        "Event extraction covers EventEmitter-style literal registrations, removals, and dispatch candidates; dynamic names remain unknown.",
+        "Function fingerprints are static candidates; equal digests can remain ambiguous and do not prove behavioral equivalence.",
+        "Graph coverage is incomplete; unavailable facts remain explicit and must not be read as absence.",
+        "JavaScript and HTML were parsed as inert text; bundle bootstrap code was never executed.",
+        "Local data flow does not claim control-flow-sensitive reaching definitions or arbitrary dynamic property resolution.",
+        "Promise ownership covers explicit unshadowed Promise construction, static factories, aggregation, chaining, and await syntax only.",
+        "Request extraction covers fetch, WebSocket, node:http/node:https construction, direct option fields, and exact local response consumers.",
+        "Resource extraction covers built-in filesystem/network acquisition and exact local close/destroy/end handles.",
+        "Sender, frame, URL, and origin checks are observations only; REA does not claim that they enforce a complete authorization policy.",
+        "Static imports, entrypoints, workers, endpoints, and storage relationships do not prove runtime execution.",
+        "Static paths and relationships may remain unresolved when expressions are dynamic or obfuscated.",
+        "The semantic graph contains static syntax observations and conservative relationship candidates; it does not claim runtime execution.",
+        "Timer extraction covers global or node:timers scheduling and exact local-handle cancellation.",
+        "Webpack/Rspack factories were recovered from AST literals; REA did not invoke push handlers or bundle bootstrap code."
+      ],
+      "unknowns": [
+        "3 application graph unknowns remain in the parent Evidence.",
+        "5130 semantic graph unknowns remain in the parent Evidence.",
+        "Alias selection expansion was conservatively bounded (maximum 512 additional selector states); selected paths remain unknown.",
+        "Boundary extraction covers unshadowed JSON/global coercions plus parse and validation method candidates.",
+        "Caller-selected source analysis leaves 3 inventoried files outside analysis scope. Inventory identity covers the complete artifact; relationships through unselected sources remain unknown.",
+        "Child-process extraction covers asynchronous node:child_process creation, literal argv/env/stdio options, exit/error listeners, and kill signals.",
+        "CommonJS and ESM binding relationships were recovered from inert syntax and resolved only within the inventoried artifact container.",
+        "Configuration extraction covers process.env, process.argv, node:fs reads, and direct logical defaults.",
+        "Electron API identity follows proven lexical module aliases and structurally verified module-namespace interop. Other reassignments, dynamic selections, and visibly overwritten namespace members are unresolved; missing findings do not establish absence. Arbitrary call side effects and runtime registration are not evaluated.",
+        "Electron relationships are derived from inert syntax; runtime registration, reachability, defaults, and enforcement remain unproven.",
+        "Event extraction covers EventEmitter-style literal registrations, removals, and dispatch candidates; dynamic names remain unknown.",
+        "Function fingerprints are static candidates; equal digests can remain ambiguous and do not prove behavioral equivalence.",
+        "Graph coverage is incomplete; unavailable facts remain explicit and must not be read as absence.",
+        "JavaScript and HTML were parsed as inert text; bundle bootstrap code was never executed.",
+        "Local data flow does not claim control-flow-sensitive reaching definitions or arbitrary dynamic property resolution.",
+        "Promise ownership covers explicit unshadowed Promise construction, static factories, aggregation, chaining, and await syntax only.",
+        "Request extraction covers fetch, WebSocket, node:http/node:https construction, direct option fields, and exact local response consumers.",
+        "Resource extraction covers built-in filesystem/network acquisition and exact local close/destroy/end handles.",
+        "Sender, frame, URL, and origin checks are observations only; REA does not claim that they enforce a complete authorization policy.",
+        "Static imports, entrypoints, workers, endpoints, and storage relationships do not prove runtime execution.",
+        "Static paths and relationships may remain unresolved when expressions are dynamic or obfuscated.",
+        "The semantic graph contains static syntax observations and conservative relationship candidates; it does not claim runtime execution.",
+        "Timer extraction covers global or node:timers scheduling and exact local-handle cancellation.",
+        "Webpack/Rspack factories were recovered from AST literals; REA did not invoke push handlers or bundle bootstrap code.",
+        "graph.coverage.status is partial",
+        "semantic_graph.coverage.status is partial"
+      ],
+      "summary": {
+        "input_path": "/Users/shiroto/Documents/ChatGPT/Notion_rea/dist",
+        "format": "directory",
+        "root_artifact_sha256": "be041c7ea5e2ca62fec7905aa1c2661a08e01bdd3757bf793591aadbd7d39079",
+        "source_selection": {
+          "requested_paths": [
+            "main.cjs",
+            "preload.cjs"
+          ],
+          "unselected_files": 3
+        },
+        "statistics": {
+          "relevant_files": 5,
+          "nested_asar_containers": 0,
+          "text_bytes_read": 148354,
+          "invalid_utf8_files": 0,
+          "parsed_javascript_files": 2,
+          "skipped_javascript_files": 0,
+          "visited_ast_nodes": 22361,
+          "findings": 21,
+          "modules": 0,
+          "parse_failures": 0
+        },
+        "electron": {
+          "browser_windows": 0,
+          "explicit_web_preferences": 0,
+          "preload_entrypoints": 0,
+          "context_bridge_apis": 1,
+          "exposed_api_members": 1,
+          "ipc": {
+            "operations": 2,
+            "literal_channels": 1,
+            "dynamic_channel_operations": 0,
+            "renderer_transmissions": 1,
+            "renderer_listeners": 0,
+            "main_handlers": 1,
+            "paired_renderer_transmissions": 1,
+            "ambiguous_renderer_transmissions": 0,
+            "unpaired_literal_renderer_transmissions": 0
+          },
+          "sender_validation_observations": 2,
+          "utility_processes": 0,
+          "resolved_utility_entrypoints": 0,
+          "native_addon_bindings": 0,
+          "resolved_native_addon_bindings": 0
+        },
+        "coverage": {
+          "static_sources": {
+            "sources": 3,
+            "unmeasured_sources": 0,
+            "syntax": {
+              "complete": 2,
+              "recovered": 0,
+              "failed": 0,
+              "not-examined": 1
+            },
+            "semantics": {
+              "unknown_sources": 1,
+              "unexamined_sources": 1
+            },
+            "examination": {
+              "complete": 1,
+              "limited": 1,
+              "not-examined": 1
+            },
+            "electron_applicability": {
+              "observed": 1,
+              "unknown": 2
+            }
+          },
+          "application": {
+            "status": "partial",
+            "truncated": false,
+            "omitted_count": null,
+            "limits": [
+              {
+                "name": "javascript_semantic_alias_selections",
+                "value": 512,
+                "unit": "items"
+              }
+            ]
+          },
+          "semantic": {
+            "status": "partial",
+            "truncated": false,
+            "omitted_nodes": null,
+            "omitted_relations": null,
+            "limits": [],
+            "families": [
+              {
+                "family": "boundary",
+                "status": "partial",
+                "retained_relations": 20,
+                "omitted_relations": null,
+                "unknown_count": 9
+              },
+              {
+                "family": "call-flow",
+                "status": "partial",
+                "retained_relations": 1199,
+                "omitted_relations": null,
+                "unknown_count": 1215
+              },
+              {
+                "family": "child-process",
+                "status": "partial",
+                "retained_relations": 0,
+                "omitted_relations": null,
+                "unknown_count": 1
+              },
+              {
+                "family": "closure",
+                "status": "partial",
+                "retained_relations": 1120,
+                "omitted_relations": null,
+                "unknown_count": 1
+              },
+              {
+                "family": "configuration",
+                "status": "partial",
+                "retained_relations": 6,
+                "omitted_relations": null,
+                "unknown_count": 3
+              },
+              {
+                "family": "data-flow",
+                "status": "partial",
+                "retained_relations": 10052,
+                "omitted_relations": null,
+                "unknown_count": 1206
+              },
+              {
+                "family": "event",
+                "status": "partial",
+                "retained_relations": 5,
+                "omitted_relations": null,
+                "unknown_count": 6
+              },
+              {
+                "family": "object-flow",
+                "status": "partial",
+                "retained_relations": 1713,
+                "omitted_relations": null,
+                "unknown_count": 2651
+              },
+              {
+                "family": "promise-ownership",
+                "status": "partial",
+                "retained_relations": 85,
+                "omitted_relations": null,
+                "unknown_count": 35
+              },
+              {
+                "family": "request",
+                "status": "partial",
+                "retained_relations": 0,
+                "omitted_relations": null,
+                "unknown_count": 1
+              },
+              {
+                "family": "resource-lifecycle",
+                "status": "partial",
+                "retained_relations": 0,
+                "omitted_relations": null,
+                "unknown_count": 1
+              },
+              {
+                "family": "timer",
+                "status": "partial",
+                "retained_relations": 0,
+                "omitted_relations": null,
+                "unknown_count": 1
+              }
+            ]
+          },
+          "application_unknowns": 3,
+          "semantic_unknowns": 5130
+        },
+        "limitation_count": 22
+      }
+    },
+    "confidence": "derived",
+    "authority": "shipped-artifact",
+    "environment": null,
+    "limitations": [
+      "Alias selection expansion was conservatively bounded (maximum 512 additional selector states); selected paths remain unknown.",
+      "Boundary extraction covers unshadowed JSON/global coercions plus parse and validation method candidates.",
+      "Caller-selected source analysis leaves 3 inventoried files outside analysis scope. Inventory identity covers the complete artifact; relationships through unselected sources remain unknown.",
+      "Child-process extraction covers asynchronous node:child_process creation, literal argv/env/stdio options, exit/error listeners, and kill signals.",
+      "CommonJS and ESM binding relationships were recovered from inert syntax and resolved only within the inventoried artifact container.",
+      "Configuration extraction covers process.env, process.argv, node:fs reads, and direct logical defaults.",
+      "Electron API identity follows proven lexical module aliases and structurally verified module-namespace interop. Other reassignments, dynamic selections, and visibly overwritten namespace members are unresolved; missing findings do not establish absence. Arbitrary call side effects and runtime registration are not evaluated.",
+      "Electron relationships are derived from inert syntax; runtime registration, reachability, defaults, and enforcement remain unproven.",
+      "Event extraction covers EventEmitter-style literal registrations, removals, and dispatch candidates; dynamic names remain unknown.",
+      "Function fingerprints are static candidates; equal digests can remain ambiguous and do not prove behavioral equivalence.",
+      "Graph coverage is incomplete; unavailable facts remain explicit and must not be read as absence.",
+      "JavaScript and HTML were parsed as inert text; bundle bootstrap code was never executed.",
+      "Local data flow does not claim control-flow-sensitive reaching definitions or arbitrary dynamic property resolution.",
+      "Promise ownership covers explicit unshadowed Promise construction, static factories, aggregation, chaining, and await syntax only.",
+      "Request extraction covers fetch, WebSocket, node:http/node:https construction, direct option fields, and exact local response consumers.",
+      "Resource extraction covers built-in filesystem/network acquisition and exact local close/destroy/end handles.",
+      "Sender, frame, URL, and origin checks are observations only; REA does not claim that they enforce a complete authorization policy.",
+      "Static imports, entrypoints, workers, endpoints, and storage relationships do not prove runtime execution.",
+      "Static paths and relationships may remain unresolved when expressions are dynamic or obfuscated.",
+      "The semantic graph contains static syntax observations and conservative relationship candidates; it does not claim runtime execution.",
+      "Timer extraction covers global or node:timers scheduling and exact local-handle cancellation.",
+      "Webpack/Rspack factories were recovered from AST literals; REA did not invoke push handlers or bundle bootstrap code."
+    ],
+    "relationship_coverage": null,
+    "locations": [
+      {
+        "kind": "artifact-path",
+        "path": "/Users/shiroto/Documents/ChatGPT/Notion_rea/dist"
+      }
+    ],
+    "evidence_links": [
+      "ev_67957e2edea54397c289171a5045ae9bf3969f433445d8697945105aba551b2c"
+    ]
+  }
+}

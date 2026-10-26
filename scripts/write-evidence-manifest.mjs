@@ -1,0 +1,10 @@
+import {readdirSync,readFileSync,writeFileSync,existsSync} from 'node:fs';
+import {createHash} from 'node:crypto';
+import {join} from 'node:path';
+const digest=path=>createHash('sha256').update(readFileSync(path)).digest('hex');
+const files=[];for(const dir of ['src','tests','scripts'])for(const entry of readdirSync(dir,{recursive:true,withFileTypes:true}))if(entry.isFile())files.push(join(entry.parentPath,entry.name));
+files.push('package-lock.json','dist/main.cjs','dist/preload.cjs','release/Folio-darwin-arm64/Folio.app/Contents/Resources/app.asar','output/unit-tests.log','output/e2e-tests.log','output/benchmark.json');
+const rea=JSON.parse(readFileSync('research/evidence/rea-analyze_javascript_application.json','utf8'));
+if(rea.isError)throw new Error('REA analysis did not succeed');
+const result={recordedAt:new Date().toISOString(),projectRoot:process.cwd(),unitTests:13,electronScenarios:7,devSmoke:JSON.parse(readFileSync('output/dev-smoke.json','utf8')),packagedSmoke:JSON.parse(readFileSync('output/package-smoke.json','utf8')),reaEvidenceId:rea.structuredContent.evidence_id,reaArtifact:rea.structuredContent.normalized_result.artifact,hashes:Object.fromEntries(files.filter(existsSync).map(p=>[p,digest(p)]))};
+writeFileSync('research/evidence/final-validation.json',JSON.stringify(result,null,2)+'\n');console.log('Validation manifest saved');
