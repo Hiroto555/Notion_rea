@@ -1,0 +1,18 @@
+{
+  "date": "2026-10-26",
+  "repository": "Hiroto555/Notion_rea",
+  "targetBranch": "master",
+  "implementationCommit": "754430158ee1de811bebdcc5a66602a13f3d3cb9",
+  "implementationURL": "https://github.com/Hiroto555/Notion_rea/commit/754430158ee1de811bebdcc5a66602a13f3d3cb9",
+  "sourceTree": "a47f282b83bfb93ef84d5b96731fac2702591ecc",
+  "testTree": "e77aef9c41a20dcdd7134f69ad4bf26e281a0344",
+  "authorization": "User explicitly requested GitHub update after local validation.",
+  "validation": "No application source changed after the recorded validation. Later changes only pin evidence and update documentation.",
+  "knownLimitations": [
+    "Full Electron suite: 21/22; unchanged block-drag test passed 3/3 reruns, cause unresolved.",
+    "Physical Japanese IME: NOT_RUN.",
+    "Notion behavior comparison: NOT_RUN."
+  ],
+  "sharing": "Current candidates passed the scanner. Twelve analysis originals are retained locally and absent from the current Git tree. Existing historical findings remain; no history rewrite or visibility change.",
+  "whitespaceCheck": "Source/test/script diff passes. Captured logs retain original trailing whitespace and blank lines to preserve their recorded hashes."
+}

@@ -74,4 +74,4 @@ README、SPEC、ARCHITECTURE、FEATURES、TEST-RESULTS、EVIDENCE、MCP-CONNECTI
 - 競合退避JSONから同一ワークスペースに別ページを復旧可能。本文/DB/タイトル履歴を直近100件保持。不正文書は原本を保全して編集停止。
 - `review/2026-10-26` の監査原本はハッシュ照合のうえ配置。原本の68ケースは変更せず、補足の `gate-a-results.json` にPASS/PARTIAL/NOT_RUNを記録。
 - 物理日本語IMEとNotion比較は未実施。次はこの手動確認とドラッグの不安定性の調査を行い、Gate Bへ進む。Gate C〜Eの大機能は追加していない。
-- 修正は未コミット。push・公開設定変更・外部送信なし。次回はmanifestのハッシュと作業ツリーを照合し、修正コミットを作成したらSHAを追記する。
+- 検証終了時点では未コミット。その後のユーザー指示により、GitHub反映対象の修正コミットは `754430158ee1de811bebdcc5a66602a13f3d3cb9` に固定した。[Git記録](validation/gate-a/git-state.json)を参照。次回はこのコミットとmanifestのハッシュを照合する。公開設定変更・履歴書き換えは行わない。

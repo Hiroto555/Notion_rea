@@ -236,5 +236,6 @@
   "lockUnchanged": true,
   "notionComparison": "NOT_RUN",
   "physicalIME": "NOT_RUN",
-  "sourceState": "uncommitted working tree; pre-existing index preserved"
+  "sourceState": "Validation captured before commit; application source fixed in 754430158ee1de811bebdcc5a66602a13f3d3cb9; subsequent documentation-only changes.",
+  "implementationCommit": "754430158ee1de811bebdcc5a66602a13f3d3cb9"
 }

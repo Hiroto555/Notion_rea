@@ -63,7 +63,7 @@ OSクリップボードへHTML/テキストを書き、実際の⌘Vで見出し
 
 ## Gate A改修後の実行 — 2026-10-26
 
-今回の対象は未コミットの修正で、元のコミット検証とは別。ソースとビルドのハッシュは [Gate A manifest](validation/gate-a/manifest.json)、コマンド/終了コードは [結果JSON](validation/gate-a/results.json)。
+今回の検証はコミット前の修正を対象として実施し、そのアプリソースを後から `754430158ee1de811bebdcc5a66602a13f3d3cb9` に固定した。元の基準コミット検証とは別。[Gate AのGit記録](validation/gate-a/git-state.json) を参照。ソースとビルドのハッシュは [Gate A manifest](validation/gate-a/manifest.json)、コマンド/終了コードは [結果JSON](validation/gate-a/results.json)。
 
 | 試験 | 結果 |
 | --- | --- |

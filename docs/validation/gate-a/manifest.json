@@ -1,7 +1,7 @@
 {
   "baseline": "abb1e3131d1b4cab6aee4560c6d8aa819859bc29",
   "head": "abb1e3131d1b4cab6aee4560c6d8aa819859bc29",
-  "sourceState": "uncommitted working tree; pre-existing index preserved",
+  "sourceState": "Validation captured before commit; application source fixed in 754430158ee1de811bebdcc5a66602a13f3d3cb9; subsequent documentation-only changes.",
   "environment": {
     "node": "v24.20.0",
     "platform": "darwin",
@@ -157,15 +157,15 @@
     },
     {
       "path": "docs/AUDIT-RESPONSE.md",
-      "sha256": "116c2b688627143e597b7dabd6027b5292ed77def17a6690cdaf18835110d246"
+      "sha256": "995c05cc1e0da6a91345a0e3eefca6dee4522be9473eda6d7c954913fe4f8e42"
     },
     {
       "path": "docs/PROGRESS.md",
-      "sha256": "746b5ae5c1cd4982409e7d988e78397150cf6b704a041fa026e27a7f4087329e"
+      "sha256": "e3135904a365a109c1e9553e985a5e44a7321b694aa203029dbd6ab4af1ae655"
     },
     {
       "path": "docs/TEST-RESULTS.md",
-      "sha256": "9065066a27832621e25cab6d725e724e1707d0925c75ba4d06e786c4b75e3984"
+      "sha256": "0fb12cd08da7c0b2efa213719d7b3b89cf97d315c96fe3b42782fde98d25edf3"
     },
     {
       "path": "dist/main.cjs",
@@ -181,11 +181,15 @@
     },
     {
       "path": "docs/validation/gate-a/results.json",
-      "sha256": "68c665ad5e59504270393bcb7a159668571c73cfbfd489cb2e72196224163ce6"
+      "sha256": "0266d77af01318a410d9272df3c8dcad8c46df291a499979989c1a1f7df72300"
     },
     {
       "path": "review/2026-10-26/gate-a-results.json",
-      "sha256": "a6e3fe792d3d821a4ee9f438c7c4ce7c5934c1a85d96a74704e2a5d77fc43a8d"
+      "sha256": "afd825fa371c81279258abaacb38cd06e97a2c83cdc16daafc0320375712511a"
+    },
+    {
+      "path": "docs/validation/gate-a/git-state.json",
+      "sha256": "5b900c394a27b0c0c50dfbb3de2fed37bdd47e04a236d5be898779e60aedbc28"
     }
   ],
   "logs": [
@@ -419,5 +423,6 @@
       "rawSha256": "07d1a17afe65253177fe0ba4cd9867155e556bc8cac6d0dd6b2ccf69755431a4",
       "sha256": "bbfda98870e77b1ec49cf26d2f1ab3c4e7a81ade9418fb1e5b63faa0bcd68b52"
     }
-  ]
+  ],
+  "implementationCommit": "754430158ee1de811bebdcc5a66602a13f3d3cb9"
 }
