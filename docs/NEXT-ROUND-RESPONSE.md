@@ -28,7 +28,11 @@ post-writeのloadが失敗した際もパッチを捨てないよう、再読込
 
 ## R3 ダイアログ
 
-修正前実ElectronでDB Escape未閉鎖、aria-modal欠落、選択リンク取消後のフォーカス欠落を採取（r3-red-electron）。実装・追加検証中。
+修正前実ElectronでDB Escape未閉鎖、aria-modal欠落、選択リンク取消後のフォーカス欠落を採取（r3-red-electron）。共通Modalはnative dialogのtop layerと背景inertを使い、初期フォーカス、明示Tabループ、復帰先、aria-modal/名前/閉じる操作を統一した。対象外の旧ダイアログは従来のラッパーを維持。IME中Enterは通常入力を妨げず、Escapeでモーダルを閉じない。defaultPreventedと内側UIを優先する。DBのnative selectを開いたEscapeで外側も閉じることを実機で追加再現し、内側selectの取消を一度だけ消費するよう修正した。
+
+リンクは開いた時のpage ID、Editor、文書、selection bookmarkを保持する。確定/取消で元選択・書式・文言を保持し、page/docが変われば挿入を止める。検索で別ページへ移動した後は移動先タイトル、DBは起点カードへフォーカスを戻す。React StrictModeのeffect再実行をユーザーの取消扱いにしない。
+
+r3-picker-electron-v2は7/7。追加のnative select試験は最初FAIL、修正後PASS。途中のTypeScriptチェックエラーではパイプラインを停止し、古いdistによるE2Eを実行していない。物理IMEは引き続きNOT_RUN。
 
 ## 証拠
 

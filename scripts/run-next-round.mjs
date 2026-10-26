@@ -14,12 +14,13 @@ function hash(paths) {return Object.fromEntries(paths.sort().map(p=>[p,createHas
 const source=hash([...files('src'),...files('tests'),...files('scripts'), 'package.json','package-lock.json','playwright.config.ts','vite.config.ts','tsconfig.json']);
 const beforeBuild=hash(files('dist'));
 const start=new Date().toISOString();
+const startHead=execFileSync('git',['rev-parse','HEAD'],{encoding:'utf8'}).trim();
 const dataDir=mkdtempSync(resolve(raw,`${label}-data-`));
 const run=spawnSync(command,args,{env:{...process.env,FOLIO_DATA_DIR:dataDir},encoding:'utf8',maxBuffer:32*1024*1024});
 const log=(run.stdout||'')+(run.stderr||'')+(run.error?String(run.error):'');
 writeFileSync(`${raw}/${label}.txt`,log);
 const clean=log.split(process.cwd()).join('<repo>').split(homedir()).join('<home>').replace(/\x1b\[[0-9;]*m/g,'');
 writeFileSync(`${base}/${label}.txt`,clean);
-const result={label,command:[command,...args],head:execFileSync('git',['rev-parse','HEAD'],{encoding:'utf8'}).trim(),start,end:new Date().toISOString(),exitCode:run.status,signal:run.signal,status:run.status===0?'PASS':'FAIL',source,beforeBuild,afterBuild:hash(files('dist')),isolatedDataDir:true};
+const result={label,command:[command,...args],head:startHead,endHead:execFileSync('git',['rev-parse','HEAD'],{encoding:'utf8'}).trim(),start,end:new Date().toISOString(),exitCode:run.status,signal:run.signal,status:run.status===0?'PASS':'FAIL',source,beforeBuild,afterBuild:hash(files('dist')),isolatedDataDir:true};
 writeFileSync(`${base}/${label}.json`,JSON.stringify(result,null,2)+'\n');
 process.stdout.write(clean);process.exitCode=run.status??1;

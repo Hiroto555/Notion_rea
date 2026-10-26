@@ -1,0 +1,162 @@
+
+Running 4 tests using 1 worker
+
+  ✘  1 tests/e2e/dialogs.spec.ts:8:1 › R3 DB Escape closes the record and saves the latest input through restart (7.3s)
+  ✘  2 tests/e2e/dialogs.spec.ts:17:1 › R3 search/link/record share initial focus, modal tab cycle, close button and background isolation (6.9s)
+  ✘  3 tests/e2e/dialogs.spec.ts:48:1 › R3 selected text link cancel/confirm restores exact range, wording and marks (7.0s)
+  ✘  4 tests/e2e/dialogs.spec.ts:64:1 › R3 synthetic composition, prevented Escape and inner menus take priority (not physical IME) (7.8s)
+
+
+  1) tests/e2e/dialogs.spec.ts:8:1 › R3 DB Escape closes the record and saves the latest input through restart 
+
+    Error: expect(locator).toHaveCount(expected) failed
+
+    Locator:  getByRole('dialog')
+    Expected: 0
+    Received: 1
+    Timeout:  5000ms
+
+    Call log:
+      - Expect "toHaveCount" getByRole('dialog') with timeout 5000ms
+      - waiting for getByRole('dialog')
+        14 × locator resolved to 1 element
+           - unexpected value "1"
+
+
+      10 |   await s.window.getByLabel('アイテムのタイトル').fill('Record updated Aあ😀');
+      11 |   await s.window.keyboard.press('Escape');
+    > 12 |   await expect(s.window.getByRole('dialog')).toHaveCount(0);await saved(s);
+         |                                              ^
+      13 |   await expect(s.window.locator('.db-card').first()).toBeFocused();
+      14 |   await s.restart();await s.window.locator('.db-card').first().click();
+      15 |   await expect(s.window.getByLabel('アイテムのタイトル')).toHaveValue('Record updated Aあ😀');
+        at <repo>/tests/e2e/dialogs.spec.ts:12:46
+
+    Error Context: output/next-round/r3-red/dialogs-R3-DB-Escape-close-48ab9-atest-input-through-restart/error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    output/next-round/r3-red/dialogs-R3-DB-Escape-close-48ab9-atest-input-through-restart/trace.zip
+    Usage:
+
+        npx playwright show-trace output/next-round/r3-red/dialogs-R3-DB-Escape-close-48ab9-atest-input-through-restart/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  2) tests/e2e/dialogs.spec.ts:17:1 › R3 search/link/record share initial focus, modal tab cycle, close button and background isolation 
+
+    Error: expect(locator).toHaveAttribute(expected) failed
+
+    Locator:  getByRole('dialog')
+    Expected: "true"
+    Received: ""
+    Timeout:  5000ms
+
+    Call log:
+      - Expect "toHaveAttribute" getByRole('dialog') with timeout 5000ms
+      - waiting for getByRole('dialog')
+        14 × locator resolved to <div role="dialog" aria-label="ワークスペース検索" class="modal search-modal">…</div>
+           - unexpected value "null"
+
+
+      21 |     else if(mode==='search')await w.keyboard.press('Meta+p');
+      22 |     else await w.getByTitle('ページへのリンク',{exact:true}).click();
+    > 23 |     const dialog=w.getByRole('dialog');await expect(dialog).toHaveAttribute('aria-modal','true');
+         |                                                             ^
+      24 |     await expect(w.getByLabel(mode==='record'?'アイテムのタイトル':'検索キーワード')).toBeFocused();
+      25 |     const count=await dialog.locator('button,input,select').count();
+      26 |     for(const key of ['Tab','Shift+Tab'])for(let i=0;i<count+2;i++){
+        at <repo>/tests/e2e/dialogs.spec.ts:23:61
+
+    Error Context: output/next-round/r3-red/dialogs-R3-search-link-rec-73dc4-on-and-background-isolation/error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    output/next-round/r3-red/dialogs-R3-search-link-rec-73dc4-on-and-background-isolation/trace.zip
+    Usage:
+
+        npx playwright show-trace output/next-round/r3-red/dialogs-R3-search-link-rec-73dc4-on-and-background-isolation/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  3) tests/e2e/dialogs.spec.ts:48:1 › R3 selected text link cancel/confirm restores exact range, wording and marks 
+
+    Error: expect(locator).toBeFocused() failed
+
+    Locator:  locator('.folio-editor')
+    Expected: focused
+    Received: inactive
+    Timeout:  5000ms
+
+    Call log:
+      - Expect "toBeFocused" locator('.folio-editor') with timeout 5000ms
+      - waiting for locator('.folio-editor')
+        13 × locator resolved to <div tabindex="0" role="textbox" translate="no" aria-label="ページ本文" contenteditable="true" class="tiptap ProseMirror folio-editor">…</div>
+           - unexpected value "inactive"
+
+
+      49 |   await linkDocument(s);await selectWord(s);const before=await editorDoc(s);
+      50 |   await s.window.keyboard.press('Meta+k');await s.window.keyboard.press('Escape');
+    > 51 |   expect(await editorDoc(s)).toEqual(before);await expect(s.window.locator('.folio-editor')).toBeFocused();
+         |                                                                                              ^
+      52 |   expect(await s.window.evaluate(()=>getSelection()?.toString())).toBe('不動産');
+      53 |   await s.window.getByTitle('ページへのリンク',{exact:true}).click();
+      54 |   await s.window.getByLabel('検索キーワード').fill('アイデアノート');
+        at <repo>/tests/e2e/dialogs.spec.ts:51:94
+
+    Error Context: output/next-round/r3-red/dialogs-R3-selected-text-l-9f56b-act-range-wording-and-marks/error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    output/next-round/r3-red/dialogs-R3-selected-text-l-9f56b-act-range-wording-and-marks/trace.zip
+    Usage:
+
+        npx playwright show-trace output/next-round/r3-red/dialogs-R3-selected-text-l-9f56b-act-range-wording-and-marks/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  4) tests/e2e/dialogs.spec.ts:64:1 › R3 synthetic composition, prevented Escape and inner menus take priority (not physical IME) 
+
+    Error: expect(locator).toHaveCount(expected) failed
+
+    Locator:  getByRole('dialog')
+    Expected: 0
+    Received: 1
+    Timeout:  5000ms
+
+    Call log:
+      - Expect "toHaveCount" getByRole('dialog') with timeout 5000ms
+      - waiting for getByRole('dialog')
+        13 × locator resolved to 1 element
+           - unexpected value "1"
+
+
+      74 |     await input.evaluate(el=>el.addEventListener('keydown',e=>{if((e as KeyboardEvent).key==='Escape')e.preventDefault();},{once:true}));
+      75 |     await s.window.keyboard.press('Escape');await expect(s.window.getByRole('dialog')).toBeVisible();
+    > 76 |     await s.window.keyboard.press('Escape');await expect(s.window.getByRole('dialog')).toHaveCount(0);
+         |                                                                                        ^
+      77 |   }
+      78 | });
+      79 |
+        at <repo>/tests/e2e/dialogs.spec.ts:76:88
+
+    Error Context: output/next-round/r3-red/dialogs-R3-synthetic-compo-6bfd8--priority-not-physical-IME-/error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    output/next-round/r3-red/dialogs-R3-synthetic-compo-6bfd8--priority-not-physical-IME-/trace.zip
+    Usage:
+
+        npx playwright show-trace output/next-round/r3-red/dialogs-R3-synthetic-compo-6bfd8--priority-not-physical-IME-/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  4 failed
+    tests/e2e/dialogs.spec.ts:8:1 › R3 DB Escape closes the record and saves the latest input through restart 
+    tests/e2e/dialogs.spec.ts:17:1 › R3 search/link/record share initial focus, modal tab cycle, close button and background isolation 
+    tests/e2e/dialogs.spec.ts:48:1 › R3 selected text link cancel/confirm restores exact range, wording and marks 
+    tests/e2e/dialogs.spec.ts:64:1 › R3 synthetic composition, prevented Escape and inner menus take priority (not physical IME) 
+(node:93107) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:93273) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:93424) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:93617) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)

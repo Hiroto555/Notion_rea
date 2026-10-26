@@ -1,0 +1,20 @@
+
+Running 13 tests using 1 worker
+
+  ✓   1 tests/e2e/desktop.spec.ts:41:1 › real Electron: page edit, slash, undo, blocks, search, clone, trash and restart (6.3s)
+  ✓   2 tests/e2e/desktop.spec.ts:145:1 › database table edits, filters, sorts, board drop and calendar persistence (3.1s)
+  ✓   3 tests/e2e/desktop.spec.ts:192:1 › security boundary, page hierarchy, cycle error and versions (1.7s)
+  ✓   4 tests/e2e/desktop.spec.ts:248:1 › native rich HTML paste, Markdown shortcuts, toggle, links and block drag (3.4s)
+  ✓   5 tests/e2e/desktop.spec.ts:318:1 › real import/export, image/file attachments and complete backup (1.9s)
+  ✓   6 tests/e2e/desktop.spec.ts:399:1 › reproducible load: 150 pages, 1000 blocks, input and reopen (3.7s)
+  ✓   7 tests/e2e/desktop.spec.ts:478:1 › stale-write recovery preserves unsaved edits before reload (1.6s)
+  ✓   8 tests/e2e/dialogs.spec.ts:15:1 › R3 DB Escape closes the record and saves the latest input through restart (3.1s)
+  ✓   9 tests/e2e/dialogs.spec.ts:30:1 › R3 search/link/record share initial focus, modal tab cycle, close button and background isolation (2.9s)
+  ✓  10 tests/e2e/dialogs.spec.ts:112:1 › R3 selected text link cancel/confirm restores exact range, wording and marks (2.2s)
+  ✓  11 tests/e2e/dialogs.spec.ts:139:1 › R3 synthetic composition, prevented Escape and inner menus take priority (not physical IME) (2.0s)
+  ✓  12 tests/e2e/drag.spec.ts:4:1 › R2 short original regression: checkbox edit then real handle drag (2.1s)
+  ✓  13 tests/e2e/drag.spec.ts:41:1 › R2 top-level matrix: single/multiple/start/end/same/cancel/scroll/undo/redo/restart (5.7s)
+
+  13 passed (40.3s)
+(node:1114) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)

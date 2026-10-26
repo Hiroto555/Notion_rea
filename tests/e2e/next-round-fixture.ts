@@ -27,6 +27,35 @@ export const test = base.extend<{ folio: Session }>({
         .context()
         .tracing.start({ screenshots: true, snapshots: true, sources: true });
       await window.waitForSelector(".page-title");
+      const main = await app.evaluate(({ app, BrowserWindow }) => ({
+        version: app.getVersion(),
+        electron: process.versions.electron,
+        chromium: process.versions.chrome,
+        platform: process.platform,
+        arch: process.arch,
+        locale: app.getLocale(),
+        zoom: BrowserWindow.getAllWindows()[0].webContents.getZoomFactor(),
+      }));
+      const renderer = await window.evaluate(() => ({
+        width: innerWidth,
+        height: innerHeight,
+        devicePixelRatio,
+        language: navigator.language,
+        theme: document.documentElement.dataset.theme,
+      }));
+      writeFileSync(
+        info.outputPath("environment.json"),
+        JSON.stringify(
+          {
+            main,
+            renderer,
+            input:
+              "Playwright pointer/keyboard; synthetic composition only; physical IME NOT_RUN",
+          },
+          null,
+          2,
+        ),
+      );
     };
     await start();
     const session: Session = {

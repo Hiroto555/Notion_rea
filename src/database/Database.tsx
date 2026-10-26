@@ -1,4 +1,5 @@
 import { useRef, useState } from "react";
+import { Modal } from "../renderer/Modal";
 import {
   Table2,
   Columns3,
@@ -415,31 +416,31 @@ export function Database({
         {rows.length} / {value.rows.length} アイテム
       </p>
       {active && (
-        <div className="modal-backdrop" onMouseDown={() => setEditing(null)}>
-          <div
-            className="record-modal"
-            role="dialog"
-            aria-label="アイテムを編集"
-            onMouseDown={(e) => e.stopPropagation()}
-          >
-            <div className="modal-header">
-              <span>アイテム</span>
-              <button onClick={() => setEditing(null)}>完了</button>
-            </div>
-            <input
-              className="record-title"
-              aria-label="アイテムのタイトル"
-              value={active.title}
-              onChange={(e) => update(active.id, { title: e.target.value })}
-            />
-            {value.properties.map((p) => (
-              <label className="record-field" key={p.id}>
-                <span>{p.name}</span>
-                {cell(active, p)}
-              </label>
-            ))}
+        <Modal
+          name="アイテムを編集"
+          className="record-modal"
+          onClose={() => setEditing(null)}
+        >
+          <div className="modal-header">
+            <span>アイテム</span>
+            <button aria-label="閉じる" onClick={() => setEditing(null)}>
+              完了
+            </button>
           </div>
-        </div>
+          <input
+            className="record-title"
+            data-initial-focus
+            aria-label="アイテムのタイトル"
+            value={active.title}
+            onChange={(e) => update(active.id, { title: e.target.value })}
+          />
+          {value.properties.map((p) => (
+            <label className="record-field" key={p.id}>
+              <span>{p.name}</span>
+              {cell(active, p)}
+            </label>
+          ))}
+        </Modal>
       )}
     </div>
   );

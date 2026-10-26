@@ -28,6 +28,7 @@ import {
   Database as DatabaseIcon,
 } from "lucide-react";
 import { Editor } from "../editor/Editor";
+import { DialogFrame } from "./Modal";
 import { recoveryContent } from "../shared/recovery";
 import { PendingEdits } from "./pending-edits";
 import { composing } from "../shared/keyboard";
@@ -92,6 +93,13 @@ export function App() {
     history = useRef<string[]>([]),
     historyIndex = useRef(-1),
     querySeq = useRef(0);
+  const linkTarget = useRef<{
+    id: string;
+    editor: TiptapEditor;
+    selection: TiptapEditor["state"]["selection"];
+    doc: TiptapEditor["state"]["doc"];
+  } | null>(null);
+  const dialogOriginPage = useRef("");
   dialogRef.current = dialog;
   const commit = (next: Page[]) => {
     pageRef.current = next;
@@ -265,6 +273,7 @@ export function App() {
     saveSetting("theme", next);
   }
   function openSearch() {
+    dialogOriginPage.current = activeRef.current;
     setQuery("");
     setResults([]);
     setDialog("search");
@@ -285,17 +294,20 @@ export function App() {
   useEffect(() => {
     const key = (e: KeyboardEvent) => {
       if (e.defaultPrevented || composing(e, composition.current)) return;
-      if (e.key === "Escape") {
-        setDialog(null);
-        setMenu(false);
-        setFindOpen(false);
-        return;
-      }
       if (
-        dialogRef.current ||
-        (e.target as HTMLElement)?.closest?.('[role="dialog"]')
+        document.querySelector("dialog[open]") ||
+        ((e.target as HTMLElement)?.closest?.('[role="dialog"]') &&
+          !dialogRef.current)
       )
         return;
+      if (e.key === "Escape") {
+        if (dialogRef.current) setDialog(null);
+        else if (menu) setMenu(false);
+        else if (findOpen) setFindOpen(false);
+        e.preventDefault();
+        return;
+      }
+      if (dialogRef.current) return;
       if (!(e.metaKey || e.ctrlKey)) return;
       const k = e.key.toLowerCase();
       if (
@@ -310,9 +322,7 @@ export function App() {
           editor.current?.isFocused &&
           !editor.current.state.selection.empty
         ) {
-          setQuery("");
-          setResults([]);
-          setDialog("link");
+          openLink();
         } else openSearch();
       } else if (k === "n") {
         e.preventDefault();
@@ -359,7 +369,7 @@ export function App() {
       window.removeEventListener("keydown", key);
       window.removeEventListener("beforeunload", unload);
     };
-  }, [theme, expanded]);
+  }, [theme, expanded, menu, findOpen]);
   useEffect(() => {
     if (!notice) return;
     const t = setTimeout(() => setNotice(""), 4000);
@@ -410,20 +420,68 @@ export function App() {
       ? editor.current
       : null;
   }
-  function applyPageLink(p: Page) {
+  function openLink() {
     const e = currentEditor();
-    if (!e) {
-      fail("編集中のページを確認できません");
+    if (!e) return;
+    linkTarget.current = {
+      id: activeRef.current,
+      editor: e,
+      selection: e.state.selection,
+      doc: e.state.doc,
+    };
+    dialogOriginPage.current = activeRef.current;
+    setQuery("");
+    setResults([]);
+    setDialog("link");
+  }
+  function restoreDialogFocus() {
+    const target = linkTarget.current;
+    linkTarget.current = null;
+    if (activeRef.current !== dialogOriginPage.current) {
+      document
+        .querySelector<HTMLElement>(".page-title")
+        ?.focus({ preventScroll: true });
+      return true;
+    }
+    if (target && currentEditor() === target.editor) {
+      if (target.doc.eq(target.editor.state.doc))
+        target.editor.view.dispatch(
+          target.editor.state.tr.setSelection(
+            target.selection.getBookmark().resolve(target.editor.state.doc),
+          ),
+        );
+      target.editor.view.focus();
+      return true;
+    }
+    return false;
+  }
+  function applyPageLink(p: Page) {
+    const target = linkTarget.current,
+      e = currentEditor();
+    if (
+      !target ||
+      !e ||
+      e !== target.editor ||
+      activeRef.current !== target.id ||
+      !target.doc.eq(e.state.doc)
+    ) {
+      fail(
+        "リンク対象のページまたは本文が変わりました。元のページで選択し直してください。",
+      );
+      setDialog(null);
       return;
     }
-    if (!e.state.selection.empty)
+    e.view.dispatch(
+      e.state.tr.setSelection(
+        target.selection.getBookmark().resolve(e.state.doc),
+      ),
+    );
+    if (!target.selection.empty)
       e.chain()
-        .focus()
         .setLink({ href: "folio-page://" + p.id })
         .run();
     else
       e.chain()
-        .focus()
         .insertContent({
           type: "text",
           text: p.title,
@@ -1230,10 +1288,7 @@ export function App() {
                         editor.current = e;
                         editorId.current = page.id;
                       }}
-                      onLink={() => {
-                        setQuery("");
-                        setDialog("link");
-                      }}
+                      onLink={openLink}
                     />
                   ) : (
                     page.database && (
@@ -1372,273 +1427,212 @@ export function App() {
         </div>
       )}
       {dialog && (
-        <div className="modal-backdrop" onMouseDown={() => setDialog(null)}>
-          <div
-            className={
-              "modal " +
-              (["search", "link"].includes(dialog) ? "search-modal" : "")
-            }
-            role="dialog"
-            aria-label={
-              dialog === "search"
-                ? "ワークスペース検索"
-                : dialog === "link"
-                  ? "ページリンク"
-                  : dialog === "move"
+        <DialogFrame
+          modal={["search", "link"].includes(dialog)}
+          className={
+            "modal " +
+            (["search", "link"].includes(dialog) ? "search-modal" : "")
+          }
+          name={
+            dialog === "search"
+              ? "ワークスペース検索"
+              : dialog === "link"
+                ? "ページリンク"
+                : dialog === "move"
+                  ? "ページを移動"
+                  : dialog === "history"
+                    ? "変更履歴"
+                    : dialog === "trash"
+                      ? "ゴミ箱"
+                      : "テンプレート"
+          }
+          onClose={() => setDialog(null)}
+          restoreFocus={restoreDialogFocus}
+        >
+          {["search", "link"].includes(dialog) ? (
+            <>
+              <div className="search-input">
+                <Search size={20} />
+                <input
+                  data-initial-focus
+                  aria-label="検索キーワード"
+                  placeholder={
+                    dialog === "link"
+                      ? "リンクするページを検索…"
+                      : "ページや本文を検索…"
+                  }
+                  value={query}
+                  onChange={(e) => {
+                    setQuery(e.target.value);
+                    setResults([]);
+                    setSearchIndex(0);
+                  }}
+                  onKeyDown={(e) => {
+                    if (
+                      e.defaultPrevented ||
+                      composing(e.nativeEvent, composition.current)
+                    )
+                      return;
+                    if (e.key === "ArrowDown") {
+                      e.preventDefault();
+                      setSearchIndex((i) =>
+                        Math.min(i + 1, results.length - 1),
+                      );
+                    }
+                    if (e.key === "ArrowUp") {
+                      e.preventDefault();
+                      setSearchIndex((i) => Math.max(0, i - 1));
+                    }
+                    if (e.key === "Enter" && results[searchIndex]) {
+                      e.preventDefault();
+                      if (dialog === "link") {
+                        applyPageLink(results[searchIndex]);
+                      } else select(results[searchIndex].id);
+                    }
+                  }}
+                />
+                <button aria-label="閉じる" onClick={() => setDialog(null)}>
+                  閉じる
+                </button>
+              </div>
+              <div className="menu-caption">
+                {query ? "検索結果" : "すべてのページ"}
+              </div>
+              <div className="search-results">
+                {results.length ? (
+                  results.map((p, i) => (
+                    <button
+                      key={p.id}
+                      className={i === searchIndex ? "active" : ""}
+                      onClick={() => {
+                        if (dialog === "link") {
+                          applyPageLink(p);
+                        } else select(p.id);
+                      }}
+                    >
+                      <span className="result-icon">{p.icon}</span>
+                      <span>
+                        <strong>{p.title || "無題"}</strong>
+                        <small>
+                          {p.documentError
+                            ? "未対応の文書（原本を保全）"
+                            : textOf(p.doc).slice(0, 85) || "空のページ"}
+                        </small>
+                      </span>
+                      <ChevronRight size={15} />
+                    </button>
+                  ))
+                ) : (
+                  <p className="empty">見つかりませんでした</p>
+                )}
+              </div>
+              {dialog === "search" && (
+                <div className="palette-actions">
+                  <button onClick={() => safe(() => create())}>
+                    <Plus size={14} />
+                    ページを作成
+                  </button>
+                  <button
+                    onClick={() =>
+                      safe(() => create(null, "database", "新しいデータベース"))
+                    }
+                  >
+                    <DatabaseIcon size={14} />
+                    データベース
+                  </button>
+                  <button onClick={toggleTheme}>
+                    {theme === "light" ? <Moon size={14} /> : <Sun size={14} />}
+                    テーマ
+                  </button>
+                </div>
+              )}
+              <footer className="search-footer">
+                ↑ ↓ 選択 <span>↵ 開く</span>
+                <span>タイトルと本文を検索</span>
+              </footer>
+            </>
+          ) : (
+            <>
+              <div className="modal-header">
+                <h3>
+                  {dialog === "move"
                     ? "ページを移動"
                     : dialog === "history"
                       ? "変更履歴"
                       : dialog === "trash"
                         ? "ゴミ箱"
-                        : "テンプレート"
-            }
-            onMouseDown={(e) => e.stopPropagation()}
-          >
-            {["search", "link"].includes(dialog) ? (
-              <>
-                <div className="search-input">
-                  <Search size={20} />
-                  <input
-                    autoFocus
-                    aria-label="検索キーワード"
-                    placeholder={
-                      dialog === "link"
-                        ? "リンクするページを検索…"
-                        : "ページや本文を検索…"
+                        : "新しいページのはじまり"}
+                </h3>
+                <button onClick={() => setDialog(null)}>閉じる</button>
+              </div>
+              {dialog === "templates" && (
+                <div className="templates">
+                  <button onClick={() => safe(() => create())}>
+                    <span>📄</span>
+                    <strong>空のページ</strong>
+                    <small>自由に書きはじめる</small>
+                  </button>
+                  {templates.map((t) => (
+                    <button
+                      key={t.title}
+                      onClick={() =>
+                        safe(async () => {
+                          const p = await create(null, "page", t.title, t.doc);
+                          update(p.id, { icon: t.icon });
+                        })
+                      }
+                    >
+                      <span>{t.icon}</span>
+                      <strong>{t.title}</strong>
+                      <small>考えるための、ひとつの型</small>
+                    </button>
+                  ))}
+                  <button
+                    onClick={() =>
+                      safe(() => create(null, "database", "新しいデータベース"))
                     }
-                    value={query}
-                    onChange={(e) => {
-                      setQuery(e.target.value);
-                      setResults([]);
-                      setSearchIndex(0);
-                    }}
-                    onKeyDown={(e) => {
-                      if (
-                        e.defaultPrevented ||
-                        composing(e.nativeEvent, composition.current)
-                      )
-                        return;
-                      if (e.key === "ArrowDown") {
-                        e.preventDefault();
-                        setSearchIndex((i) =>
-                          Math.min(i + 1, results.length - 1),
-                        );
-                      }
-                      if (e.key === "ArrowUp") {
-                        e.preventDefault();
-                        setSearchIndex((i) => Math.max(0, i - 1));
-                      }
-                      if (e.key === "Enter" && results[searchIndex]) {
-                        if (dialog === "link") {
-                          applyPageLink(results[searchIndex]);
-                        } else select(results[searchIndex].id);
-                      }
-                    }}
-                  />
-                  <kbd>esc</kbd>
+                  >
+                    <span>▦</span>
+                    <strong>データベース</strong>
+                    <small>テーブル・ボード・カレンダー</small>
+                  </button>
                 </div>
-                <div className="menu-caption">
-                  {query ? "検索結果" : "すべてのページ"}
-                </div>
-                <div className="search-results">
-                  {results.length ? (
-                    results.map((p, i) => (
+              )}
+              {dialog === "move" && (
+                <div className="dialog-list">
+                  <button onClick={() => safe(() => move(activeId, null))}>
+                    ⌂ ワークスペースの最上位
+                  </button>
+                  {live
+                    .filter((p) => p.id !== activeId)
+                    .map((p) => (
                       <button
                         key={p.id}
-                        className={i === searchIndex ? "active" : ""}
-                        onClick={() => {
-                          if (dialog === "link") {
-                            applyPageLink(p);
-                          } else select(p.id);
-                        }}
+                        onClick={() => safe(() => move(activeId, p.id))}
                       >
-                        <span className="result-icon">{p.icon}</span>
-                        <span>
-                          <strong>{p.title || "無題"}</strong>
-                          <small>
-                            {p.documentError
-                              ? "未対応の文書（原本を保全）"
-                              : textOf(p.doc).slice(0, 85) || "空のページ"}
-                          </small>
-                        </span>
-                        <ChevronRight size={15} />
-                      </button>
-                    ))
-                  ) : (
-                    <p className="empty">見つかりませんでした</p>
-                  )}
-                </div>
-                {dialog === "search" && (
-                  <div className="palette-actions">
-                    <button onClick={() => safe(() => create())}>
-                      <Plus size={14} />
-                      ページを作成
-                    </button>
-                    <button
-                      onClick={() =>
-                        safe(() =>
-                          create(null, "database", "新しいデータベース"),
-                        )
-                      }
-                    >
-                      <DatabaseIcon size={14} />
-                      データベース
-                    </button>
-                    <button onClick={toggleTheme}>
-                      {theme === "light" ? (
-                        <Moon size={14} />
-                      ) : (
-                        <Sun size={14} />
-                      )}
-                      テーマ
-                    </button>
-                  </div>
-                )}
-                <footer className="search-footer">
-                  ↑ ↓ 選択 <span>↵ 開く</span>
-                  <span>タイトルと本文を検索</span>
-                </footer>
-              </>
-            ) : (
-              <>
-                <div className="modal-header">
-                  <h3>
-                    {dialog === "move"
-                      ? "ページを移動"
-                      : dialog === "history"
-                        ? "変更履歴"
-                        : dialog === "trash"
-                          ? "ゴミ箱"
-                          : "新しいページのはじまり"}
-                  </h3>
-                  <button onClick={() => setDialog(null)}>閉じる</button>
-                </div>
-                {dialog === "templates" && (
-                  <div className="templates">
-                    <button onClick={() => safe(() => create())}>
-                      <span>📄</span>
-                      <strong>空のページ</strong>
-                      <small>自由に書きはじめる</small>
-                    </button>
-                    {templates.map((t) => (
-                      <button
-                        key={t.title}
-                        onClick={() =>
-                          safe(async () => {
-                            const p = await create(
-                              null,
-                              "page",
-                              t.title,
-                              t.doc,
-                            );
-                            update(p.id, { icon: t.icon });
-                          })
-                        }
-                      >
-                        <span>{t.icon}</span>
-                        <strong>{t.title}</strong>
-                        <small>考えるための、ひとつの型</small>
+                        {p.icon} {p.title}
                       </button>
                     ))}
-                    <button
-                      onClick={() =>
-                        safe(() =>
-                          create(null, "database", "新しいデータベース"),
-                        )
-                      }
-                    >
-                      <span>▦</span>
-                      <strong>データベース</strong>
-                      <small>テーブル・ボード・カレンダー</small>
-                    </button>
-                  </div>
-                )}
-                {dialog === "move" && (
-                  <div className="dialog-list">
-                    <button onClick={() => safe(() => move(activeId, null))}>
-                      ⌂ ワークスペースの最上位
-                    </button>
-                    {live
-                      .filter((p) => p.id !== activeId)
+                </div>
+              )}
+              {dialog === "trash" && (
+                <div className="dialog-list">
+                  {pages.filter((p) => p.deletedAt).length ? (
+                    pages
+                      .filter((p) => p.deletedAt)
                       .map((p) => (
-                        <button
-                          key={p.id}
-                          onClick={() => safe(() => move(activeId, p.id))}
-                        >
-                          {p.icon} {p.title}
-                        </button>
-                      ))}
-                  </div>
-                )}
-                {dialog === "trash" && (
-                  <div className="dialog-list">
-                    {pages.filter((p) => p.deletedAt).length ? (
-                      pages
-                        .filter((p) => p.deletedAt)
-                        .map((p) => (
-                          <div key={p.id}>
-                            <span>
-                              {p.icon} {p.title}
-                            </span>
-                            <button
-                              onClick={() =>
-                                safe(async () => {
-                                  await mutate(async () => {
-                                    await api({ type: "restore", id: p.id });
-                                    await refresh();
-                                  });
-                                  setNotice("ページを復元しました");
-                                })
-                              }
-                            >
-                              復元
-                            </button>
-                          </div>
-                        ))
-                    ) : (
-                      <p className="empty">ゴミ箱は空です</p>
-                    )}
-                  </div>
-                )}
-                {dialog === "history" && (
-                  <div className="dialog-list">
-                    {versions.length ? (
-                      versions.map((v) => (
-                        <div key={v.id}>
+                        <div key={p.id}>
                           <span>
-                            <strong>
-                              {new Date(v.createdAt).toLocaleString("ja-JP")}
-                            </strong>
-                            <small>
-                              {v.title} ·{" "}
-                              {v.database
-                                ? `${v.database.rows.length} 行: ${v.database.rows.map((r) => r.title).join(", ")} / ${v.database.properties.map((p) => p.name).join(", ")}`
-                                : textOf(v.doc).slice(0, 80)}
-                            </small>
+                            {p.icon} {p.title}
                           </span>
                           <button
                             onClick={() =>
                               safe(async () => {
                                 await mutate(async () => {
-                                  const targetId = activeId;
-                                  const saved = await api<Page>({
-                                    type: "restoreVersion",
-                                    id: activeId,
-                                    versionId: v.id,
-                                  });
+                                  await api({ type: "restore", id: p.id });
                                   await refresh();
-                                  setDatabaseEpoch((value) => value + 1);
-                                  if (
-                                    activeRef.current === targetId &&
-                                    !edits.current.patch(targetId).doc
-                                  )
-                                    currentEditor()?.commands.setContent(
-                                      saved.doc,
-                                      { emitUpdate: false },
-                                    );
                                 });
-                                setDialog(null);
-                                setNotice("履歴を復元しました");
+                                setNotice("ページを復元しました");
                               })
                             }
                           >
@@ -1646,17 +1640,67 @@ export function App() {
                           </button>
                         </div>
                       ))
-                    ) : (
-                      <p className="empty">
-                        本文・タイトル・DBを編集すると履歴が保存されます
-                      </p>
-                    )}
-                  </div>
-                )}
-              </>
-            )}
-          </div>
-        </div>
+                  ) : (
+                    <p className="empty">ゴミ箱は空です</p>
+                  )}
+                </div>
+              )}
+              {dialog === "history" && (
+                <div className="dialog-list">
+                  {versions.length ? (
+                    versions.map((v) => (
+                      <div key={v.id}>
+                        <span>
+                          <strong>
+                            {new Date(v.createdAt).toLocaleString("ja-JP")}
+                          </strong>
+                          <small>
+                            {v.title} ·{" "}
+                            {v.database
+                              ? `${v.database.rows.length} 行: ${v.database.rows.map((r) => r.title).join(", ")} / ${v.database.properties.map((p) => p.name).join(", ")}`
+                              : textOf(v.doc).slice(0, 80)}
+                          </small>
+                        </span>
+                        <button
+                          onClick={() =>
+                            safe(async () => {
+                              await mutate(async () => {
+                                const targetId = activeId;
+                                const saved = await api<Page>({
+                                  type: "restoreVersion",
+                                  id: activeId,
+                                  versionId: v.id,
+                                });
+                                await refresh();
+                                setDatabaseEpoch((value) => value + 1);
+                                if (
+                                  activeRef.current === targetId &&
+                                  !edits.current.patch(targetId).doc
+                                )
+                                  currentEditor()?.commands.setContent(
+                                    saved.doc,
+                                    { emitUpdate: false },
+                                  );
+                              });
+                              setDialog(null);
+                              setNotice("履歴を復元しました");
+                            })
+                          }
+                        >
+                          復元
+                        </button>
+                      </div>
+                    ))
+                  ) : (
+                    <p className="empty">
+                      本文・タイトル・DBを編集すると履歴が保存されます
+                    </p>
+                  )}
+                </div>
+              )}
+            </>
+          )}
+        </DialogFrame>
       )}
     </div>
   );

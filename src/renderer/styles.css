@@ -1434,3 +1434,17 @@ kbd {
     transition: none !important;
   }
 }
+
+/* Native modal top layer, limited to search / page link / DB record. */
+.common-dialog {
+  padding: 0;
+  margin: 15vh auto 0;
+  color: var(--text);
+}
+.common-dialog::backdrop {
+  background: #1c251e45;
+  backdrop-filter: blur(3px);
+}
+.common-dialog.record-modal {
+  padding-bottom: 25px;
+}

@@ -1,0 +1,43 @@
+
+Running 1 test using 1 worker
+
+  ✘  1 tests/e2e/dialogs.spec.ts:177:1 › R3 nested native UI consumes one Escape; search navigation focuses destination (8.3s)
+
+
+  1) tests/e2e/dialogs.spec.ts:177:1 › R3 nested native UI consumes one Escape; search navigation focuses destination 
+
+    Error: expect(locator).toBeVisible() failed
+
+    Locator: getByRole('dialog')
+    Expected: visible
+    Timeout: 5000ms
+    Error: element(s) not found
+
+    Call log:
+      - Expect "toBeVisible" getByRole('dialog') with timeout 5000ms
+      - waiting for getByRole('dialog')
+
+
+      207 |   await expect.poll(()=>select.evaluate(el=>el.matches(':open'))).toBe(true);
+      208 |   await s.window.keyboard.press("Escape");
+    > 209 |   await expect(s.window.getByRole("dialog")).toBeVisible();
+          |                                              ^
+      210 |   await s.window.keyboard.press("Escape");
+      211 |   await expect(s.window.getByRole("dialog")).toHaveCount(0);
+      212 | });
+        at <repo>/tests/e2e/dialogs.spec.ts:209:46
+
+    Error Context: output/next-round/r3-native-picker/dialogs-R3-nested-native-U-d7b1e-igation-focuses-destination/error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    output/next-round/r3-native-picker/dialogs-R3-nested-native-U-d7b1e-igation-focuses-destination/trace.zip
+    Usage:
+
+        npx playwright show-trace output/next-round/r3-native-picker/dialogs-R3-nested-native-U-d7b1e-igation-focuses-destination/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  1 failed
+    tests/e2e/dialogs.spec.ts:177:1 › R3 nested native UI consumes one Escape; search navigation focuses destination 
+(node:5561) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)

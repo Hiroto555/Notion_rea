@@ -1,0 +1,6 @@
+
+> folio-desktop@0.1.0 check
+> tsc --noEmit
+
+src/renderer/Modal.tsx(56,13): error TS2367: This comparison appears to be unintentional because the types 'EventTarget & HTMLDialogElement' and 'HTMLSelectElement | null' have no overlap.
+src/renderer/Modal.tsx(59,13): error TS2367: This comparison appears to be unintentional because the types 'EventTarget & HTMLDialogElement' and 'HTMLSelectElement | null' have no overlap.
