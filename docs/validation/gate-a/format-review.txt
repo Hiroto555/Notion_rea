@@ -1,0 +1,5 @@
+src/renderer/App.tsx 294ms
+src/persistence/assets.ts 38ms (unchanged)
+tests/workspace.test.ts 21ms
+tests/gate-a.test.ts 23ms (unchanged)
+tests/e2e/gate-a.spec.ts 89ms

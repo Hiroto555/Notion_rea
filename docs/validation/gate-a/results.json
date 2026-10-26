@@ -1,0 +1,240 @@
+{
+  "date": "2026-10-26",
+  "baseline": "abb1e3131d1b4cab6aee4560c6d8aa819859bc29",
+  "head": "abb1e3131d1b4cab6aee4560c6d8aa819859bc29",
+  "baselineRuns": [
+    {
+      "name": "baseline-check",
+      "command": [
+        "npm",
+        "run",
+        "check"
+      ],
+      "exitCode": 0,
+      "seconds": 3.08
+    },
+    {
+      "name": "baseline-unit",
+      "command": [
+        "npm",
+        "test"
+      ],
+      "exitCode": 0,
+      "seconds": 1.3
+    },
+    {
+      "name": "baseline-build",
+      "command": [
+        "npm",
+        "run",
+        "build"
+      ],
+      "exitCode": 0,
+      "seconds": 4.8
+    },
+    {
+      "name": "baseline-e2e",
+      "command": [
+        "npm",
+        "run",
+        "test:e2e"
+      ],
+      "exitCode": 0,
+      "seconds": 27.77
+    }
+  ],
+  "finalRuns": [
+    {
+      "name": "check",
+      "command": [
+        "npm",
+        "run",
+        "check"
+      ],
+      "exitCode": 0,
+      "seconds": 3.09
+    },
+    {
+      "name": "unit",
+      "command": [
+        "npm",
+        "test"
+      ],
+      "exitCode": 0,
+      "seconds": 2.27
+    },
+    {
+      "name": "build",
+      "command": [
+        "npm",
+        "run",
+        "build"
+      ],
+      "exitCode": 0,
+      "seconds": 8.91
+    },
+    {
+      "name": "e2e",
+      "command": [
+        "npm",
+        "run",
+        "test:e2e"
+      ],
+      "exitCode": 1,
+      "seconds": 71.85
+    },
+    {
+      "name": "drag-recheck",
+      "command": [
+        "npx",
+        "playwright",
+        "test",
+        "tests/e2e/desktop.spec.ts",
+        "--grep",
+        "real Electron: page edit",
+        "--repeat-each=3",
+        "--reporter=list"
+      ],
+      "exitCode": 0,
+      "note": "3/3 passed without product or test changes; one previous full-suite failure remains recorded as intermittent, not resolved"
+    },
+    {
+      "name": "dev-smoke",
+      "command": [
+        "node",
+        "scripts/verify-dev.mjs"
+      ],
+      "exitCode": 0,
+      "seconds": 6.01
+    },
+    {
+      "name": "package",
+      "command": [
+        "npm",
+        "run",
+        "package"
+      ],
+      "exitCode": 0,
+      "seconds": 12.26
+    },
+    {
+      "name": "package-smoke",
+      "command": [
+        "node",
+        "scripts/verify-package.mjs"
+      ],
+      "exitCode": 0,
+      "seconds": 4.71
+    }
+  ],
+  "unit": {
+    "passed": 32,
+    "failed": 0
+  },
+  "gateAElectron": {
+    "passed": 15,
+    "failed": 0
+  },
+  "fullElectron": {
+    "passed": 21,
+    "failed": 1,
+    "note": "One existing block-drag test failed. The unchanged test passed 3/3 targeted reruns; intermittent cause remains unresolved."
+  },
+  "sharingRuns": [
+    {
+      "name": "review-tests",
+      "command": [
+        "npm",
+        "run",
+        "review:test"
+      ],
+      "exitCode": 0,
+      "seconds": 0.71
+    },
+    {
+      "name": "review-scan",
+      "command": [
+        "npm",
+        "run",
+        "review:scan"
+      ],
+      "exitCode": 0,
+      "seconds": 3.06
+    },
+    {
+      "name": "diff-check",
+      "command": [
+        "git",
+        "diff",
+        "--check"
+      ],
+      "exitCode": 0,
+      "seconds": 0.01
+    },
+    {
+      "name": "post-evidence-review-scan",
+      "command": [
+        "npm",
+        "run",
+        "review:scan"
+      ],
+      "exitCode": 0,
+      "note": "After audit documentation and evidence generation; current findings empty, historical findings retained"
+    }
+  ],
+  "redRuns": [
+    {
+      "command": "npx vitest run tests/gate-a.test.ts",
+      "exitCode": 1,
+      "log": "red-unit.txt",
+      "note": "6 failures in production storage/validation code"
+    },
+    {
+      "command": "npx playwright test tests/e2e/gate-a.spec.ts --reporter=list",
+      "exitCode": 1,
+      "log": "red-e2e.txt",
+      "note": "Includes three locator setup errors and three actual attachment failures; use corrected run for F01/F06/F11"
+    },
+    {
+      "command": "npx playwright test tests/e2e/gate-a.spec.ts --grep 'F01|F06|F11' --reporter=list",
+      "exitCode": 1,
+      "log": "red-e2e-corrected.txt",
+      "note": "Three reproduced defects; old unsaved guard also delayed test teardown"
+    }
+  ],
+  "intermediateIssues": [
+    {
+      "log": "check-intermediate.txt",
+      "exitCode": 2,
+      "reason": "Duplicate field and test window typing; corrected"
+    },
+    {
+      "log": "expanded-e2e.txt",
+      "exitCode": 1,
+      "reason": "Test assertion accessed undefined patch.doc; corrected"
+    },
+    {
+      "log": "recovery-build.txt",
+      "exitCode": 2,
+      "reason": "Test env typing; corrected"
+    },
+    {
+      "log": "recovery-e2e.txt",
+      "exitCode": 1,
+      "reason": "Executed previous build after build failure; unsupported null-doc render failed; not final validation"
+    }
+  ],
+  "protectedData": {
+    "checkedFiles": 98,
+    "changedFiles": 4,
+    "contentFiles": 6,
+    "contentChangedFiles": 0,
+    "addedContentFiles": 0,
+    "sessionChangedFiles": 4,
+    "note": "An already-running Folio process started at 20:42:28. Four GPU cache files changed; SQLite/WAL/SHM content matched. The user application was left running."
+  },
+  "lockUnchanged": true,
+  "notionComparison": "NOT_RUN",
+  "physicalIME": "NOT_RUN",
+  "sourceState": "uncommitted working tree; pre-existing index preserved"
+}

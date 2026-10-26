@@ -1,0 +1,47 @@
+
+Running 13 tests using 1 worker
+
+(node:4070) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓   1 tests/e2e/gate-a.spec.ts:59:1 › F01 same-page sidebar/search reselection keeps editor, attachment, link and exports (5.1s)
+  ✓   2 tests/e2e/gate-a.spec.ts:122:3 › F05 attachment roundtrip LICENSE (1.2s)
+  ✓   3 tests/e2e/gate-a.spec.ts:122:3 › F05 attachment roundtrip 資料.日本語 (1.5s)
+  ✓   4 tests/e2e/gate-a.spec.ts:122:3 › F05 attachment roundtrip file.abcdefghijklmnop (1.4s)
+  ✓   5 tests/e2e/gate-a.spec.ts:122:3 › F05 attachment roundtrip archive.tar.gz (1.3s)
+  ✓   6 tests/e2e/gate-a.spec.ts:122:3 › F05 attachment roundtrip IMAGE.PNG (1.2s)
+  ✓   7 tests/e2e/gate-a.spec.ts:139:1 › F06 synthetic composing Enter does not navigate search or link (not physical IME) (2.0s)
+  ✓   8 tests/e2e/gate-a.spec.ts:169:1 › F11 editing during move and delayed load keeps local patch and durable revision (3.7s)
+  ✓   9 tests/e2e/gate-a.spec.ts:226:1 › F02 full-text search, preview, count and in-page selection cross inline marks (2.0s)
+  ✓  10 tests/e2e/gate-a.spec.ts:299:1 › F04 DB delete Undo, restart history restore and property history retain IDs and values (4.8s)
+  ✓  11 tests/e2e/gate-a.spec.ts:365:1 › F06 editor selection Cmd+K sets page link without replacing text; modal and prevented keys win (1.6s)
+  ✓  12 tests/e2e/gate-a.spec.ts:403:1 › F07 invalid IPC is rejected and unknown stored schema is read-only with exact source export (1.4s)
+  ✘  13 tests/e2e/gate-a.spec.ts:446:1 › F11 failed write exports pending patch and persisted state, then recovers a separate page (1.7s)
+
+
+  1) tests/e2e/gate-a.spec.ts:446:1 › F11 failed write exports pending patch and persisted state, then recovers a separate page 
+
+    TypeError: Cannot read properties of undefined (reading 'includes')
+
+      477 |   expect(
+      478 |     exported.pendingPatches.some((x: any) =>
+    > 479 |       JSON.stringify(x.patch.doc).includes("Local unsaved body"),
+          |                                  ^
+      480 |     ),
+      481 |   ).toBe(true);
+      482 |   expect(
+        at some (<PROJECT_ROOT>/tests/e2e/gate-a.spec.ts:479:34)
+        at <PROJECT_ROOT>/tests/e2e/gate-a.spec.ts:478:29
+
+    Error Context: output/playwright/results/gate-a-F11-failed-write-ex-c5b6c-en-recovers-a-separate-page/error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    output/playwright/results/gate-a-F11-failed-write-ex-c5b6c-en-recovers-a-separate-page/trace.zip
+    Usage:
+
+        npx playwright show-trace output/playwright/results/gate-a-F11-failed-write-ex-c5b6c-en-recovers-a-separate-page/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  1 failed
+    tests/e2e/gate-a.spec.ts:446:1 › F11 failed write exports pending patch and persisted state, then recovers a separate page 
+  12 passed (29.4s)

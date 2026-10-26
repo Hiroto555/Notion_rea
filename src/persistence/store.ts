@@ -1,9 +1,11 @@
 import { DatabaseSync } from "node:sqlite";
 import { randomUUID } from "node:crypto";
-import { mkdirSync } from "node:fs";
+import { existsSync, mkdirSync } from "node:fs";
 import { dirname } from "node:path";
 import {
   blankDoc,
+  isDocument,
+  requestSchema,
   emptyDatabase,
   textOf,
   type Page,
@@ -23,11 +25,48 @@ export class Store {
     const v = this.db.prepare("PRAGMA user_version").get() as {
       user_version: number;
     };
-    if (v.user_version > 1)
+    if (v.user_version > 2) {
+      this.db.close();
       throw new Error("This workspace requires a newer Folio version.");
+    }
     this.db.exec(
-      `CREATE TABLE IF NOT EXISTS pages(id TEXT PRIMARY KEY, data TEXT NOT NULL, body TEXT NOT NULL); CREATE TABLE IF NOT EXISTS settings(key TEXT PRIMARY KEY,value TEXT NOT NULL); CREATE TABLE IF NOT EXISTS versions(id INTEGER PRIMARY KEY AUTOINCREMENT,pageId TEXT NOT NULL,createdAt INTEGER NOT NULL,title TEXT NOT NULL,doc TEXT NOT NULL); CREATE INDEX IF NOT EXISTS versions_page ON versions(pageId,createdAt); PRAGMA user_version=1;`,
+      `CREATE TABLE IF NOT EXISTS pages(id TEXT PRIMARY KEY, data TEXT NOT NULL, body TEXT NOT NULL); CREATE TABLE IF NOT EXISTS settings(key TEXT PRIMARY KEY,value TEXT NOT NULL); CREATE TABLE IF NOT EXISTS versions(id INTEGER PRIMARY KEY AUTOINCREMENT,pageId TEXT NOT NULL,createdAt INTEGER NOT NULL,title TEXT NOT NULL,doc TEXT NOT NULL); CREATE INDEX IF NOT EXISTS versions_page ON versions(pageId,createdAt); `,
     );
+    if (v.user_version < 2) {
+      // A standalone SQLite snapshot makes schema rollback possible. Assets stay
+      // beside the original database and are never moved by this migration.
+      const backup = path + ".pre-v2.sqlite";
+      if (v.user_version === 1 && !existsSync(backup))
+        this.db.prepare("VACUUM INTO ?").run(backup);
+      this.transaction(() => {
+        this.db.exec(
+          "ALTER TABLE versions ADD COLUMN database TEXT; PRAGMA user_version=2;",
+        );
+      });
+    }
+    this.db.exec(
+      "CREATE TABLE IF NOT EXISTS assets(id TEXT PRIMARY KEY, metadata TEXT NOT NULL)",
+    );
+  }
+  decode(data: string): Page {
+    let p: Page;
+    try {
+      p = JSON.parse(data);
+    } catch {
+      throw new Error(
+        "ワークスペースに壊れたJSONがあります。原本は変更していません。バックアップを保存してください。",
+      );
+    }
+    if (!p || typeof p !== "object" || !p.id)
+      throw new Error("ページを読めません。原本は変更していません。");
+    return (p.schemaVersion === undefined || p.schemaVersion === 1) &&
+      isDocument(p.doc)
+      ? p
+      : {
+          ...p,
+          documentError:
+            "未対応または不正な文書です。原本を保全し、編集を停止しています。",
+        };
   }
   transaction<T>(f: () => T): T {
     this.db.exec("BEGIN IMMEDIATE");
@@ -44,16 +83,22 @@ export class Store {
     return (
       this.db.prepare("SELECT data FROM pages").all() as { data: string }[]
     )
-      .map((r) => JSON.parse(r.data) as Page)
+      .map((r) => this.decode(r.data))
       .sort((a, b) => a.position - b.position);
   }
   get(id: string): Page {
     const r = this.db.prepare("SELECT data FROM pages WHERE id=?").get(id) as
       { data: string } | undefined;
     if (!r) throw new Error("ページが見つかりません");
-    return JSON.parse(r.data) as Page;
+    return this.decode(r.data);
   }
   write(p: Page) {
+    if (
+      p.documentError ||
+      (p.schemaVersion !== undefined && p.schemaVersion !== 1) ||
+      !isDocument(p.doc)
+    )
+      throw new Error("不正な文書は保存できません。原本を保全しています。");
     this.db
       .prepare(
         "INSERT INTO pages(id,data,body) VALUES(?,?,?) ON CONFLICT(id) DO UPDATE SET data=excluded.data,body=excluded.body",
@@ -94,6 +139,7 @@ export class Store {
     const now = Date.now();
     return this.write({
       id: randomUUID(),
+      schemaVersion: 1,
       parentId,
       title,
       icon: kind === "database" ? "▦" : "📄",
@@ -116,13 +162,20 @@ export class Store {
     });
   }
   update(id: string, revision: number, patch: PagePatch): Page {
+    requestSchema.parse({ type: "update", id, revision, patch });
     return this.transaction(() => {
       const p = this.get(id);
       if (p.revision !== revision)
         throw new Error(
           "保存の競合を検出しました。再読み込みして変更を確認してください。",
         );
-      if (patch.doc) this.recordVersion(p);
+      if (p.documentError) throw new Error(p.documentError);
+      if (
+        patch.doc !== undefined ||
+        patch.database !== undefined ||
+        patch.title !== undefined
+      )
+        this.recordVersion(p);
       return this.write({
         ...p,
         ...patch,
@@ -134,9 +187,15 @@ export class Store {
   recordVersion(p: Page) {
     this.db
       .prepare(
-        "INSERT INTO versions(pageId,createdAt,title,doc) VALUES(?,?,?,?)",
+        "INSERT INTO versions(pageId,createdAt,title,doc,database) VALUES(?,?,?,?,?)",
       )
-      .run(p.id, Date.now(), p.title, JSON.stringify(p.doc));
+      .run(
+        p.id,
+        Date.now(),
+        p.title,
+        JSON.stringify(p.doc),
+        JSON.stringify(p.database),
+      );
     this.db
       .prepare(
         "DELETE FROM versions WHERE pageId=? AND id NOT IN(SELECT id FROM versions WHERE pageId=? ORDER BY id DESC LIMIT 100)",
@@ -237,8 +296,15 @@ export class Store {
     return (
       this.db
         .prepare("SELECT * FROM versions WHERE pageId=? ORDER BY id DESC")
-        .all(id) as unknown as (Omit<Version, "doc"> & { doc: string })[]
-    ).map((v) => ({ ...v, doc: JSON.parse(v.doc) }));
+        .all(id) as unknown as (Omit<Version, "doc" | "database"> & {
+        doc: string;
+        database: string | null;
+      })[]
+    ).map((v) => ({
+      ...v,
+      doc: JSON.parse(v.doc),
+      database: v.database === null ? undefined : JSON.parse(v.database),
+    }));
   }
   handle(r: Request): unknown {
     switch (r.type) {
@@ -270,7 +336,7 @@ export class Store {
             !p.deletedAt &&
             [
               p.title,
-              textOf(p.doc),
+              p.documentError ? "" : textOf(p.doc),
               ...(p.database?.rows.map(
                 (x) => x.title + " " + Object.values(x.values).join(" "),
               ) ?? []),
@@ -280,6 +346,11 @@ export class Store {
               .includes(term),
         );
       }
+      case "pageSource":
+        return (
+          this.db.prepare("SELECT data FROM pages WHERE id=?").get(r.id) as
+            { data: string } | undefined
+        )?.data;
       case "versions":
         return this.versions(r.id);
       case "restoreVersion": {
@@ -288,11 +359,70 @@ export class Store {
         return this.update(r.id, this.get(r.id).revision, {
           doc: v.doc,
           title: v.title,
+          ...(v.database === undefined ? {} : { database: v.database }),
         });
       }
       default:
         throw new Error("Unsupported storage request");
     }
+  }
+  recover(input: unknown): Page[] {
+    const value = input as {
+      format?: string;
+      schemaVersion?: number;
+      pages?: Page[];
+      pendingPatches?: { id: string; patch: PagePatch }[];
+    };
+    if (
+      !value ||
+      value.format !== "folio-recovery" ||
+      value.schemaVersion !== 1 ||
+      !Array.isArray(value.pages) ||
+      !Array.isArray(value.pendingPatches) ||
+      value.pages.length > 10000
+    )
+      throw new Error("対応するFolio退避ファイルではありません");
+    const patches = new Map<string, PagePatch>();
+    for (const entry of value.pendingPatches) {
+      requestSchema.parse({
+        type: "update",
+        id: entry.id,
+        revision: 0,
+        patch: entry.patch,
+      });
+      patches.set(entry.id, { ...patches.get(entry.id), ...entry.patch });
+    }
+    return this.transaction(() => {
+      const restored: Page[] = [];
+      for (const [id, patch] of patches) {
+        const source = value.pages!.find((p) => p.id === id);
+        if (!source) throw new Error("退避ページがありません");
+        const local = { ...source, ...patch };
+        if (
+          !["page", "database"].includes(local.kind) ||
+          typeof local.title !== "string" ||
+          local.title.length > 490 ||
+          (local.schemaVersion !== undefined && local.schemaVersion !== 1)
+        )
+          throw new Error("退避ページの形式に対応していません");
+        const copy = this.create(null, local.kind, "[復旧] " + local.title);
+        const restore = {
+          doc: local.doc,
+          database: local.database,
+          icon: local.icon,
+          cover: local.cover,
+          favorite: local.favorite,
+        };
+        requestSchema.parse({
+          type: "update",
+          id: copy.id,
+          revision: 0,
+          patch: restore,
+        });
+        restored.push(this.write({ ...copy, ...restore }));
+      }
+      return restored;
+    });
   }
   close() {
     this.db.close();

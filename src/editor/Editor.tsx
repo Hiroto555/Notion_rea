@@ -4,36 +4,6 @@ import {
   EditorContent,
   type Editor as TiptapEditor,
 } from "@tiptap/react";
-import StarterKit from "@tiptap/starter-kit";
-import Placeholder from "@tiptap/extension-placeholder";
-import TaskList from "@tiptap/extension-task-list";
-import TaskItem from "@tiptap/extension-task-item";
-import {
-  Details,
-  DetailsContent,
-  DetailsSummary,
-} from "@tiptap/extension-details";
-import Image from "@tiptap/extension-image";
-import { Markdown } from "@tiptap/markdown";
-import { InputRule, wrappingInputRule } from "@tiptap/core";
-import Blockquote from "@tiptap/extension-blockquote";
-const Quote = Blockquote.extend({
-  addInputRules() {
-    return [wrappingInputRule({ find: /^\|\s$/, type: this.type })];
-  },
-});
-const Toggle = Details.extend({
-  addInputRules() {
-    return [
-      new InputRule({
-        find: /^>\s$/,
-        handler: ({ range, chain }) => {
-          chain().deleteRange(range).setDetails().run();
-        },
-      }),
-    ];
-  },
-});
 import {
   Bold,
   Italic,
@@ -47,26 +17,11 @@ import {
   Trash2,
   Link2,
 } from "lucide-react";
+import { composing } from "../shared/keyboard";
 import type { Doc } from "../shared/types";
 import { editBlocks } from "./blocks";
-export const extensions = () => [
-  StarterKit.configure({
-    blockquote: false,
-    link: { openOnClick: false, protocols: ["folio-page", "folio-asset"] },
-  }),
-  Placeholder.configure({ placeholder: "考えを書き留める…  / でコマンド" }),
-  TaskList,
-  TaskItem.configure({
-    nested: true,
-    HTMLAttributes: { "data-type": "taskItem" },
-  }),
-  Quote,
-  Toggle.configure({ persist: true }),
-  DetailsContent,
-  DetailsSummary,
-  Image.configure({ allowBase64: true }),
-  Markdown,
-];
+export { extensions } from "../shared/editor-schema";
+import { extensions } from "../shared/editor-schema";
 type Command = {
   name: string;
   hint: string;
@@ -152,11 +107,13 @@ export function Editor({
   onChange,
   onReady,
   onLink,
+  onError,
 }: {
   doc: Doc;
   onChange: (d: Doc) => void;
   onReady: (e: TiptapEditor) => void;
   onLink: () => void;
+  onError: (error: unknown) => void;
 }) {
   const [slash, setSlash] = useState<{
       query: string;
@@ -175,7 +132,8 @@ export function Editor({
     choiceRef = useRef(choice),
     changeRef = useRef(onChange),
     drag = useRef<number[]>([]),
-    selectionRef = useRef(selected);
+    selectionRef = useRef(selected),
+    invalid = useRef(false);
   changeRef.current = onChange;
   slashRef.current = slash;
   choiceRef.current = choice;
@@ -189,10 +147,21 @@ export function Editor({
   const editor = useEditor({
     extensions: extensions(),
     content: doc,
+    enableContentCheck: true,
+    onContentError: ({ editor, error }) => {
+      invalid.current = true;
+      queueMicrotask(() => {
+        editor.setEditable(false);
+        onError(
+          "文書を読めません。原本を保全して編集を停止しました: " +
+            error.message,
+        );
+      });
+    },
     editorProps: {
       attributes: { class: "folio-editor", "aria-label": "ページ本文" },
       handleKeyDown: (view, event) => {
-        if (event.isComposing) return false;
+        if (event.defaultPrevented || composing(event)) return false;
         const s = slashRef.current;
         if (!s) return false;
         const list = commands.filter((c) =>
@@ -218,7 +187,8 @@ export function Editor({
       },
     },
     onUpdate: ({ editor: e }) => {
-      changeRef.current(e.getJSON() as Doc);
+      if (!invalid.current)
+        changeRef.current({ ...e.getJSON(), schemaVersion: 1 } as Doc);
     },
     onSelectionUpdate: () => setSelected([]),
   });
@@ -365,6 +335,7 @@ export function Editor({
         ref={host}
         className="editor-host"
         onKeyDown={(event) => {
+          if (event.defaultPrevented || composing(event.nativeEvent)) return;
           if (selected.length && event.key === "Escape") setSelected([]);
           if (
             selected.length &&

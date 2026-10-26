@@ -1,0 +1,35 @@
+{
+  "description": "Only visually reviewed synthetic Folio screenshots and original app/test assets are allowed. Public third-party license author emails are retained exactly. New bytes or emails require review.",
+  "reviewedBinaries": {
+    "assets/icon.png": {
+      "sha256": "285595c8d006a30085acc458fbaf433c74ec42579991305257cf9678146c164f",
+      "provenance": "See docs/ASSET-PROVENANCE.md"
+    },
+    "assets/icon.icns": {
+      "sha256": "c49785f1ca95fc2a34f7a6616f22bbb9c67e2e3250c34a8f2c3c508779a45c18",
+      "provenance": "See docs/ASSET-PROVENANCE.md"
+    },
+    "tests/fixtures/image.png": {
+      "sha256": "7a0513b8149dee662f975b8778824bedccb12864f489ecf05a00f865c752f3ca",
+      "provenance": "See docs/ASSET-PROVENANCE.md"
+    },
+    "docs/screenshots/folio-board.png": {
+      "sha256": "870bb5afe057d01f585f849b91a84c55dec5d7733742db52db289d495ec05c15",
+      "provenance": "See docs/ASSET-PROVENANCE.md"
+    },
+    "docs/screenshots/folio-dark.png": {
+      "sha256": "47a03f9d40c822ff89f00895e01a68d07f286ebf08958d9dfd12f90ce8cd9777",
+      "provenance": "See docs/ASSET-PROVENANCE.md"
+    },
+    "docs/screenshots/folio-light.png": {
+      "sha256": "2dceb86558b295d6f07152851fac7c9ab79f902c0c57e118417e13afc26283ae",
+      "provenance": "See docs/ASSET-PROVENANCE.md"
+    }
+  },
+  "approvedEmailHashes": {
+    "docs/THIRD_PARTY_NOTICES.txt": [
+      "a3cd0030746b8f03748eba576eea24ae1bb769f068a36c258a8271c8f64739c8",
+      "abe1d2783df084d785d2359aba8036136c1af7ae23b56e50c661fcee3d8940c2"
+    ]
+  }
+}

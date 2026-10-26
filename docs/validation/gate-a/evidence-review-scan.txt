@@ -1,0 +1,88 @@
+
+> folio-desktop@0.1.0 review:scan
+> node scripts/review-hygiene.mjs
+
+{
+  "files": 153,
+  "currentFindings": [],
+  "historyFindings": [
+    {
+      "path": "docs/MCP-CONNECTION.md",
+      "category": "personal-path",
+      "line": 33,
+      "blob": "efc89aed3b561536105d8063e502d93844e3403d"
+    },
+    {
+      "path": "docs/MCP-CONNECTION.md",
+      "category": "personal-path",
+      "line": 34,
+      "blob": "efc89aed3b561536105d8063e502d93844e3403d"
+    },
+    {
+      "path": "docs/PROGRESS.md",
+      "category": "personal-path",
+      "line": 3,
+      "blob": "ead060087d5c341f08644e521b38f8325beeb84d"
+    },
+    {
+      "path": "research/evidence/environment.json",
+      "category": "personal-path",
+      "line": 3,
+      "blob": "146c79a92ef24ba6919ce660b2b4b08f92b6cc37"
+    },
+    {
+      "path": "research/evidence/final-validation.json",
+      "category": "personal-path",
+      "line": 3,
+      "blob": "bc65f673c05b98512b282c852ed5234c703db2f0"
+    },
+    {
+      "path": "research/evidence/final-validation.json",
+      "category": "personal-path",
+      "line": 13,
+      "blob": "bc65f673c05b98512b282c852ed5234c703db2f0"
+    },
+    {
+      "path": "research/evidence/final-validation.json",
+      "category": "personal-path",
+      "line": 18,
+      "blob": "bc65f673c05b98512b282c852ed5234c703db2f0"
+    },
+    {
+      "path": "research/evidence/rea-analyze_javascript_application.json",
+      "category": "personal-path",
+      "line": 11,
+      "blob": "46a6b9d62374cf5798935a26f8fc1317cfc8f8d3"
+    },
+    {
+      "path": "research/evidence/rea-analyze_javascript_application.json",
+      "category": "personal-path",
+      "line": 21,
+      "blob": "46a6b9d62374cf5798935a26f8fc1317cfc8f8d3"
+    },
+    {
+      "path": "research/evidence/rea-analyze_javascript_application.json",
+      "category": "personal-path",
+      "line": 50,
+      "blob": "46a6b9d62374cf5798935a26f8fc1317cfc8f8d3"
+    },
+    {
+      "path": "research/evidence/rea-analyze_javascript_application.json",
+      "category": "personal-path",
+      "line": 113,
+      "blob": "46a6b9d62374cf5798935a26f8fc1317cfc8f8d3"
+    },
+    {
+      "path": "research/evidence/rea-analyze_javascript_application.json",
+      "category": "personal-path",
+      "line": 324,
+      "blob": "46a6b9d62374cf5798935a26f8fc1317cfc8f8d3"
+    },
+    {
+      "path": "research/evidence/rea-capture_browser_scenario.json",
+      "blob": "3aabcd1941f29b1445ca5845dfe023c716a8975c",
+      "category": "raw-public-page-capture"
+    }
+  ],
+  "authorEmailIdentities": 1
+}

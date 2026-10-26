@@ -1,0 +1,10 @@
+{
+  "date": "2026-10-26",
+  "pages": 155,
+  "blocks": 1000,
+  "seededMs": 98,
+  "loadMs": 261,
+  "inputMs": 598,
+  "reopenMs": 2440,
+  "method": "Single warm local Electron sample; input includes automation click + native insertText + persisted UI acknowledgement. Not physical IME or p95."
+}

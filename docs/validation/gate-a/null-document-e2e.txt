@@ -1,0 +1,8 @@
+
+Running 1 test using 1 worker
+
+(node:7175) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓  1 tests/e2e/gate-a.spec.ts:563:1 › F07 malformed JSON opens an error screen with backup, and null doc never mounts editor (5.2s)
+
+  1 passed (6.1s)

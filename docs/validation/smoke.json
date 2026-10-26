@@ -1,0 +1,24 @@
+{
+  "dev": {
+    "ok": true,
+    "title": "ようこそ、Folioへ",
+    "origin": "http://127.0.0.1:5173/"
+  },
+  "packaged": {
+    "ok": true,
+    "executablePath": "<PROJECT_ROOT>/release/Folio-darwin-arm64/Folio.app/Contents/MacOS/Folio",
+    "persistence": true
+  },
+  "source": [
+    {
+      "path": "output/dev-smoke.json",
+      "sha256": "212e5af833ab7a672314ccf319556e31be2cd92f87b262a80a4374f87c03e741",
+      "availability": "local-only; excluded from review tree"
+    },
+    {
+      "path": "output/package-smoke.json",
+      "sha256": "860b01b3aaba47259fadeaf3ef77bdab571bbe56b0c179e64e9de0f826f82ffb",
+      "availability": "local-only; excluded from review tree"
+    }
+  ]
+}

@@ -147,7 +147,7 @@ test("database table edits, filters, sorts, board drop and calendar persistence"
   await expect(window.locator(".save-state")).toHaveText("保存済み");
   await app.close();
   await launch();
-  await expect(window.locator("tbody")).toContainText("");
+  await expect(window.locator("tbody tr")).toHaveCount(3);
   await expect(
     window.getByLabel("アイテム名").filter({ visible: true }).first(),
   ).toBeVisible();

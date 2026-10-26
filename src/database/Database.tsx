@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import {
   Table2,
   Columns3,
@@ -13,11 +13,17 @@ import type { DatabaseData, Property, RecordRow } from "../shared/types";
 import { queryRows, monthDays } from "./model";
 export function Database({
   value,
-  onChange,
+  onChange: persist,
 }: {
   value: DatabaseData;
   onChange: (d: DatabaseData) => void;
 }) {
+  const undoStack = useRef<DatabaseData[]>([]);
+  const onChange = (next: DatabaseData) => {
+    undoStack.current.push(structuredClone(value));
+    if (undoStack.current.length > 100) undoStack.current.shift();
+    persist(next);
+  };
   const [propertyForm, setPropertyForm] = useState(false),
     [propertyName, setPropertyName] = useState(""),
     [propertyType, setPropertyType] = useState<Property["type"]>("text"),
@@ -141,6 +147,15 @@ export function Database({
         ))}
       </div>
       <div className="db-toolbar">
+        <button
+          disabled={!undoStack.current.length}
+          onClick={() => {
+            const previous = undoStack.current.pop();
+            if (previous) persist(previous);
+          }}
+        >
+          DB変更を元に戻す
+        </button>
         <input
           aria-label="データベースを絞り込む"
           placeholder="絞り込み…"

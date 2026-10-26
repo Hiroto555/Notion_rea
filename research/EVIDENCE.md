@@ -60,3 +60,7 @@ NotionのMain/Preload/IPC実装、内部ブロックIDとトランザクショ�
 - [Notionキーボード操作](https://www.notion.com/help/keyboard-shortcuts)
 - [Notionサイドバー](https://www.notion.com/help/navigate-with-the-sidebar)
 - [Notion terms入口](https://www.notion.com/terms)
+
+## 外部レビュー用の参照先（2026-10-26追記）
+
+共有用資料は [docs/rea/EVIDENCE.md](../docs/rea/EVIDENCE.md) に整理しました。この旧記録が参照する `research/evidence/` の原本はローカルに保持し、Git追跡から外しています。原本を含む既存履歴の扱いは [共有前検査](../docs/SHARING-AUDIT.md) を参照してください。

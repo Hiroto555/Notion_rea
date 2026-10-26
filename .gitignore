@@ -14,3 +14,34 @@ output/*
 *.sqlite
 *.sqlite-*
 *.db
+
+# Local analysis originals: shared, redacted evidence lives in docs/rea/.
+research/evidence/*
+!research/evidence/README.md
+
+# Credentials, local identity, databases, and browser/test state
+.npmrc
+.netrc
+credentials*.json
+service-account*.json
+*.pem
+*.key
+*.p12
+*.pfx
+*.keystore
+*.db-*
+*.sqlite3
+*.sqlite3-*
+backups/
+playwright/.auth/
+playwright-report/
+test-results/
+coverage/
+*.har
+*.trace
+*.dmg
+*.app/
+
+# Use docs/screenshots/ only for reviewed, synthetic-data captures.
+.idea/
+.vscode/

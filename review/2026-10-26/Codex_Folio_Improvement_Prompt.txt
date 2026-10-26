@@ -1,0 +1,98 @@
+# FolioをNotionに近づける：監査結果に基づく改修指示
+
+対象リポジトリ：Hiroto555/Notion_rea
+監査基準コミット：abb1e3131d1b4cab6aee4560c6d8aa819859bc29
+作業場所：現在開いている専用フォルダ。Desktop等の固定パスを仮定しない。
+
+あなたの任務は「Notionっぽい新機能を大量追加すること」ではない。既存Folioの実装を保存しながら、以下の監査指摘を再現・修正し、Notionとの外部動作の差分をテストで減らすこと。
+
+## 最初にすること
+
+1. 現在のブランチ・HEAD・未コミット変更を確認し、監査基準からの差分を読む。ユーザーの変更を消さない。すでに修正済みの指摘は証拠を示して閉じる。
+2. 同梱されていればFolio_Audit_2026-10-26.mdとFolio_Acceptance_Catalog.jsonを読む。抜粋プローブは参考にするが、アプリ全体のPASS証明として扱わない。
+3. README、docs/FEATURES.md、docs/ARCHITECTURE.md、docs/TEST-RESULTS.md、research/EVIDENCE.mdと該当実装を読む。REA接続済みとNotion内部解析済みは同義ではない。
+4. 実データを使わず、専用FOLIO_DATA_DIRを持つテスト環境を作る。依存のlockfileを守り、基準のbuild/check/unit/E2Eを実際に実行する。実行できないものは理由と未実行を残す。
+5. docs/AUDIT-RESPONSE.mdに、各F-ID、再現、修正方針、テスト、状態を記録する。調査計画だけで終了せず、下のGate Aを実装して検証する。
+
+## Gate A：データと基本操作の修正を優先
+
+### F01 同一ページ再選択
+App.tsxのselect(id)は同一IDでもeditor.currentをnullにする。しかしEditorのkeyとインスタンスが同じならonReady effectは再実行されない。この条件をElectron E2Eで再現して修正する。
+回帰テスト：本文のある同じページをサイドバー/検索結果から再選択→添付→ページリンク→Markdown/HTML export。本文がnullや別ページの内容へ変わらないこと。修正目的で毎回Editorを再マウントしてUndoや選択を捨てない。
+
+### F02 プレーンテキスト抽出
+shared/types.tsのtextOfのmap(...).join(" ")はインライン書式境界でスペースを挿入する。
+「不」+太字「動」+「産」は「不動産」として検索できるようにする。「soft」+太字「ware」、リンク混在、hardBreak、複数段落もテスト。
+インラインは連結、ブロック境界とhardBreakは仕様に沿って区切る。検索・文字数・プレビュー・ページ内検索の契約を統一する。
+
+### F03 保存場所
+packaged版の4階層上という保存先計算をやめる。/Applications/Folio.app/Contents/MacOS/Folioから/.folio-dataになることをパスの単体テストで確認する。
+FOLIO_DATA_DIR明示指定は維持し、既定はElectron userData配下の専用領域へ。既存.folio-dataとrelease/.folio-dataを無断削除しない。バックアップと復元テスト付きの移行を作る。起動前の保存先作成失敗もエラー表示できるようにする。
+
+### F04 DB削除の復旧
+Database.tsxのrows.filterによる削除は、本文用Undoにもページ履歴にも記録されない。DB行・プロパティ変更のUndo/soft delete/バージョン復元を設ける。
+削除→Undo、削除→再起動→復元、変更→履歴復元が成立すること。バックアップがあるから通常の誤操作復旧は不要、とはしない。
+
+### F05 添付の契約
+拡張子なし・日本語拡張子・長い拡張子をattachが受け付けるのにdownloadAttachmentが拒否する問題を修正する。assetIdと表示名/拡張子/MIME/保存先を分離し、保存したファイルを同一バイトで取り出せるようにする。パス安全性は維持する。
+
+### F06 IMEとキー優先順位
+検索/リンクダイアログのEnter処理にcomposition対策を追加し、全体キー処理と統一する。物理日本語IMEの変換確定でページが勝手に開かないこと。
+defaultPrevented、入力対象、モーダル、エディタ選択を考慮する。選択テキストへのCmd/Ctrl+Kとページ検索を混同しない。物理IMEはinsertTextで代用したと主張しない。
+
+### F07 スキーマ検証
+isDocumentは型名だけでなく実際の親子構造/属性を検査する必要がある。doc直下text、bulletList直下paragraph、壊れたJSON、未知schemaVersionを保存前に拒否する。
+Tiptapの登録schemaと保存側検証の乖離を防ぎ、contentErrorを安全に処理する。読めない文書を空文書として自動上書きしない。原本保全・復旧手段を持つ。
+
+### F11 保存と構造操作の競合
+updateのqueueとmove/trash/restore/refreshの経路が分かれている。遅延IPCを注入し、編集→移動→refreshの間にローカル内容/unsaved map/pageRefが食い違わないか確認する。
+再現前に「確定バグ」と断定せず、再現結果を記録する。構造変更も含めたmutation coordinator、revision照合、pending patchのmergeで修正する。退避JSONはpageRefだけでなく未保存パッチを確実に含み、復旧までテストする。
+
+Gate Aが終わるまで、大規模な新機能、AI機能、クラウド同期を優先しない。
+
+## Gate B：エディタの動作を揃える
+
+F09：論理ブロックの安定IDを導入。配列indexだけで選択を管理しない。ネスト内のlistItem/トグル内容も定義した粒度で選択・移動・複製・削除できるようにする。全文replaceWithではなく必要な範囲のTransactionを使う。複製/貼付時のID、親子関係、Undo/Redo、カーソルをテストする。
+
+F13：Dialog/Menu/Popoverの共通基盤でEscape、focus trap、復帰先、aria-modal、背景操作抑止を統一。DBレコードのEscapeも閉じるようにする。サイドバー・必要なセッション状態を保存/復元。
+
+F17：アウトラインとDOMを配列indexで対応させない。見出しIDでリンクし、ネスト見出しと同名見出しでも正しい位置へ移動する。
+
+Notionとの比較仕様を固定した上で、Enter分割、Backspace結合、Tab/Shift+Tab、複数ブロック選択、slash、コピー/ペースト、ページ内検索、リンクを磨く。
+
+## Gate C：DBの意味構造
+
+F08：DB行を本文付きPageとして扱い、DataSource/PropertyDefinition/PropertyValue/Viewを分離する。
+Viewは固有ID/名前/layout/filter AST/sorts/groupBy/calendarBy/表示プロパティを持つ。tableとboardの表示を切り替えるだけで「独立した4ビュー」としない。
+複数の同種ビュー、AND/OR、型に応じた比較とソート、選択した列でのboard/calendarを実装する。
+既存データからのmigrationを先にテストし、行数/ID対応/値/添付/本文を保持する。全面DB初期化で実装を簡単にしない。
+Relation/Rollup/Formulaはこの基盤の後。循環、未設定、型エラー、削除参照を扱い、任意evalを使わない。
+
+## Gate D：見た目と操作の差分
+
+F14：以前の「常時3カラム」は固定要件から外す。右情報ペイン、固定format bar、独自の緑系配色や文末コピーなどを、実際の参照画面と照合する。独自ロゴ/名称は保持する。
+対象Notionバージョン、OS、viewport、ズーム、言語、テーマ、同じテスト文書を固定する。Notionアカウント/実画面にアクセスできない場合は公式公開資料で進め、実観測済みやピクセル一致と主張しない。
+通常/暗色/slash/選択/検索/表/board/レコード/エラーの状態でbefore-afterを撮り、視覚差分と操作差分を別に管理する。
+
+## Gate E：復旧・性能・証拠
+
+F12：可逆な独自JSON/ZIPのimport/exportと、競合退避JSONからの復旧を実装。添付同梱、相対参照、内部ページ参照、DB構造を保持。Markdown/HTMLの変換損失は黙って捨てず報告する。
+
+F10：入力ごとの全文JSON化、同期Main SQLite、毎transactionの全DOM計測、App全体再描画を計測する。単にdebounceを入れて耐久性を落とさない。保存済みは最新ローカル変更のdurable ACK後にのみ表示する。未ACKの復旧境界を明記する。
+
+F15：各修正で失敗→成功テストを保存。toContainText("")を意味のある検証に置換し、sort順序、calendar移動、行削除復元、同一ページ再選択、IME、schema不正、遅延IPC、disk full、ACK後killを追加。
+1回のwarm計測をp95や入力レイテンシと呼ばない。test名がカバーを主張する操作を実際に検証する。
+
+F16：REAの証拠は対象と範囲を明示する。Notion metadata、公開ドキュメント、実際のNotion操作、Folio自己解析を別分類にする。認証/アクセス制御回避、元製品コード/保護素材のコピーはしない。非公開内部実装が分からなくても、独立した外部動作の再実装は進める。
+
+## 実行・完了ルール
+
+- 現在のフォルダを使い、既存コードを維持する。無断のリポジトリ作り直し・reset/clean・実データ削除は禁止。
+- 小さい変更単位で進める。修正→テスト→差分レビューを行う。長い計画だけで終わらない。
+- GitHubへのpush、公開範囲変更、外部サービスへの実データ送信は、この指示だけで実行しない。
+- 仮のUI、配列モック、テストのスキップで機能を完成扱いにしない。
+- 成功したテスト、失敗したテスト、未実行を区別する。Notion全体の再現率を根拠なく算出しない。
+- 終了時は起動可能な状態、変更一覧、migration/rollback手順、実行コマンドと終了コード、修正前後の証拠、未解決項目を残す。
+- docs/PROGRESS.mdとdocs/AUDIT-RESPONSE.mdを更新し、次回は修正コミットを固定して再レビュー可能にする。
+
+最初の成果目標はGate Aの修正と回帰テスト。その基盤が安定してから、Gate B→C→D/Eへ進める。

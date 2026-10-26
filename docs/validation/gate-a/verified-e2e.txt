@@ -1,0 +1,73 @@
+
+> folio-desktop@0.1.0 test:e2e
+> playwright test
+
+
+Running 22 tests using 1 worker
+
+(node:19253) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✘   1 tests/e2e/desktop.spec.ts:28:1 › real Electron: page edit, slash, undo, blocks, search, clone, trash and restart (8.4s)
+(node:19449) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓   2 tests/e2e/desktop.spec.ts:121:1 › database table edits, filters, sorts, board drop and calendar persistence (4.2s)
+  ✓   3 tests/e2e/desktop.spec.ts:159:1 › security boundary, page hierarchy, cycle error and versions (1.8s)
+  ✓   4 tests/e2e/desktop.spec.ts:215:1 › native rich HTML paste, Markdown shortcuts, toggle, links and block drag (3.4s)
+  ✓   5 tests/e2e/desktop.spec.ts:285:1 › real import/export, image/file attachments and complete backup (2.3s)
+  ✓   6 tests/e2e/desktop.spec.ts:366:1 › reproducible load: 150 pages, 1000 blocks, input and reopen (5.9s)
+  ✓   7 tests/e2e/desktop.spec.ts:445:1 › stale-write recovery preserves unsaved edits before reload (1.3s)
+  ✓   8 tests/e2e/gate-a.spec.ts:59:1 › F01 same-page sidebar/search reselection keeps editor, attachment, link and exports (2.6s)
+  ✓   9 tests/e2e/gate-a.spec.ts:122:3 › F05 attachment roundtrip LICENSE (1.6s)
+  ✓  10 tests/e2e/gate-a.spec.ts:122:3 › F05 attachment roundtrip 資料.日本語 (1.2s)
+  ✓  11 tests/e2e/gate-a.spec.ts:122:3 › F05 attachment roundtrip file.abcdefghijklmnop (1.6s)
+  ✓  12 tests/e2e/gate-a.spec.ts:122:3 › F05 attachment roundtrip archive.tar.gz (1.4s)
+  ✓  13 tests/e2e/gate-a.spec.ts:122:3 › F05 attachment roundtrip IMAGE.PNG (1.3s)
+  ✓  14 tests/e2e/gate-a.spec.ts:139:1 › F06 synthetic composing Enter does not navigate search or link (not physical IME) (1.6s)
+  ✓  15 tests/e2e/gate-a.spec.ts:169:1 › F11 editing during move and delayed load keeps local patch and durable revision (3.4s)
+  ✓  16 tests/e2e/gate-a.spec.ts:226:1 › F02 full-text search, preview, count and in-page selection cross inline marks (1.8s)
+  ✓  17 tests/e2e/gate-a.spec.ts:299:1 › F04 DB delete Undo, restart history restore and property history retain IDs and values (4.9s)
+  ✓  18 tests/e2e/gate-a.spec.ts:368:1 › F06 editor selection Cmd+K sets page link without replacing text; modal and prevented keys win (2.7s)
+  ✓  19 tests/e2e/gate-a.spec.ts:406:1 › F07 invalid IPC is rejected and unknown stored schema is read-only with exact source export (2.0s)
+  ✓  20 tests/e2e/gate-a.spec.ts:449:1 › F11 failed write exports pending patch and persisted state, then recovers a separate page (4.7s)
+  ✓  21 tests/e2e/gate-a.spec.ts:513:1 › F03 default userData path and pre-ready directory failure are observable without touching user data (4.7s)
+  ✓  22 tests/e2e/gate-a.spec.ts:570:1 › F07 malformed JSON opens an error screen with backup, and null doc never mounts editor (6.0s)
+
+
+  1) tests/e2e/desktop.spec.ts:28:1 › real Electron: page edit, slash, undo, blocks, search, clone, trash and restart 
+
+    Error: expect(locator).toContainText(expected) failed
+
+    Locator: locator('.folio-editor > :first-child')
+    Expected substring: "日本語とEnglish"
+    Received string:    "見出し Test"
+    Timeout: 5000ms
+
+    Call log:
+      - Expect "toContainText" locator('.folio-editor > :first-child') with timeout 5000ms
+      - waiting for locator('.folio-editor > :first-child')
+        13 × locator resolved to <h1>見出し Test</h1>
+           - unexpected value "見出し Test"
+
+
+      60 |     .getByLabel("ブロック 2 を選択", { exact: true })
+      61 |     .dragTo(window.getByLabel("ブロック 1 を選択", { exact: true }));
+    > 62 |   await expect(window.locator(".folio-editor > :first-child")).toContainText(
+         |                                                                ^
+      63 |     "日本語とEnglish",
+      64 |   );
+      65 |   await window.getByLabel("ブロック 1 を選択", { exact: true }).click();
+        at <PROJECT_ROOT>/tests/e2e/desktop.spec.ts:62:64
+
+    Error Context: output/playwright/results/desktop-real-Electron-page-9fe42-rch-clone-trash-and-restart/error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    output/playwright/results/desktop-real-Electron-page-9fe42-rch-clone-trash-and-restart/trace.zip
+    Usage:
+
+        npx playwright show-trace output/playwright/results/desktop-real-Electron-page-9fe42-rch-clone-trash-and-restart/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  1 failed
+    tests/e2e/desktop.spec.ts:28:1 › real Electron: page edit, slash, undo, blocks, search, clone, trash and restart 
+  21 passed (1.2m)

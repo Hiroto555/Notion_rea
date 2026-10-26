@@ -1,0 +1,8 @@
+
+> folio-desktop@0.1.0 build
+> tsc --noEmit && vite build && node scripts/build.mjs
+
+tests/e2e/gate-a.spec.ts(549,67): error TS2322: Type '{ [key: string]: string | undefined; }' is not assignable to type '{ [key: string]: string; }'.
+  'string' index signatures are incompatible.
+    Type 'string | undefined' is not assignable to type 'string'.
+      Type 'undefined' is not assignable to type 'string'.

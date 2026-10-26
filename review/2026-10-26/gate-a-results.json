@@ -1,0 +1,349 @@
+{
+  "baseline": "abb1e3131d1b4cab6aee4560c6d8aa819859bc29",
+  "head": "abb1e3131d1b4cab6aee4560c6d8aa819859bc29",
+  "catalogSha256": "a4e8b8c8dbf750317d4b37beecc278596c5474f8c7e8c1608778eff7e5e2e314",
+  "notionComparison": "NOT_RUN",
+  "note": "Folio-only supplemental evidence. Original catalog unchanged. No Notion agreement ratio is calculated.",
+  "cases": [
+    {
+      "id": "REG-01",
+      "status": "PASS",
+      "scope": "Folio local quality contract; see docs/AUDIT-RESPONSE.md"
+    },
+    {
+      "id": "REG-02",
+      "status": "PASS",
+      "scope": "Folio local quality contract; see docs/AUDIT-RESPONSE.md"
+    },
+    {
+      "id": "REG-03",
+      "status": "PASS",
+      "scope": "Folio local quality contract; see docs/AUDIT-RESPONSE.md"
+    },
+    {
+      "id": "REG-04",
+      "status": "PASS",
+      "scope": "Folio local quality contract; see docs/AUDIT-RESPONSE.md"
+    },
+    {
+      "id": "REG-05",
+      "status": "PASS",
+      "scope": "Folio local quality contract; see docs/AUDIT-RESPONSE.md"
+    },
+    {
+      "id": "REG-06",
+      "status": "PASS",
+      "scope": "Folio local quality contract; see docs/AUDIT-RESPONSE.md"
+    },
+    {
+      "id": "REG-07",
+      "status": "PASS",
+      "scope": "Folio local quality contract; see docs/AUDIT-RESPONSE.md"
+    },
+    {
+      "id": "REG-08",
+      "status": "PASS",
+      "scope": "Folio local quality contract; see docs/AUDIT-RESPONSE.md"
+    },
+    {
+      "id": "REG-09",
+      "status": "PASS",
+      "scope": "Folio local quality contract; see docs/AUDIT-RESPONSE.md"
+    },
+    {
+      "id": "REG-10",
+      "status": "PASS",
+      "scope": "Folio local quality contract; see docs/AUDIT-RESPONSE.md"
+    },
+    {
+      "id": "REG-11",
+      "status": "PARTIAL",
+      "scope": "Existing row IDs and values restored; row bodies are not implemented."
+    },
+    {
+      "id": "REG-12",
+      "status": "PASS",
+      "scope": "Folio local quality contract; see docs/AUDIT-RESPONSE.md"
+    },
+    {
+      "id": "EDIT-01",
+      "status": "NOT_RUN",
+      "scope": "Outside verified Gate A scope or manual observation pending"
+    },
+    {
+      "id": "EDIT-02",
+      "status": "NOT_RUN",
+      "scope": "Outside verified Gate A scope or manual observation pending"
+    },
+    {
+      "id": "EDIT-03",
+      "status": "NOT_RUN",
+      "scope": "Outside verified Gate A scope or manual observation pending"
+    },
+    {
+      "id": "EDIT-04",
+      "status": "NOT_RUN",
+      "scope": "Outside verified Gate A scope or manual observation pending"
+    },
+    {
+      "id": "EDIT-05",
+      "status": "NOT_RUN",
+      "scope": "Outside verified Gate A scope or manual observation pending"
+    },
+    {
+      "id": "EDIT-06",
+      "status": "NOT_RUN",
+      "scope": "Outside verified Gate A scope or manual observation pending"
+    },
+    {
+      "id": "EDIT-07",
+      "status": "NOT_RUN",
+      "scope": "Outside verified Gate A scope or manual observation pending"
+    },
+    {
+      "id": "EDIT-08",
+      "status": "NOT_RUN",
+      "scope": "Outside verified Gate A scope or manual observation pending"
+    },
+    {
+      "id": "EDIT-09",
+      "status": "NOT_RUN",
+      "scope": "Outside verified Gate A scope or manual observation pending"
+    },
+    {
+      "id": "EDIT-10",
+      "status": "NOT_RUN",
+      "scope": "Outside verified Gate A scope or manual observation pending"
+    },
+    {
+      "id": "EDIT-11",
+      "status": "PARTIAL",
+      "scope": "Selected text gets a page link; generic URL editing/Notion comparison not tested."
+    },
+    {
+      "id": "EDIT-12",
+      "status": "NOT_RUN",
+      "scope": "Outside verified Gate A scope or manual observation pending"
+    },
+    {
+      "id": "EDIT-13",
+      "status": "PASS",
+      "scope": "Folio local quality contract; see docs/AUDIT-RESPONSE.md"
+    },
+    {
+      "id": "EDIT-14",
+      "status": "NOT_RUN",
+      "scope": "Outside verified Gate A scope or manual observation pending"
+    },
+    {
+      "id": "EDIT-15",
+      "status": "PARTIAL",
+      "scope": "Plain-text and search newline contract tested; full Markdown/HTML roundtrip losses not covered."
+    },
+    {
+      "id": "EDIT-16",
+      "status": "NOT_RUN",
+      "scope": "Outside verified Gate A scope or manual observation pending"
+    },
+    {
+      "id": "IME-01",
+      "status": "NOT_RUN",
+      "scope": "Outside verified Gate A scope or manual observation pending"
+    },
+    {
+      "id": "IME-02",
+      "status": "NOT_RUN",
+      "scope": "Outside verified Gate A scope or manual observation pending"
+    },
+    {
+      "id": "DB-01",
+      "status": "NOT_RUN",
+      "scope": "Outside verified Gate A scope or manual observation pending"
+    },
+    {
+      "id": "DB-02",
+      "status": "NOT_RUN",
+      "scope": "Outside verified Gate A scope or manual observation pending"
+    },
+    {
+      "id": "DB-03",
+      "status": "NOT_RUN",
+      "scope": "Outside verified Gate A scope or manual observation pending"
+    },
+    {
+      "id": "DB-04",
+      "status": "NOT_RUN",
+      "scope": "Outside verified Gate A scope or manual observation pending"
+    },
+    {
+      "id": "DB-05",
+      "status": "NOT_RUN",
+      "scope": "Outside verified Gate A scope or manual observation pending"
+    },
+    {
+      "id": "DB-06",
+      "status": "NOT_RUN",
+      "scope": "Outside verified Gate A scope or manual observation pending"
+    },
+    {
+      "id": "DB-07",
+      "status": "NOT_RUN",
+      "scope": "Outside verified Gate A scope or manual observation pending"
+    },
+    {
+      "id": "DB-08",
+      "status": "PARTIAL",
+      "scope": "Row IDs and values restored through history; row bodies and every layout-specific restored view not tested."
+    },
+    {
+      "id": "DB-09",
+      "status": "NOT_RUN",
+      "scope": "Outside verified Gate A scope or manual observation pending"
+    },
+    {
+      "id": "DB-10",
+      "status": "NOT_RUN",
+      "scope": "Outside verified Gate A scope or manual observation pending"
+    },
+    {
+      "id": "DB-11",
+      "status": "NOT_RUN",
+      "scope": "Outside verified Gate A scope or manual observation pending"
+    },
+    {
+      "id": "DB-12",
+      "status": "NOT_RUN",
+      "scope": "Outside verified Gate A scope or manual observation pending"
+    },
+    {
+      "id": "DB-13",
+      "status": "NOT_RUN",
+      "scope": "Outside verified Gate A scope or manual observation pending"
+    },
+    {
+      "id": "DB-14",
+      "status": "NOT_RUN",
+      "scope": "Outside verified Gate A scope or manual observation pending"
+    },
+    {
+      "id": "DB-15",
+      "status": "NOT_RUN",
+      "scope": "Outside verified Gate A scope or manual observation pending"
+    },
+    {
+      "id": "DB-16",
+      "status": "NOT_RUN",
+      "scope": "Outside verified Gate A scope or manual observation pending"
+    },
+    {
+      "id": "DUR-01",
+      "status": "NOT_RUN",
+      "scope": "Outside verified Gate A scope or manual observation pending"
+    },
+    {
+      "id": "DUR-02",
+      "status": "NOT_RUN",
+      "scope": "Outside verified Gate A scope or manual observation pending"
+    },
+    {
+      "id": "DUR-03",
+      "status": "NOT_RUN",
+      "scope": "Outside verified Gate A scope or manual observation pending"
+    },
+    {
+      "id": "DUR-04",
+      "status": "PASS",
+      "scope": "Folio local quality contract; see docs/AUDIT-RESPONSE.md"
+    },
+    {
+      "id": "DUR-05",
+      "status": "PASS",
+      "scope": "Folio local quality contract; see docs/AUDIT-RESPONSE.md"
+    },
+    {
+      "id": "DUR-06",
+      "status": "PASS",
+      "scope": "Folio local quality contract; see docs/AUDIT-RESPONSE.md"
+    },
+    {
+      "id": "DUR-07",
+      "status": "PASS",
+      "scope": "Folio local quality contract; see docs/AUDIT-RESPONSE.md"
+    },
+    {
+      "id": "DUR-08",
+      "status": "PASS",
+      "scope": "Folio local quality contract; see docs/AUDIT-RESPONSE.md"
+    },
+    {
+      "id": "UX-01",
+      "status": "NOT_RUN",
+      "scope": "Outside verified Gate A scope or manual observation pending"
+    },
+    {
+      "id": "UX-02",
+      "status": "NOT_RUN",
+      "scope": "Outside verified Gate A scope or manual observation pending"
+    },
+    {
+      "id": "UX-03",
+      "status": "NOT_RUN",
+      "scope": "Outside verified Gate A scope or manual observation pending"
+    },
+    {
+      "id": "UX-04",
+      "status": "NOT_RUN",
+      "scope": "Outside verified Gate A scope or manual observation pending"
+    },
+    {
+      "id": "UX-05",
+      "status": "NOT_RUN",
+      "scope": "Outside verified Gate A scope or manual observation pending"
+    },
+    {
+      "id": "UX-06",
+      "status": "NOT_RUN",
+      "scope": "Outside verified Gate A scope or manual observation pending"
+    },
+    {
+      "id": "UX-07",
+      "status": "PARTIAL",
+      "scope": "First match selection across marks tested; next/previous highlighting is not implemented."
+    },
+    {
+      "id": "UX-08",
+      "status": "NOT_RUN",
+      "scope": "Outside verified Gate A scope or manual observation pending"
+    },
+    {
+      "id": "QA-01",
+      "status": "PARTIAL",
+      "scope": "Unknown IPC, schema and runtime isolation tested; not an exhaustive sender/frame attack suite."
+    },
+    {
+      "id": "QA-02",
+      "status": "NOT_RUN",
+      "scope": "Outside verified Gate A scope or manual observation pending"
+    },
+    {
+      "id": "QA-03",
+      "status": "NOT_RUN",
+      "scope": "Outside verified Gate A scope or manual observation pending"
+    },
+    {
+      "id": "QA-04",
+      "status": "PARTIAL",
+      "scope": "Commands run in existing working tree using lockfile; not a fresh checkout/npm ci."
+    },
+    {
+      "id": "QA-05",
+      "status": "PARTIAL",
+      "scope": "Current-candidate scanner passed; historical findings remain."
+    },
+    {
+      "id": "QA-06",
+      "status": "PARTIAL",
+      "scope": "Source hashes and baseline artifact hashes fixed; no new Notion observation."
+    }
+  ]
+}

@@ -1,0 +1,56 @@
+{
+  "kind": "metadata-only-derivative",
+  "source": {
+    "path": "research/evidence/rea-capture_browser_scenario.json",
+    "sha256": "b3da0f2538904130973a2ccc300c62ca7c665fd7efad446c717cc43c7fda75f3",
+    "availability": "local-only; excluded from review tree"
+  },
+  "evidenceId": "ev_615aba6cf5debae7836bc23bd5fec3e0173d996eb177586697f43cbabfe45133",
+  "provider": {
+    "id": "rea-playwright-browser-scenario",
+    "name": "REA Playwright browser scenario capture provider",
+    "version": "1"
+  },
+  "operation": "capture_browser_scenario",
+  "startUrl": {
+    "url": "https://www.notion.com/help/writing-and-editing-basics",
+    "query": []
+  },
+  "scenarioSha256": "e51324f8057c747ced3f4e70b4d983006b3a037c12ca7ef57f1c778a39d6b68a",
+  "captureKinds": [
+    "url",
+    "accessibility",
+    "dom"
+  ],
+  "initialStorageCounts": {
+    "cookies": 0,
+    "localStorage": 0,
+    "sessionStorage": 0
+  },
+  "declaredSecretCount": 0,
+  "browser": {
+    "mode": "launch",
+    "process_ownership": "provider-owned",
+    "cleanup": "terminated-owned-process",
+    "product": "Chromium",
+    "version": "155.0.8059.85"
+  },
+  "completeness": {
+    "status": "complete",
+    "equality_eligible": true,
+    "missing_sections": [],
+    "truncated_sections": []
+  },
+  "limitations": [
+    "Event sequence records provider receipt order; simultaneous browser causality is not inferred.",
+    "Network content is retained only when selected; Playwright response-body bytes are API results and are not guaranteed to match wire bytes.",
+    "Request bytes are limited to what Playwright exposes; not_exposed does not establish body absence or multipart file coverage.",
+    "Network content reads settle within 5 seconds each and the observer does not request bodies from unfinished responses.",
+    "Playwright scenario events do not expose request initiator stacks; receipt order does not prove causality.",
+    "Storage values are hashed only after declared-secret redaction."
+  ],
+  "omitted": [
+    "All captured HTML, accessibility text, events, page assets and code; no private Notion page captured."
+  ],
+  "scope": "Completeness applies to selected public-page capture, not Notion behavior or internals."
+}

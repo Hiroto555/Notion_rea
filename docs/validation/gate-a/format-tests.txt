@@ -1,0 +1,2 @@
+tests/gate-a.test.ts 131ms
+tests/e2e/gate-a.spec.ts 80ms

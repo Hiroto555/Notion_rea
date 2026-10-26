@@ -1,0 +1,14 @@
+
+> folio-desktop@0.1.0 test
+> vitest run
+
+
+ RUN  v3.2.7 <PROJECT_ROOT>
+
+ ✓ tests/store.test.ts (13 tests) 142ms
+
+ Test Files  1 passed (1)
+      Tests  13 passed (13)
+   Start at  20:40:21
+   Duration  602ms (transform 68ms, setup 0ms, collect 95ms, tests 142ms, environment 0ms, prepare 165ms)
+

@@ -1,0 +1,35 @@
+{
+  "baseline_commit": "abb1e3131d1b4cab6aee4560c6d8aa819859bc29",
+  "files": [
+    {
+      "path": "README_REVIEW.md",
+      "sha256": "c92cf3a7bfe8936ef0f2905feaa8c311a3d9e04d3159a5f11cfd35e1ae0dd462",
+      "bytes": 826
+    },
+    {
+      "path": "Folio_Audit_2026-10-26.md",
+      "sha256": "335fcb01988f8d879430a23d3e53b1ae2e4252c9f0f74babe1f17d5db8edf7a4",
+      "bytes": 37172
+    },
+    {
+      "path": "Codex_Folio_Improvement_Prompt.txt",
+      "sha256": "0b0d00357a99dcfb25e1fefc382704aa1406b6c1fbc0f655b3d84c1a303d961c",
+      "bytes": 10387
+    },
+    {
+      "path": "Folio_Acceptance_Catalog.json",
+      "sha256": "a4e8b8c8dbf750317d4b37beecc278596c5474f8c7e8c1608778eff7e5e2e314",
+      "bytes": 33444
+    },
+    {
+      "path": "audit_probes.mjs",
+      "sha256": "fd3dc5d9f4512f8211c500550bb21af98918d47806ef52ac8ac3d978ca74a8a3",
+      "bytes": 10205
+    },
+    {
+      "path": "audit_probe_results.json",
+      "sha256": "0d30caa22525023959c7bcb996243623bf2809e9635704ad0c56ffaf0961d833",
+      "bytes": 5513
+    }
+  ]
+}

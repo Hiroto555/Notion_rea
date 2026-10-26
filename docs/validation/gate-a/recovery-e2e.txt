@@ -1,0 +1,47 @@
+
+Running 4 tests using 1 worker
+
+(node:6232) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓  1 tests/e2e/gate-a.spec.ts:403:1 › F07 invalid IPC is rejected and unknown stored schema is read-only with exact source export (2.4s)
+  ✓  2 tests/e2e/gate-a.spec.ts:446:1 › F11 failed write exports pending patch and persisted state, then recovers a separate page (4.1s)
+  ✓  3 tests/e2e/gate-a.spec.ts:510:1 › F03 default userData path and pre-ready directory failure are observable without touching user data (6.8s)
+  ✘  4 tests/e2e/gate-a.spec.ts:563:1 › F07 malformed JSON opens an error screen with backup, and null doc never mounts editor (6.6s)
+
+
+  1) tests/e2e/gate-a.spec.ts:563:1 › F07 malformed JSON opens an error screen with backup, and null doc never mounts editor 
+
+    Error: expect(locator).toContainText(expected) failed
+
+    Locator: getByRole('alert')
+    Expected substring: "原本を保全"
+    Timeout: 5000ms
+    Error: element(s) not found
+
+    Call log:
+      - Expect "toContainText" getByRole('alert') with timeout 5000ms
+      - waiting for getByRole('alert')
+
+
+      572 |   db.close();
+      573 |   await window.reload();
+    > 574 |   await expect(window.getByRole("alert")).toContainText("原本を保全");
+          |                                           ^
+      575 |   await expect(window.locator(".folio-editor")).toHaveCount(0);
+      576 |   db = new DatabaseSync(join(folder, "workspace.sqlite"));
+      577 |   db.prepare("UPDATE pages SET data=? WHERE id=?").run(
+        at <PROJECT_ROOT>/tests/e2e/gate-a.spec.ts:574:43
+
+    Error Context: output/playwright/results/gate-a-F07-malformed-JSON--dec72-ull-doc-never-mounts-editor/error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    output/playwright/results/gate-a-F07-malformed-JSON--dec72-ull-doc-never-mounts-editor/trace.zip
+    Usage:
+
+        npx playwright show-trace output/playwright/results/gate-a-F07-malformed-JSON--dec72-ull-doc-never-mounts-editor/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  1 failed
+    tests/e2e/gate-a.spec.ts:563:1 › F07 malformed JSON opens an error screen with backup, and null doc never mounts editor 
+  3 passed (20.5s)

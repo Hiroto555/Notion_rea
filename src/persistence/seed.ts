@@ -5,7 +5,8 @@ const p = (text: string): Doc => ({
   content: [{ type: "text", text }],
 });
 export function seed(s: Store) {
-  if (s.pages().length) return;
+  if (Number(s.db.prepare("SELECT count(*) AS n FROM pages").get()?.n) > 0)
+    return;
   const home = s.create(null, "page", "ようこそ、Folioへ");
   s.update(home.id, 0, {
     icon: "✳️",

@@ -1,0 +1,7 @@
+{
+  "baseline": "abb1e3131d1b4cab6aee4560c6d8aa819859bc29",
+  "method": "Execute dataDir declaration extracted from baseline source; mocked app path only, no app installation",
+  "expected": "userData/workspace",
+  "actual": "/.folio-data",
+  "passed": false
+}

@@ -1,0 +1,65 @@
+
+ RUN  v3.2.7 <PROJECT_ROOT>
+
+ ❯ tests/gate-a.test.ts (6 tests | 6 failed) 28ms
+   × Gate A actual storage regressions > F02 inline formatting preserves words, hardBreak and paragraph boundaries are newlines 5ms
+     → expected '不 動 産  soft ware next' to be '不動産\nsoftware\nnext' // Object.is equality
+   × Gate A actual storage regressions > F04 database row deletion and property changes have durable restorable snapshots 8ms
+     → expected undefined to be defined
+   × Gate A actual storage regressions > F07 rejects doc text before persistence 4ms
+     → expected true to be false // Object.is equality
+   × Gate A actual storage regressions > F07 rejects list paragraph before persistence 3ms
+     → expected true to be false // Object.is equality
+   × Gate A actual storage regressions > F07 rejects heading attribute before persistence 3ms
+     → expected true to be false // Object.is equality
+   × Gate A actual storage regressions > F07 rejects future schema before persistence 4ms
+     → expected true to be false // Object.is equality
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 6 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/gate-a.test.ts > Gate A actual storage regressions > F02 inline formatting preserves words, hardBreak and paragraph boundaries are newlines
+AssertionError: expected '不 動 産  soft ware next' to be '不動産\nsoftware\nnext' // Object.is equality
+
+- Expected
++ Received
+
+- 不動産
+- software
+- next
++ 不 動 産  soft ware next
+
+ ❯ tests/gate-a.test.ts:11:122
+
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/6]⎯
+
+ FAIL  tests/gate-a.test.ts > Gate A actual storage regressions > F04 database row deletion and property changes have durable restorable snapshots
+AssertionError: expected undefined to be defined
+ ❯ tests/gate-a.test.ts:12:438
+
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/6]⎯
+
+ FAIL  tests/gate-a.test.ts > Gate A actual storage regressions > F07 rejects doc text before persistence
+ FAIL  tests/gate-a.test.ts > Gate A actual storage regressions > F07 rejects list paragraph before persistence
+ FAIL  tests/gate-a.test.ts > Gate A actual storage regressions > F07 rejects heading attribute before persistence
+ FAIL  tests/gate-a.test.ts > Gate A actual storage regressions > F07 rejects future schema before persistence
+AssertionError: expected true to be false // Object.is equality
+
+- Expected
++ Received
+
+- false
++ true
+
+ ❯ tests/gate-a.test.ts:13:521
+
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/6]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  6 failed (6)
+   Start at  21:48:07
+   Duration  501ms (transform 56ms, setup 0ms, collect 70ms, tests 28ms, environment 0ms, prepare 153ms)
+

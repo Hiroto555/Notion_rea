@@ -1,73 +1,17 @@
 import { z } from "zod";
+import { validDocument } from "./validation";
+import { parseAssetURL } from "./assets";
 export type Doc = {
   type: string;
+  schemaVersion?: number;
   attrs?: Record<string, unknown>;
   text?: string;
   marks?: { type: string; attrs?: Record<string, unknown> }[];
   content?: Doc[];
 };
 
-// Bounded validation at the process boundary, before untrusted JSON reaches
-// ProseMirror or the recursive text indexer.
-export function isDocument(value: unknown): value is Doc {
-  const types = new Set([
-    "doc",
-    "text",
-    "paragraph",
-    "heading",
-    "bulletList",
-    "orderedList",
-    "listItem",
-    "taskList",
-    "taskItem",
-    "blockquote",
-    "codeBlock",
-    "horizontalRule",
-    "hardBreak",
-    "image",
-    "details",
-    "detailsSummary",
-    "detailsContent",
-  ]);
-  const marks = new Set([
-    "bold",
-    "italic",
-    "strike",
-    "underline",
-    "code",
-    "link",
-  ]);
-  if (!value || typeof value !== "object" || (value as Doc).type !== "doc")
-    return false;
-  const stack: { node: unknown; depth: number }[] = [{ node: value, depth: 0 }];
-  let count = 0;
-  while (stack.length) {
-    const { node, depth } = stack.pop()!;
-    if (++count > 100000 || depth > 100 || !node || typeof node !== "object")
-      return false;
-    const n = node as Doc;
-    if (!types.has(n.type) || (depth > 0 && n.type === "doc")) return false;
-    if (n.type === "text" && (typeof n.text !== "string" || !n.text.length))
-      return false;
-    if (n.text !== undefined && typeof n.text !== "string") return false;
-    if (
-      n.attrs !== undefined &&
-      (!n.attrs || typeof n.attrs !== "object" || Array.isArray(n.attrs))
-    )
-      return false;
-    if (
-      n.marks &&
-      (!Array.isArray(n.marks) || n.marks.some((m) => !m || !marks.has(m.type)))
-    )
-      return false;
-    if (n.content !== undefined) {
-      if (!Array.isArray(n.content)) return false;
-      for (const child of n.content)
-        stack.push({ node: child, depth: depth + 1 });
-    }
-  }
-  return true;
-}
+export const isDocument = (value: unknown): value is Doc =>
+  validDocument(value);
 export type Property = {
   id: string;
   name: string;
@@ -88,6 +32,7 @@ export type DatabaseData = {
 };
 export type Page = {
   id: string;
+  schemaVersion?: number;
   parentId: string | null;
   title: string;
   icon: string;
@@ -101,6 +46,7 @@ export type Page = {
   updatedAt: number;
   revision: number;
   deletedAt: number | null;
+  documentError?: string;
 };
 export type PagePatch = Partial<
   Pick<Page, "title" | "icon" | "cover" | "doc" | "database" | "favorite">
@@ -112,6 +58,7 @@ export type Version = {
   createdAt: number;
   title: string;
   doc: Doc;
+  database?: DatabaseData | null;
 };
 export const requestSchema = z.discriminatedUnion("type", [
   z.object({ type: z.literal("load") }),
@@ -176,6 +123,8 @@ export const requestSchema = z.discriminatedUnion("type", [
   }),
   z.object({ type: z.literal("search"), query: z.string().max(500) }),
   z.object({ type: z.literal("versions"), id: z.string() }),
+  z.object({ type: z.literal("pageSource"), id: z.string() }),
+  z.object({ type: z.literal("recover") }),
   z.object({
     type: z.literal("restoreVersion"),
     id: z.string(),
@@ -185,7 +134,9 @@ export const requestSchema = z.discriminatedUnion("type", [
   z.object({ type: z.literal("attach") }),
   z.object({
     type: z.literal("downloadAttachment"),
-    url: z.string().regex(/^folio-asset:\/\/[a-f0-9-]{36}\.[a-z0-9]{1,12}\/?$/),
+    url: z
+      .string()
+      .refine((value) => parseAssetURL(value) !== null, "Invalid asset URL"),
   }),
   z.object({
     type: z.literal("openExternal"),
@@ -215,8 +166,23 @@ export const blankDoc = (): Doc => ({
   type: "doc",
   content: [{ type: "paragraph" }],
 });
-export const textOf = (node: Doc): string =>
-  node.text ?? node.content?.map(textOf).join(" ") ?? "";
+// Inline marks never change text. Hard breaks and block boundaries are one LF.
+export function textOf(node: Doc): string {
+  if (!node || typeof node !== "object") return "";
+  if (node.type === "text")
+    return typeof node.text === "string" ? node.text : "";
+  if (node.type === "hardBreak") return "\n";
+  if (!Array.isArray(node.content)) return "";
+  return node.content
+    .map(textOf)
+    .join(
+      ["paragraph", "heading", "codeBlock", "detailsSummary"].includes(
+        node.type,
+      )
+        ? ""
+        : "\n",
+    );
+}
 export const emptyDatabase = (): DatabaseData => ({
   properties: [
     {

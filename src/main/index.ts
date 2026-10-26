@@ -17,29 +17,42 @@ import {
   writeFileSync,
   readFileSync,
   statSync,
+  existsSync,
 } from "node:fs";
 import { pathToFileURL } from "node:url";
 import { randomUUID } from "node:crypto";
 import { Store } from "../persistence/store";
 import { seed } from "../persistence/seed";
+import { attachFile, resolveAsset } from "../persistence/assets";
+import { workspacePath, migrateWorkspace } from "../persistence/workspace";
 import { requestSchema } from "../shared/types";
-const dataDir = resolve(
-  process.env.FOLIO_DATA_DIR ||
-    (app.isPackaged
-      ? join(dirname(process.execPath), "../../../..", ".folio-data")
-      : join(app.getAppPath(), ".folio-data")),
-);
-mkdirSync(dataDir, { recursive: true });
-app.setPath("userData", dataDir);
-app.setPath("sessionData", join(dataDir, "session"));
 app.setName("Folio");
+const userData = join(app.getPath("appData"), "Folio");
+const dataDir = workspacePath(userData, process.env.FOLIO_DATA_DIR);
+let startupError: unknown;
+try {
+  const profile = process.env.FOLIO_DATA_DIR ? dataDir : userData;
+  mkdirSync(profile, { recursive: true });
+  app.setPath("userData", profile);
+  app.setPath("sessionData", join(profile, "session"));
+} catch (e) {
+  startupError = e;
+}
 protocol.registerSchemesAsPrivileged([
   {
     scheme: "folio-asset",
     privileges: { standard: true, secure: true, supportFetchAPI: true },
   },
 ]);
-if (!app.requestSingleInstanceLock()) {
+if (startupError) {
+  void app.whenReady().then(() => {
+    dialog.showErrorBox(
+      "Folioを起動できません",
+      "保存先を作成できません: " + dataDir + "\n" + String(startupError),
+    );
+    app.quit();
+  });
+} else if (!app.requestSingleInstanceLock()) {
   app.quit();
 } else {
   let win: BrowserWindow | null = null,
@@ -50,17 +63,69 @@ if (!app.requestSingleInstanceLock()) {
   });
   app
     .whenReady()
-    .then(() => {
+    .then(async () => {
+      if (!process.env.FOLIO_DATA_DIR && !existsSync(dataDir)) {
+        // Legacy paths are discovery candidates only, never new write targets.
+        const legacy = app.isPackaged
+          ? resolve(dirname(process.execPath), "../../../..", ".folio-data")
+          : join(app.getAppPath(), ".folio-data");
+        if (
+          legacy !== "/.folio-data" &&
+          existsSync(join(legacy, "workspace.sqlite"))
+        ) {
+          const choice = await dialog.showMessageBox({
+            type: "question",
+            title: "以前のFolioデータ",
+            message: "以前のワークスペースが見つかりました",
+            detail:
+              legacy +
+              "\n原本を残し、バックアップ付きで新しい保存先へコピーできます。",
+            buttons: [
+              "コピーして開く",
+              "別のフォルダを選ぶ",
+              "新規で始める",
+              "終了",
+            ],
+            defaultId: 0,
+            cancelId: 3,
+          });
+          if (choice.response === 3) {
+            app.quit();
+            return;
+          }
+          if (choice.response === 0) migrateWorkspace(legacy, dataDir);
+          if (choice.response === 1) {
+            const selected = await dialog.showOpenDialog({
+              properties: ["openDirectory"],
+            });
+            if (selected.canceled) {
+              app.quit();
+              return;
+            }
+            migrateWorkspace(selected.filePaths[0], dataDir);
+          }
+        }
+      }
+      mkdirSync(dataDir, { recursive: true });
       store = new Store(join(dataDir, "workspace.sqlite"));
       seed(store);
       const assets = join(dataDir, "assets");
       mkdirSync(assets, { recursive: true });
-      protocol.handle("folio-asset", (req) => {
-        const u = new URL(req.url);
-        const id = u.hostname;
-        if (!/^[a-f0-9-]{36}\.(png|jpg|jpeg|gif|webp)$/.test(id))
+      protocol.handle("folio-asset", async (req) => {
+        try {
+          const asset = resolveAsset(store.db, assets, req.url);
+          const response = await net.fetch(
+            pathToFileURL(asset.path).toString(),
+          );
+          return new Response(response.body, {
+            headers: {
+              "Content-Type": asset.mime,
+              "X-Content-Type-Options": "nosniff",
+            },
+          });
+        } catch {
           return new Response("Not found", { status: 404 });
-        return net.fetch(pathToFileURL(join(assets, id)).toString());
+        }
       });
       session.defaultSession.setPermissionRequestHandler(
         (_wc, _permission, callback) => callback(false),
@@ -86,12 +151,12 @@ if (!app.requestSingleInstanceLock()) {
           return true;
         }
         if (req.type === "downloadAttachment") {
-          const id = new URL(req.url).hostname;
+          const asset = resolveAsset(store.db, assets, req.url);
           const result = await dialog.showSaveDialog(win, {
-            defaultPath: join(dataDir, id),
+            defaultPath: join(dataDir, basename(asset.name)),
           });
           if (result.canceled || !result.filePath) return null;
-          copyFileSync(join(assets, id), result.filePath);
+          copyFileSync(asset.path, result.filePath);
           return result.filePath;
         }
         if (req.type === "backup") {
@@ -117,18 +182,18 @@ if (!app.requestSingleInstanceLock()) {
           });
           if (result.canceled) return null;
           const file = result.filePaths[0];
-          if (statSync(file).size > 20_000_000)
-            throw new Error("添付の上限は20MBです");
-          const extension = extname(file).toLowerCase(),
-            id = randomUUID() + extension;
-          copyFileSync(file, join(assets, id));
-          return {
-            name: basename(file),
-            url: "folio-asset://" + id,
-            image: [".png", ".jpg", ".jpeg", ".gif", ".webp"].includes(
-              extension,
-            ),
-          };
+          return attachFile(store.db, assets, file);
+        }
+        if (req.type === "recover") {
+          const selected = await dialog.showOpenDialog(win, {
+            properties: ["openFile"],
+            filters: [{ name: "Folio recovery", extensions: ["json"] }],
+          });
+          if (selected.canceled) return null;
+          const path = selected.filePaths[0];
+          if (statSync(path).size > 30_000_000)
+            throw new Error("復旧ファイルが大きすぎます");
+          return store.recover(JSON.parse(readFileSync(path, "utf8")));
         }
         if (req.type === "export") {
           const result = await dialog.showSaveDialog(win, {

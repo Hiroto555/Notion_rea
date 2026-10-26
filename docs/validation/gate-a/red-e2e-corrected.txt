@@ -1,0 +1,129 @@
+
+Running 3 tests using 1 worker
+
+(node:95865) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✘  1 tests/e2e/gate-a.spec.ts:11:1 › F01 same-page sidebar/search reselection keeps editor, attachment, link and exports (2.9s)
+(node:95949) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✘  2 tests/e2e/gate-a.spec.ts:25:1 › F06 synthetic composing Enter does not navigate search or link (not physical IME) (6.7s)
+(node:96155) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✘  3 tests/e2e/gate-a.spec.ts:30:1 › F11 editing during move and delayed load keeps local patch and durable revision (1.1m)
+Worker teardown timeout of 60000ms exceeded.
+
+Failed worker ran 1 test:
+tests/e2e/gate-a.spec.ts:30:1 › F11 editing during move and delayed load keeps local patch and durable revision
+
+
+  1) tests/e2e/gate-a.spec.ts:11:1 › F01 same-page sidebar/search reselection keeps editor, attachment, link and exports 
+
+    Error: expect(received).toContain(expected) // indexOf
+
+    Expected substring: "Original body"
+    Received string:    "# Gate A original·
+    null"
+
+      15 |  for(let i=0;i<5;i++) await window.locator('.page-tree-label').filter({hasText:'Gate A original'}).click();
+      16 |  await window.keyboard.press('Meta+p'); await window.getByLabel('検索キーワード').fill('Gate A original'); await window.locator('.search-results button').first().click();
+    > 17 |  const md=join(folder,'export.md'); await saveDialog(md); await window.getByLabel('ページメニュー',{exact:true}).click(); await window.getByRole('button',{name:'Markdownを書き出す',exact:true}).click(); await expect.poll(()=>existsSync(md)).toBe(true); expect(readFileSync(md,'utf8')).toContain('Original body');
+         |                                                                                                                                                                                                                                                                                  ^
+      18 |  expect(await window.locator('.folio-editor').evaluate(el=>el===(globalThis as any).originalEditorDOM)).toBe(true);
+      19 |  await window.getByLabel('元に戻す',{exact:true}).click(); await expect(window.locator('.folio-editor')).not.toContainText('Original body'); await window.getByLabel('やり直す',{exact:true}).click(); await expect(window.locator('.folio-editor')).toContainText('Original body');
+      20 |  const file=join(folder,'note.txt');writeFileSync(file,'attachment');await openDialog(file);await window.getByRole('button',{name:'添付',exact:true}).click();await expect(window.locator('.folio-editor')).toContainText('note.txt');
+        at <PROJECT_ROOT>/tests/e2e/gate-a.spec.ts:17:274
+
+    Error Context: output/playwright/results/gate-a-F01-same-page-sideb-e8660-attachment-link-and-exports/error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    output/playwright/results/gate-a-F01-same-page-sideb-e8660-attachment-link-and-exports/trace.zip
+    Usage:
+
+        npx playwright show-trace output/playwright/results/gate-a-F01-same-page-sideb-e8660-attachment-link-and-exports/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  2) tests/e2e/gate-a.spec.ts:25:1 › F06 synthetic composing Enter does not navigate search or link (not physical IME) 
+
+    Error: expect(locator).toBeVisible() failed
+
+    Locator: getByRole('dialog')
+    Expected: visible
+    Timeout: 5000ms
+    Error: element(s) not found
+
+    Call log:
+      - Expect "toBeVisible" getByRole('dialog') with timeout 5000ms
+      - waiting for getByRole('dialog')
+
+
+      26 |  for(const mode of ['search','link']) { if(mode==='search') await window.keyboard.press('Meta+p'); else await window.getByTitle('ページへのリンク',{exact:true}).click(); await window.getByLabel('検索キーワード').fill('アイデアノート');await expect(window.locator('.search-results button')).toHaveCount(1);
+      27 |  await window.getByLabel('検索キーワード').evaluate(el=>{el.dispatchEvent(new CompositionEvent('compositionstart',{bubbles:true})); el.dispatchEvent(new KeyboardEvent('keydown',{key:'Enter',isComposing:true,bubbles:true,cancelable:true}));});
+    > 28 |  await expect(window.getByRole('dialog')).toBeVisible();await window.getByLabel('検索キーワード').evaluate(el=>el.dispatchEvent(new CompositionEvent('compositionend',{bubbles:true}))); await window.keyboard.press('Escape'); }
+         |                                           ^
+      29 | });
+      30 | test('F11 editing during move and delayed load keeps local patch and durable revision',async()=>{
+      31 |  await window.keyboard.press('Meta+n');await window.getByLabel('ページタイトル',{exact:true}).fill('Before move');await saved();
+        at <PROJECT_ROOT>/tests/e2e/gate-a.spec.ts:28:43
+
+    Error Context: output/playwright/results/gate-a-F06-synthetic-compo-60ec9-h-or-link-not-physical-IME-/error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    output/playwright/results/gate-a-F06-synthetic-compo-60ec9-h-or-link-not-physical-IME-/trace.zip
+    Usage:
+
+        npx playwright show-trace output/playwright/results/gate-a-F06-synthetic-compo-60ec9-h-or-link-not-physical-IME-/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  3) tests/e2e/gate-a.spec.ts:30:1 › F11 editing during move and delayed load keeps local patch and durable revision 
+
+    Error: expect(locator).toHaveValue(expected) failed
+
+    Locator:  getByLabel('ページタイトル', { exact: true })
+    Expected: "Local edit during move"
+    Received: "Before move"
+    Timeout:  5000ms
+
+    Call log:
+      - Expect "toHaveValue" getByLabel('ページタイトル', { exact: true }) with timeout 5000ms
+      - waiting for getByLabel('ページタイトル', { exact: true })
+        14 × locator resolved to <input placeholder="無題" class="page-title" value="Before move" aria-label="ページタイトル"/>
+           - unexpected value "Before move"
+
+
+      33 |  await window.locator('.page-tree-row').filter({has:window.locator('.page-tree-label',{hasText:'Before move'})}).dragTo(window.locator('.page-tree-row').filter({has:window.locator('.page-tree-label',{hasText:'アイデアノート'})}));
+      34 |  await expect.poll(()=>app.evaluate(()=>(globalThis as any).heldLoad)).toBe(true);await window.getByLabel('ページタイトル',{exact:true}).fill('Local edit during move');
+    > 35 |  await app.evaluate(()=>(globalThis as any).releaseLoad()); await expect(window.getByLabel('ページタイトル',{exact:true})).toHaveValue('Local edit during move');await saved();
+         |                                                                                                                     ^
+      36 |  const p=await window.evaluate(async()=>{const s=await window.folio.request<any>({type:'load'});return s.pages.find((p:any)=>p.title==='Local edit during move');});expect(p?.parentId).toBeTruthy();await app.close();await launch();await expect(window.getByLabel('ページタイトル',{exact:true})).toHaveValue('Local edit during move');
+      37 | });
+      38 |
+        at <PROJECT_ROOT>/tests/e2e/gate-a.spec.ts:35:117
+
+    Test timeout of 60000ms exceeded while running "afterEach" hook.
+
+       5 | async function launch() { app=await electron.launch({args:[resolve('dist/main.cjs')],env:{...process.env,FOLIO_DATA_DIR:folder}}); window=await app.firstWindow(); await window.waitForSelector('.page-title'); }
+       6 | test.beforeEach(async()=>{folder=mkdtempSync(resolve('output/gate-a-e2e-')); await launch();});
+    >  7 | test.afterEach(async()=>{await app?.close(); rmSync(folder,{recursive:true,force:true});});
+         |      ^
+       8 | async function saveDialog(path:string) { await app.evaluate(({dialog},p)=>{dialog.showSaveDialog=(async()=>({canceled:false,filePath:p})) as typeof dialog.showSaveDialog;},path); }
+       9 | async function openDialog(path:string) { await app.evaluate(({dialog},p)=>{dialog.showOpenDialog=(async()=>({canceled:false,filePaths:[p]})) as typeof dialog.showOpenDialog;},path); }
+      10 | async function saved() { await expect(window.locator('.save-state')).toHaveText('保存済み'); }
+        at <PROJECT_ROOT>/tests/e2e/gate-a.spec.ts:7:6
+
+    Error Context: output/playwright/results/gate-a-F11-editing-during--c372d--patch-and-durable-revision/error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    output/playwright/results/gate-a-F11-editing-during--c372d--patch-and-durable-revision/trace.zip
+    Usage:
+
+        npx playwright show-trace output/playwright/results/gate-a-F11-editing-during--c372d--patch-and-durable-revision/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  3 failed
+    tests/e2e/gate-a.spec.ts:11:1 › F01 same-page sidebar/search reselection keeps editor, attachment, link and exports 
+    tests/e2e/gate-a.spec.ts:25:1 › F06 synthetic composing Enter does not navigate search or link (not physical IME) 
+    tests/e2e/gate-a.spec.ts:30:1 › F11 editing during move and delayed load keeps local patch and durable revision 
+  1 error was not a part of any test, see above for details

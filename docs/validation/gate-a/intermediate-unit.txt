@@ -1,0 +1,41 @@
+
+ RUN  v3.2.7 <PROJECT_ROOT>
+
+ ❯ tests/gate-a.test.ts (6 tests | 5 failed) 45ms
+   ✓ Gate A actual storage regressions > F02 inline formatting preserves words, hardBreak and paragraph boundaries are newlines 12ms
+   × Gate A actual storage regressions > F04 database row deletion and property changes have durable restorable snapshots 7ms
+     → expected undefined to be defined
+   × Gate A actual storage regressions > F07 rejects doc text before persistence 8ms
+     → expected [Function] to throw an error
+   × Gate A actual storage regressions > F07 rejects list paragraph before persistence 6ms
+     → expected [Function] to throw an error
+   × Gate A actual storage regressions > F07 rejects heading attribute before persistence 5ms
+     → expected [Function] to throw an error
+   × Gate A actual storage regressions > F07 rejects future schema before persistence 6ms
+     → expected [Function] to throw an error
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 5 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/gate-a.test.ts > Gate A actual storage regressions > F04 database row deletion and property changes have durable restorable snapshots
+AssertionError: expected undefined to be defined
+ ❯ tests/gate-a.test.ts:12:438
+
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/5]⎯
+
+ FAIL  tests/gate-a.test.ts > Gate A actual storage regressions > F07 rejects doc text before persistence
+ FAIL  tests/gate-a.test.ts > Gate A actual storage regressions > F07 rejects list paragraph before persistence
+ FAIL  tests/gate-a.test.ts > Gate A actual storage regressions > F07 rejects heading attribute before persistence
+ FAIL  tests/gate-a.test.ts > Gate A actual storage regressions > F07 rejects future schema before persistence
+AssertionError: expected [Function] to throw an error
+ ❯ tests/gate-a.test.ts:13:591
+
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/5]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  5 failed | 1 passed (6)
+   Start at  21:50:01
+   Duration  1.69s (transform 85ms, setup 0ms, collect 266ms, tests 45ms, environment 0ms, prepare 685ms)
+

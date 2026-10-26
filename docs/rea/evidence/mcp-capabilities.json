@@ -1,0 +1,16 @@
+{
+  "kind": "selected-metadata-derivative",
+  "source": {
+    "path": "research/evidence/rea-tools.json",
+    "sha256": "4207c872e47a5f2bff494ae16d83df0cb527418c2a6430d4ca81a5baba7d5335",
+    "availability": "local-only; excluded from review tree"
+  },
+  "advertisedToolCount": 229,
+  "usedTools": [
+    "inspect_desktop_application",
+    "capture_browser_scenario",
+    "analyze_javascript_application"
+  ],
+  "omitted": "Full tool descriptions and schemas; see installed REA server for fresh capabilities.",
+  "scope": "Enumeration does not establish that every advertised analysis engine is installed or runnable."
+}

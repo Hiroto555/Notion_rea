@@ -1,0 +1,135 @@
+{
+  "baseline": "abb1e3131d1b4cab6aee4560c6d8aa819859bc29",
+  "runtime": "v22.16.0",
+  "scope": "transcribed source-logic excerpts only; not npm test, Playwright, Electron or Notion verification",
+  "probes": 14,
+  "confirmed": 14,
+  "results": [
+    {
+      "id": "P01",
+      "title": "Control: plain Japanese text",
+      "source": "https://github.com/Hiroto555/Notion_rea/blob/abb1e3131d1b4cab6aee4560c6d8aa819859bc29/src/shared/types.ts",
+      "status": "observation_confirmed",
+      "classification": "control",
+      "actual": "不動産"
+    },
+    {
+      "id": "P02",
+      "title": "Formatting splits a Japanese search term",
+      "source": "https://github.com/Hiroto555/Notion_rea/blob/abb1e3131d1b4cab6aee4560c6d8aa819859bc29/src/shared/types.ts",
+      "status": "observation_confirmed",
+      "classification": "defect",
+      "actual": "不 動 産",
+      "required": "不動産",
+      "searchMatches": false
+    },
+    {
+      "id": "P03",
+      "title": "Formatting splits an English word",
+      "source": "https://github.com/Hiroto555/Notion_rea/blob/abb1e3131d1b4cab6aee4560c6d8aa819859bc29/src/shared/types.ts",
+      "status": "observation_confirmed",
+      "classification": "defect",
+      "actual": "soft ware",
+      "required": "software"
+    },
+    {
+      "id": "P04",
+      "title": "Hard-break extraction does not preserve a newline",
+      "source": "https://github.com/Hiroto555/Notion_rea/blob/abb1e3131d1b4cab6aee4560c6d8aa819859bc29/src/shared/types.ts",
+      "status": "observation_confirmed",
+      "classification": "semantic_gap",
+      "actual": "A  B",
+      "desired": "A\nB"
+    },
+    {
+      "id": "P05",
+      "title": "Control: unknown node types are rejected",
+      "source": "https://github.com/Hiroto555/Notion_rea/blob/abb1e3131d1b4cab6aee4560c6d8aa819859bc29/src/shared/types.ts",
+      "status": "observation_confirmed",
+      "classification": "control",
+      "actual": false
+    },
+    {
+      "id": "P06",
+      "title": "Inline text directly below doc is accepted by boundary validator",
+      "source": "https://github.com/Hiroto555/Notion_rea/blob/abb1e3131d1b4cab6aee4560c6d8aa819859bc29/src/shared/types.ts",
+      "status": "observation_confirmed",
+      "classification": "validation_gap",
+      "actual": true,
+      "note": "Tiptap/ProseMirror schema check is not executed in this probe."
+    },
+    {
+      "id": "P07",
+      "title": "A paragraph directly below bulletList is accepted",
+      "source": "https://github.com/Hiroto555/Notion_rea/blob/abb1e3131d1b4cab6aee4560c6d8aa819859bc29/src/shared/types.ts",
+      "status": "observation_confirmed",
+      "classification": "validation_gap",
+      "actual": true,
+      "note": "Only the repository boundary validator is exercised."
+    },
+    {
+      "id": "P08",
+      "title": "Standard macOS installation path maps to root data directory",
+      "source": "https://github.com/Hiroto555/Notion_rea/blob/abb1e3131d1b4cab6aee4560c6d8aa819859bc29/src/main/index.ts",
+      "status": "observation_confirmed",
+      "classification": "defect",
+      "actual": "/.folio-data",
+      "note": "Path calculation only; no directory is created and macOS launch is not tested."
+    },
+    {
+      "id": "P09",
+      "title": "Control: current development package layout",
+      "source": "https://github.com/Hiroto555/Notion_rea/blob/abb1e3131d1b4cab6aee4560c6d8aa819859bc29/src/main/index.ts",
+      "status": "observation_confirmed",
+      "classification": "control",
+      "actual": "/project/release/.folio-data"
+    },
+    {
+      "id": "P10",
+      "title": "An extensionless attachment ID cannot be downloaded",
+      "source": "https://github.com/Hiroto555/Notion_rea/blob/abb1e3131d1b4cab6aee4560c6d8aa819859bc29/src/shared/types.ts",
+      "status": "observation_confirmed",
+      "classification": "defect",
+      "actual": false,
+      "inputShape": "folio-asset://<uuid>",
+      "note": "attach() permits this ID when extname(file) is empty."
+    },
+    {
+      "id": "P11",
+      "title": "An attachment with a non-ASCII extension cannot be downloaded",
+      "source": "https://github.com/Hiroto555/Notion_rea/blob/abb1e3131d1b4cab6aee4560c6d8aa819859bc29/src/shared/types.ts",
+      "status": "observation_confirmed",
+      "classification": "defect",
+      "actual": false,
+      "inputShape": "folio-asset://<uuid>.資料"
+    },
+    {
+      "id": "P12",
+      "title": "Database row deletion leaves no page-version recovery entry",
+      "source": "https://github.com/Hiroto555/Notion_rea/blob/abb1e3131d1b4cab6aee4560c6d8aa819859bc29/src/persistence/store.ts",
+      "status": "observation_confirmed",
+      "classification": "recovery_gap",
+      "actual": {
+        "rowCount": 0,
+        "versionCount": 0
+      },
+      "note": "Excerpt of real SQLite methods; no UI or complete application test."
+    },
+    {
+      "id": "P13",
+      "title": "Title-only updates create no version entry",
+      "source": "https://github.com/Hiroto555/Notion_rea/blob/abb1e3131d1b4cab6aee4560c6d8aa819859bc29/src/persistence/store.ts",
+      "status": "observation_confirmed",
+      "classification": "documented_limitation",
+      "actual": 0
+    },
+    {
+      "id": "P14",
+      "title": "Control: document updates do create version entries",
+      "source": "https://github.com/Hiroto555/Notion_rea/blob/abb1e3131d1b4cab6aee4560c6d8aa819859bc29/src/persistence/store.ts",
+      "status": "observation_confirmed",
+      "classification": "control",
+      "actual": 1
+    }
+  ]
+}

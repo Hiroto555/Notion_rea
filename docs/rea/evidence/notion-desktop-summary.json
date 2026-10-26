@@ -1,0 +1,92 @@
+{
+  "kind": "selected-redacted-derivative",
+  "source": {
+    "path": "research/evidence/rea-inspect_desktop_application.json",
+    "sha256": "94980bac05f27038db28699f61d6f01373dc0ca34e42a22bb8736736dc91423d",
+    "availability": "local-only; excluded from review tree"
+  },
+  "redactions": [
+    "MCP text duplicate, host identity, raw results, file locations, next-probe suggestions",
+    "Absolute project path replaced by <PROJECT_ROOT>."
+  ],
+  "evidenceId": "ev_723df25edd39242b27abd4305a93a7e4e4367ea265979f92e1b219a30fd29a89",
+  "provider": {
+    "id": "rea-analysis-view",
+    "name": "REA analysis view projection",
+    "version": "1"
+  },
+  "parentEvidenceId": "ev_efdcce9e825a3428cf20cc3fd037db397946581caeae55ab79e13f56db904b60",
+  "parentOperation": "inspect_desktop_application",
+  "parentDigest": "efdcce9e825a3428cf20cc3fd037db397946581caeae55ab79e13f56db904b60",
+  "viewDigest": "d9d5d4183c62f1af8b1d74be4a1fbf23fa92c861b949e7dda41eac5cc3a4d0b8",
+  "artifact": {
+    "path": "/Applications/Notion.app",
+    "sha256": "31bfaa2304f39457eef21b767079fc9454027625332d18274ba475d13372ddb0"
+  },
+  "viewCoverage": {
+    "status": "complete-within-view",
+    "examined": 300,
+    "total": 300,
+    "next_offset": null,
+    "exhausted": true
+  },
+  "summary": {
+    "root": {
+      "path": "/Applications/Notion.app",
+      "canonical_path": "/Applications/Notion.app",
+      "snapshot_sha256": "31bfaa2304f39457eef21b767079fc9454027625332d18274ba475d13372ddb0",
+      "identity_scope": "examined-metadata-and-read-ranges"
+    },
+    "source_coverage": {
+      "status": "partial",
+      "entries_examined": 300,
+      "files_probed": 9,
+      "bytes_read": 684,
+      "symlinks_not_followed": 5,
+      "special_entries_omitted": 0,
+      "limits": {
+        "max_entries": 300,
+        "max_probe_bytes": 4096
+      }
+    },
+    "available_counts": {
+      "files": 300,
+      "omissions": 0,
+      "candidates": 1,
+      "components": 0,
+      "next_probes": 2
+    },
+    "probe_issues": {
+      "file_count": 0,
+      "issue_count": 0,
+      "preview": [],
+      "preview_truncated": false
+    },
+    "candidates": [
+      {
+        "candidate_id": "dsc_4164f4daec31c0ce4fcaf644a6b039a91561c11276c4843172afd559a5968f62",
+        "family": "electron",
+        "confidence": "inferred",
+        "rationale": "An app.asar in a resources directory suggests an Electron application; archive validity and execution are unverified.",
+        "basis_file_count": 1,
+        "basis_path_preview": [
+          "Contents/Resources/app.asar"
+        ]
+      }
+    ],
+    "components": []
+  },
+  "limitations": [
+    "Runtime candidates and component markers do not establish loaded code, execution, or build correspondence.",
+    "The directory SHA-256 commits only to retained paths, omission kinds, available filesystem metadata and read-range digests, not to every file's contents. Unread bytes are unknown.",
+    "Special-entry payloads are not read. Their paths and kinds are retained; other special-entry metadata is unavailable in this report.",
+    "Child symlinks are not followed. Executable section-embedded PCKs without a trailer and encrypted contents remain unexamined.",
+    "This is a sequence of stable entry observations, not an atomic snapshot of the entire directory.",
+    "Unity reference decoding stops after a witness in each Data/Managed directory; other assemblies' references are unexamined. Header facts remain per-file.",
+    "Directory traversal reached max_entries; unvisited paths and candidate families remain unknown."
+  ],
+  "unknowns": [
+    "Runtime behavior and unread bytes remain unknown.",
+    "Source inspection is partial; an exhausted page does not establish absence."
+  ]
+}

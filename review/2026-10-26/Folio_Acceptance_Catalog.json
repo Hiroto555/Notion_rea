@@ -1,0 +1,899 @@
+{
+  "baseline_commit": "abb1e3131d1b4cab6aee4560c6d8aa819859bc29",
+  "created_date": "2026-10-26",
+  "purpose": "Proposed acceptance catalog; these cases were NOT executed in this review.",
+  "cases": [
+    {
+      "id": "REG-01",
+      "group": "REG",
+      "scenario": "現在ページをサイドバーから5回再選択",
+      "expected": "添付/リンク/exportが動き、Undoと選択を不要に初期化しない",
+      "related_findings": [
+        "F01"
+      ],
+      "reference_basis": "Folio品質要件",
+      "validation_mode": "automated",
+      "status": "NOT_RUN",
+      "note": "提案する受け入れテスト。今回の抜粋プローブや原リポジトリの実行結果と混同しない。"
+    },
+    {
+      "id": "REG-02",
+      "group": "REG",
+      "scenario": "現在ページを検索から再選択してMarkdown export",
+      "expected": "元の本文が出力され、nullが混入しない",
+      "related_findings": [
+        "F01"
+      ],
+      "reference_basis": "Folio品質要件",
+      "validation_mode": "automated",
+      "status": "NOT_RUN",
+      "note": "提案する受け入れテスト。今回の抜粋プローブや原リポジトリの実行結果と混同しない。"
+    },
+    {
+      "id": "REG-03",
+      "group": "REG",
+      "scenario": "部分太字の「不動産」を全体検索",
+      "expected": "書式なし文書と同じ一致結果",
+      "related_findings": [
+        "F02"
+      ],
+      "reference_basis": "Folio品質要件",
+      "validation_mode": "automated",
+      "status": "NOT_RUN",
+      "note": "提案する受け入れテスト。今回の抜粋プローブや原リポジトリの実行結果と混同しない。"
+    },
+    {
+      "id": "REG-04",
+      "group": "REG",
+      "scenario": "soft＋太字wareの検索",
+      "expected": "softwareに一致",
+      "related_findings": [
+        "F02"
+      ],
+      "reference_basis": "Folio品質要件",
+      "validation_mode": "automated",
+      "status": "NOT_RUN",
+      "note": "提案する受け入れテスト。今回の抜粋プローブや原リポジトリの実行結果と混同しない。"
+    },
+    {
+      "id": "REG-05",
+      "group": "REG",
+      "scenario": "標準Applicationsへ配置した保存パス",
+      "expected": "ルート直下でなくユーザー固有のデータ領域",
+      "related_findings": [
+        "F03"
+      ],
+      "reference_basis": "Folio品質要件",
+      "validation_mode": "automated",
+      "status": "NOT_RUN",
+      "note": "提案する受け入れテスト。今回の抜粋プローブや原リポジトリの実行結果と混同しない。"
+    },
+    {
+      "id": "REG-06",
+      "group": "REG",
+      "scenario": "旧releaseデータの移行",
+      "expected": "本文/DB/添付を保持、移行前バックアップから復元可能",
+      "related_findings": [
+        "F03"
+      ],
+      "reference_basis": "Folio品質要件",
+      "validation_mode": "automated",
+      "status": "NOT_RUN",
+      "note": "提案する受け入れテスト。今回の抜粋プローブや原リポジトリの実行結果と混同しない。"
+    },
+    {
+      "id": "REG-07",
+      "group": "REG",
+      "scenario": "拡張子なし添付の取り出し",
+      "expected": "元ファイルと同一バイト",
+      "related_findings": [
+        "F05"
+      ],
+      "reference_basis": "Folio品質要件",
+      "validation_mode": "automated",
+      "status": "NOT_RUN",
+      "note": "提案する受け入れテスト。今回の抜粋プローブや原リポジトリの実行結果と混同しない。"
+    },
+    {
+      "id": "REG-08",
+      "group": "REG",
+      "scenario": "日本語/長い拡張子の添付",
+      "expected": "受理したファイルは取り出せる",
+      "related_findings": [
+        "F05"
+      ],
+      "reference_basis": "Folio品質要件",
+      "validation_mode": "automated",
+      "status": "NOT_RUN",
+      "note": "提案する受け入れテスト。今回の抜粋プローブや原リポジトリの実行結果と混同しない。"
+    },
+    {
+      "id": "REG-09",
+      "group": "REG",
+      "scenario": "doc直下textを保存要求",
+      "expected": "保存前に拒否し既存文書を保持",
+      "related_findings": [
+        "F07"
+      ],
+      "reference_basis": "Folio品質要件",
+      "validation_mode": "automated",
+      "status": "NOT_RUN",
+      "note": "提案する受け入れテスト。今回の抜粋プローブや原リポジトリの実行結果と混同しない。"
+    },
+    {
+      "id": "REG-10",
+      "group": "REG",
+      "scenario": "bulletList直下paragraphを保存要求",
+      "expected": "共有schemaに基づき拒否",
+      "related_findings": [
+        "F07"
+      ],
+      "reference_basis": "Folio品質要件",
+      "validation_mode": "automated",
+      "status": "NOT_RUN",
+      "note": "提案する受け入れテスト。今回の抜粋プローブや原リポジトリの実行結果と混同しない。"
+    },
+    {
+      "id": "REG-11",
+      "group": "REG",
+      "scenario": "DB行を削除してUndo",
+      "expected": "全値と本文が復元",
+      "related_findings": [
+        "F04"
+      ],
+      "reference_basis": "Folio品質要件",
+      "validation_mode": "automated",
+      "status": "NOT_RUN",
+      "note": "提案する受け入れテスト。今回の抜粋プローブや原リポジトリの実行結果と混同しない。"
+    },
+    {
+      "id": "REG-12",
+      "group": "REG",
+      "scenario": "保存競合→退避→復旧",
+      "expected": "DB側と未保存側の両方が回収できる",
+      "related_findings": [
+        "F11",
+        "F12"
+      ],
+      "reference_basis": "Folio品質要件",
+      "validation_mode": "automated",
+      "status": "NOT_RUN",
+      "note": "提案する受け入れテスト。今回の抜粋プローブや原リポジトリの実行結果と混同しない。"
+    },
+    {
+      "id": "EDIT-01",
+      "group": "EDIT",
+      "scenario": "段落中央でEnter",
+      "expected": "参照観察に沿って前後に分割し文字を失わない",
+      "related_findings": [
+        "F09"
+      ],
+      "reference_basis": "Notion操作の実観測で固定",
+      "validation_mode": "automated",
+      "status": "NOT_RUN",
+      "note": "提案する受け入れテスト。今回の抜粋プローブや原リポジトリの実行結果と混同しない。"
+    },
+    {
+      "id": "EDIT-02",
+      "group": "EDIT",
+      "scenario": "段落先頭でBackspace",
+      "expected": "結合・カーソル移動が参照仕様と一致",
+      "related_findings": [
+        "F09"
+      ],
+      "reference_basis": "Notion操作の実観測で固定",
+      "validation_mode": "automated",
+      "status": "NOT_RUN",
+      "note": "提案する受け入れテスト。今回の抜粋プローブや原リポジトリの実行結果と混同しない。"
+    },
+    {
+      "id": "EDIT-03",
+      "group": "EDIT",
+      "scenario": "リスト2項目目だけを移動",
+      "expected": "他の項目と子孫を意図せず動かさない",
+      "related_findings": [
+        "F09"
+      ],
+      "reference_basis": "Notion操作の実観測で固定",
+      "validation_mode": "automated",
+      "status": "NOT_RUN",
+      "note": "提案する受け入れテスト。今回の抜粋プローブや原リポジトリの実行結果と混同しない。"
+    },
+    {
+      "id": "EDIT-04",
+      "group": "EDIT",
+      "scenario": "トグル内ブロックを外へ移動",
+      "expected": "内容/順序/IDを保つ",
+      "related_findings": [
+        "F09"
+      ],
+      "reference_basis": "Notion操作の実観測で固定",
+      "validation_mode": "automated",
+      "status": "NOT_RUN",
+      "note": "提案する受け入れテスト。今回の抜粋プローブや原リポジトリの実行結果と混同しない。"
+    },
+    {
+      "id": "EDIT-05",
+      "group": "EDIT",
+      "scenario": "TabとShift+Tab",
+      "expected": "定義したブロックでネスト/解除が動く",
+      "related_findings": [
+        "F09"
+      ],
+      "reference_basis": "Notion公式ショートカット＋実観測",
+      "validation_mode": "automated",
+      "status": "NOT_RUN",
+      "note": "提案する受け入れテスト。今回の抜粋プローブや原リポジトリの実行結果と混同しない。"
+    },
+    {
+      "id": "EDIT-06",
+      "group": "EDIT",
+      "scenario": "親ブロックを子孫と共に選択",
+      "expected": "選択表示と操作範囲が一致",
+      "related_findings": [
+        "F09"
+      ],
+      "reference_basis": "Notion公式ショートカット＋実観測",
+      "validation_mode": "automated",
+      "status": "NOT_RUN",
+      "note": "提案する受け入れテスト。今回の抜粋プローブや原リポジトリの実行結果と混同しない。"
+    },
+    {
+      "id": "EDIT-07",
+      "group": "EDIT",
+      "scenario": "複数ブロックを複製",
+      "expected": "観測した順序で複製し新IDを発行",
+      "related_findings": [
+        "F09"
+      ],
+      "reference_basis": "Notion操作の実観測で固定",
+      "validation_mode": "automated",
+      "status": "NOT_RUN",
+      "note": "提案する受け入れテスト。今回の抜粋プローブや原リポジトリの実行結果と混同しない。"
+    },
+    {
+      "id": "EDIT-08",
+      "group": "EDIT",
+      "scenario": "末尾へ複数ブロックを移動",
+      "expected": "順序と内容が保たれ重複/消失なし",
+      "related_findings": [
+        "F09"
+      ],
+      "reference_basis": "Folio品質要件",
+      "validation_mode": "automated",
+      "status": "NOT_RUN",
+      "note": "提案する受け入れテスト。今回の抜粋プローブや原リポジトリの実行結果と混同しない。"
+    },
+    {
+      "id": "EDIT-09",
+      "group": "EDIT",
+      "scenario": "書式付きテキストのページ間コピー",
+      "expected": "テキスト/書式/リンクを保持、ブロックID重複なし",
+      "related_findings": [
+        "F09"
+      ],
+      "reference_basis": "Folio品質要件",
+      "validation_mode": "automated",
+      "status": "NOT_RUN",
+      "note": "提案する受け入れテスト。今回の抜粋プローブや原リポジトリの実行結果と混同しない。"
+    },
+    {
+      "id": "EDIT-10",
+      "group": "EDIT",
+      "scenario": "大きい貼付をUndo/Redo",
+      "expected": "定義した操作単位で正確に往復",
+      "related_findings": [
+        "F09"
+      ],
+      "reference_basis": "Notion操作の実観測で固定",
+      "validation_mode": "automated",
+      "status": "NOT_RUN",
+      "note": "提案する受け入れテスト。今回の抜粋プローブや原リポジトリの実行結果と混同しない。"
+    },
+    {
+      "id": "EDIT-11",
+      "group": "EDIT",
+      "scenario": "選択テキストにCmd+K",
+      "expected": "リンク編集になり全体検索と競合しない",
+      "related_findings": [
+        "F06"
+      ],
+      "reference_basis": "Notion公式ショートカット",
+      "validation_mode": "automated",
+      "status": "NOT_RUN",
+      "note": "提案する受け入れテスト。今回の抜粋プローブや原リポジトリの実行結果と混同しない。"
+    },
+    {
+      "id": "EDIT-12",
+      "group": "EDIT",
+      "scenario": "slash候補の上下/Enter/Escape",
+      "expected": "候補を確定/キャンセルし意図しない文字消去なし",
+      "related_findings": [
+        "F06"
+      ],
+      "reference_basis": "Notion操作の実観測で固定",
+      "validation_mode": "automated",
+      "status": "NOT_RUN",
+      "note": "提案する受け入れテスト。今回の抜粋プローブや原リポジトリの実行結果と混同しない。"
+    },
+    {
+      "id": "EDIT-13",
+      "group": "EDIT",
+      "scenario": "部分太字をまたぐページ内検索",
+      "expected": "可視文字列として一致し正しい範囲を選択",
+      "related_findings": [
+        "F02"
+      ],
+      "reference_basis": "Folio品質要件",
+      "validation_mode": "automated",
+      "status": "NOT_RUN",
+      "note": "提案する受け入れテスト。今回の抜粋プローブや原リポジトリの実行結果と混同しない。"
+    },
+    {
+      "id": "EDIT-14",
+      "group": "EDIT",
+      "scenario": "同名・ネスト見出しのoutline",
+      "expected": "項目のIDが対応する見出しへ移動",
+      "related_findings": [
+        "F17"
+      ],
+      "reference_basis": "Folio品質要件",
+      "validation_mode": "automated",
+      "status": "NOT_RUN",
+      "note": "提案する受け入れテスト。今回の抜粋プローブや原リポジトリの実行結果と混同しない。"
+    },
+    {
+      "id": "EDIT-15",
+      "group": "EDIT",
+      "scenario": "hardBreakを含む検索/書き出し",
+      "expected": "改行契約に沿って一貫した変換",
+      "related_findings": [
+        "F02"
+      ],
+      "reference_basis": "Folio品質要件",
+      "validation_mode": "automated",
+      "status": "NOT_RUN",
+      "note": "提案する受け入れテスト。今回の抜粋プローブや原リポジトリの実行結果と混同しない。"
+    },
+    {
+      "id": "EDIT-16",
+      "group": "EDIT",
+      "scenario": "ページ遷移前後の選択/Undo",
+      "expected": "ページ間で別の文書へ操作が漏れない",
+      "related_findings": [
+        "F01",
+        "F09"
+      ],
+      "reference_basis": "Folio品質要件",
+      "validation_mode": "automated",
+      "status": "NOT_RUN",
+      "note": "提案する受け入れテスト。今回の抜粋プローブや原リポジトリの実行結果と混同しない。"
+    },
+    {
+      "id": "IME-01",
+      "group": "IME",
+      "scenario": "検索候補がある状態で日本語変換をEnter確定",
+      "expected": "候補選択やページ遷移を勝手に実行しない",
+      "related_findings": [
+        "F06"
+      ],
+      "reference_basis": "Folio品質要件",
+      "validation_mode": "manual_real_IME",
+      "status": "NOT_RUN",
+      "note": "提案する受け入れテスト。今回の抜粋プローブや原リポジトリの実行結果と混同しない。"
+    },
+    {
+      "id": "IME-02",
+      "group": "IME",
+      "scenario": "本文/slash/リンクの変換・再変換・Escape",
+      "expected": "文字欠落/重複/コマンド誤発火なし",
+      "related_findings": [
+        "F06"
+      ],
+      "reference_basis": "Folio品質要件",
+      "validation_mode": "manual_real_IME",
+      "status": "NOT_RUN",
+      "note": "提案する受け入れテスト。今回の抜粋プローブや原リポジトリの実行結果と混同しない。"
+    },
+    {
+      "id": "DB-01",
+      "group": "DB",
+      "scenario": "DB行を開いて本文編集",
+      "expected": "ページ本文とプロパティが同一行に保存",
+      "related_findings": [
+        "F08"
+      ],
+      "reference_basis": "Notion公式DB基本",
+      "validation_mode": "automated",
+      "status": "NOT_RUN",
+      "note": "提案する受け入れテスト。今回の抜粋プローブや原リポジトリの実行結果と混同しない。"
+    },
+    {
+      "id": "DB-02",
+      "group": "DB",
+      "scenario": "表・board・calendar間で同じ行を編集",
+      "expected": "全ビューで一貫した値",
+      "related_findings": [
+        "F08"
+      ],
+      "reference_basis": "Notion公式DB基本",
+      "validation_mode": "automated",
+      "status": "NOT_RUN",
+      "note": "提案する受け入れテスト。今回の抜粋プローブや原リポジトリの実行結果と混同しない。"
+    },
+    {
+      "id": "DB-03",
+      "group": "DB",
+      "scenario": "同じtable型のビューを2つ作成",
+      "expected": "名前/条件/列表示が独立して保存",
+      "related_findings": [
+        "F08"
+      ],
+      "reference_basis": "Notion公式ビュー",
+      "validation_mode": "automated",
+      "status": "NOT_RUN",
+      "note": "提案する受け入れテスト。今回の抜粋プローブや原リポジトリの実行結果と混同しない。"
+    },
+    {
+      "id": "DB-04",
+      "group": "DB",
+      "scenario": "AND/ORと数値条件で絞り込み",
+      "expected": "文字列検索で代用せず型に沿った結果",
+      "related_findings": [
+        "F08"
+      ],
+      "reference_basis": "Notion公式ビュー",
+      "validation_mode": "automated",
+      "status": "NOT_RUN",
+      "note": "提案する受け入れテスト。今回の抜粋プローブや原リポジトリの実行結果と混同しない。"
+    },
+    {
+      "id": "DB-05",
+      "group": "DB",
+      "scenario": "複数ソートキーと同値行",
+      "expected": "優先順位とtie-breakを定義して再現",
+      "related_findings": [
+        "F08"
+      ],
+      "reference_basis": "Notion公式ビュー",
+      "validation_mode": "automated",
+      "status": "NOT_RUN",
+      "note": "提案する受け入れテスト。今回の抜粋プローブや原リポジトリの実行結果と混同しない。"
+    },
+    {
+      "id": "DB-06",
+      "group": "DB",
+      "scenario": "boardの対象select列を変更",
+      "expected": "最初の列へ固定せず指定列でgroup化",
+      "related_findings": [
+        "F08"
+      ],
+      "reference_basis": "Notion公式board",
+      "validation_mode": "automated",
+      "status": "NOT_RUN",
+      "note": "提案する受け入れテスト。今回の抜粋プローブや原リポジトリの実行結果と混同しない。"
+    },
+    {
+      "id": "DB-07",
+      "group": "DB",
+      "scenario": "calendarの対象date列を変更",
+      "expected": "指定した日付列へDnD結果を反映",
+      "related_findings": [
+        "F08"
+      ],
+      "reference_basis": "Notionの操作観察で固定",
+      "validation_mode": "automated",
+      "status": "NOT_RUN",
+      "note": "提案する受け入れテスト。今回の抜粋プローブや原リポジトリの実行結果と混同しない。"
+    },
+    {
+      "id": "DB-08",
+      "group": "DB",
+      "scenario": "行削除後に全ビューで復元",
+      "expected": "同じID/値/本文で戻る",
+      "related_findings": [
+        "F04",
+        "F08"
+      ],
+      "reference_basis": "Folio品質要件",
+      "validation_mode": "automated",
+      "status": "NOT_RUN",
+      "note": "提案する受け入れテスト。今回の抜粋プローブや原リポジトリの実行結果と混同しない。"
+    },
+    {
+      "id": "DB-09",
+      "group": "DB",
+      "scenario": "プロパティ名変更",
+      "expected": "IDで参照し既存値・式を破壊しない",
+      "related_findings": [
+        "F08"
+      ],
+      "reference_basis": "Folio品質要件",
+      "validation_mode": "automated",
+      "status": "NOT_RUN",
+      "note": "提案する受け入れテスト。今回の抜粋プローブや原リポジトリの実行結果と混同しない。"
+    },
+    {
+      "id": "DB-10",
+      "group": "DB",
+      "scenario": "select選択肢名称変更",
+      "expected": "stable option IDに従い値と表示を保持",
+      "related_findings": [
+        "F08"
+      ],
+      "reference_basis": "Folio設計案",
+      "validation_mode": "automated",
+      "status": "NOT_RUN",
+      "note": "提案する受け入れテスト。今回の抜粋プローブや原リポジトリの実行結果と混同しない。"
+    },
+    {
+      "id": "DB-11",
+      "group": "DB",
+      "scenario": "不正数値と未設定値",
+      "expected": "NaN/Infinity/空の型を契約に沿って扱う",
+      "related_findings": [
+        "F07",
+        "F08"
+      ],
+      "reference_basis": "Folio品質要件",
+      "validation_mode": "automated",
+      "status": "NOT_RUN",
+      "note": "提案する受け入れテスト。今回の抜粋プローブや原リポジトリの実行結果と混同しない。"
+    },
+    {
+      "id": "DB-12",
+      "group": "DB",
+      "scenario": "relation参照先変更/削除",
+      "expected": "整合した参照と復元契約",
+      "related_findings": [
+        "F08"
+      ],
+      "reference_basis": "後続仕様・要固定",
+      "validation_mode": "automated",
+      "status": "NOT_RUN",
+      "note": "提案する受け入れテスト。今回の抜粋プローブや原リポジトリの実行結果と混同しない。"
+    },
+    {
+      "id": "DB-13",
+      "group": "DB",
+      "scenario": "rollup対象行の編集/削除",
+      "expected": "派生値を正しく再計算",
+      "related_findings": [
+        "F08"
+      ],
+      "reference_basis": "後続仕様・要固定",
+      "validation_mode": "automated",
+      "status": "NOT_RUN",
+      "note": "提案する受け入れテスト。今回の抜粋プローブや原リポジトリの実行結果と混同しない。"
+    },
+    {
+      "id": "DB-14",
+      "group": "DB",
+      "scenario": "formula循環/型エラー",
+      "expected": "安全なエラーとなり評価が暴走しない",
+      "related_findings": [
+        "F08"
+      ],
+      "reference_basis": "Folio品質要件",
+      "validation_mode": "automated",
+      "status": "NOT_RUN",
+      "note": "提案する受け入れテスト。今回の抜粋プローブや原リポジトリの実行結果と混同しない。"
+    },
+    {
+      "id": "DB-15",
+      "group": "DB",
+      "scenario": "旧DB JSONからのmigration",
+      "expected": "行数/ID対応/値/添付を保持しrollback可能",
+      "related_findings": [
+        "F08"
+      ],
+      "reference_basis": "Folio品質要件",
+      "validation_mode": "automated",
+      "status": "NOT_RUN",
+      "note": "提案する受け入れテスト。今回の抜粋プローブや原リポジトリの実行結果と混同しない。"
+    },
+    {
+      "id": "DB-16",
+      "group": "DB",
+      "scenario": "CSVと可逆形式の往復",
+      "expected": "CSVの損失を報告し可逆形式では同値を保持",
+      "related_findings": [
+        "F12"
+      ],
+      "reference_basis": "Folio品質要件",
+      "validation_mode": "automated",
+      "status": "NOT_RUN",
+      "note": "提案する受け入れテスト。今回の抜粋プローブや原リポジトリの実行結果と混同しない。"
+    },
+    {
+      "id": "DUR-01",
+      "group": "DUR",
+      "scenario": "最新編集の保存済み直後に強制終了",
+      "expected": "ACK済みデータを再起動後に保持",
+      "related_findings": [
+        "F10"
+      ],
+      "reference_basis": "Folio品質要件",
+      "validation_mode": "automated",
+      "status": "NOT_RUN",
+      "note": "提案する受け入れテスト。今回の抜粋プローブや原リポジトリの実行結果と混同しない。"
+    },
+    {
+      "id": "DUR-02",
+      "group": "DUR",
+      "scenario": "保存中に強制終了",
+      "expected": "未ACKの復旧範囲を明示し既存DBを壊さない",
+      "related_findings": [
+        "F10"
+      ],
+      "reference_basis": "Folio品質要件",
+      "validation_mode": "automated",
+      "status": "NOT_RUN",
+      "note": "提案する受け入れテスト。今回の抜粋プローブや原リポジトリの実行結果と混同しない。"
+    },
+    {
+      "id": "DUR-03",
+      "group": "DUR",
+      "scenario": "ディスク満杯を注入",
+      "expected": "エラーを表示し未保存内容を退避できる",
+      "related_findings": [
+        "F10",
+        "F11"
+      ],
+      "reference_basis": "Folio品質要件",
+      "validation_mode": "automated",
+      "status": "NOT_RUN",
+      "note": "提案する受け入れテスト。今回の抜粋プローブや原リポジトリの実行結果と混同しない。"
+    },
+    {
+      "id": "DUR-04",
+      "group": "DUR",
+      "scenario": "途中のSQLエラーを注入",
+      "expected": "トランザクション全体がrollback",
+      "related_findings": [
+        "F04",
+        "F11"
+      ],
+      "reference_basis": "Folio品質要件",
+      "validation_mode": "automated",
+      "status": "NOT_RUN",
+      "note": "提案する受け入れテスト。今回の抜粋プローブや原リポジトリの実行結果と混同しない。"
+    },
+    {
+      "id": "DUR-05",
+      "group": "DUR",
+      "scenario": "入力とページ移動に遅延IPC",
+      "expected": "ローカル変更とrevisionの整合性を保つ",
+      "related_findings": [
+        "F11"
+      ],
+      "reference_basis": "Folio品質要件",
+      "validation_mode": "automated",
+      "status": "NOT_RUN",
+      "note": "提案する受け入れテスト。今回の抜粋プローブや原リポジトリの実行結果と混同しない。"
+    },
+    {
+      "id": "DUR-06",
+      "group": "DUR",
+      "scenario": "バックアップを新規領域へ復元",
+      "expected": "ページ・DB・assetsの整合性を確認",
+      "related_findings": [
+        "F12"
+      ],
+      "reference_basis": "Folio品質要件",
+      "validation_mode": "automated",
+      "status": "NOT_RUN",
+      "note": "提案する受け入れテスト。今回の抜粋プローブや原リポジトリの実行結果と混同しない。"
+    },
+    {
+      "id": "DUR-07",
+      "group": "DUR",
+      "scenario": "DB/タイトル/本文を履歴復元",
+      "expected": "選んだ版の状態へ復元し再起動後も維持",
+      "related_findings": [
+        "F04"
+      ],
+      "reference_basis": "Folio品質要件",
+      "validation_mode": "automated",
+      "status": "NOT_RUN",
+      "note": "提案する受け入れテスト。今回の抜粋プローブや原リポジトリの実行結果と混同しない。"
+    },
+    {
+      "id": "DUR-08",
+      "group": "DUR",
+      "scenario": "未知のschemaVersionを開く",
+      "expected": "原本を保全し対応不足を明示",
+      "related_findings": [
+        "F07"
+      ],
+      "reference_basis": "Folio品質要件",
+      "validation_mode": "automated",
+      "status": "NOT_RUN",
+      "note": "提案する受け入れテスト。今回の抜粋プローブや原リポジトリの実行結果と混同しない。"
+    },
+    {
+      "id": "UX-01",
+      "group": "UX",
+      "scenario": "通常/暗色の同条件スクリーンショット",
+      "expected": "参照差分を計測しマスク理由を明記",
+      "related_findings": [
+        "F14"
+      ],
+      "reference_basis": "参照仕様を固定してから比較",
+      "validation_mode": "automated",
+      "status": "NOT_RUN",
+      "note": "提案する受け入れテスト。今回の抜粋プローブや原リポジトリの実行結果と混同しない。"
+    },
+    {
+      "id": "UX-02",
+      "group": "UX",
+      "scenario": "slash/選択/検索の画面比較",
+      "expected": "位置・余白・focus・操作の差分を記録",
+      "related_findings": [
+        "F14"
+      ],
+      "reference_basis": "参照仕様を固定してから比較",
+      "validation_mode": "automated",
+      "status": "NOT_RUN",
+      "note": "提案する受け入れテスト。今回の抜粋プローブや原リポジトリの実行結果と混同しない。"
+    },
+    {
+      "id": "UX-03",
+      "group": "UX",
+      "scenario": "DB4状態の画面比較",
+      "expected": "表/board/calendar/recordの差分を記録",
+      "related_findings": [
+        "F14"
+      ],
+      "reference_basis": "参照仕様を固定してから比較",
+      "validation_mode": "automated",
+      "status": "NOT_RUN",
+      "note": "提案する受け入れテスト。今回の抜粋プローブや原リポジトリの実行結果と混同しない。"
+    },
+    {
+      "id": "UX-04",
+      "group": "UX",
+      "scenario": "sidebar/右ペイン切替と再起動",
+      "expected": "定義した設定が復元される",
+      "related_findings": [
+        "F13"
+      ],
+      "reference_basis": "参照仕様を固定してから比較",
+      "validation_mode": "automated",
+      "status": "NOT_RUN",
+      "note": "提案する受け入れテスト。今回の抜粋プローブや原リポジトリの実行結果と混同しない。"
+    },
+    {
+      "id": "UX-05",
+      "group": "UX",
+      "scenario": "モーダル内Tab巡回",
+      "expected": "背景へフォーカスが漏れず復帰先が正しい",
+      "related_findings": [
+        "F13"
+      ],
+      "reference_basis": "参照仕様を固定してから比較",
+      "validation_mode": "automated",
+      "status": "NOT_RUN",
+      "note": "提案する受け入れテスト。今回の抜粋プローブや原リポジトリの実行結果と混同しない。"
+    },
+    {
+      "id": "UX-06",
+      "group": "UX",
+      "scenario": "DBレコードをEscapeで閉じる",
+      "expected": "editing stateが閉じる",
+      "related_findings": [
+        "F13"
+      ],
+      "reference_basis": "参照仕様を固定してから比較",
+      "validation_mode": "automated",
+      "status": "NOT_RUN",
+      "note": "提案する受け入れテスト。今回の抜粋プローブや原リポジトリの実行結果と混同しない。"
+    },
+    {
+      "id": "UX-07",
+      "group": "UX",
+      "scenario": "ページ内検索で複数一致を移動",
+      "expected": "前/次とハイライトの位置が正しい",
+      "related_findings": [
+        "F02"
+      ],
+      "reference_basis": "参照仕様を固定してから比較",
+      "validation_mode": "automated",
+      "status": "NOT_RUN",
+      "note": "提案する受け入れテスト。今回の抜粋プローブや原リポジトリの実行結果と混同しない。"
+    },
+    {
+      "id": "UX-08",
+      "group": "UX",
+      "scenario": "ページ復帰時のスクロール/カーソル",
+      "expected": "定義したセッション仕様を満たす",
+      "related_findings": [
+        "F13"
+      ],
+      "reference_basis": "参照仕様を固定してから比較",
+      "validation_mode": "automated",
+      "status": "NOT_RUN",
+      "note": "提案する受け入れテスト。今回の抜粋プローブや原リポジトリの実行結果と混同しない。"
+    },
+    {
+      "id": "QA-01",
+      "group": "QA",
+      "scenario": "不正IPC操作/送信元frame/URL",
+      "expected": "権限を広げず拒否する",
+      "related_findings": [
+        "F07"
+      ],
+      "reference_basis": "Folio品質要件",
+      "validation_mode": "automated",
+      "status": "NOT_RUN",
+      "note": "提案する受け入れテスト。今回の抜粋プローブや原リポジトリの実行結果と混同しない。"
+    },
+    {
+      "id": "QA-02",
+      "group": "QA",
+      "scenario": "1,000ブロックで継続入力",
+      "expected": "p50/p95/maxと保存キュー長を複数回記録",
+      "related_findings": [
+        "F10"
+      ],
+      "reference_basis": "Folio品質要件",
+      "validation_mode": "automated",
+      "status": "NOT_RUN",
+      "note": "提案する受け入れテスト。今回の抜粋プローブや原リポジトリの実行結果と混同しない。"
+    },
+    {
+      "id": "QA-03",
+      "group": "QA",
+      "scenario": "10,000ページ相当で検索/切替",
+      "expected": "データ量を明記して遅延とメモリを測定",
+      "related_findings": [
+        "F10"
+      ],
+      "reference_basis": "Folio品質要件",
+      "validation_mode": "automated",
+      "status": "NOT_RUN",
+      "note": "提案する受け入れテスト。今回の抜粋プローブや原リポジトリの実行結果と混同しない。"
+    },
+    {
+      "id": "QA-04",
+      "group": "QA",
+      "scenario": "清潔なcheckoutからcheck/build/tests",
+      "expected": "実行コマンド・環境・exit codeを記録",
+      "related_findings": [
+        "F15"
+      ],
+      "reference_basis": "Folio品質要件",
+      "validation_mode": "automated",
+      "status": "NOT_RUN",
+      "note": "提案する受け入れテスト。今回の抜粋プローブや原リポジトリの実行結果と混同しない。"
+    },
+    {
+      "id": "QA-05",
+      "group": "QA",
+      "scenario": "監査artifactの機密確認",
+      "expected": "cookie/認証/実顧客データ/抽出コードを含めない",
+      "related_findings": [
+        "F16"
+      ],
+      "reference_basis": "Folio品質要件",
+      "validation_mode": "automated",
+      "status": "NOT_RUN",
+      "note": "提案する受け入れテスト。今回の抜粋プローブや原リポジトリの実行結果と混同しない。"
+    },
+    {
+      "id": "QA-06",
+      "group": "QA",
+      "scenario": "参照証拠と実装コミットを照合",
+      "expected": "観測対象と検証対象を取り違えない",
+      "related_findings": [
+        "F15",
+        "F16"
+      ],
+      "reference_basis": "Folio品質要件",
+      "validation_mode": "automated",
+      "status": "NOT_RUN",
+      "note": "提案する受け入れテスト。今回の抜粋プローブや原リポジトリの実行結果と混同しない。"
+    }
+  ],
+  "count": 68
+}

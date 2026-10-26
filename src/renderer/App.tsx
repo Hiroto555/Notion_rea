@@ -28,6 +28,9 @@ import {
   Database as DatabaseIcon,
 } from "lucide-react";
 import { Editor } from "../editor/Editor";
+import { PendingEdits } from "./pending-edits";
+import { composing } from "../shared/keyboard";
+import { findText } from "../editor/text-search";
 import { Database } from "../database/Database";
 import {
   textOf,
@@ -74,17 +77,21 @@ export function App() {
     [pending, setPending] = useState(0),
     [ready, setReady] = useState(false),
     [pageFind, setPageFind] = useState(""),
-    [findOpen, setFindOpen] = useState(false);
+    [findOpen, setFindOpen] = useState(false),
+    [databaseEpoch, setDatabaseEpoch] = useState(0);
   const pageRef = useRef<Page[]>([]),
     activeRef = useRef(""),
     queue = useRef(Promise.resolve()),
     pendingRef = useRef(0),
-    unsaved = useRef(new Map<string, PagePatch>()),
+    edits = useRef(new PendingEdits()),
+    composition = useRef(false),
+    dialogRef = useRef<Dialog>(null),
     editor = useRef<TiptapEditor | null>(null),
     editorId = useRef(""),
     history = useRef<string[]>([]),
     historyIndex = useRef(-1),
     querySeq = useRef(0);
+  dialogRef.current = dialog;
   const commit = (next: Page[]) => {
     pageRef.current = next;
     setPages(next);
@@ -93,8 +100,9 @@ export function App() {
     setError(e instanceof Error ? e.message : String(e));
   const refresh = async () => {
     const state = await api<Snapshot>({ type: "load" });
-    commit(state.pages);
-    return state;
+    const merged = edits.current.merge(state.pages);
+    commit(merged);
+    return { ...state, pages: merged };
   };
   useEffect(() => {
     if (!window.folio) {
@@ -131,14 +139,18 @@ export function App() {
     void api({ type: "setting", key, value }).catch(fail);
   };
   function select(id: string, push = true) {
+    const changed = activeRef.current !== id;
     activeRef.current = id;
     setActiveId(id);
-    editor.current = null;
+    if (changed) {
+      editor.current = null;
+      editorId.current = "";
+    }
     setMenu(false);
     setDialog(null);
     setFindOpen(false);
     saveSetting("activePage", id);
-    if (push) {
+    if (push && changed) {
       history.current = history.current.slice(0, historyIndex.current + 1);
       history.current.push(id);
       historyIndex.current++;
@@ -151,74 +163,93 @@ export function App() {
       select(history.current[next], false);
     }
   }
-  function enqueue(action: () => Promise<void>) {
+  function enqueue<T>(action: () => Promise<T>): Promise<T> {
     pendingRef.current++;
     setPending(pendingRef.current);
-    queue.current = queue.current
-      .then(action)
-      .catch(fail)
-      .finally(() => {
-        pendingRef.current--;
-        setPending(pendingRef.current);
-      });
-    return queue.current;
+    const operation = queue.current.then(action).finally(() => {
+      pendingRef.current--;
+      setPending(pendingRef.current);
+    });
+    queue.current = operation.then(
+      () => undefined,
+      () => undefined,
+    );
+    return operation;
   }
-  async function ensureSaved() {
-    await queue.current;
-    if (unsaved.current.size)
+  function assertNoFailed() {
+    if (edits.current.failed.size)
       throw new Error(
         "未保存の変更があります。保存の再試行または退避を先に実行してください。",
       );
   }
+  async function ensureSaved() {
+    let current;
+    do {
+      current = queue.current;
+      await current;
+    } while (current !== queue.current);
+    if (edits.current.size)
+      throw new Error(
+        "未保存の変更があります。保存の再試行または退避を先に実行してください。",
+      );
+  }
+  function mutate<T>(action: () => Promise<T>) {
+    return enqueue(async () => {
+      assertNoFailed();
+      return action();
+    });
+  }
   function update(id: string, patch: PagePatch) {
-    commit(
-      pageRef.current.map((p) =>
-        p.id === id ? { ...p, ...patch, updatedAt: Date.now() } : p,
-      ),
-    );
+    const page = pageRef.current.find((p) => p.id === id);
+    if (page?.documentError) {
+      fail(page.documentError);
+      return;
+    }
+    const seq = edits.current.add(id, patch);
+    commit(edits.current.merge(pageRef.current));
     void enqueue(async () => {
+      if (!edits.current.has(id, seq)) return;
       const existing = pageRef.current.find((p) => p.id === id);
-      if (!existing) return;
-      const combined = { ...unsaved.current.get(id), ...patch };
-      let saved: Page;
+      if (!existing)
+        throw new Error("保存対象のページがありません。退避してください。");
       try {
-        saved = await api<Page>({
+        const saved = await api<Page>({
           type: "update",
           id,
           revision: existing.revision,
-          patch: combined,
+          patch: edits.current.patch(id, seq),
         });
-      } catch (error) {
-        unsaved.current.set(id, combined);
-        throw error;
+        edits.current.ack(id, seq);
+        commit(
+          edits.current.merge(
+            pageRef.current.map((p) => (p.id === id ? saved : p)),
+          ),
+        );
+        if (!edits.current.failed.size) setError("");
+      } catch (e) {
+        edits.current.failed.add(id);
+        throw e;
       }
-      unsaved.current.delete(id);
-      if (!unsaved.current.size) setError("");
-      commit(
-        pageRef.current.map((p) =>
-          p.id === id ? { ...p, revision: saved.revision } : p,
-        ),
-      );
-    });
+    }).catch(fail);
   }
-  const create = async (
+  const create = (
     parentId: string | null = null,
     kind: Page["kind"] = "page",
     title?: string,
     doc?: Doc,
-  ) => {
-    await ensureSaved();
-    const p = await api<Page>({ type: "create", parentId, kind, title });
-    commit([...pageRef.current, p]);
-    if (parentId) {
-      const next = new Set(expanded).add(parentId);
-      setExpanded(next);
-      saveSetting("expanded", JSON.stringify([...next]));
-    }
-    select(p.id);
-    if (doc) update(p.id, { doc });
-    return p;
-  };
+  ) =>
+    mutate(async () => {
+      const p = await api<Page>({ type: "create", parentId, kind, title });
+      commit([...pageRef.current, p]);
+      if (parentId) {
+        const next = new Set(expanded).add(parentId);
+        setExpanded(next);
+        saveSetting("expanded", JSON.stringify([...next]));
+      }
+      select(p.id);
+      if (doc) update(p.id, { doc });
+      return p;
+    });
   const safe = (fn: () => Promise<unknown>) => {
     void fn().catch(fail);
   };
@@ -252,18 +283,36 @@ export function App() {
   }, [query, dialog, pages.length]);
   useEffect(() => {
     const key = (e: KeyboardEvent) => {
-      if (e.isComposing) return;
+      if (e.defaultPrevented || composing(e, composition.current)) return;
       if (e.key === "Escape") {
         setDialog(null);
         setMenu(false);
         setFindOpen(false);
         return;
       }
+      if (
+        dialogRef.current ||
+        (e.target as HTMLElement)?.closest?.('[role="dialog"]')
+      )
+        return;
       if (!(e.metaKey || e.ctrlKey)) return;
       const k = e.key.toLowerCase();
+      if (
+        k === "k" &&
+        (e.target as HTMLElement)?.closest?.("input,textarea,select")
+      )
+        return;
       if (k === "k" || k === "p") {
         e.preventDefault();
-        openSearch();
+        if (
+          k === "k" &&
+          editor.current?.isFocused &&
+          !editor.current.state.selection.empty
+        ) {
+          setQuery("");
+          setResults([]);
+          setDialog("link");
+        } else openSearch();
       } else if (k === "n") {
         e.preventDefault();
         safe(() => create());
@@ -288,14 +337,24 @@ export function App() {
       }
     };
     const unload = (e: BeforeUnloadEvent) => {
-      if (pendingRef.current > 0 || unsaved.current.size > 0) {
+      if (pendingRef.current > 0 || edits.current.size > 0) {
         e.preventDefault();
         e.returnValue = "保存中です";
       }
     };
+    const start = () => {
+      composition.current = true;
+    };
+    const end = () => {
+      composition.current = false;
+    };
+    window.addEventListener("compositionstart", start);
+    window.addEventListener("compositionend", end);
     window.addEventListener("keydown", key);
     window.addEventListener("beforeunload", unload);
     return () => {
+      window.removeEventListener("compositionstart", start);
+      window.removeEventListener("compositionend", end);
       window.removeEventListener("keydown", key);
       window.removeEventListener("beforeunload", unload);
     };
@@ -306,44 +365,78 @@ export function App() {
     return () => clearTimeout(t);
   }, [notice]);
   const duplicate = () =>
-    safe(async () => {
-      if (!page) return;
-      await ensureSaved();
-      const copy = await api<Page>({ type: "duplicate", id: page.id });
-      await refresh();
-      select(copy.id);
-    });
+    safe(() =>
+      mutate(async () => {
+        if (!page) return;
+        const copy = await api<Page>({ type: "duplicate", id: page.id });
+        await refresh();
+        select(copy.id);
+      }),
+    );
   const trash = () =>
-    safe(async () => {
-      if (!page) return;
-      await ensureSaved();
-      await api({ type: "trash", id: page.id });
-      const s = await refresh();
-      select(s.pages.find((p) => !p.deletedAt)?.id || "");
-      setMenu(false);
-    });
-  const move = async (
+    safe(() =>
+      mutate(async () => {
+        if (!page) return;
+        await api({ type: "trash", id: page.id });
+        const s = await refresh();
+        select(s.pages.find((p) => !p.deletedAt)?.id || "");
+        setMenu(false);
+      }),
+    );
+  const move = (
     id: string,
     parentId: string | null,
     beforeId: string | null = null,
-  ) => {
-    await ensureSaved();
-    await api({ type: "move", id, parentId, beforeId });
-    await refresh();
-    if (parentId) setExpanded((prev) => new Set(prev).add(parentId));
-    setDialog(null);
-  };
-  const openHistory = () =>
-    safe(async () => {
-      if (!page) return;
-      await ensureSaved();
-      setVersions(await api<Version[]>({ type: "versions", id: page.id }));
-      setDialog("history");
+  ) =>
+    mutate(async () => {
+      await api({ type: "move", id, parentId, beforeId });
+      await refresh();
+      if (parentId) setExpanded((prev) => new Set(prev).add(parentId));
+      setDialog(null);
     });
+  const openHistory = () =>
+    safe(() =>
+      mutate(async () => {
+        if (!page) return;
+        setVersions(await api<Version[]>({ type: "versions", id: page.id }));
+        setDialog("history");
+      }),
+    );
+  function currentEditor() {
+    return editorId.current === activeRef.current &&
+      editor.current &&
+      !editor.current.isDestroyed
+      ? editor.current
+      : null;
+  }
+  function applyPageLink(p: Page) {
+    const e = currentEditor();
+    if (!e) {
+      fail("編集中のページを確認できません");
+      return;
+    }
+    if (!e.state.selection.empty)
+      e.chain()
+        .focus()
+        .setLink({ href: "folio-page://" + p.id })
+        .run();
+    else
+      e.chain()
+        .focus()
+        .insertContent({
+          type: "text",
+          text: p.title,
+          marks: [{ type: "link", attrs: { href: "folio-page://" + p.id } }],
+        })
+        .run();
+    setDialog(null);
+  }
   const exportPage = (format: "md" | "html" | "json") =>
     safe(async () => {
       if (!page) return;
-      const e = editor.current;
+      const e = currentEditor();
+      if (page.kind === "page" && format !== "json" && !e)
+        throw new Error("本文を取得できないため書き出しを停止しました");
       const content =
         format === "json"
           ? JSON.stringify(page, null, 2)
@@ -394,22 +487,23 @@ export function App() {
     });
   const attach = () =>
     safe(async () => {
-      if (!page || !editor.current) return;
+      const e = currentEditor(),
+        id = activeRef.current;
+      if (!page || !e) return;
       const file = await api<{
         name: string;
         url: string;
         image: boolean;
       } | null>({ type: "attach" });
       if (!file) return;
+      if (currentEditor() !== e || activeRef.current !== id)
+        throw new Error(
+          "添付の選択中にページが変わりました。元のページでやり直してください。",
+        );
       if (file.image)
-        editor.current
-          .chain()
-          .focus()
-          .setImage({ src: file.url, alt: file.name })
-          .run();
+        e.chain().focus().setImage({ src: file.url, alt: file.name }).run();
       else
-        editor.current
-          .chain()
+        e.chain()
           .focus()
           .insertContent({
             type: "paragraph",
@@ -503,10 +597,13 @@ export function App() {
       (m) => m.type === "link" && m.attrs?.href === "folio-page://" + target,
     ) || !!doc.content?.some((n) => linked(n, target));
   const backlinks = page
-    ? live.filter((p) => p.id !== page.id && linked(p.doc, page.id))
+    ? live.filter(
+        (p) => !p.documentError && p.id !== page.id && linked(p.doc, page.id),
+      )
     : [];
-  const headings: Doc[] =
-    page?.doc.content?.filter((n) => n.type === "heading") ?? [];
+  const headings: Doc[] = page?.documentError
+    ? []
+    : (page?.doc?.content?.filter((n) => n.type === "heading") ?? []);
   const templates = [
     {
       title: "ミーティングノート",
@@ -585,6 +682,18 @@ export function App() {
         <div className="brand-mark">f</div>
         <h2>Folio</h2>
         <p>{error || "ワークスペースを開いています…"}</p>
+        {error && (
+          <button
+            onClick={() =>
+              safe(async () => {
+                const path = await api<string>({ type: "backup" });
+                setError("バックアップ保存先: " + path);
+              })
+            }
+          >
+            原本のバックアップを保存
+          </button>
+        )}
       </main>
     );
   return (
@@ -782,6 +891,26 @@ export function App() {
                   変更履歴
                 </button>
                 <hr />
+                <button
+                  onClick={() =>
+                    safe(() =>
+                      mutate(async () => {
+                        const copies = await api<Page[] | null>({
+                          type: "recover",
+                        });
+                        if (copies?.length) {
+                          await refresh();
+                          select(copies[0].id);
+                          setNotice(
+                            "退避内容を新しいページとして復旧しました。元のページも保持しています。",
+                          );
+                        }
+                      }),
+                    )
+                  }
+                >
+                  退避JSONから復旧
+                </button>
                 <button onClick={() => exportPage("md")}>
                   <Download size={15} />
                   Markdownを書き出す
@@ -819,11 +948,11 @@ export function App() {
         {error && (
           <div className="error-banner" role="alert">
             {error}
-            {unsaved.current.size ? (
+            {edits.current.size ? (
               <div>
                 <button
                   onClick={() => {
-                    for (const [id, patch] of unsaved.current)
+                    for (const [id, patch] of edits.current.patches())
                       update(id, patch);
                   }}
                 >
@@ -832,32 +961,40 @@ export function App() {
                 <button
                   onClick={() =>
                     safe(async () => {
-                      await queue.current;
-                      const path = await api<string | null>({
-                        type: "export",
-                        name: "folio-unsaved-recovery",
-                        format: "json",
-                        content: JSON.stringify(
-                          { pages: pageRef.current },
-                          null,
-                          2,
-                        ),
-                      });
-                      if (path) {
-                        unsaved.current.clear();
+                      await enqueue(async () => {
+                        const through = edits.current.sequence;
+                        const persisted = await api<Snapshot>({ type: "load" });
+                        const path = await api<string | null>({
+                          type: "export",
+                          name: "folio-unsaved-recovery",
+                          format: "json",
+                          content: JSON.stringify(
+                            {
+                              format: "folio-recovery",
+                              schemaVersion: 1,
+                              pages: pageRef.current,
+                              persistedPages: persisted.pages,
+                              pendingPatches: edits.current.snapshot(),
+                            },
+                            null,
+                            2,
+                          ),
+                        });
+                        if (!path) return;
+                        edits.current.discardThrough(through);
                         const state = await refresh();
                         const current = state.pages.find(
                           (p) => p.id === activeRef.current,
                         );
-                        if (current)
-                          editor.current?.commands.setContent(current.doc, {
+                        if (current && !current.documentError)
+                          currentEditor()?.commands.setContent(current.doc, {
                             emitUpdate: false,
                           });
                         setError("");
                         setNotice(
                           "未保存の内容をJSONに退避し、保存済みデータを読み直しました",
                         );
-                      }
+                      });
                     })
                   }
                 >
@@ -995,6 +1132,7 @@ export function App() {
                     aria-label="ページタイトル"
                     placeholder="無題"
                     value={page.title}
+                    disabled={!!page.documentError}
                     onChange={(e) => update(page.id, { title: e.target.value })}
                   />
                   <div className="page-subtitle">
@@ -1012,7 +1150,7 @@ export function App() {
                       更新
                     </span>
                   </div>
-                  {findOpen && (
+                  {findOpen && !page.documentError && (
                     <div className="page-find">
                       <Search size={14} />
                       <input
@@ -1036,27 +1174,15 @@ export function App() {
                             pageFind &&
                             document.querySelector(".folio-editor")
                           ) {
-                            const walker = document.createTreeWalker(
-                              document.querySelector(".folio-editor")!,
-                              NodeFilter.SHOW_TEXT,
-                            );
-                            let node;
-                            while ((node = walker.nextNode())) {
-                              const index =
-                                node.textContent
-                                  ?.toLowerCase()
-                                  .indexOf(pageFind.toLowerCase()) ?? -1;
-                              if (index >= 0) {
-                                const range = document.createRange();
-                                range.setStart(node, index);
-                                range.setEnd(node, index + pageFind.length);
-                                window.getSelection()?.removeAllRanges();
-                                window.getSelection()?.addRange(range);
-                                node.parentElement?.scrollIntoView({
-                                  block: "center",
-                                });
-                                break;
-                              }
+                            const e = currentEditor();
+                            if (e) {
+                              const match = findText(e.state.doc, pageFind)[0];
+                              if (match)
+                                e.chain()
+                                  .focus()
+                                  .setTextSelection(match)
+                                  .scrollIntoView()
+                                  .run();
                             }
                           }
                         }}
@@ -1065,7 +1191,29 @@ export function App() {
                       </button>
                     </div>
                   )}
-                  {page.kind === "page" ? (
+                  {page.documentError ? (
+                    <div role="alert">
+                      <p>{page.documentError}</p>
+                      <button
+                        onClick={() =>
+                          safe(async () => {
+                            const content = await api<string>({
+                              type: "pageSource",
+                              id: page.id,
+                            });
+                            await api({
+                              type: "export",
+                              name: page.title + "-original",
+                              format: "json",
+                              content,
+                            });
+                          })
+                        }
+                      >
+                        原本JSONを保存
+                      </button>
+                    </div>
+                  ) : page.kind === "page" ? (
                     <Editor
                       key={
                         page.id +
@@ -1074,6 +1222,7 @@ export function App() {
                       }
                       doc={page.doc}
                       onChange={(doc) => update(page.id, { doc })}
+                      onError={fail}
                       onReady={(e) => {
                         editor.current = e;
                         editorId.current = page.id;
@@ -1086,6 +1235,7 @@ export function App() {
                   ) : (
                     page.database && (
                       <Database
+                        key={page.id + ":" + databaseEpoch}
                         value={page.database}
                         onChange={(database) => update(page.id, { database })}
                       />
@@ -1138,7 +1288,11 @@ export function App() {
                     {new Date(page.createdAt).toLocaleDateString("ja-JP")}
                   </dd>
                   <dt>文字数</dt>
-                  <dd>{textOf(page.doc).length.toLocaleString()}</dd>
+                  <dd>
+                    {page.documentError
+                      ? "—"
+                      : textOf(page.doc).length.toLocaleString()}
+                  </dd>
                   <dt>保存先</dt>
                   <dd>このMac</dd>
                 </dl>
@@ -1256,6 +1410,11 @@ export function App() {
                       setSearchIndex(0);
                     }}
                     onKeyDown={(e) => {
+                      if (
+                        e.defaultPrevented ||
+                        composing(e.nativeEvent, composition.current)
+                      )
+                        return;
                       if (e.key === "ArrowDown") {
                         e.preventDefault();
                         setSearchIndex((i) =>
@@ -1268,22 +1427,7 @@ export function App() {
                       }
                       if (e.key === "Enter" && results[searchIndex]) {
                         if (dialog === "link") {
-                          const p = results[searchIndex];
-                          editor.current
-                            ?.chain()
-                            .focus()
-                            .insertContent({
-                              type: "text",
-                              text: p.title,
-                              marks: [
-                                {
-                                  type: "link",
-                                  attrs: { href: "folio-page://" + p.id },
-                                },
-                              ],
-                            })
-                            .run();
-                          setDialog(null);
+                          applyPageLink(results[searchIndex]);
                         } else select(results[searchIndex].id);
                       }
                     }}
@@ -1301,21 +1445,7 @@ export function App() {
                         className={i === searchIndex ? "active" : ""}
                         onClick={() => {
                           if (dialog === "link") {
-                            editor.current
-                              ?.chain()
-                              .focus()
-                              .insertContent({
-                                type: "text",
-                                text: p.title,
-                                marks: [
-                                  {
-                                    type: "link",
-                                    attrs: { href: "folio-page://" + p.id },
-                                  },
-                                ],
-                              })
-                              .run();
-                            setDialog(null);
+                            applyPageLink(p);
                           } else select(p.id);
                         }}
                       >
@@ -1323,7 +1453,9 @@ export function App() {
                         <span>
                           <strong>{p.title || "無題"}</strong>
                           <small>
-                            {textOf(p.doc).slice(0, 85) || "空のページ"}
+                            {p.documentError
+                              ? "未対応の文書（原本を保全）"
+                              : textOf(p.doc).slice(0, 85) || "空のページ"}
                           </small>
                         </span>
                         <ChevronRight size={15} />
@@ -1448,9 +1580,10 @@ export function App() {
                             <button
                               onClick={() =>
                                 safe(async () => {
-                                  await ensureSaved();
-                                  await api({ type: "restore", id: p.id });
-                                  await refresh();
+                                  await mutate(async () => {
+                                    await api({ type: "restore", id: p.id });
+                                    await refresh();
+                                  });
                                   setNotice("ページを復元しました");
                                 })
                               }
@@ -1473,20 +1606,33 @@ export function App() {
                             <strong>
                               {new Date(v.createdAt).toLocaleString("ja-JP")}
                             </strong>
-                            <small>{textOf(v.doc).slice(0, 80)}</small>
+                            <small>
+                              {v.title} ·{" "}
+                              {v.database
+                                ? `${v.database.rows.length} 行: ${v.database.rows.map((r) => r.title).join(", ")} / ${v.database.properties.map((p) => p.name).join(", ")}`
+                                : textOf(v.doc).slice(0, 80)}
+                            </small>
                           </span>
                           <button
                             onClick={() =>
                               safe(async () => {
-                                await ensureSaved();
-                                const saved = await api<Page>({
-                                  type: "restoreVersion",
-                                  id: activeId,
-                                  versionId: v.id,
-                                });
-                                await refresh();
-                                editor.current?.commands.setContent(saved.doc, {
-                                  emitUpdate: false,
+                                await mutate(async () => {
+                                  const targetId = activeId;
+                                  const saved = await api<Page>({
+                                    type: "restoreVersion",
+                                    id: activeId,
+                                    versionId: v.id,
+                                  });
+                                  await refresh();
+                                  setDatabaseEpoch((value) => value + 1);
+                                  if (
+                                    activeRef.current === targetId &&
+                                    !edits.current.patch(targetId).doc
+                                  )
+                                    currentEditor()?.commands.setContent(
+                                      saved.doc,
+                                      { emitUpdate: false },
+                                    );
                                 });
                                 setDialog(null);
                                 setNotice("履歴を復元しました");
@@ -1499,7 +1645,7 @@ export function App() {
                       ))
                     ) : (
                       <p className="empty">
-                        本文を編集すると履歴が保存されます
+                        本文・タイトル・DBを編集すると履歴が保存されます
                       </p>
                     )}
                   </div>

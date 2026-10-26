@@ -1,0 +1,22 @@
+{
+  "capturedDate": "2026-10-26",
+  "application": "Folio",
+  "data": "Own seed content and synthetic E2E data; visually inspected.",
+  "images": [
+    {
+      "path": "folio-light.png",
+      "source": "output/playwright/folio-light.png",
+      "sha256": "2dceb86558b295d6f07152851fac7c9ab79f902c0c57e118417e13afc26283ae"
+    },
+    {
+      "path": "folio-dark.png",
+      "source": "output/playwright/folio-dark.png",
+      "sha256": "47a03f9d40c822ff89f00895e01a68d07f286ebf08958d9dfd12f90ce8cd9777"
+    },
+    {
+      "path": "folio-board.png",
+      "source": "output/playwright/folio-board.png",
+      "sha256": "870bb5afe057d01f585f849b91a84c55dec5d7733742db52db289d495ec05c15"
+    }
+  ]
+}

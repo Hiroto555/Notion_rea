@@ -46,3 +46,10 @@ contextIsolation=true、nodeIntegration=false、sandbox=true。CSPはローカ�
 - [Electron security](https://www.electronjs.org/docs/latest/tutorial/security)
 - [Electron context isolation](https://www.electronjs.org/docs/latest/tutorial/context-isolation)
 - [Electron 45 clipboard](https://www.electronjs.org/docs/latest/api/clipboard) — 従来の同期APIではなくClipboardItem/Promise。テストも現APIへ対応。
+
+## Gate Aによる更新（2026-10-26）
+
+- `shared/editor-schema.ts` がReact非依存のTiptap拡張定義を共有。`shared/validation.ts` はサイズ/深さ/属性を検査後、同じschemaの `Node.check()` で親子構造を検証する。旧versionなし文書はv1として読む。未知version/不正構造は読み取り専用、JSON破損は原本バックアップを案内する。
+- SQLite user_version 2はversionsにdatabase列を追加。v1 DBはmigration前に `workspace.sqlite.pre-v2.sqlite` を作る。新しい添付はUUIDを保管名にし、assetsテーブルで元の名前・拡張子・MIME・サイズ・SHA-256を管理する。旧URLも安全な単一ファイル名として解決する。
+- Appのmutationキューに編集・作成・移動・複製・削除・復元を集約。`PendingEdits` はローカル変更を即時記録し、ACK済みの連番までだけ除去する。snapshot読込時は最新revisionと未ACKパッチを合成する。競合の自動上書きは行わない。
+- `persistence/workspace.ts` は保存先の選択と、SQLiteスナップショット＋assetsのコピー移行を担当する。移行元・既存移行先を置き換えない。

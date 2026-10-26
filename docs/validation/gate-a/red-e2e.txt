@@ -1,0 +1,207 @@
+
+Running 8 tests using 1 worker
+
+(node:93532) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✘  1 tests/e2e/gate-a.spec.ts:11:1 › F01 same-page sidebar/search reselection keeps editor, attachment, link and exports (32.1s)
+(node:94033) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✘  2 tests/e2e/gate-a.spec.ts:24:94 › F05 attachment roundtrip LICENSE (1.8s)
+(node:94107) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✘  3 tests/e2e/gate-a.spec.ts:24:94 › F05 attachment roundtrip 資料.日本語 (1.2s)
+(node:94206) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✘  4 tests/e2e/gate-a.spec.ts:24:94 › F05 attachment roundtrip file.abcdefghijklmnop (1.2s)
+(node:94300) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓  5 tests/e2e/gate-a.spec.ts:24:94 › F05 attachment roundtrip archive.tar.gz (1.3s)
+  ✓  6 tests/e2e/gate-a.spec.ts:24:94 › F05 attachment roundtrip IMAGE.PNG (1.3s)
+  ✘  7 tests/e2e/gate-a.spec.ts:25:1 › F06 synthetic composing Enter does not navigate search or link (not physical IME) (31.3s)
+(node:94901) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✘  8 tests/e2e/gate-a.spec.ts:30:1 › F11 editing during move and delayed load keeps local patch and durable revision (31.9s)
+
+
+  1) tests/e2e/gate-a.spec.ts:11:1 › F01 same-page sidebar/search reselection keeps editor, attachment, link and exports 
+
+    TimeoutError: locator.click: Timeout 30000ms exceeded.
+    Call log:
+      - waiting for getByRole('button', { name: '新しいページ', exact: true })
+
+
+      10 | async function saved() { await expect(window.locator('.save-state')).toHaveText('保存済み'); }
+      11 | test('F01 same-page sidebar/search reselection keeps editor, attachment, link and exports',async()=>{
+    > 12 |  await window.getByRole('button',{name:'新しいページ',exact:true}).click(); await window.getByLabel('ページタイトル',{exact:true}).fill('Gate A original');
+         |                                                              ^
+      13 |  await window.locator('.folio-editor').fill('Original body'); await saved();
+      14 |  await window.locator('.folio-editor').evaluate(el=>(globalThis as any).originalEditorDOM=el);
+      15 |  for(let i=0;i<5;i++) await window.locator('.page-tree-label').filter({hasText:'Gate A original'}).click();
+        at <PROJECT_ROOT>/tests/e2e/gate-a.spec.ts:12:62
+
+    Error Context: output/playwright/results/gate-a-F01-same-page-sideb-e8660-attachment-link-and-exports/error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    output/playwright/results/gate-a-F01-same-page-sideb-e8660-attachment-link-and-exports/trace.zip
+    Usage:
+
+        npx playwright show-trace output/playwright/results/gate-a-F01-same-page-sideb-e8660-attachment-link-and-exports/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  2) tests/e2e/gate-a.spec.ts:24:94 › F05 attachment roundtrip LICENSE ─────────────────────────────
+
+    Error: page.evaluate: Error: Error invoking remote method 'folio:request': [
+      {
+        "validation": "regex",
+        "code": "invalid_string",
+        "message": "Invalid",
+        "path": [
+          "url"
+        ]
+      }
+    ]
+
+      22 |  const html=join(folder,'export.html');await saveDialog(html);await window.getByLabel('ページメニュー',{exact:true}).click();await window.getByRole('button',{name:'HTMLを書き出す',exact:true}).click();await expect.poll(()=>existsSync(html)).toBe(true);expect(readFileSync(html,'utf8')).toContain('Original body'); await saved();
+      23 | });
+    > 24 | for(const name of ['LICENSE','資料.日本語','file.abcdefghijklmnop','archive.tar.gz','IMAGE.PNG']) test('F05 attachment roundtrip '+name,async()=>{const source=join(folder,name),dest=join(folder,'download');const bytes=Buffer.from([0,255,1,128,10]);writeFileSync(source,bytes);await openDialog(source);const file=await window.evaluate(()=>window.folio.request<{url:string}>({type:'attach'}));await saveDialog(dest);await window.evaluate(url=>window.folio.request({type:'downloadAttachment',url}),file.url);expect(readFileSync(dest)).toEqual(bytes);});
+         |                                                                                                                                                                                                                                                                                                                                                                                                                                       ^
+      25 | test('F06 synthetic composing Enter does not navigate search or link (not physical IME)',async()=>{
+      26 |  for(const mode of ['search','link']) { if(mode==='search') await window.getByRole('button',{name:'検索',exact:true}).click(); else await window.getByTitle('ページへのリンク',{exact:true}).click(); await window.getByLabel('検索キーワード').fill('アイデアノート');await expect(window.locator('.search-results button')).toHaveCount(1);
+      27 |  await window.getByLabel('検索キーワード').evaluate(el=>{el.dispatchEvent(new CompositionEvent('compositionstart',{bubbles:true})); el.dispatchEvent(new KeyboardEvent('keydown',{key:'Enter',isComposing:true,bubbles:true,cancelable:true}));});
+        at <PROJECT_ROOT>/tests/e2e/gate-a.spec.ts:24:423
+
+    Error Context: output/playwright/results/gate-a-F05-attachment-roundtrip-LICENSE/error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    output/playwright/results/gate-a-F05-attachment-roundtrip-LICENSE/trace.zip
+    Usage:
+
+        npx playwright show-trace output/playwright/results/gate-a-F05-attachment-roundtrip-LICENSE/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  3) tests/e2e/gate-a.spec.ts:24:94 › F05 attachment roundtrip 資料.日本語 ──────────────────────────────
+
+    Error: page.evaluate: Error: Error invoking remote method 'folio:request': [
+      {
+        "validation": "regex",
+        "code": "invalid_string",
+        "message": "Invalid",
+        "path": [
+          "url"
+        ]
+      }
+    ]
+
+      22 |  const html=join(folder,'export.html');await saveDialog(html);await window.getByLabel('ページメニュー',{exact:true}).click();await window.getByRole('button',{name:'HTMLを書き出す',exact:true}).click();await expect.poll(()=>existsSync(html)).toBe(true);expect(readFileSync(html,'utf8')).toContain('Original body'); await saved();
+      23 | });
+    > 24 | for(const name of ['LICENSE','資料.日本語','file.abcdefghijklmnop','archive.tar.gz','IMAGE.PNG']) test('F05 attachment roundtrip '+name,async()=>{const source=join(folder,name),dest=join(folder,'download');const bytes=Buffer.from([0,255,1,128,10]);writeFileSync(source,bytes);await openDialog(source);const file=await window.evaluate(()=>window.folio.request<{url:string}>({type:'attach'}));await saveDialog(dest);await window.evaluate(url=>window.folio.request({type:'downloadAttachment',url}),file.url);expect(readFileSync(dest)).toEqual(bytes);});
+         |                                                                                                                                                                                                                                                                                                                                                                                                                                       ^
+      25 | test('F06 synthetic composing Enter does not navigate search or link (not physical IME)',async()=>{
+      26 |  for(const mode of ['search','link']) { if(mode==='search') await window.getByRole('button',{name:'検索',exact:true}).click(); else await window.getByTitle('ページへのリンク',{exact:true}).click(); await window.getByLabel('検索キーワード').fill('アイデアノート');await expect(window.locator('.search-results button')).toHaveCount(1);
+      27 |  await window.getByLabel('検索キーワード').evaluate(el=>{el.dispatchEvent(new CompositionEvent('compositionstart',{bubbles:true})); el.dispatchEvent(new KeyboardEvent('keydown',{key:'Enter',isComposing:true,bubbles:true,cancelable:true}));});
+        at <PROJECT_ROOT>/tests/e2e/gate-a.spec.ts:24:423
+
+    Error Context: output/playwright/results/gate-a-F05-attachment-roundtrip-資料-日本語/error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    output/playwright/results/gate-a-F05-attachment-roundtrip-資料-日本語/trace.zip
+    Usage:
+
+        npx playwright show-trace output/playwright/results/gate-a-F05-attachment-roundtrip-資料-日本語/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  4) tests/e2e/gate-a.spec.ts:24:94 › F05 attachment roundtrip file.abcdefghijklmnop ───────────────
+
+    Error: page.evaluate: Error: Error invoking remote method 'folio:request': [
+      {
+        "validation": "regex",
+        "code": "invalid_string",
+        "message": "Invalid",
+        "path": [
+          "url"
+        ]
+      }
+    ]
+
+      22 |  const html=join(folder,'export.html');await saveDialog(html);await window.getByLabel('ページメニュー',{exact:true}).click();await window.getByRole('button',{name:'HTMLを書き出す',exact:true}).click();await expect.poll(()=>existsSync(html)).toBe(true);expect(readFileSync(html,'utf8')).toContain('Original body'); await saved();
+      23 | });
+    > 24 | for(const name of ['LICENSE','資料.日本語','file.abcdefghijklmnop','archive.tar.gz','IMAGE.PNG']) test('F05 attachment roundtrip '+name,async()=>{const source=join(folder,name),dest=join(folder,'download');const bytes=Buffer.from([0,255,1,128,10]);writeFileSync(source,bytes);await openDialog(source);const file=await window.evaluate(()=>window.folio.request<{url:string}>({type:'attach'}));await saveDialog(dest);await window.evaluate(url=>window.folio.request({type:'downloadAttachment',url}),file.url);expect(readFileSync(dest)).toEqual(bytes);});
+         |                                                                                                                                                                                                                                                                                                                                                                                                                                       ^
+      25 | test('F06 synthetic composing Enter does not navigate search or link (not physical IME)',async()=>{
+      26 |  for(const mode of ['search','link']) { if(mode==='search') await window.getByRole('button',{name:'検索',exact:true}).click(); else await window.getByTitle('ページへのリンク',{exact:true}).click(); await window.getByLabel('検索キーワード').fill('アイデアノート');await expect(window.locator('.search-results button')).toHaveCount(1);
+      27 |  await window.getByLabel('検索キーワード').evaluate(el=>{el.dispatchEvent(new CompositionEvent('compositionstart',{bubbles:true})); el.dispatchEvent(new KeyboardEvent('keydown',{key:'Enter',isComposing:true,bubbles:true,cancelable:true}));});
+        at <PROJECT_ROOT>/tests/e2e/gate-a.spec.ts:24:423
+
+    Error Context: output/playwright/results/gate-a-F05-attachment-roundtrip-file-abcdefghijklmnop/error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    output/playwright/results/gate-a-F05-attachment-roundtrip-file-abcdefghijklmnop/trace.zip
+    Usage:
+
+        npx playwright show-trace output/playwright/results/gate-a-F05-attachment-roundtrip-file-abcdefghijklmnop/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  5) tests/e2e/gate-a.spec.ts:25:1 › F06 synthetic composing Enter does not navigate search or link (not physical IME) 
+
+    TimeoutError: locator.click: Timeout 30000ms exceeded.
+    Call log:
+      - waiting for getByRole('button', { name: '検索', exact: true })
+
+
+      24 | for(const name of ['LICENSE','資料.日本語','file.abcdefghijklmnop','archive.tar.gz','IMAGE.PNG']) test('F05 attachment roundtrip '+name,async()=>{const source=join(folder,name),dest=join(folder,'download');const bytes=Buffer.from([0,255,1,128,10]);writeFileSync(source,bytes);await openDialog(source);const file=await window.evaluate(()=>window.folio.request<{url:string}>({type:'attach'}));await saveDialog(dest);await window.evaluate(url=>window.folio.request({type:'downloadAttachment',url}),file.url);expect(readFileSync(dest)).toEqual(bytes);});
+      25 | test('F06 synthetic composing Enter does not navigate search or link (not physical IME)',async()=>{
+    > 26 |  for(const mode of ['search','link']) { if(mode==='search') await window.getByRole('button',{name:'検索',exact:true}).click(); else await window.getByTitle('ページへのリンク',{exact:true}).click(); await window.getByLabel('検索キーワード').fill('アイデアノート');await expect(window.locator('.search-results button')).toHaveCount(1);
+         |                                                                                                                     ^
+      27 |  await window.getByLabel('検索キーワード').evaluate(el=>{el.dispatchEvent(new CompositionEvent('compositionstart',{bubbles:true})); el.dispatchEvent(new KeyboardEvent('keydown',{key:'Enter',isComposing:true,bubbles:true,cancelable:true}));});
+      28 |  await expect(window.getByRole('dialog')).toBeVisible();await window.getByLabel('検索キーワード').evaluate(el=>el.dispatchEvent(new CompositionEvent('compositionend',{bubbles:true}))); await window.keyboard.press('Escape'); }
+      29 | });
+        at <PROJECT_ROOT>/tests/e2e/gate-a.spec.ts:26:117
+
+    Error Context: output/playwright/results/gate-a-F06-synthetic-compo-60ec9-h-or-link-not-physical-IME-/error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    output/playwright/results/gate-a-F06-synthetic-compo-60ec9-h-or-link-not-physical-IME-/trace.zip
+    Usage:
+
+        npx playwright show-trace output/playwright/results/gate-a-F06-synthetic-compo-60ec9-h-or-link-not-physical-IME-/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  6) tests/e2e/gate-a.spec.ts:30:1 › F11 editing during move and delayed load keeps local patch and durable revision 
+
+    TimeoutError: locator.click: Timeout 30000ms exceeded.
+    Call log:
+      - waiting for getByRole('button', { name: '新しいページ', exact: true })
+
+
+      29 | });
+      30 | test('F11 editing during move and delayed load keeps local patch and durable revision',async()=>{
+    > 31 |  await window.getByRole('button',{name:'新しいページ',exact:true}).click();await window.getByLabel('ページタイトル',{exact:true}).fill('Before move');await saved();
+         |                                                              ^
+      32 |  await app.evaluate(({ipcMain})=>{const ipc=ipcMain as any;const original=ipc._invokeHandlers.get('folio:request');let armed=false;ipc.removeHandler('folio:request');ipc.handle('folio:request',async(event:any,req:any)=>{const result=await original(event,req);if(req.type==='move') armed=true;else if(req.type==='load'&&armed){armed=false;(globalThis as any).heldLoad=true; await new Promise<void>(r=>(globalThis as any).releaseLoad=r);}return result;});});
+      33 |  await window.getByLabel('ページメニュー',{exact:true}).click();await window.getByRole('button',{name:'移動する',exact:true}).click();await window.getByRole('dialog').getByRole('button',{name:'💡 アイデアノート',exact:true}).click();
+      34 |  await expect.poll(()=>app.evaluate(()=>(globalThis as any).heldLoad)).toBe(true);await window.getByLabel('ページタイトル',{exact:true}).fill('Local edit during move');
+        at <PROJECT_ROOT>/tests/e2e/gate-a.spec.ts:31:62
+
+    Error Context: output/playwright/results/gate-a-F11-editing-during--c372d--patch-and-durable-revision/error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    output/playwright/results/gate-a-F11-editing-during--c372d--patch-and-durable-revision/trace.zip
+    Usage:
+
+        npx playwright show-trace output/playwright/results/gate-a-F11-editing-during--c372d--patch-and-durable-revision/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  6 failed
+    tests/e2e/gate-a.spec.ts:11:1 › F01 same-page sidebar/search reselection keeps editor, attachment, link and exports 
+    tests/e2e/gate-a.spec.ts:24:94 › F05 attachment roundtrip LICENSE ──────────────────────────────
+    tests/e2e/gate-a.spec.ts:24:94 › F05 attachment roundtrip 資料.日本語 ───────────────────────────────
+    tests/e2e/gate-a.spec.ts:24:94 › F05 attachment roundtrip file.abcdefghijklmnop ────────────────
+    tests/e2e/gate-a.spec.ts:25:1 › F06 synthetic composing Enter does not navigate search or link (not physical IME) 
+    tests/e2e/gate-a.spec.ts:30:1 › F11 editing during move and delayed load keeps local patch and durable revision 
+  2 passed (1.8m)

@@ -14,7 +14,10 @@
     "check": "tsc --noEmit",
     "package": "npm run build && node scripts/package.mjs",
     "format": "prettier --write src tests scripts docs README.md",
-    "setup": "node scripts/setup.mjs"
+    "setup": "node scripts/setup.mjs",
+    "review:scan": "node scripts/review-hygiene.mjs",
+    "review:test": "node --test tests/review-hygiene.test.mjs",
+    "review:export": "node scripts/export-review.mjs"
   },
   "dependencies": {
     "@tiptap/extension-details": "^3.0.0",

@@ -30,11 +30,13 @@ Codexから直接列挙したい場合、次の登録を `~/.codex/config.toml` 
 
 ```toml
 [mcp_servers.rea]
-command = "/Users/shiroto/Documents/ChatGPT/Notion_rea/tools/rea/node_modules/node/bin/node"
-args = ["/Users/shiroto/Documents/ChatGPT/Notion_rea/tools/rea/node_modules/rea-agents/scripts/rea.mjs", "mcp"]
+command = "<PROJECT_ROOT>/tools/rea/node_modules/node/bin/node"
+args = ["<PROJECT_ROOT>/tools/rea/node_modules/rea-agents/scripts/rea.mjs", "mcp"]
 startup_timeout_sec = 30
 tool_timeout_sec = 180
 ```
+
+`<PROJECT_ROOT>` は説明用のプレースホルダーです。TOMLが自動展開する値ではないため、将来登録する場合は各自の絶対パスに置き換えてください。共有資料には端末固有のパスを記載しません。
 
 現在のMCPクライアントで解析可能なので、この設定変更は継続開発の前提条件ではない。
 

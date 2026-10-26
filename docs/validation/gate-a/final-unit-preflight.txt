@@ -1,0 +1,17 @@
+
+> folio-desktop@0.1.0 test
+> vitest run
+
+
+ RUN  v3.2.7 <PROJECT_ROOT>
+
+ ✓ tests/pending-edits.test.ts (3 tests) 13ms
+ ✓ tests/workspace.test.ts (5 tests) 142ms
+ ✓ tests/gate-a.test.ts (11 tests) 177ms
+ ✓ tests/store.test.ts (13 tests) 228ms
+
+ Test Files  4 passed (4)
+      Tests  32 passed (32)
+   Start at  22:01:58
+   Duration  1.51s (transform 551ms, setup 0ms, collect 3.03s, tests 560ms, environment 1ms, prepare 715ms)
+

@@ -1,0 +1,24 @@
+
+> folio-desktop@0.1.0 build
+> tsc --noEmit && vite build && node scripts/build.mjs
+
+vite v7.3.7 building client environment for production...
+transforming...
+✓ 1667 modules transformed.
+[plugin vite:reporter] 
+(!) <PROJECT_ROOT>/node_modules/@tiptap/core/dist/index.js is dynamically imported by <PROJECT_ROOT>/src/renderer/App.tsx but also statically imported by <PROJECT_ROOT>/node_modules/@tiptap/extension-blockquote/dist/index.js, <PROJECT_ROOT>/node_modules/@tiptap/extension-bold/dist/index.js, <PROJECT_ROOT>/node_modules/@tiptap/extension-code-block/dist/index.js, <PROJECT_ROOT>/node_modules/@tiptap/extension-code/dist/index.js, <PROJECT_ROOT>/node_modules/@tiptap/extension-details/dist/index.js, <PROJECT_ROOT>/node_modules/@tiptap/extension-document/dist/index.js, <PROJECT_ROOT>/node_modules/@tiptap/extension-hard-break/dist/index.js, <PROJECT_ROOT>/node_modules/@tiptap/extension-heading/dist/index.js, <PROJECT_ROOT>/node_modules/@tiptap/extension-horizontal-rule/dist/index.js, <PROJECT_ROOT>/node_modules/@tiptap/extension-image/dist/index.js, <PROJECT_ROOT>/node_modules/@tiptap/extension-italic/dist/index.js, <PROJECT_ROOT>/node_modules/@tiptap/extension-link/dist/index.js, <PROJECT_ROOT>/node_modules/@tiptap/extension-list/dist/index.js, <PROJECT_ROOT>/node_modules/@tiptap/extension-paragraph/dist/index.js, <PROJECT_ROOT>/node_modules/@tiptap/extension-strike/dist/index.js, <PROJECT_ROOT>/node_modules/@tiptap/extension-text/dist/index.js, <PROJECT_ROOT>/node_modules/@tiptap/extension-underline/dist/index.js, <PROJECT_ROOT>/node_modules/@tiptap/extensions/dist/index.js, <PROJECT_ROOT>/node_modules/@tiptap/markdown/dist/index.js, <PROJECT_ROOT>/node_modules/@tiptap/react/dist/index.js, <PROJECT_ROOT>/node_modules/@tiptap/starter-kit/dist/index.js, <PROJECT_ROOT>/src/shared/editor-schema.ts, dynamic import will not move module into another chunk.
+
+[plugin vite:reporter] 
+(!) <PROJECT_ROOT>/src/editor/Editor.tsx is dynamically imported by <PROJECT_ROOT>/src/renderer/App.tsx but also statically imported by <PROJECT_ROOT>/src/renderer/App.tsx, dynamic import will not move module into another chunk.
+
+rendering chunks...
+computing gzip size...
+dist/renderer/index.html                   0.60 kB │ gzip:   0.38 kB
+dist/renderer/assets/index-DF9c_BXA.css   20.53 kB │ gzip:   5.22 kB
+dist/renderer/assets/index-DyooZhsm.js   833.02 kB │ gzip: 258.91 kB
+
+(!) Some chunks are larger than 500 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+✓ built in 1.75s

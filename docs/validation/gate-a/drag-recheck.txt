@@ -1,0 +1,14 @@
+
+Running 3 tests using 1 worker
+
+(node:22260) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓  1 tests/e2e/desktop.spec.ts:28:1 › real Electron: page edit, slash, undo, blocks, search, clone, trash and restart (10.8s)
+(node:22518) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓  2 tests/e2e/desktop.spec.ts:28:1 › real Electron: page edit, slash, undo, blocks, search, clone, trash and restart (4.9s)
+(node:22700) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓  3 tests/e2e/desktop.spec.ts:28:1 › real Electron: page edit, slash, undo, blocks, search, clone, trash and restart (4.6s)
+
+  3 passed (22.4s)
