@@ -1,6 +1,6 @@
 import { test, expect, saved } from "./next-round-fixture";
 import { observeDrag, dragEvidence, editorDoc } from "./drag-observer";
-import { realDrag } from "./real-drag";
+import { realDrag, beginRealDrag } from "./real-drag";
 test("R2 short original regression: checkbox edit then real handle drag", async ({
   folio: s,
 }, info) => {
@@ -118,15 +118,17 @@ test("R2 top-level matrix: single/multiple/start/end/same/cancel/scroll/undo/red
     await assertDoc(before.content);
     await w.getByLabel("やり直す", { exact: true }).click();
     await assertDoc(multi);
-    const source = await handle(2).boundingBox(),
-      target = await handle(1).boundingBox();
-    await w.mouse.move(source!.x + 11, source!.y + 13);
-    await w.mouse.down();
-    await w.mouse.move(source!.x + 18, source!.y + 20);
-    await w.mouse.move(target!.x + 11, target!.y + 13);
-    await w.mouse.move(target!.x + 12, target!.y + 14);
+    await beginRealDrag(w, handle(2));
+    await handle(1).hover();
+    await handle(1).hover();
     await w.keyboard.press("Escape");
     await w.mouse.up();
+    await expect
+      .poll(() => w.evaluate(() => (globalThis as any).pointerDragEnded))
+      .toBe(true);
+    expect(await w.evaluate(() => (globalThis as any).pointerDropped)).toBe(
+      false,
+    );
     await assertDoc(multi);
     await handle(20).scrollIntoViewIfNeeded();
     expect(
