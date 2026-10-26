@@ -1,0 +1,13 @@
+{
+  "head": "7759906dbbc905a4dc79d01b97aaff6471e51eb3",
+  "branch": "master",
+  "initialStatus": "",
+  "lockfileSHA256": "b08cddaa73f347443854288cec92b39927f2ea190714a555f1ec187cb8ca53de",
+  "os": "macOS-26.6.2-arm64-arm-64bit-Mach-O",
+  "priorManifestFiles": 43,
+  "priorManifestMismatches": [],
+  "reviewBundleVerified": true,
+  "protectedFiles": 6,
+  "notionObserved": "NOT_RUN: no authorized test workspace provided",
+  "physicalIME": "NOT_RUN"
+}

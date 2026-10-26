@@ -155,7 +155,8 @@ it("F11 recovery copies local edits without overwriting the stored competing pag
     pendingPatches: [{ id: p.id, patch: { title: "local", doc: mixed } }],
   });
   expect(copy.id).not.toBe(p.id);
-  expect(copy.title).toBe("[復旧] local");
+  expect(copy.title).toBe("local");
+  expect(copy.recoveredFrom?.pageId).toBe(p.id);
   expect(copy.doc).toEqual(mixed);
   expect(s.get(p.id).title).toBe("remote");
   expect(() =>

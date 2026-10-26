@@ -472,19 +472,10 @@ test("F11 failed write exports pending patch and persisted state, then recovers 
     window.getByLabel("ページタイトル", { exact: true }),
   ).toHaveValue("Stored competing title");
   const exported = JSON.parse(readFileSync(recovery, "utf8"));
-  expect(
-    exported.pendingPatches.some(
-      (x: any) => x.patch.title === "Local unsaved title",
-    ),
-  ).toBe(true);
-  expect(
-    exported.pendingPatches.some((x: any) =>
-      JSON.stringify(x.patch.doc ?? null).includes("Local unsaved body"),
-    ),
-  ).toBe(true);
-  expect(
-    exported.persistedPages.find((x: any) => x.id === original.id).title,
-  ).toBe("Stored competing title");
+  expect(exported.schemaVersion).toBe(2);
+  expect(exported.pages).toHaveLength(1);
+  expect(exported.pages[0].title).toBe("Local unsaved title");
+  expect(JSON.stringify(exported.pages[0].doc)).toContain("Local unsaved body");
   await openDialog(recovery);
   await window.getByLabel("ページメニュー", { exact: true }).click();
   await window
@@ -492,7 +483,7 @@ test("F11 failed write exports pending patch and persisted state, then recovers 
     .click();
   await expect(
     window.getByLabel("ページタイトル", { exact: true }),
-  ).toHaveValue("[復旧] Local unsaved title");
+  ).toHaveValue("Local unsaved title");
   await expect(window.locator(".folio-editor")).toContainText(
     "Local unsaved body",
   );

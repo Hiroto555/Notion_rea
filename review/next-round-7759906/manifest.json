@@ -1,0 +1,26 @@
+{
+  "target_commit": "7759906dbbc905a4dc79d01b97aaff6471e51eb3",
+  "purpose": "Review and scoped next-round Codex instructions; not a patch",
+  "files": [
+    {
+      "name": "Codex_Next_Round_7759906.md",
+      "bytes": 13753,
+      "sha256": "47563c0b8a90b8ee0f049ae4e8f3de42d67ac87adf93cefe131a897eb2dffd9e"
+    },
+    {
+      "name": "Review_7759906.md",
+      "bytes": 3966,
+      "sha256": "e7bce2aab820f159b472931a27f831386311e7b88b7b84f89f2123c4c800d4f2"
+    },
+    {
+      "name": "recovery-boundary-probe.mjs",
+      "bytes": 2824,
+      "sha256": "1a32841d6afc33340fc97396fcb0daa8fa9420770e5b414ac47c003af718ce02"
+    },
+    {
+      "name": "recovery-boundary-results.json",
+      "bytes": 1211,
+      "sha256": "5c2e9b3715d8e91e3a80c040314594f60583c166e2ec3ca78c96b1549af6244f"
+    }
+  ]
+}

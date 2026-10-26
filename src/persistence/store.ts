@@ -14,6 +14,7 @@ import {
   type Snapshot,
   type Version,
 } from "../shared/types";
+import { recoveryPages } from "../shared/recovery";
 export class Store {
   readonly db: DatabaseSync;
   constructor(readonly path: string) {
@@ -367,62 +368,22 @@ export class Store {
     }
   }
   recover(input: unknown): Page[] {
-    const value = input as {
-      format?: string;
-      schemaVersion?: number;
-      pages?: Page[];
-      pendingPatches?: { id: string; patch: PagePatch }[];
-    };
-    if (
-      !value ||
-      value.format !== "folio-recovery" ||
-      value.schemaVersion !== 1 ||
-      !Array.isArray(value.pages) ||
-      !Array.isArray(value.pendingPatches) ||
-      value.pages.length > 10000
-    )
-      throw new Error("対応するFolio退避ファイルではありません");
-    const patches = new Map<string, PagePatch>();
-    for (const entry of value.pendingPatches) {
-      requestSchema.parse({
-        type: "update",
-        id: entry.id,
-        revision: 0,
-        patch: entry.patch,
-      });
-      patches.set(entry.id, { ...patches.get(entry.id), ...entry.patch });
-    }
-    return this.transaction(() => {
-      const restored: Page[] = [];
-      for (const [id, patch] of patches) {
-        const source = value.pages!.find((p) => p.id === id);
-        if (!source) throw new Error("退避ページがありません");
-        const local = { ...source, ...patch };
-        if (
-          !["page", "database"].includes(local.kind) ||
-          typeof local.title !== "string" ||
-          local.title.length > 490 ||
-          (local.schemaVersion !== undefined && local.schemaVersion !== 1)
-        )
-          throw new Error("退避ページの形式に対応していません");
-        const copy = this.create(null, local.kind, "[復旧] " + local.title);
-        const restore = {
+    const pages = recoveryPages(input);
+    return this.transaction(() =>
+      pages.map((local) => {
+        const copy = this.create(null, local.kind, local.title);
+        return this.write({
+          ...copy,
+          title: local.title,
           doc: local.doc,
           database: local.database,
           icon: local.icon,
           cover: local.cover,
           favorite: local.favorite,
-        };
-        requestSchema.parse({
-          type: "update",
-          id: copy.id,
-          revision: 0,
-          patch: restore,
+          recoveredFrom: { pageId: local.id, recoveredAt: Date.now() },
         });
-        restored.push(this.write({ ...copy, ...restore }));
-      }
-      return restored;
-    });
+      }),
+    );
   }
   close() {
     this.db.close();

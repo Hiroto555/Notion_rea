@@ -1,0 +1,77 @@
+
+> folio-desktop@0.1.0 test
+> vitest run tests/recovery.test.ts
+
+
+ RUN  v3.2.7 <repo>
+
+ ❯ tests/recovery.test.ts (5 tests | 4 failed) 99ms
+   × R1 title 490 uses the normal input contract and preserves original 18ms
+     → expected '[復旧] 題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題…' to be '題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題…' // Object.is equality
+   × R1 title 491 uses the normal input contract and preserves original 5ms
+     → 退避ページの形式に対応していません
+   × R1 title 500 uses the normal input contract and preserves original 3ms
+     → 退避ページの形式に対応していません
+   ✓ R1 title 501 uses the normal input contract and preserves original 3ms
+   × R1 actual export schema rejects UTF-8 bytes above the recover file limit 68ms
+     → expected true to be false // Object.is equality
+
+ Test Files  1 failed (1)
+      Tests  4 failed | 1 passed (5)
+   Start at  22:41:28
+   Duration  810ms (transform 74ms, setup 0ms, collect 158ms, tests 99ms, environment 0ms, prepare 151ms)
+
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 4 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/recovery.test.ts > R1 title 490 uses the normal input contract and preserves original
+AssertionError: expected '[復旧] 題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題…' to be '題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題…' // Object.is equality
+
+Expected: "題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題"
+Received: "[復旧] 題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題題"
+
+ ❯ tests/recovery.test.ts:15:59
+     13|   const value={format:'folio-recovery',schemaVersion:1,pages:[p],pendi…
+     14|   if(length>500) expect(()=>s.recover(value)).toThrow();
+     15|   else {const [copy]=s.recover(value); expect(copy.title).toBe(title);…
+       |                                                           ^
+     16| });
+     17| it('R1 actual export schema rejects UTF-8 bytes above the recover file…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/4]⎯
+
+ FAIL  tests/recovery.test.ts > R1 title 491 uses the normal input contract and preserves original
+ FAIL  tests/recovery.test.ts > R1 title 500 uses the normal input contract and preserves original
+Error: 退避ページの形式に対応していません
+ ❯ src/persistence/store.ts:407:17
+    405|           (local.schemaVersion !== undefined && local.schemaVersion !=…
+    406|         )
+    407|           throw new Error("退避ページの形式に対応していません");
+       |                 ^
+    408|         const copy = this.create(null, local.kind, "[復旧] " + local.tit…
+    409|         const restore = {
+ ❯ Store.transaction src/persistence/store.ts:74:21
+ ❯ Store.recover src/persistence/store.ts:395:17
+ ❯ tests/recovery.test.ts:15:24
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/4]⎯
+
+ FAIL  tests/recovery.test.ts > R1 actual export schema rejects UTF-8 bytes above the recover file limit
+AssertionError: expected true to be false // Object.is equality
+
+- Expected
++ Received
+
+- false
++ true
+
+ ❯ tests/recovery.test.ts:21:98
+     19|   expect(content.length).toBeLessThan(30_000_000);
+     20|   expect(Buffer.byteLength(content)).toBeGreaterThan(30_000_000);
+     21|   expect(requestSchema.safeParse({type:'export',name:'recovery',format…
+       |                                                                                                  ^
+     22| });
+     23| 
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/4]⎯
+

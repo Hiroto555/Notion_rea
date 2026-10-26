@@ -1,0 +1,42 @@
+
+Running 1 test using 1 worker
+
+  ✘  1 tests/e2e/recovery.spec.ts:17:1 › R1 real IPC rejects the 30.3MB Japanese export previously accepted (2.4s)
+
+
+  1) tests/e2e/recovery.spec.ts:17:1 › R1 real IPC rejects the 30.3MB Japanese export previously accepted 
+
+    Error: expect(received).toEqual(expected) // deep equality
+
+    - Expected  - 2
+    + Received  + 2
+
+      Object {
+    -   "export": "rejected",
+    -   "recover": "not-written",
+    +   "export": "accepted",
+    +   "recover": "rejected",
+      }
+
+      26 |     try{await window.folio.request({type:'recover'});return {export:'accepted',recover:'accepted'};}
+      27 |     catch{return {export:'accepted',recover:'rejected'};}
+    > 28 |   }); expect(result).toEqual({export:'rejected',recover:'not-written'});
+         |                      ^
+      29 | });
+      30 |
+        at <repo>/tests/e2e/recovery.spec.ts:28:22
+
+    Error Context: output/next-round/r1-red-confirm/recovery-R1-real-IPC-rejec-794fc--export-previously-accepted/error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    output/next-round/r1-red-confirm/recovery-R1-real-IPC-rejec-794fc--export-previously-accepted/trace.zip
+    Usage:
+
+        npx playwright show-trace output/next-round/r1-red-confirm/recovery-R1-real-IPC-rejec-794fc--export-previously-accepted/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  1 failed
+    tests/e2e/recovery.spec.ts:17:1 › R1 real IPC rejects the 30.3MB Japanese export previously accepted 
+(node:74680) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)

@@ -28,6 +28,7 @@ import {
   Database as DatabaseIcon,
 } from "lucide-react";
 import { Editor } from "../editor/Editor";
+import { recoveryContent } from "../shared/recovery";
 import { PendingEdits } from "./pending-edits";
 import { composing } from "../shared/keyboard";
 import { findText } from "../editor/text-search";
@@ -963,26 +964,23 @@ export function App() {
                     safe(async () => {
                       await enqueue(async () => {
                         const through = edits.current.sequence;
-                        const persisted = await api<Snapshot>({ type: "load" });
+                        const content = recoveryContent(
+                          pageRef.current,
+                          edits.current.snapshot(),
+                        );
                         const path = await api<string | null>({
-                          type: "export",
-                          name: "folio-unsaved-recovery",
-                          format: "json",
-                          content: JSON.stringify(
-                            {
-                              format: "folio-recovery",
-                              schemaVersion: 1,
-                              pages: pageRef.current,
-                              persistedPages: persisted.pages,
-                              pendingPatches: edits.current.snapshot(),
-                            },
-                            null,
-                            2,
-                          ),
+                          type: "exportRecovery",
+                          content,
                         });
                         if (!path) return;
+                        // Do not discard pending edits if the post-write reload fails.
+                        const persisted = await api<Snapshot>({ type: "load" });
                         edits.current.discardThrough(through);
-                        const state = await refresh();
+                        const state = {
+                          ...persisted,
+                          pages: edits.current.merge(persisted.pages),
+                        };
+                        commit(state.pages);
                         const current = state.pages.find(
                           (p) => p.id === activeRef.current,
                         );
@@ -1074,6 +1072,11 @@ export function App() {
                 )}
                 <div className="document-content">
                   <div className="page-decoration">
+                    {page.recoveredFrom && (
+                      <span title="退避JSONから別ページに復旧しました">
+                        復旧ページ
+                      </span>
+                    )}
                     <div className="menu-anchor">
                       <button
                         className="page-icon"

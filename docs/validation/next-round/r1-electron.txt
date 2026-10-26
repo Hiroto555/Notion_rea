@@ -1,0 +1,28 @@
+
+Running 21 tests using 1 worker
+
+  ✓   1 tests/e2e/gate-a.spec.ts:59:1 › F01 same-page sidebar/search reselection keeps editor, attachment, link and exports (4.2s)
+  ✓   2 tests/e2e/gate-a.spec.ts:122:3 › F05 attachment roundtrip LICENSE (3.0s)
+  ✓   3 tests/e2e/gate-a.spec.ts:122:3 › F05 attachment roundtrip 資料.日本語 (3.8s)
+  ✓   4 tests/e2e/gate-a.spec.ts:122:3 › F05 attachment roundtrip file.abcdefghijklmnop (2.2s)
+  ✓   5 tests/e2e/gate-a.spec.ts:122:3 › F05 attachment roundtrip archive.tar.gz (3.4s)
+  ✓   6 tests/e2e/gate-a.spec.ts:122:3 › F05 attachment roundtrip IMAGE.PNG (2.7s)
+  ✓   7 tests/e2e/gate-a.spec.ts:139:1 › F06 synthetic composing Enter does not navigate search or link (not physical IME) (3.6s)
+  ✓   8 tests/e2e/gate-a.spec.ts:169:1 › F11 editing during move and delayed load keeps local patch and durable revision (5.1s)
+  ✓   9 tests/e2e/gate-a.spec.ts:226:1 › F02 full-text search, preview, count and in-page selection cross inline marks (2.7s)
+  ✓  10 tests/e2e/gate-a.spec.ts:299:1 › F04 DB delete Undo, restart history restore and property history retain IDs and values (5.5s)
+  ✓  11 tests/e2e/gate-a.spec.ts:368:1 › F06 editor selection Cmd+K sets page link without replacing text; modal and prevented keys win (2.2s)
+  ✓  12 tests/e2e/gate-a.spec.ts:406:1 › F07 invalid IPC is rejected and unknown stored schema is read-only with exact source export (1.9s)
+  ✓  13 tests/e2e/gate-a.spec.ts:449:1 › F11 failed write exports pending patch and persisted state, then recovers a separate page (3.4s)
+  ✓  14 tests/e2e/gate-a.spec.ts:504:1 › F03 default userData path and pre-ready directory failure are observable without touching user data (6.6s)
+  ✓  15 tests/e2e/gate-a.spec.ts:561:1 › F07 malformed JSON opens an error screen with backup, and null doc never mounts editor (3.8s)
+  ✓  16 tests/e2e/recovery.spec.ts:12:1 › R1 legacy export file → recovery → restart preserves a 500 character title (4.3s)
+  ✓  17 tests/e2e/recovery.spec.ts:57:3 › R1 real IPC v2 byte boundary -1 with escaping → file → restart (18.9s)
+  ✓  18 tests/e2e/recovery.spec.ts:57:3 › R1 real IPC v2 byte boundary 0 with escaping → file → restart (15.7s)
+  ✓  19 tests/e2e/recovery.spec.ts:57:3 › R1 real IPC v2 byte boundary 1 with escaping → file → restart (9.1s)
+  ✓  20 tests/e2e/recovery.spec.ts:102:1 › R1 multiple pending pages survive cancel/write/reload failures; copies retain original and attachment (4.0s)
+  ✓  21 tests/e2e/recovery.spec.ts:262:1 › R1 real IPC rejects the 30.3MB Japanese export previously accepted (1.6s)
+
+  21 passed (1.8m)
+(node:77389) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)

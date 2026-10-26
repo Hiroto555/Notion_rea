@@ -1,0 +1,48 @@
+{
+  "targetCommit": "7759906dbbc905a4dc79d01b97aaff6471e51eb3",
+  "executionKind": "transcribed guard-expression probe; not production-function test",
+  "runtime": "v22.16.0",
+  "platform": "linux",
+  "limitations": [
+    "No Electron run",
+    "No dependency installation",
+    "No full requestSchema or Store.recover execution",
+    "No Notion operation",
+    "No physical IME test"
+  ],
+  "titleCases": [
+    {
+      "length": 489,
+      "normalTitleLengthAllows": true,
+      "recoveryTitleGuardAllows": true
+    },
+    {
+      "length": 490,
+      "normalTitleLengthAllows": true,
+      "recoveryTitleGuardAllows": true
+    },
+    {
+      "length": 491,
+      "normalTitleLengthAllows": true,
+      "recoveryTitleGuardAllows": false
+    },
+    {
+      "length": 500,
+      "normalTitleLengthAllows": true,
+      "recoveryTitleGuardAllows": false
+    },
+    {
+      "length": 501,
+      "normalTitleLengthAllows": false,
+      "recoveryTitleGuardAllows": false
+    }
+  ],
+  "byteCase": {
+    "contentUTF16Length": 10101495,
+    "fileUTF8Bytes": 30301515,
+    "requestUTF8Bytes": 30301813,
+    "exportContentLengthAllows": true,
+    "exportRequestSizeAllows": true,
+    "recoveryFileSizeAllows": false
+  }
+}

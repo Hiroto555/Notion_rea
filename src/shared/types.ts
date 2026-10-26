@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { validDocument } from "./validation";
 import { parseAssetURL } from "./assets";
+import { fileFits } from "./limits";
 export type Doc = {
   type: string;
   schemaVersion?: number;
@@ -47,6 +48,7 @@ export type Page = {
   revision: number;
   deletedAt: number | null;
   documentError?: string;
+  recoveredFrom?: { pageId: string; recoveredAt: number };
 };
 export type PagePatch = Partial<
   Pick<Page, "title" | "icon" | "cover" | "doc" | "database" | "favorite">
@@ -126,6 +128,15 @@ export const requestSchema = z.discriminatedUnion("type", [
   z.object({ type: z.literal("pageSource"), id: z.string() }),
   z.object({ type: z.literal("recover") }),
   z.object({
+    type: z.literal("exportRecovery"),
+    content: z
+      .string()
+      .refine(
+        fileFits,
+        "退避の上限はUTF-8で30,000,000 bytesです。未保存変更を保持しています。",
+      ),
+  }),
+  z.object({
     type: z.literal("restoreVersion"),
     id: z.string(),
     versionId: z.number().int(),
@@ -149,7 +160,9 @@ export const requestSchema = z.discriminatedUnion("type", [
     type: z.literal("export"),
     name: z.string().max(500),
     format: z.enum(["md", "html", "json"]),
-    content: z.string().max(30000000),
+    content: z
+      .string()
+      .refine(fileFits, "書き出しの上限はUTF-8で30,000,000 bytesです"),
   }),
   z.object({ type: z.literal("import") }),
 ]);

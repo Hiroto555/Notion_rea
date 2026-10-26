@@ -1,0 +1,62 @@
+
+Running 2 tests using 1 worker
+
+  ✘  1 tests/e2e/recovery.spec.ts:4:1 › R1 legacy export file → recovery → restart preserves a 500 character title (2.9s)
+  ✘  2 tests/e2e/recovery.spec.ts:17:1 › R1 real IPC rejects the 30.3MB Japanese export previously accepted (1.8s)
+
+
+  1) tests/e2e/recovery.spec.ts:4:1 › R1 legacy export file → recovery → restart preserves a 500 character title 
+
+    Error: page.evaluate: Error: Error invoking remote method 'folio:request': Error: 退避ページの形式に対応していません
+
+       8 |   await s.window.evaluate(content=>window.folio.request({type:'export',name:'recovery',format:'json',content}),JSON.stringify(value));
+       9 |   await openDialog(s,path);
+    > 10 |   const [copy]=await s.window.evaluate(()=>window.folio.request<any[]>({type:'recover'}));
+         |                               ^
+      11 |   expect(copy.title).toBe(original.title); expect(copy.id).not.toBe(original.id);
+      12 |   await s.restart();
+      13 |   const state=await s.window.evaluate(()=>window.folio.request<any>({type:'load'}));
+        at <repo>/tests/e2e/recovery.spec.ts:10:31
+
+    Error Context: output/next-round/r1-red/recovery-R1-legacy-export--a932f-erves-a-500-character-title/error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    output/next-round/r1-red/recovery-R1-legacy-export--a932f-erves-a-500-character-title/trace.zip
+    Usage:
+
+        npx playwright show-trace output/next-round/r1-red/recovery-R1-legacy-export--a932f-erves-a-500-character-title/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  2) tests/e2e/recovery.spec.ts:17:1 › R1 real IPC rejects the 30.3MB Japanese export previously accepted 
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: "rejected"
+    Received: "accepted"
+
+      20 |     const content=JSON.stringify({format:'folio-recovery',schemaVersion:1,pages:[],pendingPatches:[],padding:'あ'.repeat(10_100_000)});
+      21 |     try{await window.folio.request({type:'export',name:'recovery',format:'json',content});return 'accepted';}catch{return 'rejected';}
+    > 22 |   }); expect(result).toBe('rejected');
+         |                      ^
+      23 | });
+      24 |
+        at <repo>/tests/e2e/recovery.spec.ts:22:22
+
+    Error Context: output/next-round/r1-red/recovery-R1-real-IPC-rejec-794fc--export-previously-accepted/error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    output/next-round/r1-red/recovery-R1-real-IPC-rejec-794fc--export-previously-accepted/trace.zip
+    Usage:
+
+        npx playwright show-trace output/next-round/r1-red/recovery-R1-real-IPC-rejec-794fc--export-previously-accepted/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  2 failed
+    tests/e2e/recovery.spec.ts:4:1 › R1 legacy export file → recovery → restart preserves a 500 character title 
+    tests/e2e/recovery.spec.ts:17:1 › R1 real IPC rejects the 30.3MB Japanese export previously accepted 
+(node:74179) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:74286) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)

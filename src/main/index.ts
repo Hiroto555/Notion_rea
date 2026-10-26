@@ -26,6 +26,9 @@ import { seed } from "../persistence/seed";
 import { attachFile, resolveAsset } from "../persistence/assets";
 import { workspacePath, migrateWorkspace } from "../persistence/workspace";
 import { requestSchema } from "../shared/types";
+import { FILE_MAX_BYTES } from "../shared/limits";
+import { parseRecovery } from "../shared/recovery";
+import { writeRecoveryFile } from "../persistence/recovery-file";
 app.setName("Folio");
 const userData = join(app.getPath("appData"), "Folio");
 const dataDir = workspacePath(userData, process.env.FOLIO_DATA_DIR);
@@ -144,7 +147,14 @@ if (startupError) {
         )
           throw new Error("Unauthorized IPC sender");
         const req = requestSchema.parse(input);
-        if (Buffer.byteLength(JSON.stringify(req)) > 32_000_000)
+        // File payloads are bounded by their actual UTF-8 bytes in the schema.
+        // JSON-escaping the entire IPC envelope would double-count quotes and
+        // backslashes and reject otherwise readable recovery files.
+        if (
+          req.type !== "export" &&
+          req.type !== "exportRecovery" &&
+          Buffer.byteLength(JSON.stringify(req)) > 32_000_000
+        )
           throw new Error("リクエストが大きすぎます");
         if (req.type === "openExternal") {
           await shell.openExternal(req.url);
@@ -191,9 +201,20 @@ if (startupError) {
           });
           if (selected.canceled) return null;
           const path = selected.filePaths[0];
-          if (statSync(path).size > 30_000_000)
+          if (statSync(path).size > FILE_MAX_BYTES)
             throw new Error("復旧ファイルが大きすぎます");
-          return store.recover(JSON.parse(readFileSync(path, "utf8")));
+          const content = readFileSync(path, "utf8");
+          parseRecovery(content);
+          return store.recover(JSON.parse(content));
+        }
+        if (req.type === "exportRecovery") {
+          parseRecovery(req.content);
+          const result = await dialog.showSaveDialog(win, {
+            defaultPath: join(dataDir, "folio-unsaved-recovery.json"),
+          });
+          if (result.canceled || !result.filePath) return null;
+          writeRecoveryFile(result.filePath, req.content);
+          return result.filePath;
         }
         if (req.type === "export") {
           const result = await dialog.showSaveDialog(win, {
