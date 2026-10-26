@@ -275,18 +275,20 @@ test("F02 full-text search, preview, count and in-page selection cross inline ma
       .filter({ hasText: "文字数" })
       .locator("+ dd"),
   ).toHaveText("12");
-  await window.keyboard.press("Meta+p");
-  await window.getByLabel("検索キーワード").fill("不動産");
-  await expect(window.locator(".search-results button")).toHaveCount(1);
-  await expect(window.locator(".search-results small")).toContainText("不動産");
-  await window.keyboard.press("Enter");
-  await window.keyboard.press("Meta+f");
-  await window.getByLabel("ページ内検索").fill("不動産");
-  await expect(window.locator(".page-find")).toContainText("1 件");
-  await window.getByRole("button", { name: "表示", exact: true }).click();
-  expect(
-    await window.evaluate(() => globalThis.getSelection()?.toString()),
-  ).toBe("不動産");
+  for (const word of ["不動産", "software"]) {
+    await window.keyboard.press("Meta+p");
+    await window.getByLabel("検索キーワード").fill(word);
+    await expect(window.locator(".search-results button")).toHaveCount(1);
+    await expect(window.locator(".search-results small")).toContainText(word);
+    await window.keyboard.press("Enter");
+    await window.keyboard.press("Meta+f");
+    await window.getByLabel("ページ内検索").fill(word);
+    await expect(window.locator(".page-find")).toContainText("1 件");
+    await window.getByRole("button", { name: "表示", exact: true }).click();
+    expect(
+      await window.evaluate(() => globalThis.getSelection()?.toString()),
+    ).toBe(word);
+  }
   const loaded = await window.evaluate(
     (id) =>
       globalThis.window.folio
