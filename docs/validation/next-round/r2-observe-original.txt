@@ -1,0 +1,226 @@
+
+Running 5 tests using 1 worker
+
+  ✘  1 tests/e2e/drag.spec.ts:3:1 › R2 short original regression: checkbox edit then real handle drag (8.9s)
+  ✘  2 tests/e2e/drag.spec.ts:3:1 › R2 short original regression: checkbox edit then real handle drag (7.7s)
+  ✘  3 tests/e2e/drag.spec.ts:3:1 › R2 short original regression: checkbox edit then real handle drag (7.4s)
+  ✘  4 tests/e2e/drag.spec.ts:3:1 › R2 short original regression: checkbox edit then real handle drag (7.4s)
+  ✘  5 tests/e2e/drag.spec.ts:3:1 › R2 short original regression: checkbox edit then real handle drag (7.1s)
+
+
+  1) tests/e2e/drag.spec.ts:3:1 › R2 short original regression: checkbox edit then real handle drag 
+
+    Error: expect(received).toEqual(expected) // deep equality
+
+    - Expected  - 0
+    + Received  + 3
+
+    @@ -40,6 +40,9 @@
+              "type": "taskItem",
+            },
+          ],
+          "type": "taskList",
+        },
+    +   Object {
+    +     "type": "paragraph",
+    +   },
+      ]
+
+    Call Log:
+    - Timeout 5000ms exceeded while waiting on the predicate
+
+      12 |     const before=await editorDoc(s);
+      13 |     await w.getByLabel('ブロック 2 を選択',{exact:true}).dragTo(w.getByLabel('ブロック 1 を選択',{exact:true}));
+    > 14 |     await expect.poll(async()=> (await editorDoc(s)).content).toEqual([before.content[1],before.content[0],before.content[2]]);
+         |                                                               ^
+      15 |     await saved(s);
+      16 |   }finally{await dragEvidence(s,info);}
+      17 | });
+        at <repo>/tests/e2e/drag.spec.ts:14:63
+
+    Error Context: output/next-round/r2-observe/drag-R2-short-original-reg-e611d--edit-then-real-handle-drag/error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    output/next-round/r2-observe/drag-R2-short-original-reg-e611d--edit-then-real-handle-drag/trace.zip
+    Usage:
+
+        npx playwright show-trace output/next-round/r2-observe/drag-R2-short-original-reg-e611d--edit-then-real-handle-drag/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  2) tests/e2e/drag.spec.ts:3:1 › R2 short original regression: checkbox edit then real handle drag 
+
+    Error: expect(received).toEqual(expected) // deep equality
+
+    - Expected  - 0
+    + Received  + 3
+
+    @@ -40,6 +40,9 @@
+              "type": "taskItem",
+            },
+          ],
+          "type": "taskList",
+        },
+    +   Object {
+    +     "type": "paragraph",
+    +   },
+      ]
+
+    Call Log:
+    - Timeout 5000ms exceeded while waiting on the predicate
+
+      12 |     const before=await editorDoc(s);
+      13 |     await w.getByLabel('ブロック 2 を選択',{exact:true}).dragTo(w.getByLabel('ブロック 1 を選択',{exact:true}));
+    > 14 |     await expect.poll(async()=> (await editorDoc(s)).content).toEqual([before.content[1],before.content[0],before.content[2]]);
+         |                                                               ^
+      15 |     await saved(s);
+      16 |   }finally{await dragEvidence(s,info);}
+      17 | });
+        at <repo>/tests/e2e/drag.spec.ts:14:63
+
+    Error Context: output/next-round/r2-observe/drag-R2-short-original-reg-e611d--edit-then-real-handle-drag-repeat1/error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    output/next-round/r2-observe/drag-R2-short-original-reg-e611d--edit-then-real-handle-drag-repeat1/trace.zip
+    Usage:
+
+        npx playwright show-trace output/next-round/r2-observe/drag-R2-short-original-reg-e611d--edit-then-real-handle-drag-repeat1/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  3) tests/e2e/drag.spec.ts:3:1 › R2 short original regression: checkbox edit then real handle drag 
+
+    Error: expect(received).toEqual(expected) // deep equality
+
+    - Expected  - 0
+    + Received  + 3
+
+    @@ -40,6 +40,9 @@
+              "type": "taskItem",
+            },
+          ],
+          "type": "taskList",
+        },
+    +   Object {
+    +     "type": "paragraph",
+    +   },
+      ]
+
+    Call Log:
+    - Timeout 5000ms exceeded while waiting on the predicate
+
+      12 |     const before=await editorDoc(s);
+      13 |     await w.getByLabel('ブロック 2 を選択',{exact:true}).dragTo(w.getByLabel('ブロック 1 を選択',{exact:true}));
+    > 14 |     await expect.poll(async()=> (await editorDoc(s)).content).toEqual([before.content[1],before.content[0],before.content[2]]);
+         |                                                               ^
+      15 |     await saved(s);
+      16 |   }finally{await dragEvidence(s,info);}
+      17 | });
+        at <repo>/tests/e2e/drag.spec.ts:14:63
+
+    Error Context: output/next-round/r2-observe/drag-R2-short-original-reg-e611d--edit-then-real-handle-drag-repeat2/error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    output/next-round/r2-observe/drag-R2-short-original-reg-e611d--edit-then-real-handle-drag-repeat2/trace.zip
+    Usage:
+
+        npx playwright show-trace output/next-round/r2-observe/drag-R2-short-original-reg-e611d--edit-then-real-handle-drag-repeat2/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  4) tests/e2e/drag.spec.ts:3:1 › R2 short original regression: checkbox edit then real handle drag 
+
+    Error: expect(received).toEqual(expected) // deep equality
+
+    - Expected  - 0
+    + Received  + 3
+
+    @@ -40,6 +40,9 @@
+              "type": "taskItem",
+            },
+          ],
+          "type": "taskList",
+        },
+    +   Object {
+    +     "type": "paragraph",
+    +   },
+      ]
+
+    Call Log:
+    - Timeout 5000ms exceeded while waiting on the predicate
+
+      12 |     const before=await editorDoc(s);
+      13 |     await w.getByLabel('ブロック 2 を選択',{exact:true}).dragTo(w.getByLabel('ブロック 1 を選択',{exact:true}));
+    > 14 |     await expect.poll(async()=> (await editorDoc(s)).content).toEqual([before.content[1],before.content[0],before.content[2]]);
+         |                                                               ^
+      15 |     await saved(s);
+      16 |   }finally{await dragEvidence(s,info);}
+      17 | });
+        at <repo>/tests/e2e/drag.spec.ts:14:63
+
+    Error Context: output/next-round/r2-observe/drag-R2-short-original-reg-e611d--edit-then-real-handle-drag-repeat3/error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    output/next-round/r2-observe/drag-R2-short-original-reg-e611d--edit-then-real-handle-drag-repeat3/trace.zip
+    Usage:
+
+        npx playwright show-trace output/next-round/r2-observe/drag-R2-short-original-reg-e611d--edit-then-real-handle-drag-repeat3/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  5) tests/e2e/drag.spec.ts:3:1 › R2 short original regression: checkbox edit then real handle drag 
+
+    Error: expect(received).toEqual(expected) // deep equality
+
+    - Expected  - 0
+    + Received  + 3
+
+    @@ -40,6 +40,9 @@
+              "type": "taskItem",
+            },
+          ],
+          "type": "taskList",
+        },
+    +   Object {
+    +     "type": "paragraph",
+    +   },
+      ]
+
+    Call Log:
+    - Timeout 5000ms exceeded while waiting on the predicate
+
+      12 |     const before=await editorDoc(s);
+      13 |     await w.getByLabel('ブロック 2 を選択',{exact:true}).dragTo(w.getByLabel('ブロック 1 を選択',{exact:true}));
+    > 14 |     await expect.poll(async()=> (await editorDoc(s)).content).toEqual([before.content[1],before.content[0],before.content[2]]);
+         |                                                               ^
+      15 |     await saved(s);
+      16 |   }finally{await dragEvidence(s,info);}
+      17 | });
+        at <repo>/tests/e2e/drag.spec.ts:14:63
+
+    Error Context: output/next-round/r2-observe/drag-R2-short-original-reg-e611d--edit-then-real-handle-drag-repeat4/error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    output/next-round/r2-observe/drag-R2-short-original-reg-e611d--edit-then-real-handle-drag-repeat4/trace.zip
+    Usage:
+
+        npx playwright show-trace output/next-round/r2-observe/drag-R2-short-original-reg-e611d--edit-then-real-handle-drag-repeat4/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  5 failed
+    tests/e2e/drag.spec.ts:3:1 › R2 short original regression: checkbox edit then real handle drag ─
+    tests/e2e/drag.spec.ts:3:1 › R2 short original regression: checkbox edit then real handle drag ─
+    tests/e2e/drag.spec.ts:3:1 › R2 short original regression: checkbox edit then real handle drag ─
+    tests/e2e/drag.spec.ts:3:1 › R2 short original regression: checkbox edit then real handle drag ─
+    tests/e2e/drag.spec.ts:3:1 › R2 short original regression: checkbox edit then real handle drag ─
+(node:80929) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:81070) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:81216) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:81356) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:81492) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)

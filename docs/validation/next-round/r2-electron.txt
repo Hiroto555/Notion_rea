@@ -1,0 +1,56 @@
+
+Running 9 tests using 1 worker
+
+  ✓  1 tests/e2e/desktop.spec.ts:41:1 › real Electron: page edit, slash, undo, blocks, search, clone, trash and restart (8.2s)
+  ✘  2 tests/e2e/desktop.spec.ts:145:1 › database table edits, filters, sorts, board drop and calendar persistence (7.8s)
+  ✓  3 tests/e2e/desktop.spec.ts:190:1 › security boundary, page hierarchy, cycle error and versions (2.3s)
+  ✓  4 tests/e2e/desktop.spec.ts:246:1 › native rich HTML paste, Markdown shortcuts, toggle, links and block drag (5.0s)
+  ✓  5 tests/e2e/desktop.spec.ts:316:1 › real import/export, image/file attachments and complete backup (2.9s)
+  ✓  6 tests/e2e/desktop.spec.ts:397:1 › reproducible load: 150 pages, 1000 blocks, input and reopen (6.1s)
+  ✓  7 tests/e2e/desktop.spec.ts:476:1 › stale-write recovery preserves unsaved edits before reload (2.1s)
+  ✓  8 tests/e2e/drag.spec.ts:4:1 › R2 short original regression: checkbox edit then real handle drag (2.1s)
+  ✓  9 tests/e2e/drag.spec.ts:39:1 › R2 top-level matrix: single/multiple/start/end/same/cancel/scroll/undo/redo/restart (7.1s)
+
+
+  1) tests/e2e/desktop.spec.ts:145:1 › database table edits, filters, sorts, board drop and calendar persistence 
+
+    Error: expect(locator).toContainText(expected) failed
+
+    Locator: locator('.board-column').filter({ has: locator('h4').filter({ hasText: '完了' }) })
+    Expected substring: "次のアイデアを見つける"
+    Received string:    "完了 1▤ワークスペースを整える完了2026-10-26＋ 新規"
+    Timeout: 5000ms
+
+    Call log:
+      - Expect "toContainText" locator('.board-column').filter({ has: locator('h4').filter({ hasText: '完了' }) }) with timeout 5000ms
+      - waiting for locator('.board-column').filter({ has: locator('h4').filter({ hasText: '完了' }) })
+        13 × locator resolved to <section class="board-column">…</section>
+           - unexpected value "完了 1▤ワークスペースを整える完了2026-10-26＋ 新規"
+
+
+      161 |     .filter({ has: window.locator("h4", { hasText: "完了" }) });
+      162 |   await card.dragTo(target);
+    > 163 |   await expect(target).toContainText("次のアイデアを見つける");
+          |                        ^
+      164 |   await window.screenshot({ path: "output/playwright/folio-board.png" });
+      165 |   await window.getByRole("button", { name: "カレンダー", exact: true }).click();
+      166 |   await expect(window.locator(".day")).toHaveCount(42);
+        at <repo>/tests/e2e/desktop.spec.ts:163:24
+
+    Error Context: output/next-round/r2-green/desktop-database-table-edi-ce04b-op-and-calendar-persistence/error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    output/next-round/r2-green/desktop-database-table-edi-ce04b-op-and-calendar-persistence/trace.zip
+    Usage:
+
+        npx playwright show-trace output/next-round/r2-green/desktop-database-table-edi-ce04b-op-and-calendar-persistence/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  1 failed
+    tests/e2e/desktop.spec.ts:145:1 › database table edits, filters, sorts, board drop and calendar persistence 
+  8 passed (44.6s)
+(node:85735) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:86124) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)

@@ -1,0 +1,84 @@
+
+Running 1 test using 1 worker
+
+  ✘  1 tests/e2e/drag.spec.ts:39:1 › R2 top-level matrix: single/multiple/start/end/same/cancel/scroll/undo/redo/restart (12.3s)
+
+
+  1) tests/e2e/drag.spec.ts:39:1 › R2 top-level matrix: single/multiple/start/end/same/cancel/scroll/undo/redo/restart 
+
+    Error: expect(received).toEqual(expected) // deep equality
+
+    - Expected  - 12
+    + Received  + 12
+
+    @@ -1,19 +1,7 @@
+      Array [
+        Object {
+    -     "attrs": Object {
+    -       "level": 1,
+    -     },
+    -     "content": Array [
+    -       Object {
+    -         "text": "Alpha",
+    -         "type": "text",
+    -       },
+    -     ],
+    -     "type": "heading",
+    -   },
+    -   Object {
+          "content": Array [
+            Object {
+              "marks": Array [
+                Object {
+                  "type": "bold",
+    @@ -36,10 +24,22 @@
+              "text": "Charlie",
+              "type": "text",
+            },
+          ],
+          "type": "paragraph",
+    +   },
+    +   Object {
+    +     "attrs": Object {
+    +       "level": 1,
+    +     },
+    +     "content": Array [
+    +       Object {
+    +         "text": "Alpha",
+    +         "type": "text",
+    +       },
+    +     ],
+    +     "type": "heading",
+        },
+        Object {
+          "content": Array [
+            Object {
+              "text": "Block 4",
+
+    Call Log:
+    - Timeout 5000ms exceeded while waiting on the predicate
+
+      82 |     await expect
+      83 |       .poll(async () => (await editorDoc(s)).content)
+    > 84 |       .toEqual(content);
+         |        ^
+      85 |     await saved(s);
+      86 |   };
+      87 |   try {
+        at assertDoc (<repo>/tests/e2e/drag.spec.ts:84:8)
+        at <repo>/tests/e2e/drag.spec.ts:116:11
+
+    Error Context: output/next-round/r2-real-pointer-red/drag-R2-top-level-matrix-s-0df63-el-scroll-undo-redo-restart/error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    output/next-round/r2-real-pointer-red/drag-R2-top-level-matrix-s-0df63-el-scroll-undo-redo-restart/trace.zip
+    Usage:
+
+        npx playwright show-trace output/next-round/r2-real-pointer-red/drag-R2-top-level-matrix-s-0df63-el-scroll-undo-redo-restart/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  1 failed
+    tests/e2e/drag.spec.ts:39:1 › R2 top-level matrix: single/multiple/start/end/same/cancel/scroll/undo/redo/restart 
+(node:83906) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)

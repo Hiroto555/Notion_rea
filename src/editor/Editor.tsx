@@ -20,6 +20,8 @@ import {
 import { composing } from "../shared/keyboard";
 import type { Doc } from "../shared/types";
 import { editBlocks } from "./blocks";
+import { closeHistory } from "@tiptap/pm/history";
+import { Selection } from "@tiptap/pm/state";
 export { extensions } from "../shared/editor-schema";
 import { extensions } from "../shared/editor-schema";
 type Command = {
@@ -246,15 +248,35 @@ export function Editor({
       target,
     );
     const next = editor.schema.nodeFromJSON({ type: "doc", content });
-    editor.view.dispatch(
-      editor.state.tr.replaceWith(
-        0,
-        editor.state.doc.content.size,
-        next.content,
+    // A same-position drop must not consume an Undo step.
+    if (next.eq(editor.state.doc)) return;
+    const tr = closeHistory(editor.state.tr).replaceWith(
+      0,
+      editor.state.doc.content.size,
+      next.content,
+    );
+    // Keep the cursor near the manipulated blocks. Mapping through a complete
+    // replacement otherwise leaves it at the end and Undo/Redo scrolls there.
+    const indices = selectionRef.current;
+    const at = Math.max(
+      0,
+      Math.min(
+        next.childCount - 1,
+        action === "move"
+          ? target - indices.filter((i) => i < target).length
+          : Math.min(...indices),
       ),
     );
+    let pos = 0;
+    next.forEach((_node, offset, index) => {
+      if (index === at) pos = offset;
+    });
+    tr.setSelection(Selection.near(tr.doc.resolve(pos + 1)));
+    editor.view.dispatch(tr);
     setSelected([]);
-    editor.commands.focus();
+    // Whole-document replacement maps the old cursor; do not scroll a completed
+    // pointer operation to that cursor while the user starts the next drag.
+    editor.commands.focus(undefined, { scrollIntoView: false });
   }
   if (!editor) return null;
   const filtered = commands.filter((c) =>

@@ -1,0 +1,287 @@
+
+Running 40 tests using 1 worker
+
+  ✓   1 tests/e2e/drag.spec.ts:4:1 › R2 short original regression: checkbox edit then real handle drag (3.6s)
+  ✓   2 tests/e2e/drag.spec.ts:39:1 › R2 top-level matrix: single/multiple/start/end/same/cancel/scroll/undo/redo/restart (9.6s)
+  ✓   3 tests/e2e/drag.spec.ts:4:1 › R2 short original regression: checkbox edit then real handle drag (2.3s)
+  ✓   4 tests/e2e/drag.spec.ts:39:1 › R2 top-level matrix: single/multiple/start/end/same/cancel/scroll/undo/redo/restart (8.2s)
+  ✓   5 tests/e2e/drag.spec.ts:4:1 › R2 short original regression: checkbox edit then real handle drag (1.8s)
+  ✓   6 tests/e2e/drag.spec.ts:39:1 › R2 top-level matrix: single/multiple/start/end/same/cancel/scroll/undo/redo/restart (9.0s)
+  ✘   7 tests/e2e/drag.spec.ts:4:1 › R2 short original regression: checkbox edit then real handle drag (7.3s)
+  ✓   8 tests/e2e/drag.spec.ts:39:1 › R2 top-level matrix: single/multiple/start/end/same/cancel/scroll/undo/redo/restart (8.2s)
+  ✓   9 tests/e2e/drag.spec.ts:4:1 › R2 short original regression: checkbox edit then real handle drag (2.3s)
+  ✘  10 tests/e2e/drag.spec.ts:39:1 › R2 top-level matrix: single/multiple/start/end/same/cancel/scroll/undo/redo/restart (10.3s)
+  ✓  11 tests/e2e/drag.spec.ts:4:1 › R2 short original regression: checkbox edit then real handle drag (2.6s)
+  ✓  12 tests/e2e/drag.spec.ts:39:1 › R2 top-level matrix: single/multiple/start/end/same/cancel/scroll/undo/redo/restart (8.4s)
+  ✓  13 tests/e2e/drag.spec.ts:4:1 › R2 short original regression: checkbox edit then real handle drag (1.8s)
+  ✓  14 tests/e2e/drag.spec.ts:39:1 › R2 top-level matrix: single/multiple/start/end/same/cancel/scroll/undo/redo/restart (7.0s)
+  ✓  15 tests/e2e/drag.spec.ts:4:1 › R2 short original regression: checkbox edit then real handle drag (1.6s)
+  ✓  16 tests/e2e/drag.spec.ts:39:1 › R2 top-level matrix: single/multiple/start/end/same/cancel/scroll/undo/redo/restart (6.8s)
+  ✓  17 tests/e2e/drag.spec.ts:4:1 › R2 short original regression: checkbox edit then real handle drag (1.9s)
+  ✓  18 tests/e2e/drag.spec.ts:39:1 › R2 top-level matrix: single/multiple/start/end/same/cancel/scroll/undo/redo/restart (6.8s)
+  ✓  19 tests/e2e/drag.spec.ts:4:1 › R2 short original regression: checkbox edit then real handle drag (1.9s)
+  ✓  20 tests/e2e/drag.spec.ts:39:1 › R2 top-level matrix: single/multiple/start/end/same/cancel/scroll/undo/redo/restart (8.4s)
+  ✓  21 tests/e2e/drag.spec.ts:4:1 › R2 short original regression: checkbox edit then real handle drag (2.1s)
+  ✓  22 tests/e2e/drag.spec.ts:39:1 › R2 top-level matrix: single/multiple/start/end/same/cancel/scroll/undo/redo/restart (7.8s)
+  ✓  23 tests/e2e/drag.spec.ts:4:1 › R2 short original regression: checkbox edit then real handle drag (2.5s)
+  ✓  24 tests/e2e/drag.spec.ts:39:1 › R2 top-level matrix: single/multiple/start/end/same/cancel/scroll/undo/redo/restart (9.2s)
+  ✓  25 tests/e2e/drag.spec.ts:4:1 › R2 short original regression: checkbox edit then real handle drag (2.2s)
+  ✓  26 tests/e2e/drag.spec.ts:39:1 › R2 top-level matrix: single/multiple/start/end/same/cancel/scroll/undo/redo/restart (8.2s)
+  ✓  27 tests/e2e/drag.spec.ts:4:1 › R2 short original regression: checkbox edit then real handle drag (2.3s)
+  ✓  28 tests/e2e/drag.spec.ts:39:1 › R2 top-level matrix: single/multiple/start/end/same/cancel/scroll/undo/redo/restart (8.5s)
+  ✓  29 tests/e2e/drag.spec.ts:4:1 › R2 short original regression: checkbox edit then real handle drag (2.9s)
+  ✓  30 tests/e2e/drag.spec.ts:39:1 › R2 top-level matrix: single/multiple/start/end/same/cancel/scroll/undo/redo/restart (7.9s)
+  ✓  31 tests/e2e/drag.spec.ts:4:1 › R2 short original regression: checkbox edit then real handle drag (2.2s)
+  ✓  32 tests/e2e/drag.spec.ts:39:1 › R2 top-level matrix: single/multiple/start/end/same/cancel/scroll/undo/redo/restart (9.4s)
+  ✓  33 tests/e2e/drag.spec.ts:4:1 › R2 short original regression: checkbox edit then real handle drag (2.1s)
+  ✓  34 tests/e2e/drag.spec.ts:39:1 › R2 top-level matrix: single/multiple/start/end/same/cancel/scroll/undo/redo/restart (8.7s)
+  ✓  35 tests/e2e/drag.spec.ts:4:1 › R2 short original regression: checkbox edit then real handle drag (2.3s)
+  ✘  36 tests/e2e/drag.spec.ts:39:1 › R2 top-level matrix: single/multiple/start/end/same/cancel/scroll/undo/redo/restart (8.6s)
+  ✘  37 tests/e2e/drag.spec.ts:4:1 › R2 short original regression: checkbox edit then real handle drag (6.6s)
+  ✓  38 tests/e2e/drag.spec.ts:39:1 › R2 top-level matrix: single/multiple/start/end/same/cancel/scroll/undo/redo/restart (7.8s)
+  ✓  39 tests/e2e/drag.spec.ts:4:1 › R2 short original regression: checkbox edit then real handle drag (1.8s)
+  ✓  40 tests/e2e/drag.spec.ts:39:1 › R2 top-level matrix: single/multiple/start/end/same/cancel/scroll/undo/redo/restart (7.0s)
+
+
+  1) tests/e2e/drag.spec.ts:4:1 › R2 short original regression: checkbox edit then real handle drag 
+
+    Error: expect(received).toEqual(expected) // deep equality
+
+    - Expected  - 7
+    + Received  + 7
+
+    @@ -1,26 +1,26 @@
+      Array [
+        Object {
+    +     "attrs": Object {
+    +       "level": 1,
+    +     },
+          "content": Array [
+            Object {
+    -         "text": "Bravo 不動産",
+    +         "text": "Alpha heading",
+              "type": "text",
+            },
+          ],
+    -     "type": "paragraph",
+    +     "type": "heading",
+        },
+        Object {
+    -     "attrs": Object {
+    -       "level": 1,
+    -     },
+          "content": Array [
+            Object {
+    -         "text": "Alpha heading",
+    +         "text": "Bravo 不動産",
+              "type": "text",
+            },
+          ],
+    -     "type": "heading",
+    +     "type": "paragraph",
+        },
+        Object {
+          "content": Array [
+            Object {
+              "attrs": Object {
+
+    Call Log:
+    - Timeout 5000ms exceeded while waiting on the predicate
+
+      27 |     await expect
+      28 |       .poll(async () => (await editorDoc(s)).content)
+    > 29 |       .toEqual([
+         |        ^
+      30 |         before.content[1],
+      31 |         before.content[0],
+      32 |         ...before.content.slice(2),
+        at <repo>/tests/e2e/drag.spec.ts:29:8
+
+    Error Context: output/next-round/r2-repeat20/drag-R2-short-original-reg-e611d--edit-then-real-handle-drag-repeat3/error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    output/next-round/r2-repeat20/drag-R2-short-original-reg-e611d--edit-then-real-handle-drag-repeat3/trace.zip
+    Usage:
+
+        npx playwright show-trace output/next-round/r2-repeat20/drag-R2-short-original-reg-e611d--edit-then-real-handle-drag-repeat3/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  2) tests/e2e/drag.spec.ts:39:1 › R2 top-level matrix: single/multiple/start/end/same/cancel/scroll/undo/redo/restart 
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: true
+    Received: false
+
+    Call Log:
+    - Timeout 5000ms exceeded while waiting on the predicate
+
+       at real-drag.ts:25
+
+      23 |   await expect
+      24 |     .poll(() => page.evaluate(() => (globalThis as any).pointerDragStarted))
+    > 25 |     .toBe(true);
+         |      ^
+      26 |   await target.hover();
+      27 |   await target.hover();
+      28 |   await page.mouse.up();
+        at realDrag (<repo>/tests/e2e/real-drag.ts:25:6)
+        at <repo>/tests/e2e/drag.spec.ts:133:5
+
+    Error Context: output/next-round/r2-repeat20/drag-R2-top-level-matrix-s-0df63-el-scroll-undo-redo-restart-repeat4/error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    output/next-round/r2-repeat20/drag-R2-top-level-matrix-s-0df63-el-scroll-undo-redo-restart-repeat4/trace.zip
+    Usage:
+
+        npx playwright show-trace output/next-round/r2-repeat20/drag-R2-top-level-matrix-s-0df63-el-scroll-undo-redo-restart-repeat4/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  3) tests/e2e/drag.spec.ts:39:1 › R2 top-level matrix: single/multiple/start/end/same/cancel/scroll/undo/redo/restart 
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: true
+    Received: false
+
+    Call Log:
+    - Timeout 5000ms exceeded while waiting on the predicate
+
+       at real-drag.ts:25
+
+      23 |   await expect
+      24 |     .poll(() => page.evaluate(() => (globalThis as any).pointerDragStarted))
+    > 25 |     .toBe(true);
+         |      ^
+      26 |   await target.hover();
+      27 |   await target.hover();
+      28 |   await page.mouse.up();
+        at realDrag (<repo>/tests/e2e/real-drag.ts:25:6)
+        at <repo>/tests/e2e/drag.spec.ts:110:5
+
+    Error Context: output/next-round/r2-repeat20/drag-R2-top-level-matrix-s-0df63-el-scroll-undo-redo-restart-repeat17/error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    output/next-round/r2-repeat20/drag-R2-top-level-matrix-s-0df63-el-scroll-undo-redo-restart-repeat17/trace.zip
+    Usage:
+
+        npx playwright show-trace output/next-round/r2-repeat20/drag-R2-top-level-matrix-s-0df63-el-scroll-undo-redo-restart-repeat17/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  4) tests/e2e/drag.spec.ts:4:1 › R2 short original regression: checkbox edit then real handle drag 
+
+    Error: expect(received).toEqual(expected) // deep equality
+
+    - Expected  - 7
+    + Received  + 7
+
+    @@ -1,26 +1,26 @@
+      Array [
+        Object {
+    +     "attrs": Object {
+    +       "level": 1,
+    +     },
+          "content": Array [
+            Object {
+    -         "text": "Bravo 不動産",
+    +         "text": "Alpha heading",
+              "type": "text",
+            },
+          ],
+    -     "type": "paragraph",
+    +     "type": "heading",
+        },
+        Object {
+    -     "attrs": Object {
+    -       "level": 1,
+    -     },
+          "content": Array [
+            Object {
+    -         "text": "Alpha heading",
+    +         "text": "Bravo 不動産",
+              "type": "text",
+            },
+          ],
+    -     "type": "heading",
+    +     "type": "paragraph",
+        },
+        Object {
+          "content": Array [
+            Object {
+              "attrs": Object {
+
+    Call Log:
+    - Timeout 5000ms exceeded while waiting on the predicate
+
+      27 |     await expect
+      28 |       .poll(async () => (await editorDoc(s)).content)
+    > 29 |       .toEqual([
+         |        ^
+      30 |         before.content[1],
+      31 |         before.content[0],
+      32 |         ...before.content.slice(2),
+        at <repo>/tests/e2e/drag.spec.ts:29:8
+
+    Error Context: output/next-round/r2-repeat20/drag-R2-short-original-reg-e611d--edit-then-real-handle-drag-repeat18/error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    output/next-round/r2-repeat20/drag-R2-short-original-reg-e611d--edit-then-real-handle-drag-repeat18/trace.zip
+    Usage:
+
+        npx playwright show-trace output/next-round/r2-repeat20/drag-R2-short-original-reg-e611d--edit-then-real-handle-drag-repeat18/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  4 failed
+    tests/e2e/drag.spec.ts:4:1 › R2 short original regression: checkbox edit then real handle drag ─
+    tests/e2e/drag.spec.ts:39:1 › R2 top-level matrix: single/multiple/start/end/same/cancel/scroll/undo/redo/restart 
+    tests/e2e/drag.spec.ts:39:1 › R2 top-level matrix: single/multiple/start/end/same/cancel/scroll/undo/redo/restart 
+    tests/e2e/drag.spec.ts:4:1 › R2 short original regression: checkbox edit then real handle drag ─
+  36 passed (3.9m)
+(node:87334) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:87667) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:87899) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:88106) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:88263) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:88448) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:88759) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:89021) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:89214) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:89408) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:89578) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:89789) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:89991) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:90263) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:90576) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:90902) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:91228) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:91573) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:91874) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:92166) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:92309) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:92476) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)

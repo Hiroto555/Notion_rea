@@ -1,0 +1,111 @@
+import type { Session } from "./next-round-fixture";
+import type { TestInfo } from "@playwright/test";
+import { writeFileSync } from "node:fs";
+// Only called in synthetic, dedicated test workspaces. No product telemetry.
+export async function observeDrag(s: Session) {
+  await s.app.evaluate(({ ipcMain }) => {
+    const m = ipcMain as any,
+      handler = m._invokeHandlers.get("folio:request");
+    (globalThis as any).dragACK = [];
+    m.removeHandler("folio:request");
+    m.handle("folio:request", async (e: any, r: any) => {
+      const result = await handler(e, r);
+      if (r.type === "update")
+        (globalThis as any).dragACK.push({
+          id: r.id,
+          revision: result.revision,
+          doc: result.doc,
+          database: result.database,
+          time: Date.now(),
+        });
+      return result;
+    });
+  });
+  await s.window.evaluate(() => {
+    const g = globalThis as any;
+    g.dragJournal = [];
+    const editor = (document.querySelector(".folio-editor") as any)?.editor;
+    const rect = (el: Element) => {
+      const r = el.getBoundingClientRect();
+      return { x: r.x, y: r.y, width: r.width, height: r.height };
+    };
+    const state = () => ({
+      doc: editor?.getJSON(),
+      selection: editor?.state.selection.toJSON(),
+      selected: [...document.querySelectorAll(".block-handle.selected")].map(
+        (el) => el.getAttribute("aria-label"),
+      ),
+      scroll: document.querySelector(".document-scroll")?.scrollTop,
+      handles: [...document.querySelectorAll(".block-handle")].map((el) => ({
+        name: el.getAttribute("aria-label"),
+        ...rect(el),
+      })),
+    });
+    g.dragJournal.push({ type: "before", ...state() });
+    for (const type of [
+      "mousedown",
+      "mouseup",
+      "dragstart",
+      "dragover",
+      "drop",
+      "dragend",
+      "keydown",
+    ])
+      document.addEventListener(
+        type,
+        (e: Event) => {
+          if (type === "keydown" && (e as KeyboardEvent).key !== "Escape")
+            return;
+          const m = e as MouseEvent,
+            t = e.target as Element;
+          const entry = {
+            type,
+            time: performance.now(),
+            x: m.clientX,
+            y: m.clientY,
+            target:
+              t?.closest("button")?.getAttribute("aria-label") || t?.tagName,
+            defaultPrevented: e.defaultPrevented,
+            types: [...((e as DragEvent).dataTransfer?.types ?? [])],
+            ...state(),
+          };
+          g.dragJournal.push(entry);
+          queueMicrotask(() => (entry.defaultPrevented = e.defaultPrevented));
+        },
+        true,
+      );
+    for (const type of ["dragstart", "dragover", "drop", "dragend"])
+      document.addEventListener(
+        type,
+        (e) =>
+          g.dragJournal.push({
+            type: type + "-bubble",
+            defaultPrevented: e.defaultPrevented,
+          }),
+        false,
+      );
+    editor?.on("transaction", ({ transaction }: any) => {
+      g.dragJournal.push({
+        type: "transaction",
+        docChanged: transaction.docChanged,
+        ...state(),
+      });
+    });
+  });
+}
+export async function dragEvidence(s: Session, info: TestInfo) {
+  const events = await s.window.evaluate(() => ({
+    events: (globalThis as any).dragJournal,
+    after: (document.querySelector(".folio-editor") as any)?.editor.getJSON(),
+  }));
+  const ack = await s.app.evaluate(() => (globalThis as any).dragACK);
+  writeFileSync(
+    info.outputPath("drag-events.json"),
+    JSON.stringify({ ...events, ack }, null, 2),
+  );
+}
+export async function editorDoc(s: Session) {
+  return s.window
+    .locator(".folio-editor")
+    .evaluate((el) => (el as any).editor.getJSON());
+}

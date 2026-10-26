@@ -16,9 +16,19 @@ post-writeのloadが失敗した際もパッチを捨てないよう、再読込
 
 検証: check→単体48/48→build→Electron21/21（前回Gate A15＋今回R1の6）。単体の上限直前/一致/直後はASCII・日本語・絵文字それぞれ。Electronは実ファイル・IPC・Store・再起動、複数ページpending、選択取消、ENOENT書込失敗、再読込失敗、添付バイト照合を含む。SQL途中失敗はStoreのSQLite trigger注入で確認。物理ディスク障害の再現ではない。巨大fixtureはoutput内に実行時生成しGitへ追加しない。
 
-## R2 / R3
+## R2 トップレベルドラッグ
 
-調査・実装中。完了時に結果と未解決を追記する。
+短い既存操作と30ブロックの境界操作を独立させた。生証拠はoutput/next-round/r2-*のdrag-events.json、screen.png、trace.zip。押下/離上/dragstart/dragover/drop/dragend、対象、座標、スクロール、選択、doc before/after、Transaction、保存ACKを専用の合成データに限って採取する。
+
+初版の5失敗はテスト期待値が既存の末尾空段落を落とした誤り。段落も含む全ノード照合に修正した。実際の失敗は、末尾へのdragToでmousedown後にdragstartがない経路、同位置dropがUndoを1件消費する経路。前者は固定sleepを入れず、実マウスで開始位置から40pxを10段階移動してnative dragstartを確認し、目的地へ2回移動してdropを確認する経路に変更した。既存長い試験の期待値は維持。実dropは合成していない。DBボードの既存試験でもドラッグ失敗が出たため、同じ入力ヘルパーを使用する（DB機能の変更はなし）。
+
+本番側は内容が同じdropでTransactionを作らず、ブロック操作をcloseHistoryで区切り、全文置換で文末へ写像されていたカーソルを操作したブロック近傍へ置く。pointer操作後は不要なscrollIntoViewを起こさない。永続IDやネスト粒度の移行は行わない。
+
+反復の途中結果: r2-repeat20は36/40、r2-final-repeat20は39/40。失敗は残しており、その成功分だけで安定済みとはしない。2回目の残件もmousedown後のdragstart未発火だったため、入力経路の移動幅をさらに明確化した。変更後の最終反復・全体3回の結果は後段に追記する。これは前回失敗の全てを単一原因で説明できたという主張ではない。
+
+## R3 ダイアログ
+
+修正前実ElectronでDB Escape未閉鎖、aria-modal欠落、選択リンク取消後のフォーカス欠落を採取（r3-red-electron）。実装・追加検証中。
 
 ## 証拠
 

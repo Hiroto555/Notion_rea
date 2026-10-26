@@ -7,6 +7,10 @@ import {
 } from "@playwright/test";
 import { mkdtempSync, rmSync } from "node:fs";
 import { join, resolve } from "node:path";
+import { realDrag } from "./real-drag";
+import { observeDrag, dragEvidence } from "./drag-observer";
+let dragObserved = false;
+const dragSession = () => ({ app, window, folder, restart: async () => {} });
 let app: ElectronApplication, window: Page, folder: string;
 async function launch() {
   app = await electron.launch({
@@ -16,12 +20,21 @@ async function launch() {
   });
   window = await app.firstWindow();
   await window.waitForSelector(".page-title");
+  await app
+    .context()
+    .tracing.start({ screenshots: true, snapshots: true, sources: true });
 }
 test.beforeEach(async () => {
+  dragObserved = false;
   folder = mkdtempSync(resolve("output/e2e-"));
   await launch();
 });
-test.afterEach(async () => {
+test.afterEach(async ({}, info) => {
+  try {
+    if (dragObserved) await dragEvidence(dragSession(), info);
+    await window.screenshot({ path: info.outputPath("screen.png") });
+    await app.context().tracing.stop({ path: info.outputPath("trace.zip") });
+  } catch {}
   await app?.close();
   rmSync(folder, { recursive: true, force: true });
 });
@@ -56,9 +69,13 @@ test("real Electron: page edit, slash, undo, blocks, search, clone, trash and re
     window.locator(".folio-editor input[type=checkbox]"),
   ).toHaveCount(1);
   await window.locator(".folio-editor input[type=checkbox]").check();
-  await window
-    .getByLabel("ブロック 2 を選択", { exact: true })
-    .dragTo(window.getByLabel("ブロック 1 を選択", { exact: true }));
+  await observeDrag(dragSession());
+  dragObserved = true;
+  await realDrag(
+    window,
+    window.getByLabel("ブロック 2 を選択", { exact: true }),
+    window.getByLabel("ブロック 1 を選択", { exact: true }),
+  );
   await expect(window.locator(".folio-editor > :first-child")).toContainText(
     "日本語とEnglish",
   );
@@ -102,6 +119,13 @@ test("real Electron: page edit, slash, undo, blocks, search, clone, trash and re
   const title = await window
     .getByLabel("ページタイトル", { exact: true })
     .inputValue();
+  if (dragObserved) {
+    await dragEvidence(dragSession(), test.info());
+    dragObserved = false;
+  }
+  await app
+    .context()
+    .tracing.stop({ path: test.info().outputPath("before-restart.zip") });
   await app.close();
   await launch();
   await expect(
@@ -135,7 +159,9 @@ test("database table edits, filters, sorts, board drop and calendar persistence"
   const target = window
     .locator(".board-column")
     .filter({ has: window.locator("h4", { hasText: "完了" }) });
-  await card.dragTo(target);
+  await observeDrag(dragSession());
+  dragObserved = true;
+  await realDrag(window, card, target);
   await expect(target).toContainText("次のアイデアを見つける");
   await window.screenshot({ path: "output/playwright/folio-board.png" });
   await window.getByRole("button", { name: "カレンダー", exact: true }).click();
@@ -145,6 +171,13 @@ test("database table edits, filters, sorts, board drop and calendar persistence"
   await window.getByRole("button", { name: "テーブル", exact: true }).click();
   await window.getByLabel("アイテム名").first().fill("変更を保存");
   await expect(window.locator(".save-state")).toHaveText("保存済み");
+  if (dragObserved) {
+    await dragEvidence(dragSession(), test.info());
+    dragObserved = false;
+  }
+  await app
+    .context()
+    .tracing.stop({ path: test.info().outputPath("before-restart.zip") });
   await app.close();
   await launch();
   await expect(window.locator("tbody tr")).toHaveCount(3);
