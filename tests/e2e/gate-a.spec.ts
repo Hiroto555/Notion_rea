@@ -13,6 +13,11 @@ import {
   existsSync,
 } from "node:fs";
 import { join, resolve } from "node:path";
+import { observeDrag, dragEvidence } from "./drag-observer";
+import { beginRealDrag } from "./real-drag";
+let traceEnabled = false,
+  dragObserved = false;
+const dragSession = () => ({ app, window, folder, restart: async () => {} });
 let app: ElectronApplication, window: Page, folder: string;
 async function launch() {
   app = await electron.launch({
@@ -21,13 +26,43 @@ async function launch() {
   });
   window = await app.firstWindow();
   await window.waitForSelector(".page-title");
+  if (traceEnabled)
+    await app
+      .context()
+      .tracing.start({ screenshots: true, snapshots: true, sources: true });
 }
-test.beforeEach(async () => {
+test.beforeEach(async ({}, info) => {
+  traceEnabled =
+    info.title.startsWith("F11 editing") ||
+    info.title.startsWith("F02 full-text");
+  dragObserved = false;
   folder = mkdtempSync(resolve("output/gate-a-e2e-"));
   await launch();
 });
-test.afterEach(async () => {
+test.afterEach(async ({}, info) => {
   if (app) {
+    if (traceEnabled) {
+      try {
+        if (dragObserved) {
+          await dragEvidence(dragSession(), info);
+          writeFileSync(
+            info.outputPath("move-requests.json"),
+            JSON.stringify(
+              await app.evaluate(() => ({
+                requests: (globalThis as any).moveRequests,
+                heldLoad: (globalThis as any).heldLoad,
+              })),
+              null,
+              2,
+            ),
+          );
+        }
+        await window.screenshot({ path: info.outputPath("screen.png") });
+        await app
+          .context()
+          .tracing.stop({ path: info.outputPath("trace.zip") });
+      } catch {}
+    }
     try {
       await app.evaluate(({ BrowserWindow }) => {
         for (const w of BrowserWindow.getAllWindows()) w.destroy();
@@ -166,19 +201,29 @@ test("F06 synthetic composing Enter does not navigate search or link (not physic
     await window.keyboard.press("Escape");
   }
 });
-test("F11 editing during move and delayed load keeps local patch and durable revision", async () => {
+test("F11 editing during move and delayed load keeps local patch and durable revision", async ({}, info) => {
   await window.keyboard.press("Meta+n");
   await window
     .getByLabel("ページタイトル", { exact: true })
     .fill("Before move");
   await saved();
+  await observeDrag(dragSession());
+  dragObserved = true;
   await app.evaluate(({ ipcMain }) => {
     const ipc = ipcMain as any;
     const original = ipc._invokeHandlers.get("folio:request");
     let armed = false;
+    (globalThis as any).moveRequests = [];
     ipc.removeHandler("folio:request");
     ipc.handle("folio:request", async (event: any, req: any) => {
+      (globalThis as any).moveRequests.push({
+        type: req.type,
+        id: req.id,
+        parentId: req.parentId,
+        stage: "start",
+      });
       const result = await original(event, req);
+      (globalThis as any).moveRequests.push({ type: req.type, stage: "ack" });
       if (req.type === "move") armed = true;
       else if (req.type === "load" && armed) {
         armed = false;
@@ -188,18 +233,24 @@ test("F11 editing during move and delayed load keeps local patch and durable rev
       return result;
     });
   });
-  await window
-    .locator(".page-tree-row")
-    .filter({
-      has: window.locator(".page-tree-label", { hasText: "Before move" }),
-    })
-    .dragTo(
-      window.locator(".page-tree-row").filter({
-        has: window.locator(".page-tree-label", {
-          hasText: "アイデアノート",
-        }),
-      }),
-    );
+  const source = window.locator(".page-tree-row").filter({
+    has: window.locator(".page-tree-label", { hasText: "Before move" }),
+  });
+  const target = window.locator(".page-tree-row").filter({
+    has: window.locator(".page-tree-label", { hasText: "アイデアノート" }),
+  });
+  await beginRealDrag(window, source);
+  await target.hover();
+  await target.hover();
+  await window.mouse.up();
+  // Tree drop intentionally stops bubbling; verify the native capture journal.
+  await expect
+    .poll(() =>
+      window.evaluate(() =>
+        (globalThis as any).dragJournal.some((e: any) => e.type === "drop"),
+      ),
+    )
+    .toBe(true);
   await expect
     .poll(() => app.evaluate(() => (globalThis as any).heldLoad))
     .toBe(true);
@@ -216,6 +267,22 @@ test("F11 editing during move and delayed load keeps local patch and durable rev
     return s.pages.find((p: any) => p.title === "Local edit during move");
   });
   expect(p?.parentId).toBeTruthy();
+  await dragEvidence(dragSession(), info);
+  writeFileSync(
+    info.outputPath("move-requests.json"),
+    JSON.stringify(
+      await app.evaluate(() => ({
+        requests: (globalThis as any).moveRequests,
+        heldLoad: (globalThis as any).heldLoad,
+      })),
+      null,
+      2,
+    ),
+  );
+  dragObserved = false;
+  await app
+    .context()
+    .tracing.stop({ path: info.outputPath("before-restart.zip") });
   await app.close();
   await launch();
   await expect(
@@ -285,9 +352,12 @@ test("F02 full-text search, preview, count and in-page selection cross inline ma
     await window.getByLabel("ページ内検索").fill(word);
     await expect(window.locator(".page-find")).toContainText("1 件");
     await window.getByRole("button", { name: "表示", exact: true }).click();
-    expect(
-      await window.evaluate(() => globalThis.getSelection()?.toString()),
-    ).toBe(word);
+    // Tiptap focuses on the next animation frame. Check the completed user
+    // selection, not the transient state before that focus callback.
+    await expect(window.locator(".folio-editor")).toBeFocused();
+    await expect
+      .poll(() => window.evaluate(() => globalThis.getSelection()?.toString()))
+      .toBe(word);
   }
   const loaded = await window.evaluate(
     (id) =>
