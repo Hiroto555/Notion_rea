@@ -5,13 +5,13 @@ import {
   type ElectronApplication,
   type Page,
 } from "@playwright/test";
-import { mkdtempSync, rmSync } from "node:fs";
+import { mkdtempSync, mkdirSync, rmSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { realDrag } from "./real-drag";
 import { observeDrag, dragEvidence } from "./drag-observer";
 let dragObserved = false;
 const dragSession = () => ({ app, window, folder, restart: async () => {} });
-let app: ElectronApplication, window: Page, folder: string;
+let app: ElectronApplication, window: Page, folder: string, root: string, exportsDir: string, inputsDir: string;
 async function launch() {
   app = await electron.launch({
     args: [resolve("dist/main.cjs")],
@@ -26,7 +26,13 @@ async function launch() {
 }
 test.beforeEach(async () => {
   dragObserved = false;
-  folder = mkdtempSync(resolve("output/e2e-"));
+  root = mkdtempSync(resolve("output/e2e-"));
+  folder = join(root, "workspace");
+  exportsDir = join(root, "exports");
+  inputsDir = join(root, "inputs");
+  mkdirSync(folder);
+  mkdirSync(exportsDir);
+  mkdirSync(inputsDir);
   await launch();
 });
 test.afterEach(async ({}, info) => {
@@ -36,15 +42,15 @@ test.afterEach(async ({}, info) => {
     await app.context().tracing.stop({ path: info.outputPath("trace.zip") });
   } catch {}
   await app?.close();
-  rmSync(folder, { recursive: true, force: true });
+  rmSync(root, { recursive: true, force: true });
 });
-test("real Electron: page edit, slash, undo, blocks, search, clone, trash and restart", async () => {
+test("real Electron: page edit, slash, undo, blocks, search, clone, trash and restart", async ({}, info) => {
   const errors: string[] = [];
   window.on("pageerror", (e) => errors.push(e.message));
   await expect(
     window.getByLabel("ページタイトル", { exact: true }),
   ).toHaveValue("ようこそ、Folioへ");
-  await window.screenshot({ path: "output/playwright/folio-light.png" });
+  await window.screenshot({ path: info.outputPath("folio-light.png") });
   await window.keyboard.press("Meta+n");
   await expect(
     window.getByLabel("ページタイトル", { exact: true }),
@@ -317,8 +323,8 @@ test("native rich HTML paste, Markdown shortcuts, toggle, links and block drag",
 });
 test("real import/export, image/file attachments and complete backup", async () => {
   const fs = await import("node:fs");
-  const input = join(folder, "import.md"),
-    exported = join(folder, "export.md");
+  const input = join(inputsDir, "import.md"),
+    exported = join(exportsDir, "export.md");
   fs.writeFileSync(
     input,
     "# Imported 日本語\n\n**Bold** text and English.\n\n- [ ] task",
@@ -349,7 +355,7 @@ test("real import/export, image/file attachments and complete backup", async () 
     .click();
   await expect.poll(() => fs.existsSync(exported)).toBe(true);
   expect(fs.readFileSync(exported, "utf8")).toContain("**Bold**");
-  const png = join(folder, "image.png");
+  const png = join(inputsDir, "image.png");
   fs.copyFileSync("tests/fixtures/image.png", png);
   await app.evaluate(({ dialog }, path) => {
     dialog.showOpenDialog = (async () => ({
@@ -366,7 +372,7 @@ test("real import/export, image/file attachments and complete backup", async () 
         .evaluate((e: HTMLImageElement) => e.naturalWidth),
     )
     .toBeGreaterThan(0);
-  const txt = join(folder, "attachment.txt");
+  const txt = join(inputsDir, "attachment.txt");
   fs.writeFileSync(txt, "添付テキスト");
   await app.evaluate(({ dialog }, path) => {
     dialog.showOpenDialog = (async () => ({
@@ -378,7 +384,7 @@ test("real import/export, image/file attachments and complete backup", async () 
   await expect(window.locator(".folio-editor a")).toContainText(
     "attachment.txt",
   );
-  const downloaded = join(folder, "downloaded.txt");
+  const downloaded = join(exportsDir, "downloaded.txt");
   await app.evaluate(({ dialog }, path) => {
     dialog.showSaveDialog = (async () => ({
       canceled: false,
@@ -498,7 +504,7 @@ test("stale-write recovery preserves unsaved edits before reload", async () => {
   await expect(
     window.getByLabel("ページタイトル", { exact: true }),
   ).toHaveValue("未保存の題名");
-  const path = join(folder, "recovery.json");
+  const path = join(exportsDir, "recovery.json");
   await app.evaluate(({ dialog }, path) => {
     dialog.showSaveDialog = (async () => ({
       canceled: false,

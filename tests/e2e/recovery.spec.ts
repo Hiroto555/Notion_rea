@@ -26,7 +26,7 @@ test("R1 legacy export file → recovery → restart preserves a 500 character t
     pages: [original],
     pendingPatches: [{ id: original.id, patch: { title: original.title } }],
   };
-  const path = join(s.folder, "legacy.json");
+  const path = join(s.exportsDir, "legacy.json");
   await saveDialog(s, path);
   await s.window.evaluate(
     (content) =>
@@ -66,7 +66,7 @@ for (const delta of [-1, 0, 1])
       }),
     );
     const content = sizedRecovery(original, FILE_MAX_BYTES + delta, "あ😀");
-    const file = join(s.folder, "boundary.json");
+    const file = join(s.exportsDir, "boundary.json");
     await saveDialog(s, file);
     await openDialog(s, file);
     if (delta > 0) {
@@ -102,7 +102,7 @@ for (const delta of [-1, 0, 1])
 test("R1 multiple pending pages survive cancel/write/reload failures; copies retain original and attachment", async ({
   folio: s,
 }) => {
-  const attachment = join(s.folder, "source.txt");
+  const attachment = join(s.inputsDir, "source.txt");
   writeFileSync(attachment, "attachment bytes");
   await openDialog(s, attachment);
   const file = await s.window.evaluate(() =>
@@ -190,10 +190,14 @@ test("R1 multiple pending pages survive cancel/write/reload failures; copies ret
   await expect(
     s.window.getByLabel("ページタイトル", { exact: true }),
   ).toHaveValue("Recovery B local");
-  await saveDialog(s, join(s.folder, "missing-parent", "recovery.json"));
+  await saveDialog(s, join(s.folder, "workspace.sqlite"));
+  await button.click();
+  await expect(s.window.getByRole("alert")).toContainText("ワークスペース");
+  await expect(s.window.getByLabel("ページタイトル", { exact: true })).toHaveValue("Recovery B local");
+  await saveDialog(s, join(s.exportsDir, "missing-parent", "recovery.json"));
   await button.click();
   await expect(s.window.getByRole("alert")).toContainText("ENOENT");
-  const recovery = join(s.folder, "recovery.json");
+  const recovery = join(s.exportsDir, "recovery.json");
   await saveDialog(s, recovery);
   // Inject a post-write load failure, preserving the unsaved queue until retry.
   await s.app.evaluate(({ ipcMain }) => {
@@ -251,7 +255,7 @@ test("R1 multiple pending pages survive cancel/write/reload failures; copies ret
       updatedAt: source.updatedAt,
     });
   }
-  const downloaded = join(s.folder, "downloaded");
+  const downloaded = join(s.exportsDir, "downloaded");
   await saveDialog(s, downloaded);
   await s.window.evaluate(
     (url) => window.folio.request({ type: "downloadAttachment", url }),
@@ -262,7 +266,7 @@ test("R1 multiple pending pages survive cancel/write/reload failures; copies ret
 test("R1 real IPC rejects the 30.3MB Japanese export previously accepted", async ({
   folio: s,
 }) => {
-  const path = join(s.folder, "oversize.json");
+  const path = join(s.exportsDir, "oversize.json");
   await saveDialog(s, path);
   await openDialog(s, path);
   const result = await s.window.evaluate(async () => {
