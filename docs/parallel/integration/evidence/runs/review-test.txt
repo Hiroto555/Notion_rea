@@ -1,0 +1,19 @@
+
+> folio-desktop@0.1.0 review:test
+> node --test tests/review-hygiene.test.mjs
+
+✔ detects credentials and paths without copying values to findings (1.939917ms)
+✔ email attribution exception matches only the exact approved email hash (0.778ms)
+✔ rejects a new binary and accepts only the reviewed bytes (54.869791ms)
+✔ ignored files are excluded, but already tracked raw evidence still fails (47.933125ms)
+✔ rejects symlinks without reading a target outside the review tree (26.913167ms)
+ℹ tests 5
+ℹ suites 0
+ℹ pass 5
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 200.877125
+
+exit_code=0

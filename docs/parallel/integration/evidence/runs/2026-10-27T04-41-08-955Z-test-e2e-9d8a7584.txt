@@ -1,0 +1,53 @@
+{"command":"npm","args":["run","test:e2e","--","tests/e2e/integration-v2.spec.ts","--retries=0","--reporter=list","--output=output/agent-workspace/evidence/integration-focused-after-fix"],"branch":"codex/folio-integration-v2","role":"integration","started":"2026-10-27T04:41:08.956Z"}
+
+> folio-desktop@0.1.0 test:e2e
+> playwright test tests/e2e/integration-v2.spec.ts --retries=0 --reporter=list --output=output/agent-workspace/evidence/integration-focused-after-fix
+
+
+Running 1 test using 1 worker
+
+(node:3492) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✘  1 tests/e2e/integration-v2.spec.ts:6:1 › integrated editor, attachment, independent database views and theme persist together through restart (14.4s)
+
+
+  1) tests/e2e/integration-v2.spec.ts:6:1 › integrated editor, attachment, independent database views and theme persist together through restart
+
+    Error: expect(received).toEqual(expected) // deep equality
+
+    - Expected  - 0
+    + Received  + 1
+
+    @@ -81,7 +81,8 @@
+              "id": "59ebc1f9-46c3-491e-9b1c-aab55725f622",
+            },
+            "type": "paragraph",
+          },
+        ],
+    +   "schemaVersion": 1,
+        "type": "doc",
+      }
+
+      156 |   expect(await editorDoc(s)).toEqual(noteDoc);
+      157 |   const afterRestart = await load();
+    > 158 |   expect(afterRestart.pages.find((p: any) => p.id === page.id).doc).toEqual(
+          |                                                                     ^
+      159 |     noteDoc,
+      160 |   );
+      161 |   expect(
+        at <integration-worktree>/tests/e2e/integration-v2.spec.ts:158:69
+
+    Error Context: output/agent-workspace/evidence/integration-focused-after-fix/integration-v2-integrated--c717a-st-together-through-restart/error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    output/agent-workspace/evidence/integration-focused-after-fix/integration-v2-integrated--c717a-st-together-through-restart/trace.zip
+    Usage:
+
+        npx playwright show-trace output/agent-workspace/evidence/integration-focused-after-fix/integration-v2-integrated--c717a-st-together-through-restart/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  1 failed
+    tests/e2e/integration-v2.spec.ts:6:1 › integrated editor, attachment, independent database views and theme persist together through restart
+
+exit_code=1 signal=none

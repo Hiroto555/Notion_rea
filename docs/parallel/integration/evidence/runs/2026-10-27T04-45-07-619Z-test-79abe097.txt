@@ -1,0 +1,17 @@
+{"command":"npm","args":["run","test","--","tests/integration-migration.test.ts"],"branch":"codex/folio-integration-v2","role":"integration","started":"2026-10-27T04:45:07.620Z"}
+
+> folio-desktop@0.1.0 test
+> vitest run tests/integration-migration.test.ts
+
+
+ RUN  v3.2.7 <integration-worktree>
+
+ ✓ tests/integration-migration.test.ts (2 tests) 28ms
+
+ Test Files  1 passed (1)
+      Tests  2 passed (2)
+   Start at  13:45:08
+   Duration  1.04s (transform 135ms, setup 0ms, collect 382ms, tests 28ms, environment 0ms, prepare 170ms)
+
+
+exit_code=0 signal=none

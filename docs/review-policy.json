@@ -24,6 +24,22 @@
     "docs/screenshots/folio-light.png": {
       "sha256": "2dceb86558b295d6f07152851fac7c9ab79f902c0c57e118417e13afc26283ae",
       "provenance": "See docs/ASSET-PROVENANCE.md"
+    },
+    "docs/parallel/ui/evidence/ui-dark-1440x907.png": {
+      "sha256": "c14e5b188caac0516cfd457404b7594b2085062268a5b1e32b26660d1e1654cf",
+      "provenance": "Visually reviewed 2026-10-27; synthetic isolated E2E data. See docs/parallel/ui/evidence/MANIFEST.json and UI-V2-REPORT.md."
+    },
+    "docs/parallel/ui/evidence/ui-light-1024x720.png": {
+      "sha256": "9e6d1833252af8e27c268c636ee1fb618b08d2506da125f84b04a6b83ba1dfd9",
+      "provenance": "Visually reviewed 2026-10-27; synthetic isolated E2E data. See docs/parallel/ui/evidence/MANIFEST.json and UI-V2-REPORT.md."
+    },
+    "docs/parallel/ui/evidence/ui-light-1440x907.png": {
+      "sha256": "63d59939d51fdc44b1840072d9096ceb731e62dd99ccca323bd690e47d1bdd34",
+      "provenance": "Visually reviewed 2026-10-27; synthetic isolated E2E data. See docs/parallel/ui/evidence/MANIFEST.json and UI-V2-REPORT.md."
+    },
+    "docs/parallel/ui/evidence/ui-light-960x700.png": {
+      "sha256": "2288c6c98a0848e9bfbb4f0e49a67018d878d09452f740b67deedee46a634a69",
+      "provenance": "Visually reviewed 2026-10-27; synthetic isolated E2E data. See docs/parallel/ui/evidence/MANIFEST.json and UI-V2-REPORT.md."
     }
   },
   "approvedEmailHashes": {

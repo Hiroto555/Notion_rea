@@ -58,8 +58,7 @@ export class Store {
         // the rewrite itself and the version bump commit atomically.
         if (originalVersion === 2) {
           const backup = path + ".pre-v3.sqlite";
-          if (!existsSync(backup))
-            this.db.prepare("VACUUM INTO ?").run(backup);
+          if (!existsSync(backup)) this.db.prepare("VACUUM INTO ?").run(backup);
         }
         this.transaction(() => {
           this.migrateStoredDatabases();
@@ -74,31 +73,56 @@ export class Store {
     }
   }
   private migrateStoredDatabases() {
-    const pages = this.db
-      .prepare("SELECT id,data FROM pages")
-      .all() as { id: string; data: string }[];
+    const protectedPages = new Set<string>();
+    const pages = this.db.prepare("SELECT id,data FROM pages").all() as {
+      id: string;
+      data: string;
+    }[];
     for (const row of pages) {
       let page: any;
       try {
         page = JSON.parse(row.data);
       } catch {
         // Corrupt JSON is left byte-for-byte intact for pageSource/recovery.
+        protectedPages.add(row.id);
         continue;
       }
-      if (!page || typeof page !== "object" || page.database == null) continue;
+      if (!page || typeof page !== "object") {
+        protectedPages.add(row.id);
+        continue;
+      }
+      // Keep the whole source unchanged when the page or its document is not
+      // understood, matching decode()'s read-only original-preservation rule.
+      if (
+        (page.schemaVersion !== undefined && page.schemaVersion !== 1) ||
+        !isDocument(page.doc)
+      ) {
+        protectedPages.add(row.id);
+        continue;
+      }
+      if (page.database == null) continue;
       const database = normalizeDatabaseData(page.database);
       // Unknown database versions and malformed values also stay untouched.
-      if (!database.ok || !database.migrated) continue;
+      if (!database.ok) {
+        protectedPages.add(row.id);
+        continue;
+      }
+      if (!database.migrated) continue;
       this.db
         .prepare("UPDATE pages SET data=? WHERE id=?")
         .run(JSON.stringify({ ...page, database: database.data }), row.id);
     }
     const versions = this.db
-      .prepare("SELECT id,database FROM versions WHERE database IS NOT NULL")
-      .all() as { id: number; database: string }[];
+      .prepare(
+        "SELECT id,pageId,doc,database FROM versions WHERE database IS NOT NULL",
+      )
+      .all() as { id: number; pageId: string; doc: string; database: string }[];
     for (const row of versions) {
+      if (protectedPages.has(row.pageId)) continue;
       let value: unknown;
       try {
+        // A history entry with an unknown document must also stay intact.
+        if (!isDocument(JSON.parse(row.doc))) continue;
         value = JSON.parse(row.database);
       } catch {
         continue;
@@ -249,7 +273,8 @@ export class Store {
   }
   update(id: string, revision: number, patch: PagePatch): Page {
     const parsed = requestSchema.parse({ type: "update", id, revision, patch });
-    if (parsed.type !== "update") throw new Error("Unsupported storage request");
+    if (parsed.type !== "update")
+      throw new Error("Unsupported storage request");
     const cleanPatch: PagePatch = parsed.patch;
     return this.transaction(() => {
       const p = this.get(id);
