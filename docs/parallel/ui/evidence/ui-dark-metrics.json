@@ -1,0 +1,135 @@
+{
+  "capture": "1440x960 dark",
+  "reading": {
+    "viewport": {
+      "width": 1440,
+      "height": 907,
+      "dpr": 2
+    },
+    "theme": "dark",
+    "horizontalOverflow": 0,
+    "documentOverflow": 0,
+    "boxes": {
+      "sidebar": {
+        "x": 0,
+        "y": 0,
+        "width": 252,
+        "height": 907
+      },
+      "topbar": {
+        "x": 252,
+        "y": 0,
+        "width": 1188,
+        "height": 54
+      },
+      "topbarActions": {
+        "x": 1251,
+        "y": 11.5,
+        "width": 177,
+        "height": 30
+      },
+      "breadcrumbs": {
+        "x": 389,
+        "y": 14.8,
+        "width": 110.8,
+        "height": 23.5
+      },
+      "saveState": {
+        "x": 1253,
+        "y": 14.5,
+        "width": 73,
+        "height": 24
+      },
+      "menuButton": {
+        "x": 1398,
+        "y": 11.5,
+        "width": 30,
+        "height": 30
+      },
+      "documentScroll": {
+        "x": 252,
+        "y": 54,
+        "width": 948,
+        "height": 853
+      },
+      "content": {
+        "x": 305.5,
+        "y": 216,
+        "width": 830,
+        "height": 828.3
+      },
+      "title": {
+        "x": 369.5,
+        "y": 292,
+        "width": 702,
+        "height": 48.6
+      },
+      "inspector": {
+        "x": 1200,
+        "y": 54,
+        "width": 240,
+        "height": 853
+      },
+      "activeRow": {
+        "x": 8,
+        "y": 283.5,
+        "width": 235,
+        "height": 31
+      }
+    },
+    "styles": {
+      "bodyBackground": "rgb(30, 33, 28)",
+      "bodyColor": "rgb(231, 233, 224)",
+      "sidebarBackground": "rgb(25, 27, 23)",
+      "line": "rgb(52, 56, 48)",
+      "titleSize": "36px",
+      "titleWeight": "700",
+      "titleColor": "rgb(231, 233, 224)",
+      "subtitleColor": "rgb(164, 170, 155)",
+      "contentPaddingLeft": "64px",
+      "inspectorPosition": "static",
+      "inspectorBackground": "rgb(27, 30, 25)",
+      "crumbSize": "11.5px",
+      "treeAddOpacity": "0",
+      "pageToolsOpacity": "0",
+      "focusOutline": ""
+    },
+    "a11y": {
+      "activeLabelCurrent": "✳️ようこそ、Folioへ",
+      "sidebarPressed": "true",
+      "inspectorPressed": "true",
+      "toggleExpanded": "false",
+      "saveStateText": "保存済み",
+      "focusableCount": 48
+    },
+    "tree": [
+      {
+        "text": "✳️ようこそ、Folioへ",
+        "left": 8,
+        "depth": "0",
+        "active": true
+      },
+      {
+        "text": "💡アイデアノート",
+        "left": 8,
+        "depth": "0",
+        "active": false
+      },
+      {
+        "text": "◈プロジェクト",
+        "left": 8,
+        "depth": "0",
+        "active": false
+      }
+    ]
+  },
+  "reopenedTheme": "dark",
+  "contrast": {
+    "body": 13.28,
+    "title": 13.28,
+    "meta": 6.83,
+    "sidebar": 14.15
+  },
+  "menuSurface": "rgb(38, 42, 35)",
+  "menuSurfaceDiffersFromPage": true
+}

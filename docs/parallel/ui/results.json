@@ -1,0 +1,306 @@
+{
+  "role": "ui",
+  "branch": "sprint/ui-v2",
+  "worktree": "<this worktree: Folio-ui>",
+  "baseCommit": "b7c150d15739c59edf6ba9a62ebda4794748d46b",
+  "headBefore": "27243170102e753ce70ef5255c22edd61710d164",
+  "implementationCommit": "created after this record; see the branch HEAD containing this file",
+  "date": "2026-10-27",
+  "scope": {
+    "changed": [
+      "src/renderer/styles.css",
+      "src/renderer/App.tsx (display-only JSX, aria attributes, menu visibility state)",
+      "tests/e2e/ui-v2.spec.ts (new UI-only evidence tests)",
+      "docs/parallel/ui/"
+    ],
+    "notChanged": [
+      "src/editor/",
+      "src/database/",
+      "src/shared/",
+      "src/main/",
+      "src/preload/",
+      "src/persistence/",
+      "existing tests",
+      "scripts/folio-agent.mjs",
+      "package.json and lockfile",
+      "other worktrees and master"
+    ]
+  },
+  "hashes": {
+    "source": {
+      "src/renderer/App.tsx": "67a336df175f98538c9d03dd1809a7a07e6a1274fdf3e66ec32aa88596b0b403",
+      "src/renderer/styles.css": "25420e12a46ba196daffba4a7483236e8c128a8bb75e214df1adee66e31b5a88",
+      "tests/e2e/ui-v2.spec.ts": "e115ca723752e761bb4b477e4aa4b960b4e0d6d8124eecdd479a0d9c5e3d96e0"
+    },
+    "build": {
+      "dist/renderer/assets/index-BOHnGoVY.css": "dc131258cddf2c4edb30ac3acd4a84fb8cb8a677c34302cd32277c72b579a5d6",
+      "dist/renderer/assets/index-dl_u_r6y.js": "f657b02ee0c509a3fd97299028c2cdfcad5baaca0164e17db88d17a31b4e726e"
+    },
+    "evidenceManifest": "docs/parallel/ui/evidence/MANIFEST.json"
+  },
+  "environment": {
+    "branchCheck": "launcher verifies sprint/ui-v2 before every command",
+    "isolation": "FOLIO_DATA_DIR / VITE cache / npm cache / electron cache / TMPDIR under output/agent-workspace",
+    "harnessElectronRunAsNode": "ELECTRON_RUN_AS_NODE=1 is set by the DeepSeek Harness environment; Electron-based commands were executed with the variable unset for the child process only (`env -u ELECTRON_RUN_AS_NODE node scripts/folio-agent.mjs ...`). The launcher was not modified.",
+    "dshSandbox": "Under the DSH workspace sandbox Electron reports `sandbox initialization failed: Operation not permitted` (Chromium OS sandbox). Electron E2E commands were retried once each with an explicitly approved one-shot danger-full-access. No permanent sandbox change, no --no-sandbox bypass, no launcher edit.",
+    "activeWindow": "Hover observations require the Electron window to be active; tests call app.focus({steal:true}) and BrowserWindow.focus() and assert :hover before reading styles.",
+    "physicalIME": "NOT_RUN",
+    "notionComparison": "UNKNOWN"
+  },
+  "attempts": [
+    {
+      "at": "2026-10-27T03:00:35Z",
+      "label": "baseline-check",
+      "command": "node scripts/folio-agent.mjs check",
+      "exitCode": 0,
+      "log": "output/agent-workspace/logs/2026-10-27T03-00-35-508Z-check-58d51bd8.log",
+      "note": "before edits"
+    },
+    {
+      "at": "2026-10-27T03:01:00Z",
+      "label": "baseline-unit",
+      "command": "node scripts/folio-agent.mjs test",
+      "exitCode": 0,
+      "result": "50/50",
+      "log": "output/agent-workspace/logs/2026-10-27T03-01-00-325Z-test-ccd0a304.log",
+      "note": "before edits"
+    },
+    {
+      "at": "2026-10-27T03:20:22Z",
+      "label": "ui-e2e-launch-failed",
+      "command": "node scripts/folio-agent.mjs test:e2e -- --retries=0 --reporter=list tests/e2e/ui-v2.spec.ts",
+      "exitCode": 1,
+      "result": "4 launch failures",
+      "log": "output/agent-workspace/logs/2026-10-27T03-20-22-938Z-test-e2e-a535cbee.log",
+      "note": "ELECTRON_RUN_AS_NODE=1 made Electron exit with `bad option: --remote-debugging-port=0`"
+    },
+    {
+      "at": "2026-10-27T03:24:19Z",
+      "label": "ui-e2e-renderer-sandbox-failure",
+      "command": "env -u ELECTRON_RUN_AS_NODE node scripts/folio-agent.mjs test:e2e -- --retries=0 --reporter=list tests/e2e/ui-v2.spec.ts",
+      "exitCode": 1,
+      "result": "renderer crashed at startup",
+      "log": "output/agent-workspace/logs/2026-10-27T03-24-19-860Z-test-e2e-78c153c9.log",
+      "note": "stderr: sandbox initialization failed: Operation not permitted; DSH workspace sandbox blocks Chromium OS sandbox"
+    },
+    {
+      "at": "2026-10-27T03:27:28Z",
+      "label": "diagnostic-debug-spec-1",
+      "command": "env -u ELECTRON_RUN_AS_NODE node scripts/folio-agent.mjs test:e2e -- --retries=0 --reporter=list tests/e2e/ui-debug.spec.ts",
+      "exitCode": 1,
+      "log": "output/agent-workspace/logs/2026-10-27T03-27-28-425Z-test-e2e-38907f79.log",
+      "note": "temporary diagnostic spec, deleted before commit"
+    },
+    {
+      "at": "2026-10-27T03:27:57Z",
+      "label": "diagnostic-debug-spec-2",
+      "command": "env -u ELECTRON_RUN_AS_NODE node scripts/folio-agent.mjs test:e2e -- --retries=0 --reporter=list tests/e2e/ui-debug.spec.ts",
+      "exitCode": 1,
+      "log": "output/agent-workspace/logs/2026-10-27T03-27-57-096Z-test-e2e-9dbfec6c.log",
+      "note": "temporary diagnostic spec, deleted before commit"
+    },
+    {
+      "at": "2026-10-27T03:29:23Z",
+      "label": "minimal-electron-probe-1",
+      "command": "env -u ELECTRON_RUN_AS_NODE node scripts/folio-agent.mjs test:e2e -- --retries=0 --reporter=list tests/e2e/ui-debug.spec.ts",
+      "exitCode": 1,
+      "log": "output/agent-workspace/logs/2026-10-27T03-29-23-234Z-test-e2e-c97fbff3.log",
+      "note": "minimal data: page also fails to render; temporary files deleted"
+    },
+    {
+      "at": "2026-10-27T03:30:03Z",
+      "label": "minimal-electron-probe-2",
+      "command": "env -u ELECTRON_RUN_AS_NODE node scripts/folio-agent.mjs test:e2e -- --retries=0 --reporter=list tests/e2e/ui-debug.spec.ts",
+      "exitCode": 0,
+      "log": "output/agent-workspace/logs/2026-10-27T03-30-03-949Z-test-e2e-e399d7d5.log",
+      "note": "captured `sandbox initialization failed: Operation not permitted`; proves the failure is environmental, not renderer code"
+    },
+    {
+      "at": "2026-10-27T03:32:57Z",
+      "label": "ui-e2e-1",
+      "command": "env -u ELECTRON_RUN_AS_NODE node scripts/folio-agent.mjs test:e2e -- --retries=0 --reporter=list tests/e2e/ui-v2.spec.ts",
+      "exitCode": 1,
+      "result": "3 passed / 1 failed",
+      "log": "output/agent-workspace/logs/2026-10-27T03-32-57-321Z-test-e2e-610a47b3.log",
+      "note": "test-side timing: focus assertion read opacity mid-transition"
+    },
+    {
+      "at": "2026-10-27T03:37:57Z",
+      "label": "ui-e2e-2",
+      "command": "env -u ELECTRON_RUN_AS_NODE node scripts/folio-agent.mjs test:e2e -- --retries=0 --reporter=list tests/e2e/ui-v2.spec.ts",
+      "exitCode": 1,
+      "result": "3 passed / 1 failed",
+      "log": "output/agent-workspace/logs/2026-10-27T03-37-57-727Z-test-e2e-5a7fea1d.log",
+      "note": "test-side hover state not engaged in an inactive window"
+    },
+    {
+      "at": "2026-10-27T03:43:26Z",
+      "label": "ui-e2e-3",
+      "command": "env -u ELECTRON_RUN_AS_NODE node scripts/folio-agent.mjs test:e2e -- --retries=0 --reporter=list tests/e2e/ui-v2.spec.ts",
+      "exitCode": 1,
+      "result": "3 passed / 1 failed",
+      "log": "output/agent-workspace/logs/2026-10-27T03-43-26-684Z-test-e2e-1807cae3.log",
+      "note": "test-side hover state not engaged; diagnostic probe added"
+    },
+    {
+      "at": "2026-10-27T03:49:57Z",
+      "label": "ui-e2e-4",
+      "command": "env -u ELECTRON_RUN_AS_NODE node scripts/folio-agent.mjs test:e2e -- --retries=0 --reporter=list tests/e2e/ui-v2.spec.ts",
+      "exitCode": 1,
+      "result": "3 passed / 1 failed",
+      "log": "output/agent-workspace/logs/2026-10-27T03-49-57-864Z-test-e2e-ef5b9cc3.log",
+      "note": "same hover environment issue; fixed with app.focus({steal:true}) + two-step real pointer move + :hover assertion"
+    },
+    {
+      "at": "2026-10-27T03:53:53Z",
+      "label": "ui-e2e-final",
+      "command": "env -u ELECTRON_RUN_AS_NODE node scripts/folio-agent.mjs test:e2e -- --retries=0 --reporter=list tests/e2e/ui-v2.spec.ts",
+      "exitCode": 0,
+      "result": "4/4 passed",
+      "log": "output/agent-workspace/logs/2026-10-27T03-53-53-652Z-test-e2e-950bf306.log"
+    },
+    {
+      "at": "2026-10-27T03:54:30Z",
+      "label": "full-e2e-final",
+      "command": "env -u ELECTRON_RUN_AS_NODE node scripts/folio-agent.mjs test:e2e -- --retries=0 --reporter=list",
+      "exitCode": 0,
+      "result": "45/45 passed in 3.6m, retries 0",
+      "log": "output/agent-workspace/logs/2026-10-27T03-54-30-494Z-test-e2e-ae989fde.log",
+      "note": "includes all pre-existing desktop/dialogs/drag/gate-a/page-move/recovery/output-boundary specs and the 4 new UI tests"
+    },
+    {
+      "at": "2026-10-27T03:58:36Z",
+      "label": "final-check",
+      "command": "node scripts/folio-agent.mjs check",
+      "exitCode": 0,
+      "log": "output/agent-workspace/logs/2026-10-27T03-58-36-305Z-check-917bf229.log"
+    },
+    {
+      "at": "2026-10-27T03:58:39Z",
+      "label": "final-unit",
+      "command": "node scripts/folio-agent.mjs test",
+      "exitCode": 0,
+      "result": "50/50",
+      "log": "output/agent-workspace/logs/2026-10-27T03-58-39-337Z-test-5a910661.log"
+    }
+  ],
+  "builds": [
+    {
+      "at": "2026-10-27T03:47:03Z",
+      "command": "node scripts/folio-agent.mjs build",
+      "exitCode": 0,
+      "log": "output/agent-workspace/logs/2026-10-27T03-47-03-114Z-build-889f8213.log",
+      "note": "final build used by the final E2E; Vite chunk-size warning remains"
+    }
+  ],
+  "uiEvidence": {
+    "suite": "tests/e2e/ui-v2.spec.ts",
+    "tests": [
+      "UI 2.0 light: hierarchy, hover reveal, menu bounds and contrast",
+      "UI 2.0 dark: theme tokens, menu surface and contrast",
+      "UI 2.0 responsive: 1024 and 960 keep panels usable without overflow",
+      "UI 2.0 keyboard: focus visibility, shortcuts and menu Escape"
+    ],
+    "measured": {
+      "light1440": {
+        "viewport": "1440x907",
+        "sidebarWidth": 252,
+        "topbarHeight": 54,
+        "inspectorWidth": 240,
+        "documentScrollWidth": 948,
+        "contentWidth": 830,
+        "textMeasure": 702,
+        "titleFontSize": "36px",
+        "titleWeight": "700",
+        "horizontalOverflow": 0,
+        "documentOverflow": 0,
+        "contrast": { "body": 12.57, "title": 12.57, "meta": 4.59 },
+        "nestedRowLeft": 33,
+        "rootRowLeft": 8,
+        "hover": {
+          "rowHover": true,
+          "opacityBefore": "0",
+          "opacitySettled": "1",
+          "focusRevealsAdd": true
+        },
+        "menuBox": { "x": 1157.2, "y": 52.9, "width": 269.6, "height": 427.2 },
+        "menuFitsViewport": true,
+        "menuEscapeCloses": true,
+        "menuClickOutsideCloses": true
+      },
+      "dark1440": {
+        "viewport": "1440x907",
+        "pageBackground": "rgb(30, 33, 28)",
+        "pageText": "rgb(231, 233, 224)",
+        "sidebarBackground": "rgb(25, 27, 23)",
+        "menuSurface": "rgb(38, 42, 35)",
+        "contrast": {
+          "body": 13.28,
+          "title": 13.28,
+          "meta": 6.83,
+          "sidebar": 14.15
+        },
+        "themePersistsAfterReload": true,
+        "hoverReveal": true
+      },
+      "responsive1024": {
+        "viewport": "1024x720",
+        "sidebarWidth": 220,
+        "inspector": { "position": "static", "width": 224, "x": 800 },
+        "documentScrollWidth": 580,
+        "contentWidth": 569,
+        "contentRight": 789,
+        "paddingLeft": 46,
+        "titleFontSize": "33px",
+        "horizontalOverflow": 0,
+        "inspectorCloseVisible": false
+      },
+      "responsive960": {
+        "viewport": "960x700",
+        "sidebarWidth": 208,
+        "inspector": {
+          "position": "absolute",
+          "width": 268,
+          "x": 680,
+          "y": 66,
+          "height": 622
+        },
+        "documentScrollWidth": 752,
+        "contentWidth": 741,
+        "paddingLeft": 34,
+        "titleFontSize": "29px",
+        "horizontalOverflow": 0,
+        "inspectorCloseVisible": true,
+        "inspectorReopenedFromTopbar": true,
+        "sidebarHiddenTopbarLeft": "88px",
+        "overflowWhileSidebarHidden": 0
+      },
+      "keyboard": {
+        "tabOutline": "2px solid",
+        "searchDialogOpens": true,
+        "searchDialogClosesOnEscape": true,
+        "menuOpensWithEnter": true,
+        "menuClosesOnEscape": true,
+        "resultNavigationMovesAriaCurrent": true
+      }
+    },
+    "screenshots": "docs/parallel/ui/evidence/*.png",
+    "raw": "docs/parallel/ui/evidence/*-metrics.json"
+  },
+  "regressions": {
+    "existingE2E": "45/45 together with the new UI tests; retries 0",
+    "unit": "50/50",
+    "typecheck": "PASS",
+    "build": "PASS",
+    "knownFailuresThisRound": []
+  },
+  "remaining": [
+    "Physical Japanese IME NOT_RUN; synthetic composition coverage unchanged.",
+    "Notion comparison UNKNOWN; no real Notion interaction in this round.",
+    "Dev server (`dev`) startup NOT_RUN; verification used the production dist.",
+    "Screenshots cover 1440x907, 1024x720 and 960x700; no pixel diff against the pre-change UI and no intermediate-width sweep.",
+    "At 1000px and below the inspector overlays the document; an explicit close button is provided, but reflow that avoids overlap is not implemented.",
+    "New evidence PNGs are not registered in docs/review-policy.json reviewedBinaries; registration/move is left to the integration/review step (outside this role's file scope).",
+    "Hover assertions depend on an active window; the tests focus the Electron window and assert :hover, but headless/inactive-window hover is not guaranteed."
+  ]
+}

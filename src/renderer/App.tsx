@@ -26,6 +26,7 @@ import {
   Settings2,
   Link2,
   Database as DatabaseIcon,
+  X,
 } from "lucide-react";
 import { Editor } from "../editor/Editor";
 import { DialogFrame } from "./Modal";
@@ -141,6 +142,20 @@ export function App() {
   useEffect(() => {
     document.documentElement.dataset.theme = theme;
   }, [theme]);
+  // Dismiss transient menus on the next interaction outside their anchor.
+  // This only changes menu visibility; page actions still run through the
+  // same handlers as before.
+  useEffect(() => {
+    if (!menu && !iconMenu) return;
+    const dismiss = (event: PointerEvent) => {
+      const target = event.target as Element | null;
+      if (target?.closest?.(".menu-anchor")) return;
+      setMenu(false);
+      setIconMenu(false);
+    };
+    document.addEventListener("pointerdown", dismiss);
+    return () => document.removeEventListener("pointerdown", dismiss);
+  }, [menu, iconMenu]);
   const saveSetting = (
     key: "activePage" | "theme" | "sidebar" | "expanded",
     value: string,
@@ -583,10 +598,9 @@ export function App() {
       .map((p) => {
         const has = live.some((c) => c.parentId === p.id);
         return (
-          <div key={p.id}>
+          <div className="page-tree-node" data-depth={depth} key={p.id}>
             <div
               className={"page-tree-row " + (p.id === activeId ? "active" : "")}
-              style={{ paddingLeft: 12 + depth * 15 }}
               draggable
               onDragStart={(e) =>
                 e.dataTransfer.setData("application/x-folio-page", p.id)
@@ -610,6 +624,7 @@ export function App() {
               <button
                 className={"tree-toggle " + (!has ? "invisible" : "")}
                 aria-label={p.title + " を展開"}
+                aria-expanded={has ? expanded.has(p.id) : undefined}
                 onClick={() => {
                   const next = new Set(expanded);
                   if (next.has(p.id)) next.delete(p.id);
@@ -624,9 +639,14 @@ export function App() {
                   <ChevronRight size={13} />
                 )}
               </button>
-              <button className="page-tree-label" onClick={() => select(p.id)}>
+              <button
+                className="page-tree-label"
+                title={p.title || "無題"}
+                aria-current={p.id === activeId ? "page" : undefined}
+                onClick={() => select(p.id)}
+              >
                 <span className="page-emoji">{p.icon}</span>
-                <span>{p.title || "無題"}</span>
+                <span className="page-tree-title">{p.title || "無題"}</span>
               </button>
               <button
                 className="tree-add"
@@ -636,7 +656,9 @@ export function App() {
                 <Plus size={13} />
               </button>
             </div>
-            {expanded.has(p.id) && tree(p.id, depth + 1)}
+            {expanded.has(p.id) && (
+              <div className="page-tree-children">{tree(p.id, depth + 1)}</div>
+            )}
           </div>
         );
       });
@@ -758,7 +780,7 @@ export function App() {
   return (
     <div className="app-shell">
       {sidebar && (
-        <aside className="sidebar">
+        <aside className="sidebar" aria-label="サイドバー">
           <div className="mac-drag" />
           <div className="workspace">
             <div className="brand-mark">f</div>
@@ -767,7 +789,7 @@ export function App() {
             </span>
             <ChevronDown size={14} />
           </div>
-          <nav className="sidebar-nav">
+          <nav className="sidebar-nav" aria-label="ワークスペース操作">
             <button onClick={openSearch}>
               <Search size={17} />
               <span>検索</span>
@@ -781,69 +803,97 @@ export function App() {
           </nav>
           <div className="sidebar-scroll">
             {live.some((p) => p.favorite) && (
-              <>
-                <div className="section-label">お気に入り</div>
-                {live
-                  .filter((p) => p.favorite)
-                  .map((p) => (
-                    <button
-                      key={p.id}
-                      className="favorite-row"
-                      onClick={() => select(p.id)}
-                    >
-                      <span>{p.icon}</span>
-                      {p.title}
-                    </button>
-                  ))}
-              </>
+              <div className="sidebar-section">
+                <div className="section-label">
+                  <span>お気に入り</span>
+                </div>
+                <div className="favorites">
+                  {live
+                    .filter((p) => p.favorite)
+                    .map((p) => (
+                      <button
+                        key={p.id}
+                        className="favorite-row"
+                        title={p.title || "無題"}
+                        aria-current={p.id === activeId ? "page" : undefined}
+                        onClick={() => select(p.id)}
+                      >
+                        <span className="page-emoji">{p.icon}</span>
+                        <span className="page-tree-title">
+                          {p.title || "無題"}
+                        </span>
+                      </button>
+                    ))}
+                </div>
+              </div>
             )}
-            <div className="section-label">
-              <span>プライベート</span>
+            <div className="sidebar-section">
+              <div className="section-label">
+                <span>プライベート</span>
+                <span className="section-meta">
+                  <span className="section-count">{live.length}</span>
+                  <button
+                    aria-label="ページを追加"
+                    onClick={() => safe(() => create())}
+                  >
+                    <Plus size={14} />
+                  </button>
+                </span>
+              </div>
+              {live.length ? (
+                <div className="page-tree">{tree(null)}</div>
+              ) : (
+                <p className="sidebar-empty">
+                  ページがまだありません。⌘N で作りはじめましょう。
+                </p>
+              )}
               <button
-                aria-label="ページを追加"
+                className="new-root"
+                onDragOver={(e) => {
+                  if (e.dataTransfer.types.includes("application/x-folio-page"))
+                    e.preventDefault();
+                }}
+                onDrop={(e) => {
+                  const id = e.dataTransfer.getData("application/x-folio-page");
+                  if (id) safe(() => move(id, null));
+                }}
                 onClick={() => safe(() => create())}
               >
-                <Plus size={14} />
+                <Plus size={15} />
+                ページを追加
               </button>
             </div>
-            <div className="page-tree">{tree(null)}</div>
-            <button
-              className="new-root"
-              onDragOver={(e) => {
-                if (e.dataTransfer.types.includes("application/x-folio-page"))
-                  e.preventDefault();
-              }}
-              onDrop={(e) => {
-                const id = e.dataTransfer.getData("application/x-folio-page");
-                if (id) safe(() => move(id, null));
-              }}
-              onClick={() => safe(() => create())}
-            >
-              <Plus size={15} />
-              ページを追加
-            </button>
           </div>
           <div className="sidebar-footer">
-            <button onClick={() => setDialog("templates")}>
-              <BookOpen size={16} />
-              テンプレート
-            </button>
-            <button onClick={importPage}>
-              <Upload size={16} />
-              インポート
-            </button>
-            <button onClick={() => setDialog("trash")}>
-              <Trash2 size={16} />
-              ゴミ箱{" "}
-              <small>{pages.filter((p) => p.deletedAt).length || ""}</small>
-            </button>
+            <div className="sidebar-footer-actions">
+              <button
+                title="ページテンプレートから作成"
+                onClick={() => setDialog("templates")}
+              >
+                <BookOpen size={16} />
+                テンプレート
+              </button>
+              <button title="Markdown / HTML を読み込む" onClick={importPage}>
+                <Upload size={16} />
+                インポート
+              </button>
+              <button
+                title="削除したページを復元"
+                onClick={() => setDialog("trash")}
+              >
+                <Trash2 size={16} />
+                ゴミ箱{" "}
+                <small>{pages.filter((p) => p.deletedAt).length || ""}</small>
+              </button>
+            </div>
             <div className="sidebar-bottom">
               <span>
-                <i />
+                <i aria-hidden="true" />
                 ローカルワークスペース
               </span>
               <button
                 aria-label="テーマを切り替え"
+                aria-pressed={theme === "dark"}
                 title="⌘⇧L"
                 onClick={toggleTheme}
               >
@@ -855,153 +905,176 @@ export function App() {
       )}
       <main className="main-pane">
         <header className="topbar">
-          <button
-            aria-label="サイドバーを切り替え"
-            onClick={() => setSidebar((v) => !v)}
-          >
-            <PanelLeft size={17} />
-          </button>
-          <button
-            aria-label="前のページ"
-            onClick={() => back(-1)}
-            disabled={historyIndex.current <= 0}
-          >
-            <ArrowLeft size={16} />
-          </button>
-          <button
-            aria-label="次のページ"
-            onClick={() => back(1)}
-            disabled={historyIndex.current >= history.current.length - 1}
-          >
-            <ArrowRight size={16} />
-          </button>
-          <div className="breadcrumbs">
+          <div className="topbar-group topbar-nav">
+            <button
+              aria-label="サイドバーを切り替え"
+              aria-pressed={sidebar}
+              title="サイドバー (⌘\\)"
+              onClick={() => setSidebar((v) => !v)}
+            >
+              <PanelLeft size={17} />
+            </button>
+            <span className="topbar-divider" aria-hidden="true" />
+            <button
+              aria-label="前のページ"
+              title="前のページ (⌘[)"
+              onClick={() => back(-1)}
+              disabled={historyIndex.current <= 0}
+            >
+              <ArrowLeft size={16} />
+            </button>
+            <button
+              aria-label="次のページ"
+              title="次のページ (⌘])"
+              onClick={() => back(1)}
+              disabled={historyIndex.current >= history.current.length - 1}
+            >
+              <ArrowRight size={16} />
+            </button>
+          </div>
+          <nav className="breadcrumbs" aria-label="ページの階層">
             {ancestors.map((p) => (
-              <span key={p.id}>
-                <button onClick={() => select(p.id)}>
+              <span className="crumb" key={p.id}>
+                <button title={p.title} onClick={() => select(p.id)}>
                   {p.icon} {p.title}
                 </button>
-                <span>/</span>
+                <span className="crumb-separator" aria-hidden="true">
+                  /
+                </span>
               </span>
             ))}
-            <span>
+            <span className="crumb crumb-current" aria-current="page">
               {page?.icon} {page?.title || "ワークスペース"}
             </span>
-          </div>
+          </nav>
           <div className="spacer" />
-          <span
-            className={"save-state " + (error ? "error" : "")}
-            aria-live="polite"
-          >
-            {error ? (
-              "保存エラー"
-            ) : pending ? (
-              "保存中…"
-            ) : (
-              <>
-                <Check size={12} />
-                保存済み
-              </>
+          <div className="topbar-group topbar-actions">
+            <span
+              className={"save-state " + (error ? "error" : "")}
+              data-state={error ? "error" : pending ? "pending" : "saved"}
+              aria-live="polite"
+            >
+              {error ? (
+                "保存エラー"
+              ) : pending ? (
+                "保存中…"
+              ) : (
+                <>
+                  <Check size={12} />
+                  保存済み
+                </>
+              )}
+            </span>
+            {page && (
+              <button
+                aria-label="お気に入り"
+                aria-pressed={!!page.favorite}
+                title="お気に入りに追加"
+                className={page.favorite ? "starred" : ""}
+                onClick={() => update(page.id, { favorite: !page.favorite })}
+              >
+                <Star
+                  size={17}
+                  fill={page.favorite ? "currentColor" : "none"}
+                />
+              </button>
             )}
-          </span>
-          {page && (
             <button
-              aria-label="お気に入り"
-              className={page.favorite ? "starred" : ""}
-              onClick={() => update(page.id, { favorite: !page.favorite })}
+              aria-label="ページ情報"
+              aria-pressed={inspector}
+              title="ページ情報"
+              onClick={() => setInspector((v) => !v)}
             >
-              <Star size={17} fill={page.favorite ? "currentColor" : "none"} />
+              <PanelRight size={17} />
             </button>
-          )}
-          <button
-            aria-label="ページ情報"
-            onClick={() => setInspector((v) => !v)}
-          >
-            <PanelRight size={17} />
-          </button>
-          <div className="menu-anchor">
-            <button
-              aria-label="ページメニュー"
-              onClick={() => setMenu((v) => !v)}
-            >
-              <MoreHorizontal size={20} />
-            </button>
-            {menu && page && (
-              <div className="dropdown">
-                <button onClick={duplicate}>
-                  <Copy size={15} />
-                  複製
-                </button>
-                <button
-                  onClick={() => {
-                    setDialog("move");
-                    setMenu(false);
-                  }}
-                >
-                  <FolderInput size={15} />
-                  移動する
-                </button>
-                <button onClick={() => safe(() => create(page.id))}>
-                  <Plus size={15} />
-                  子ページを追加
-                </button>
-                <button onClick={openHistory}>
-                  <History size={15} />
-                  変更履歴
-                </button>
-                <hr />
-                <button
-                  onClick={() =>
-                    safe(() =>
-                      mutate(async () => {
-                        const copies = await api<Page[] | null>({
-                          type: "recover",
-                        });
-                        if (copies?.length) {
-                          await refresh();
-                          select(copies[0].id);
-                          setNotice(
-                            "退避内容を新しいページとして復旧しました。元のページも保持しています。",
-                          );
-                        }
-                      }),
-                    )
-                  }
-                >
-                  退避JSONから復旧
-                </button>
-                <button onClick={() => exportPage("md")}>
-                  <Download size={15} />
-                  Markdownを書き出す
-                </button>
-                <button onClick={() => exportPage("html")}>
-                  <Download size={15} />
-                  HTMLを書き出す
-                </button>
-                <button onClick={() => exportPage("json")}>
-                  <Download size={15} />
-                  JSONを書き出す
-                </button>
-                <button
-                  onClick={() =>
-                    safe(async () => {
-                      await ensureSaved();
-                      const path = await api<string>({ type: "backup" });
-                      setNotice("バックアップを保存しました：" + path);
+            <div className="menu-anchor">
+              <button
+                aria-label="ページメニュー"
+                aria-expanded={menu}
+                title="ページメニュー"
+                onClick={() => setMenu((v) => !v)}
+              >
+                <MoreHorizontal size={20} />
+              </button>
+              {menu && page && (
+                <div className="dropdown">
+                  <div className="menu-section-label">ページ</div>
+                  <button onClick={duplicate}>
+                    <Copy size={15} />
+                    複製
+                  </button>
+                  <button
+                    onClick={() => {
+                      setDialog("move");
                       setMenu(false);
-                    })
-                  }
-                >
-                  <Copy size={15} />
-                  ワークスペースをバックアップ
-                </button>
-                <hr />
-                <button className="danger" onClick={trash}>
-                  <Trash2 size={15} />
-                  ゴミ箱に移動
-                </button>
-              </div>
-            )}
+                    }}
+                  >
+                    <FolderInput size={15} />
+                    移動する
+                  </button>
+                  <button onClick={() => safe(() => create(page.id))}>
+                    <Plus size={15} />
+                    子ページを追加
+                  </button>
+                  <button onClick={openHistory}>
+                    <History size={15} />
+                    変更履歴
+                  </button>
+                  <hr />
+                  <div className="menu-section-label">書き出し・復旧</div>
+                  <button
+                    onClick={() =>
+                      safe(() =>
+                        mutate(async () => {
+                          const copies = await api<Page[] | null>({
+                            type: "recover",
+                          });
+                          if (copies?.length) {
+                            await refresh();
+                            select(copies[0].id);
+                            setNotice(
+                              "退避内容を新しいページとして復旧しました。元のページも保持しています。",
+                            );
+                          }
+                        }),
+                      )
+                    }
+                  >
+                    退避JSONから復旧
+                  </button>
+                  <button onClick={() => exportPage("md")}>
+                    <Download size={15} />
+                    Markdownを書き出す
+                  </button>
+                  <button onClick={() => exportPage("html")}>
+                    <Download size={15} />
+                    HTMLを書き出す
+                  </button>
+                  <button onClick={() => exportPage("json")}>
+                    <Download size={15} />
+                    JSONを書き出す
+                  </button>
+                  <button
+                    onClick={() =>
+                      safe(async () => {
+                        await ensureSaved();
+                        const path = await api<string>({ type: "backup" });
+                        setNotice("バックアップを保存しました：" + path);
+                        setMenu(false);
+                      })
+                    }
+                  >
+                    <Copy size={15} />
+                    ワークスペースをバックアップ
+                  </button>
+                  <hr />
+                  <button className="danger" onClick={trash}>
+                    <Trash2 size={15} />
+                    ゴミ箱に移動
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         </header>
         {error && (
@@ -1094,6 +1167,8 @@ export function App() {
                   "document " + (page.kind === "database" ? "wide" : "")
                 }
                 key={page.id}
+                data-kind={page.kind}
+                data-document-error={page.documentError ? "true" : undefined}
               >
                 {page.cover && (
                   <div
@@ -1111,6 +1186,7 @@ export function App() {
                   >
                     <div className="cover-landscape" />
                     <button
+                      title="カバーの色・画像を切り替え"
                       onClick={() =>
                         update(page.id, {
                           cover:
@@ -1131,7 +1207,10 @@ export function App() {
                 <div className="document-content">
                   <div className="page-decoration">
                     {page.recoveredFrom && (
-                      <span title="退避JSONから別ページに復旧しました">
+                      <span
+                        className="recovered-badge"
+                        title="退避JSONから別ページに復旧しました"
+                      >
                         復旧ページ
                       </span>
                     )}
@@ -1139,15 +1218,22 @@ export function App() {
                       <button
                         className="page-icon"
                         aria-label="ページアイコン"
+                        aria-expanded={iconMenu}
+                        title="アイコンを変更"
                         onClick={() => setIconMenu((v) => !v)}
                       >
                         {page.icon}
                       </button>
                       {iconMenu && (
-                        <div className="icon-picker">
+                        <div
+                          className="icon-picker"
+                          role="group"
+                          aria-label="アイコンを選択"
+                        >
                           {icons.map((i) => (
                             <button
                               key={i}
+                              aria-label={"アイコン " + i}
                               onClick={() => {
                                 update(page.id, { icon: i });
                                 setIconMenu(false);
@@ -1162,16 +1248,18 @@ export function App() {
                     <div className="page-tools">
                       {!page.cover && (
                         <button
+                          title="このページにカバーを追加"
                           onClick={() => update(page.id, { cover: "sage" })}
                         >
                           カバーを追加
                         </button>
                       )}
-                      <button onClick={attach}>
+                      <button title="ファイルを添付" onClick={attach}>
                         <Paperclip size={12} />
                         添付
                       </button>
                       <button
+                        title="画像をカバーに設定"
                         onClick={() =>
                           safe(async () => {
                             const f = await api<{
@@ -1197,13 +1285,15 @@ export function App() {
                     onChange={(e) => update(page.id, { title: e.target.value })}
                   />
                   <div className="page-subtitle">
-                    <span>
+                    <span className="page-kind">
                       {page.kind === "database"
                         ? "データベース"
                         : "プライベートページ"}
                     </span>
-                    <span>·</span>
-                    <span>
+                    <span className="meta-dot" aria-hidden="true">
+                      ·
+                    </span>
+                    <span className="page-updated">
                       {new Date(page.updatedAt).toLocaleDateString("ja-JP", {
                         month: "long",
                         day: "numeric",
@@ -1300,15 +1390,23 @@ export function App() {
                     )
                   )}
                   {children.length > 0 && (
-                    <div className="child-pages">
+                    <section className="child-pages" aria-label="子ページ">
+                      <div className="child-pages-heading">
+                        <span>子ページ</span>
+                        <small>{children.length}</small>
+                      </div>
                       {children.map((child) => (
-                        <button key={child.id} onClick={() => select(child.id)}>
-                          <span>{child.icon}</span>
+                        <button
+                          key={child.id}
+                          title={child.title}
+                          onClick={() => select(child.id)}
+                        >
+                          <span className="page-emoji">{child.icon}</span>
                           <strong>{child.title}</strong>
-                          <ChevronRight size={15} />
+                          <ChevronRight size={15} aria-hidden="true" />
                         </button>
                       ))}
-                    </div>
+                    </section>
                   )}
                   <div className="document-end">
                     <span>✧</span>
@@ -1330,14 +1428,24 @@ export function App() {
             )}
           </div>
           {inspector && page && (
-            <aside className="inspector">
-              <div className="inspector-heading">
-                ページの情報
-                <Settings2 size={14} />
-              </div>
-              <div className="inspector-section">
-                <label>このページ</label>
-                <p>
+            <aside className="inspector" aria-label="ページの情報">
+              <h2 className="inspector-heading">
+                <span>ページの情報</span>
+                <span className="inspector-heading-actions">
+                  <Settings2 size={14} aria-hidden="true" />
+                  <button
+                    className="inspector-close"
+                    aria-label="情報パネルを閉じる"
+                    title="情報パネルを閉じる"
+                    onClick={() => setInspector(false)}
+                  >
+                    <X size={14} />
+                  </button>
+                </span>
+              </h2>
+              <section className="inspector-section">
+                <h3 className="inspector-label">このページ</h3>
+                <p className="inspector-page">
                   {page.icon} {page.title}
                 </p>
                 <dl>
@@ -1354,9 +1462,9 @@ export function App() {
                   <dt>保存先</dt>
                   <dd>このMac</dd>
                 </dl>
-              </div>
-              <div className="inspector-section">
-                <label>アウトライン</label>
+              </section>
+              <section className="inspector-section">
+                <h3 className="inspector-label">アウトライン</h3>
                 {headings.length ? (
                   headings.map((h, i) => (
                     <button
@@ -1365,6 +1473,7 @@ export function App() {
                       style={{
                         paddingLeft: ((h.attrs?.level as number) || 2) * 7 - 7,
                       }}
+                      title={textOf(h)}
                       onClick={() =>
                         document
                           .querySelectorAll(
@@ -1382,15 +1491,16 @@ export function App() {
                 ) : (
                   <p className="subtle">見出しを追加すると表示されます</p>
                 )}
-              </div>
-              <div className="inspector-section">
-                <label>
+              </section>
+              <section className="inspector-section">
+                <h3 className="inspector-label">
                   バックリンク <small>{backlinks.length}</small>
-                </label>
+                </h3>
                 {backlinks.map((p) => (
                   <button
                     className="outline-item"
                     key={p.id}
+                    title={p.title}
                     onClick={() => select(p.id)}
                   >
                     {p.icon} {p.title}
@@ -1403,13 +1513,13 @@ export function App() {
                     ここに集まります。
                   </p>
                 )}
-              </div>
+              </section>
               <button className="history-link" onClick={openHistory}>
-                <History size={14} />
+                <History size={14} aria-hidden="true" />
                 変更履歴を見る
               </button>
               <div className="inspector-tip">
-                <Command size={17} />
+                <Command size={17} aria-hidden="true" />
                 <p>
                   <kbd>⌘ K</kbd> で、すぐに移動。
                   <br />
@@ -1498,12 +1608,18 @@ export function App() {
               <div className="menu-caption">
                 {query ? "検索結果" : "すべてのページ"}
               </div>
-              <div className="search-results">
+              <div
+                className="search-results"
+                role="group"
+                aria-label={query ? "検索結果" : "すべてのページ"}
+              >
                 {results.length ? (
                   results.map((p, i) => (
                     <button
                       key={p.id}
                       className={i === searchIndex ? "active" : ""}
+                      aria-current={i === searchIndex ? "true" : undefined}
+                      title={p.title || "無題"}
                       onClick={() => {
                         if (dialog === "link") {
                           applyPageLink(p);
@@ -1511,7 +1627,7 @@ export function App() {
                       }}
                     >
                       <span className="result-icon">{p.icon}</span>
-                      <span>
+                      <span className="result-text">
                         <strong>{p.title || "無題"}</strong>
                         <small>
                           {p.documentError
@@ -1519,7 +1635,7 @@ export function App() {
                             : textOf(p.doc).slice(0, 85) || "空のページ"}
                         </small>
                       </span>
-                      <ChevronRight size={15} />
+                      <ChevronRight size={15} aria-hidden="true" />
                     </button>
                   ))
                 ) : (
@@ -1528,11 +1644,15 @@ export function App() {
               </div>
               {dialog === "search" && (
                 <div className="palette-actions">
-                  <button onClick={() => safe(() => create())}>
+                  <button
+                    title="新しいページ (⌘N)"
+                    onClick={() => safe(() => create())}
+                  >
                     <Plus size={14} />
                     ページを作成
                   </button>
                   <button
+                    title="新しいデータベース"
                     onClick={() =>
                       safe(() => create(null, "database", "新しいデータベース"))
                     }
@@ -1540,15 +1660,23 @@ export function App() {
                     <DatabaseIcon size={14} />
                     データベース
                   </button>
-                  <button onClick={toggleTheme}>
+                  <button title="テーマを切り替え (⌘⇧L)" onClick={toggleTheme}>
                     {theme === "light" ? <Moon size={14} /> : <Sun size={14} />}
                     テーマ
                   </button>
                 </div>
               )}
               <footer className="search-footer">
-                ↑ ↓ 選択 <span>↵ 開く</span>
-                <span>タイトルと本文を検索</span>
+                <span className="search-hint">
+                  <kbd>↑</kbd>
+                  <kbd>↓</kbd> 選択
+                </span>
+                <span className="search-hint">
+                  <kbd>↵</kbd> 開く
+                </span>
+                <span className="search-hint search-hint-end">
+                  タイトルと本文を検索
+                </span>
               </footer>
             </>
           ) : (
@@ -1563,18 +1691,26 @@ export function App() {
                         ? "ゴミ箱"
                         : "新しいページのはじまり"}
                 </h3>
-                <button onClick={() => setDialog(null)}>閉じる</button>
+                <button className="modal-close" onClick={() => setDialog(null)}>
+                  閉じる
+                </button>
               </div>
               {dialog === "templates" && (
                 <div className="templates">
-                  <button onClick={() => safe(() => create())}>
+                  <button
+                    className="template-card"
+                    title="空のページを作成"
+                    onClick={() => safe(() => create())}
+                  >
                     <span>📄</span>
                     <strong>空のページ</strong>
                     <small>自由に書きはじめる</small>
                   </button>
                   {templates.map((t) => (
                     <button
+                      className="template-card"
                       key={t.title}
+                      title={t.title + "を作成"}
                       onClick={() =>
                         safe(async () => {
                           const p = await create(null, "page", t.title, t.doc);
