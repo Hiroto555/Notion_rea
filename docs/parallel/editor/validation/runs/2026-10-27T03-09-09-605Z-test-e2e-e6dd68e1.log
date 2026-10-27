@@ -1,0 +1,16 @@
+{"command":"npm","args":["run","test:e2e","--","tests/e2e/editor-identity.spec.ts","--retries=0","--reporter=list","--output=output/agent-workspace/evidence/editor-v2/nested-e2e-v3"],"branch":"sprint/editor-v2","role":"editor","started":"2026-10-27T03:09:09.605Z"}
+
+> folio-desktop@0.1.0 test:e2e
+> playwright test tests/e2e/editor-identity.spec.ts --retries=0 --reporter=list --output=output/agent-workspace/evidence/editor-v2/nested-e2e-v3
+
+
+Running 2 tests using 1 worker
+
+(node:56317) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓  1 tests/e2e/editor-identity.spec.ts:5:1 › Editor 2.0: legacy document obtains IDs on edit, survives restart and copy paste (6.7s)
+  ✓  2 tests/e2e/editor-identity.spec.ts:54:1 › Editor 2.0: nested sibling move, duplicate, undo/redo and restart (16.2s)
+
+  2 passed (23.3s)
+
+exit_code=0 signal=none

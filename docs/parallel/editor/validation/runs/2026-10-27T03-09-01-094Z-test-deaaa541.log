@@ -1,0 +1,17 @@
+{"command":"npm","args":["run","test","--","tests/editor-identity.test.ts"],"branch":"sprint/editor-v2","role":"editor","started":"2026-10-27T03:09:01.095Z"}
+
+> folio-desktop@0.1.0 test
+> vitest run tests/editor-identity.test.ts
+
+
+ RUN  v3.2.7 /Users/shiroto/Documents/ChatGPT/Folio-editor
+
+ ✓ tests/editor-identity.test.ts (4 tests) 8ms
+
+ Test Files  1 passed (1)
+      Tests  4 passed (4)
+   Start at  12:09:01
+   Duration  394ms (transform 46ms, setup 0ms, collect 121ms, tests 8ms, environment 0ms, prepare 81ms)
+
+
+exit_code=0 signal=none
