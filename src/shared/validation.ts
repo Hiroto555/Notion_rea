@@ -50,8 +50,14 @@ export function validDocument(value: unknown): boolean {
         !attributes(node.attrs, spec.spec.attrs ?? {})
       )
         return false;
-      if (node.attrs?.id) {
-        if (ids.has(node.attrs.id)) return false;
+      if (node.attrs?.id !== undefined && node.attrs.id !== null) {
+        if (
+          typeof node.attrs.id !== "string" ||
+          !node.attrs.id ||
+          node.attrs.id.length > 128 ||
+          ids.has(node.attrs.id)
+        )
+          return false;
         ids.add(node.attrs.id);
       }
       if (node.marks !== undefined) {
