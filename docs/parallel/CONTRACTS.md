@@ -20,4 +20,4 @@
 - `App.tsx` のUI担当変更は表示層と既存コールバックに限る。保存の意味、IPC、競合処理、Editor/Databaseプロパティ契約を変更しない。契約競合や他担当が必要な場合は実装を捏造せず提案と未完を報告する。
 - 実ユーザーデータ・Notion個人領域を使用しない。既存R1/R2/R3の保護と全試験を維持。実測していないNotion挙動はUNKNOWN、物理IME未実施はNOT_RUN。公開されていないコード・素材は使わない。
 - 4branchとも同じGitオブジェクト・refsを共有する。masterや他branchをcheckout/変更せず、自branchにのみコミット。GitHub公開、push、統合は行わない。通常のGit worktree管理情報は作業ディレクトリ外にあり、Workspace Write sandboxから `git add` / `git commit` が拒否される場合がある。拒否時は理由を報告し、Harnessの狭い1回限りの承認経路を使う。sandboxを恒久的に無制限へ変更しない。要求された承認を勝手に回避しない。
-- `node scripts/folio-agent.mjs` 経由で作業用 `check`, `test`, `build`, `test:e2e`, `dev`, `start` を実行する。data/cache/tmp/logsは各worktreeの `output/agent-workspace/`、portは `folio-agent.json`。E2Eは同一Mac上のnative UI競合を避ける共有ロックを取り、競合時は失敗し試験を実行しない。固定待ち・自動retry・失敗の選別は行わない。個別の直接コマンドやAIが設定を変更した場合まで隔離を保証する仕組みではない。
+- `node scripts/folio-agent.mjs` 経由で作業用 `check`, `test`, `build`, `test:e2e`, `dev`, `start` を実行する。data/cache/tmp/logsは各worktreeの `output/agent-workspace/`、portは `folio-agent.json`。単体とE2Eは同一Mac上の負荷とnative UI競合を避ける共有ロックを取り、競合時はファイルイベントで待機してから一度だけ実行する。テスト開始後の自動retry・固定sleep・失敗の選別は行わない。個別の直接コマンドやAIが設定を変更した場合まで隔離を保証する仕組みではない。

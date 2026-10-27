@@ -1,7 +1,7 @@
 import { spawn, spawnSync } from "node:child_process";
 import { createHash, randomUUID } from "node:crypto";
-import { mkdirSync, readFileSync, writeFileSync, createWriteStream, unlinkSync, rmdirSync, realpathSync } from "node:fs";
-import { dirname, join, resolve } from "node:path";
+import { mkdirSync, readFileSync, writeFileSync, createWriteStream, unlinkSync, rmdirSync, realpathSync, watch } from "node:fs";
+import { basename, dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
@@ -25,14 +25,33 @@ if (command === "environment") {
 const token = createHash("sha256").update(commonDir).digest("hex").slice(0, 16);
 const lock = join(realpathSync("/tmp"), `folio-e2e-${token}.lock`);
 let hasLock = false;
-if (command === "test:e2e") {
-  try { mkdirSync(lock); hasLock = true; writeFileSync(join(lock, "owner.json"), JSON.stringify({ pid: process.pid, role: config.role, started: new Date().toISOString() }), { flag: "wx" }); }
-  catch (error) {
-    if (hasLock) { try { rmdirSync(lock); } catch {} }
-    console.error(`E2E lock unavailable: ${lock}. Another Folio E2E may be running. No tests were skipped or started. If stale, inspect its owner before removal.`);
-    process.exit(2);
-  }
+if (command === "test" || command === "test:e2e") {
+  const acquired = await new Promise((done, reject) => {
+    let waiting = false, settled = false;
+    const watcher = watch(dirname(lock), (_event, filename) => {
+      if (!filename || filename.toString() === basename(lock)) tryAcquire();
+    });
+    const stop = () => { if (!settled) { settled = true; watcher.close(); done(false); } };
+    process.once("SIGINT", stop); process.once("SIGTERM", stop);
+    const cleanupSignals = () => { process.removeListener("SIGINT", stop); process.removeListener("SIGTERM", stop); };
+    function tryAcquire() {
+      if (settled) return;
+      try {
+        mkdirSync(lock);
+        try { writeFileSync(join(lock, "owner.json"), JSON.stringify({ pid: process.pid, role: config.role, command, started: new Date().toISOString() }), { flag: "wx" }); }
+        catch (error) { try { rmdirSync(lock); } catch {} throw error; }
+        hasLock = true; settled = true; watcher.close(); cleanupSignals();
+        console.log(`Test lock acquired: ${lock}`); done(true);
+      } catch (error) {
+        if (error.code === "EEXIST") { if (!waiting) { waiting = true; console.log(`Waiting for test lock: ${lock}. Tests have not started.`); } return; }
+        settled = true; watcher.close(); cleanupSignals(); reject(error);
+      }
+    }
+    tryAcquire();
+  });
+  if (!acquired) { console.error("Interrupted while waiting; no tests started."); process.exit(130); }
 }
+
 const name = `${new Date().toISOString().replace(/[:.]/g, "-")}-${command.replace(":", "-")}-${randomUUID().slice(0, 8)}.log`;
 const logPath = join(storage, "logs", name);
 const log = createWriteStream(logPath, { flags: "wx" });
