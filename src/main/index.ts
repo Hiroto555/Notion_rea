@@ -29,6 +29,7 @@ import { requestSchema } from "../shared/types";
 import { FILE_MAX_BYTES } from "../shared/limits";
 import { parseRecovery } from "../shared/recovery";
 import { writeRecoveryFile } from "../persistence/recovery-file";
+import { assertExternalOutput } from "../persistence/output-path";
 app.setName("Folio");
 const userData = join(app.getPath("appData"), "Folio");
 const dataDir = workspacePath(userData, process.env.FOLIO_DATA_DIR);
@@ -163,9 +164,10 @@ if (startupError) {
         if (req.type === "downloadAttachment") {
           const asset = resolveAsset(store.db, assets, req.url);
           const result = await dialog.showSaveDialog(win, {
-            defaultPath: join(dataDir, basename(asset.name)),
+            defaultPath: join(app.getPath("downloads"), basename(asset.name)),
           });
           if (result.canceled || !result.filePath) return null;
+          assertExternalOutput(dataDir, result.filePath);
           copyFileSync(asset.path, result.filePath);
           return result.filePath;
         }
@@ -210,22 +212,23 @@ if (startupError) {
         if (req.type === "exportRecovery") {
           parseRecovery(req.content);
           const result = await dialog.showSaveDialog(win, {
-            defaultPath: join(dataDir, "folio-unsaved-recovery.json"),
+            defaultPath: join(app.getPath("downloads"), "folio-unsaved-recovery.json"),
           });
           if (result.canceled || !result.filePath) return null;
-          writeRecoveryFile(result.filePath, req.content);
+          writeRecoveryFile(result.filePath, req.content, () => assertExternalOutput(dataDir, result.filePath!));
           return result.filePath;
         }
         if (req.type === "export") {
           const result = await dialog.showSaveDialog(win, {
             defaultPath: join(
-              dataDir,
+              app.getPath("downloads"),
               req.name.replace(/[<>:"/\\|?*\x00-\x1f]/g, "_") +
                 "." +
                 req.format,
             ),
           });
           if (result.canceled || !result.filePath) return null;
+          assertExternalOutput(dataDir, result.filePath);
           writeFileSync(result.filePath, req.content, "utf8");
           return result.filePath;
         }

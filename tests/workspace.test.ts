@@ -7,6 +7,7 @@ import {
   readFileSync,
   existsSync,
   symlinkSync,
+  renameSync,
 } from "node:fs";
 import { resolve, join } from "node:path";
 import { createHash } from "node:crypto";
@@ -74,6 +75,7 @@ it("F03 migration and backup restoration preserve pages, DB rows and attachment 
   const before = hash(join(source, "workspace.sqlite"));
   const result = migrateWorkspace(source, join(r, "new-workspace"));
   expect(hash(join(source, "workspace.sqlite"))).toBe(before);
+  rmSync(source, { recursive: true });
   for (const directory of [
     result.destination,
     result.backup,
@@ -159,4 +161,26 @@ it("F05 safe legacy URLs still resolve Unicode and extensionless files; traversa
   expect(() =>
     resolveAsset(s.db, join(r, "assets"), "folio-asset://" + other),
   ).toThrow();
+});
+it("rejects symlinked migration roots, DB and assets without modifying source", () => {
+  const r = root(), source = join(r, "source"), s = store(source);
+  s.create(null); s.close();
+  const before = hash(join(source, "workspace.sqlite"));
+  symlinkSync(source, join(r, "source-link"));
+  expect(() => migrateWorkspace(join(r, "source-link"), join(r, "dest1"))).toThrow(/シンボリック/);
+  const realAssets = join(r, "real-assets");
+  rmSync(join(source, "assets"), { recursive: true }); mkdirSync(realAssets);
+  writeFileSync(join(realAssets, "file"), "attachment");
+  symlinkSync(realAssets, join(source, "assets"));
+  expect(() => migrateWorkspace(source, join(r, "dest2"))).toThrow(/シンボリック/);
+  expect(hash(join(source, "workspace.sqlite"))).toBe(before);
+  expect(readFileSync(join(realAssets, "file"), "utf8")).toBe("attachment");
+  expect(existsSync(join(r, "dest2"))).toBe(false);
+  rmSync(join(source, "assets")); mkdirSync(join(source, "assets"));
+  const actualDb = join(r, "actual.sqlite");
+  renameSync(join(source, "workspace.sqlite"), actualDb);
+  symlinkSync(actualDb, join(source, "workspace.sqlite"));
+  expect(() => migrateWorkspace(source, join(r, "dest3"))).toThrow(/シンボリック/);
+  expect(hash(actualDb)).toBe(before);
+  expect(existsSync(join(r, "dest3"))).toBe(false);
 });

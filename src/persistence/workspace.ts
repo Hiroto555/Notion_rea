@@ -14,6 +14,9 @@ export function workspacePath(userData: string, override?: string) {
   return resolve(override || join(userData, "workspace"));
 }
 function checkTree(path: string) {
+  const root = lstatSync(path);
+  if (root.isSymbolicLink()) throw new Error("移行元にシンボリックリンクがあります: " + path);
+  if (!root.isDirectory()) throw new Error("移行元のassetsがディレクトリではありません");
   for (const entry of readdirSync(path, { withFileTypes: true })) {
     const child = join(path, entry.name);
     if (lstatSync(child).isSymbolicLink())
@@ -24,6 +27,12 @@ function checkTree(path: string) {
 export function backupWorkspace(source: string, destination: string) {
   if (existsSync(destination))
     throw new Error("バックアップ先が既に存在します");
+  const sourceStat = lstatSync(source);
+  const dbStat = lstatSync(join(source, "workspace.sqlite"));
+  if (sourceStat.isSymbolicLink() || dbStat.isSymbolicLink())
+    throw new Error("移行元にシンボリックリンクがあります");
+  if (!sourceStat.isDirectory() || !dbStat.isFile())
+    throw new Error("移行元の形式が不正です");
   checkTree(join(source, "assets"));
   mkdirSync(destination, { recursive: true });
   const db = new DatabaseSync(join(source, "workspace.sqlite"), {
