@@ -7,6 +7,7 @@ import {
 } from "@playwright/test";
 import {
   mkdtempSync,
+  mkdirSync,
   rmSync,
   readFileSync,
   writeFileSync,
@@ -18,7 +19,7 @@ import { beginRealDrag } from "./real-drag";
 let traceEnabled = false,
   dragObserved = false;
 const dragSession = () => ({ app, window, folder, restart: async () => {} });
-let app: ElectronApplication, window: Page, folder: string;
+let app: ElectronApplication, window: Page, folder: string, root: string, exportsDir: string, inputsDir: string;
 async function launch() {
   app = await electron.launch({
     args: [resolve("dist/main.cjs")],
@@ -36,7 +37,13 @@ test.beforeEach(async ({}, info) => {
     info.title.startsWith("F11 editing") ||
     info.title.startsWith("F02 full-text");
   dragObserved = false;
-  folder = mkdtempSync(resolve("output/gate-a-e2e-"));
+  root = mkdtempSync(resolve("output/gate-a-e2e-"));
+  folder = join(root, "workspace");
+  exportsDir = join(root, "exports");
+  inputsDir = join(root, "inputs");
+  mkdirSync(folder);
+  mkdirSync(exportsDir);
+  mkdirSync(inputsDir);
   await launch();
 });
 test.afterEach(async ({}, info) => {
@@ -63,6 +70,7 @@ test.afterEach(async ({}, info) => {
           .tracing.stop({ path: info.outputPath("trace.zip") });
       } catch {}
     }
+    try { await app.evaluate(() => (globalThis as any).releaseLoad?.()); } catch {}
     try {
       await app.evaluate(({ BrowserWindow }) => {
         for (const w of BrowserWindow.getAllWindows()) w.destroy();
@@ -70,7 +78,7 @@ test.afterEach(async ({}, info) => {
     } catch {}
     await app.close();
   }
-  rmSync(folder, { recursive: true, force: true });
+  rmSync(root, { recursive: true, force: true });
 });
 async function saveDialog(path: string) {
   await app.evaluate(({ dialog }, p) => {
@@ -109,7 +117,7 @@ test("F01 same-page sidebar/search reselection keeps editor, attachment, link an
   await window.keyboard.press("Meta+p");
   await window.getByLabel("検索キーワード").fill("Gate A original");
   await window.locator(".search-results button").first().click();
-  const md = join(folder, "export.md");
+  const md = join(exportsDir, "export.md");
   await saveDialog(md);
   await window.getByLabel("ページメニュー", { exact: true }).click();
   await window
@@ -128,7 +136,7 @@ test("F01 same-page sidebar/search reselection keeps editor, attachment, link an
   );
   await window.getByLabel("やり直す", { exact: true }).click();
   await expect(window.locator(".folio-editor")).toContainText("Original body");
-  const file = join(folder, "note.txt");
+  const file = join(inputsDir, "note.txt");
   writeFileSync(file, "attachment");
   await openDialog(file);
   await window.getByRole("button", { name: "添付", exact: true }).click();
@@ -137,7 +145,7 @@ test("F01 same-page sidebar/search reselection keeps editor, attachment, link an
   await window.getByLabel("検索キーワード").fill("アイデアノート");
   await window.locator(".search-results button").first().click();
   await expect(window.locator(".folio-editor")).toContainText("アイデアノート");
-  const html = join(folder, "export.html");
+  const html = join(exportsDir, "export.html");
   await saveDialog(html);
   await window.getByLabel("ページメニュー", { exact: true }).click();
   await window
@@ -155,8 +163,8 @@ for (const name of [
   "IMAGE.PNG",
 ])
   test("F05 attachment roundtrip " + name, async () => {
-    const source = join(folder, name),
-      dest = join(folder, "download");
+    const source = join(inputsDir, name),
+      dest = join(exportsDir, "download");
     const bytes = Buffer.from([0, 255, 1, 128, 10]);
     writeFileSync(source, bytes);
     await openDialog(source);
@@ -206,7 +214,18 @@ test("F11 editing during move and delayed load keeps local patch and durable rev
   await window
     .getByLabel("ページタイトル", { exact: true })
     .fill("Before move");
+  await window.locator(".folio-editor").click();
+  await window.keyboard.press("Meta+b");
+  await window.keyboard.insertText("Formatted move body");
+  await window.keyboard.press("Meta+b");
   await saved();
+  const initial = await window.evaluate(async () => {
+    const state = await globalThis.window.folio.request<any>({ type: "load" });
+    const source = state.pages.find((p: any) => p.title === "Before move");
+    const target = state.pages.find((p: any) => p.title === "アイデアノート");
+    const child = await globalThis.window.folio.request<any>({ type: "create", parentId: source.id, kind: "page", title: "Move child" });
+    return { sourceId: source.id, targetId: target.id, childId: child.id, doc: source.doc };
+  });
   await observeDrag(dragSession());
   dragObserved = true;
   await app.evaluate(({ ipcMain }) => {
@@ -239,10 +258,12 @@ test("F11 editing during move and delayed load keeps local patch and durable rev
   const target = window.locator(".page-tree-row").filter({
     has: window.locator(".page-tree-label", { hasText: "アイデアノート" }),
   });
-  await beginRealDrag(window, source);
-  await target.hover();
-  await target.hover();
-  await window.mouse.up();
+  const attempt = await beginRealDrag(window, source);
+  try {
+    await target.hover();
+    await target.hover();
+    await window.mouse.up();
+  } finally { await attempt.cleanup(); }
   // Tree drop intentionally stops bubbling; verify the native capture journal.
   await expect
     .poll(() =>
@@ -266,7 +287,15 @@ test("F11 editing during move and delayed load keeps local patch and durable rev
     const s = await globalThis.window.folio.request<any>({ type: "load" });
     return s.pages.find((p: any) => p.title === "Local edit during move");
   });
-  expect(p?.parentId).toBeTruthy();
+  expect(p?.id).toBe(initial.sourceId);
+  expect(p?.parentId).toBe(initial.targetId);
+  expect(p?.doc).toEqual(initial.doc);
+  const hierarchy = await window.evaluate(async (ids) => {
+    const pages = (await globalThis.window.folio.request<any>({ type: "load" })).pages;
+    return { child: pages.find((x: any) => x.id === ids.childId), siblings: pages.filter((x: any) => x.parentId === ids.targetId).sort((a: any, b: any) => a.position - b.position).map((x: any) => x.id) };
+  }, initial);
+  expect(hierarchy.child.parentId).toBe(initial.sourceId);
+  expect(hierarchy.siblings).toContain(initial.sourceId);
   await dragEvidence(dragSession(), info);
   writeFileSync(
     info.outputPath("move-requests.json"),
@@ -288,6 +317,14 @@ test("F11 editing during move and delayed load keeps local patch and durable rev
   await expect(
     window.getByLabel("ページタイトル", { exact: true }),
   ).toHaveValue("Local edit during move");
+  const reopened = await window.evaluate(async (ids) => {
+    const pages = (await globalThis.window.folio.request<any>({ type: "load" })).pages;
+    return { source: pages.find((x: any) => x.id === ids.sourceId), child: pages.find((x: any) => x.id === ids.childId), siblings: pages.filter((x: any) => x.parentId === ids.targetId).sort((a: any, b: any) => a.position - b.position).map((x: any) => x.id) };
+  }, initial);
+  expect(reopened.source.parentId).toBe(initial.targetId);
+  expect(reopened.source.doc).toEqual(initial.doc);
+  expect(reopened.child.parentId).toBe(initial.sourceId);
+  expect(reopened.siblings).toEqual(hierarchy.siblings);
 });
 
 test("F02 full-text search, preview, count and in-page selection cross inline marks", async () => {
@@ -504,7 +541,7 @@ test("F07 invalid IPC is rejected and unknown stored schema is read-only with ex
   await window.reload();
   await expect(window.getByRole("alert")).toContainText("原本を保全");
   await expect(window.locator(".folio-editor")).toHaveCount(0);
-  const exportFile = join(folder, "raw.json");
+  const exportFile = join(exportsDir, "raw.json");
   await saveDialog(exportFile);
   await window
     .getByRole("button", { name: "原本JSONを保存", exact: true })
@@ -535,7 +572,7 @@ test("F11 failed write exports pending patch and persisted state, then recovers 
     .fill("Local unsaved title");
   await window.locator(".folio-editor").fill("Local unsaved body");
   await expect(window.getByRole("alert")).toContainText("競合");
-  const recovery = join(folder, "recovery.json");
+  const recovery = join(exportsDir, "recovery.json");
   await saveDialog(recovery);
   await window
     .getByRole("button", { name: "退避して再読込", exact: true })
@@ -576,9 +613,9 @@ test("F11 failed write exports pending patch and persisted state, then recovers 
 test("F03 default userData path and pre-ready directory failure are observable without touching user data", async () => {
   const { spawn } = await import("node:child_process");
   const { default: executable } = await import("electron");
-  const blocker = join(folder, "not-a-directory"),
-    report = join(folder, "startup-error.json"),
-    bootstrap = join(folder, "startup.cjs");
+  const blocker = join(inputsDir, "not-a-directory"),
+    report = join(inputsDir, "startup-error.json"),
+    bootstrap = join(inputsDir, "startup.cjs");
   writeFileSync(blocker, "keep");
   writeFileSync(
     bootstrap,
@@ -604,8 +641,8 @@ test("F03 default userData path and pre-ready directory failure are observable w
     "保存先を作成できません",
   );
   expect(readFileSync(blocker, "utf8")).toBe("keep");
-  const appData = join(folder, "isolated-app-data"),
-    defaultBootstrap = join(folder, "default.cjs");
+  const appData = join(inputsDir, "isolated-app-data"),
+    defaultBootstrap = join(inputsDir, "default.cjs");
   writeFileSync(
     defaultBootstrap,
     `const {app}=require('electron'); require('node:fs').mkdirSync(${JSON.stringify(appData)},{recursive:true});app.setPath('appData',${JSON.stringify(appData)});require(${JSON.stringify(resolve("dist/main.cjs"))});`,

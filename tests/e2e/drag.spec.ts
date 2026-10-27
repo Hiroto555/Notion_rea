@@ -118,7 +118,8 @@ test("R2 top-level matrix: single/multiple/start/end/same/cancel/scroll/undo/red
     await assertDoc(before.content);
     await w.getByLabel("やり直す", { exact: true }).click();
     await assertDoc(multi);
-    await beginRealDrag(w, handle(2));
+    const cancelledDrag = await beginRealDrag(w, handle(2));
+    try {
     await handle(1).hover();
     await handle(1).hover();
     await w.keyboard.press("Escape");
@@ -130,6 +131,7 @@ test("R2 top-level matrix: single/multiple/start/end/same/cancel/scroll/undo/red
       false,
     );
     await assertDoc(multi);
+    } finally { await cancelledDrag.cleanup(); }
     await handle(20).scrollIntoViewIfNeeded();
     expect(
       await w.locator(".document-scroll").evaluate((el) => el.scrollTop),
