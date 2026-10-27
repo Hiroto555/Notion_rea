@@ -1,0 +1,13 @@
+{
+  "tabFocus": {
+    "tag": "BUTTON",
+    "label": "太字",
+    "outlineStyle": "solid",
+    "outlineWidth": "2px"
+  },
+  "searchDialogOpened": true,
+  "searchDialogClosed": true,
+  "menuOpenedFromKeyboard": true,
+  "menuClosedWithEscape": true,
+  "resultNavigation": "ArrowDown moved aria-current"
+}
