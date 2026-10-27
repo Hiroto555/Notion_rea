@@ -1,0 +1,589 @@
+{
+  "schemaVersion": 1,
+  "recordedAt": "2026-10-27T12:03:50+09:00",
+  "baseline": {
+    "path": "docs/NOTION-PARITY-BASELINE.md",
+    "sha256": "d6ae10591eb13ed8ad32b84ca665efdb1a77a9fe00d9177616d145a56ecafffd",
+    "baseCommit": "b7c150d15739c59edf6ba9a62ebda4794748d46b",
+    "preserved": true,
+    "note": "既存の固定比較表は変更せず、本調査は別ファイルで4列を分離する。"
+  },
+  "permissions": {
+    "notionTestSpace": false,
+    "notionTestSpaceDetail": "テスト専用のNotion領域・アカウント・URLの明示的な許可を受けていない",
+    "physicalIme": false,
+    "privateData": false
+  },
+  "comparisonPolicy": {
+    "columns": [
+      "folio",
+      "reference",
+      "official",
+      "comparison"
+    ],
+    "matchRequiresObservedReference": true,
+    "matchRequiresSameFixture": true,
+    "matchRequiresSameEnvironment": true,
+    "documentationAlone": "UNKNOWN",
+    "unobserved": "UNKNOWN",
+    "physicalIme": "NOT_RUN"
+  },
+  "latestRun": "parity-e2e-2026-10-27",
+  "priorRun": {
+    "id": "acceptance-full-1/2/3",
+    "record": "docs/validation/next-round/results.json",
+    "summary": "既存の全体E2EはPARTIAL。最終全体は37/37、37/37、36/37で、ページツリー移動F11のみFAIL。"
+  },
+  "scenarios": [
+    {
+      "id": "N01",
+      "title": "同一ページ再選択5回→本文確認→Undo/Redo→Markdown/HTML書き出し",
+      "priority": "P3",
+      "procedure": "procedures.md#n01",
+      "folio": {
+        "status": "PASS",
+        "basis": "PRIOR_RECORD",
+        "latestResult": "NOT_RUN",
+        "testFiles": [
+          "tests/e2e/gate-a.spec.ts"
+        ],
+        "testTitles": [
+          "F01 same-page sidebar/search reselection keeps editor, attachment, link and exports"
+        ],
+        "priorRecord": "docs/validation/next-round/results.json",
+        "note": "合成のGate A seedを使う。5回再選択・Undo/Redo・Markdown/HTMLの自動回帰。"
+      },
+      "reference": {
+        "status": "NOT_RUN",
+        "permitted": false,
+        "observedAt": null,
+        "environmentRef": "environment.json#/notion",
+        "reason": "許可されたNotionテスト領域がない"
+      },
+      "official": {
+        "basis": "INFERRED",
+        "sourceIds": [],
+        "sources": [],
+        "limits": [
+          "再選択時の状態維持・履歴・書き出しを説明する公式資料は今回の取得範囲で確認していない",
+          "Folio側の契約からの推定であり、Notionの文書化された仕様ではない"
+        ]
+      },
+      "comparison": "UNKNOWN",
+      "matchJustification": null,
+      "differences": [],
+      "hypotheses": [
+        "H1"
+      ],
+      "unresolved": [
+        "U01",
+        "U04"
+      ],
+      "firstAction": "許可後に同一fixtureで再選択・履歴・書き出しをNotion側で観測する",
+      "note": "FolioのPASSをNotionとの一致に読み替えない。"
+    },
+    {
+      "id": "N02",
+      "title": "書式をまたぐ「不動産」「software」を全体/ページ内検索し、ヒットと選択範囲を確認",
+      "priority": "P3",
+      "procedure": "procedures.md#n02",
+      "folio": {
+        "status": "PASS",
+        "basis": "PRIOR_RECORD",
+        "latestResult": "NOT_RUN",
+        "testFiles": [
+          "tests/e2e/gate-a.spec.ts"
+        ],
+        "testTitles": [
+          "F02 full-text search, preview, count and in-page selection cross inline marks"
+        ],
+        "priorRecord": "docs/validation/next-round/results.json",
+        "note": "`不` + 太字`動` + `産`、hardBreak、`soft` + link の`ware` を全体検索とページ内検索で確認する合成fixture。"
+      },
+      "reference": {
+        "status": "NOT_RUN",
+        "permitted": false,
+        "observedAt": null,
+        "environmentRef": "environment.json#/notion",
+        "reason": "許可されたNotionテスト領域がない"
+      },
+      "official": {
+        "basis": "DOCUMENTED_REFERENCE",
+        "sourceIds": [
+          "REF-01"
+        ],
+        "sources": [
+          {
+            "id": "REF-01",
+            "title": "Keyboard shortcuts",
+            "url": "https://www.notion.com/help/keyboard-shortcuts",
+            "retrievedAt": "2026-10-27"
+          }
+        ],
+        "limits": [
+          "ページ内検索と全体検索の入口は記載されている",
+          "書式境界をまたぐヒット・選択範囲の挙動は記載されていない"
+        ]
+      },
+      "comparison": "UNKNOWN",
+      "matchJustification": null,
+      "differences": [],
+      "hypotheses": [
+        "H6"
+      ],
+      "unresolved": [
+        "U01",
+        "U05"
+      ],
+      "firstAction": "同一の合成文書をNotionテスト領域に作り、両検索のヒット件数と選択範囲を記録する",
+      "note": "検索の存在は文書化されているが、書式境界の結果は未観測。"
+    },
+    {
+      "id": "N03",
+      "title": "太字を含む本文選択→⌘K→リンク確定/取消し、範囲・文言・書式・フォーカスを確認",
+      "priority": "P2",
+      "procedure": "procedures.md#n03",
+      "folio": {
+        "status": "PASS",
+        "basis": "PRIOR_RECORD",
+        "latestResult": "NOT_RUN",
+        "testFiles": [
+          "tests/e2e/dialogs.spec.ts"
+        ],
+        "testTitles": [
+          "R3 selected text link cancel/confirm restores exact range, wording and marks",
+          "R3 stale link document is rejected and switching page leaves both pages unchanged"
+        ],
+        "priorRecord": "docs/validation/next-round/results.json",
+        "note": "リンク元は合成seedのアイデアノート。取消後の範囲復帰、確定、stale文書の拒否を確認。"
+      },
+      "reference": {
+        "status": "NOT_RUN",
+        "permitted": false,
+        "observedAt": null,
+        "environmentRef": "environment.json#/notion",
+        "reason": "許可されたNotionテスト領域がない"
+      },
+      "official": {
+        "basis": "DOCUMENTED_REFERENCE",
+        "sourceIds": [
+          "REF-01"
+        ],
+        "sources": [
+          {
+            "id": "REF-01",
+            "title": "Keyboard shortcuts",
+            "url": "https://www.notion.com/help/keyboard-shortcuts",
+            "retrievedAt": "2026-10-27"
+          }
+        ],
+        "limits": [
+          "選択テキストへの⌘Kリンク追加は記載されている",
+          "取消後の正確な範囲・書式・フォーカス復帰は記載されていない"
+        ]
+      },
+      "comparison": "UNKNOWN",
+      "matchJustification": null,
+      "differences": [],
+      "hypotheses": [
+        "H2"
+      ],
+      "unresolved": [
+        "U01",
+        "U05"
+      ],
+      "firstAction": "Notionで選択範囲→⌘K→確定/取消を別々に行い、DOMに依存せず画面・フォーカス・選択を記録する",
+      "note": "Folioの「元範囲を厳密に復元」は自動回帰の契約であり、Notionの仕様とは断定しない。"
+    },
+    {
+      "id": "N04",
+      "title": "/メニュー→上下選択→Enter、別試行でEscape。カーソルと入力継続を確認",
+      "priority": "P2",
+      "procedure": "procedures.md#n04",
+      "folio": {
+        "status": "PASS",
+        "basis": "PRIOR_RECORD",
+        "latestResult": "NOT_RUN",
+        "testFiles": [
+          "tests/e2e/dialogs.spec.ts"
+        ],
+        "testTitles": [
+          "N04 slash arrow/confirm/cancel retains text and cursor (Folio only)"
+        ],
+        "priorRecord": "docs/validation/next-round/results.json",
+        "note": "独立した新規ページでメニュー選択・確定・取消・入力継続を確認。"
+      },
+      "reference": {
+        "status": "NOT_RUN",
+        "permitted": false,
+        "observedAt": null,
+        "environmentRef": "environment.json#/notion",
+        "reason": "許可されたNotionテスト領域がない"
+      },
+      "official": {
+        "basis": "DOCUMENTED_REFERENCE",
+        "sourceIds": [
+          "REF-02"
+        ],
+        "sources": [
+          {
+            "id": "REF-02",
+            "title": "Intro to writing & editing",
+            "url": "https://www.notion.com/help/writing-and-editing-basics",
+            "retrievedAt": "2026-10-27"
+          }
+        ],
+        "limits": [
+          "`/` メニューとコマンドの存在は記載されている",
+          "矢印キー・Enter・Escapeの挙動、取消後のカーソル位置は記載されていない"
+        ]
+      },
+      "comparison": "UNKNOWN",
+      "matchJustification": null,
+      "differences": [],
+      "hypotheses": [
+        "H3"
+      ],
+      "unresolved": [
+        "U01",
+        "U05"
+      ],
+      "firstAction": "Notionで`/h1`等を入力し、上下選択・Enter・Escape・入力継続を各1回以上観測する",
+      "note": "Folio専用テストの名称の通り、Notion比較は未実施。"
+    },
+    {
+      "id": "N05",
+      "title": "単一トップレベルブロックをハンドルで移動→Undo/Redo→保存/再起動",
+      "priority": "P2",
+      "procedure": "procedures.md#n05",
+      "folio": {
+        "status": "PASS",
+        "basis": "PRIOR_RECORD",
+        "latestResult": "NOT_RUN",
+        "testFiles": [
+          "tests/e2e/drag.spec.ts"
+        ],
+        "testTitles": [
+          "R2 short original regression: checkbox edit then real handle drag",
+          "R2 top-level matrix: single/multiple/start/end/same/cancel/scroll/undo/redo/restart"
+        ],
+        "priorRecord": "docs/validation/next-round/results.json",
+        "note": "Alpha見出し・Bravo本文・Charlieタスク・末尾空段落の合成fixture。実マウスでdragstart/dropを観測。"
+      },
+      "reference": {
+        "status": "NOT_RUN",
+        "permitted": false,
+        "observedAt": null,
+        "environmentRef": "environment.json#/notion",
+        "reason": "許可されたNotionテスト領域がない"
+      },
+      "official": {
+        "basis": "DOCUMENTED_REFERENCE",
+        "sourceIds": [
+          "REF-02"
+        ],
+        "sources": [
+          {
+            "id": "REF-02",
+            "title": "Intro to writing & editing",
+            "url": "https://www.notion.com/help/writing-and-editing-basics",
+            "retrievedAt": "2026-10-27"
+          }
+        ],
+        "limits": [
+          "ハンドルのクリック&ドラッグでブロックを移動できることは記載されている",
+          "ドロップ境界、同位置ドロップ、Undo/Redo、再起動後の状態は記載されていない"
+        ]
+      },
+      "comparison": "UNKNOWN",
+      "matchJustification": null,
+      "differences": [],
+      "hypotheses": [
+        "H4"
+      ],
+      "unresolved": [
+        "U01",
+        "U05"
+      ],
+      "firstAction": "Notionで同じ3ブロックを作り、ハンドル移動の挿入位置・取消・Undo/Redo・再読込を記録する",
+      "note": "既存の自動回帰はFolioの実装契約を確認するもので、Notionの結果ではない。"
+    },
+    {
+      "id": "N06",
+      "title": "Shiftで連続複数選択→先頭/末尾移動、同位置drop、Escape取消、スクロール後の移動",
+      "priority": "P2",
+      "procedure": "procedures.md#n06",
+      "folio": {
+        "status": "PASS",
+        "basis": "PRIOR_RECORD",
+        "latestResult": "NOT_RUN",
+        "testFiles": [
+          "tests/e2e/drag.spec.ts"
+        ],
+        "testTitles": [
+          "R2 top-level matrix: single/multiple/start/end/same/cancel/scroll/undo/redo/restart"
+        ],
+        "priorRecord": "docs/validation/next-round/results.json",
+        "note": "Alpha・太字Bravo・斜体Charlie・Block 4〜30の合成fixture。複数選択・境界移動・取消・再起動を確認。"
+      },
+      "reference": {
+        "status": "NOT_RUN",
+        "permitted": false,
+        "observedAt": null,
+        "environmentRef": "environment.json#/notion",
+        "reason": "許可されたNotionテスト領域がない"
+      },
+      "official": {
+        "basis": "DOCUMENTED_REFERENCE",
+        "sourceIds": [
+          "REF-01",
+          "REF-02",
+          "REF-03"
+        ],
+        "sources": [
+          {
+            "id": "REF-01",
+            "title": "Keyboard shortcuts",
+            "url": "https://www.notion.com/help/keyboard-shortcuts",
+            "retrievedAt": "2026-10-27"
+          },
+          {
+            "id": "REF-02",
+            "title": "Intro to writing & editing",
+            "url": "https://www.notion.com/help/writing-and-editing-basics",
+            "retrievedAt": "2026-10-27"
+          },
+          {
+            "id": "REF-03",
+            "title": "Navigate Notion with the sidebar",
+            "url": "https://www.notion.com/help/navigate-with-the-sidebar",
+            "retrievedAt": "2026-10-27"
+          }
+        ],
+        "limits": [
+          "複数ブロックを選択できること自体はカウント機能の説明から読み取れる",
+          "Shiftによる連続選択、境界への移動、同位置ドロップ、Escape取消、スクロール後の挙動は記載されていない",
+          "サイドバーのページ並べ替えは記載されているが、本文ブロックの複数選択移動の説明ではない"
+        ]
+      },
+      "comparison": "UNKNOWN",
+      "matchJustification": null,
+      "differences": [],
+      "hypotheses": [
+        "H4"
+      ],
+      "unresolved": [
+        "U01",
+        "U05"
+      ],
+      "firstAction": "NotionでShift選択→境界移動→同位置ドロップ→Escape→スクロール後の移動を個別試行し、順序・個数・書式を記録する",
+      "note": "自動回帰のPASSはNotionのDnD仕様と一致する証拠ではない。"
+    },
+    {
+      "id": "N07",
+      "title": "DBレコードを開く→入力→Tab/Shift+Tab周回→Escape→再度開く/再起動、値と復帰先を確認",
+      "priority": "P2",
+      "procedure": "procedures.md#n07",
+      "folio": {
+        "status": "PASS",
+        "basis": "PRIOR_RECORD",
+        "latestResult": "NOT_RUN",
+        "testFiles": [
+          "tests/e2e/dialogs.spec.ts"
+        ],
+        "testTitles": [
+          "R3 DB Escape closes the record and saves the latest input through restart",
+          "R3 search/link/record share initial focus, modal tab cycle, close button and background isolation",
+          "R3 nested native UI consumes one Escape; search navigation focuses destination"
+        ],
+        "priorRecord": "docs/validation/next-round/results.json",
+        "note": "合成seedのプロジェクトDB。Record updated Aあ😀を保存・再起動。WAI-ARIAのモーダル契約を観測項目に使う。"
+      },
+      "reference": {
+        "status": "NOT_RUN",
+        "permitted": false,
+        "observedAt": null,
+        "environmentRef": "environment.json#/notion",
+        "reason": "許可されたNotionテスト領域がない"
+      },
+      "official": {
+        "basis": "INFERRED",
+        "sourceIds": [
+          "REF-05"
+        ],
+        "sources": [
+          {
+            "id": "REF-05",
+            "title": "Dialog (Modal) Pattern",
+            "url": "https://www.w3.org/WAI/ARIA/apg/patterns/dialog-modal/",
+            "retrievedAt": "2026-10-27"
+          }
+        ],
+        "limits": [
+          "W3Cの設計契約であり、Notionの実装・挙動の証拠ではない",
+          "NotionのDBレコード画面の初期フォーカス・Tab順・Escapeの扱いは今回の公式ヘルプ取得範囲で未確認"
+        ]
+      },
+      "comparison": "UNKNOWN",
+      "matchJustification": null,
+      "differences": [],
+      "hypotheses": [
+        "H5"
+      ],
+      "unresolved": [
+        "U01",
+        "U05"
+      ],
+      "firstAction": "Notionのテスト用DBにRecord Aを作り、開く→Tab/Shift+Tab→Escape→再オープン→リロードを観測する",
+      "note": "WAI-ARIAとFolioの一致はNotionとの比較ではない。"
+    },
+    {
+      "id": "N08",
+      "title": "本文/検索/リンクで物理日本語IMEの変換・候補選択・取消・再変換",
+      "priority": "P1",
+      "procedure": "procedures.md#n08",
+      "folio": {
+        "status": "NOT_RUN",
+        "basis": "MANUAL_ONLY",
+        "latestResult": "NOT_RUN",
+        "testFiles": [
+          "tests/e2e/gate-a.spec.ts",
+          "tests/e2e/dialogs.spec.ts"
+        ],
+        "testTitles": [
+          "F06 synthetic composing Enter does not navigate search or link (not physical IME)",
+          "R3 synthetic composition, prevented Escape and inner menus take priority (not physical IME)"
+        ],
+        "priorRecord": "docs/validation/next-round/results.json",
+        "note": "合成compositionの試験は補助証拠に留め、物理IMEのNOT_RUNを維持する。"
+      },
+      "reference": {
+        "status": "NOT_RUN",
+        "permitted": false,
+        "observedAt": null,
+        "environmentRef": "environment.json#/notion",
+        "reason": "許可されたNotionテスト領域がなく、物理IMEを操作する人間の観測も未実施"
+      },
+      "official": {
+        "basis": "UNKNOWN",
+        "sourceIds": [
+          "REF-01"
+        ],
+        "sources": [
+          {
+            "id": "REF-01",
+            "title": "Keyboard shortcuts",
+            "url": "https://www.notion.com/help/keyboard-shortcuts",
+            "retrievedAt": "2026-10-27"
+          }
+        ],
+        "limits": [
+          "公式ヘルプはショートカット説明が英語/QWERTY向けで、国際化はroadmapと明記している",
+          "日本語IMEの変換・候補選択・取消・再変換の挙動は記載されていない"
+        ]
+      },
+      "comparison": "UNKNOWN",
+      "matchJustification": null,
+      "differences": [],
+      "hypotheses": [
+        "H7"
+      ],
+      "unresolved": [
+        "U03",
+        "U08"
+      ],
+      "firstAction": "日本語IMEを装着した人間が、Folioと許可済みNotion領域で同一の入力手順を実施し、OS/IME版・キー・画面・保存結果を記録する",
+      "note": "合成composition・insertTextを物理IMEの結果として扱わない。"
+    },
+    {
+      "id": "N09",
+      "title": "合成ページSource/Targetを用意し、SourceをTarget内へ移動→兄弟順変更→ルートへ戻す",
+      "priority": "P1",
+      "procedure": "procedures.md#n09",
+      "folio": {
+        "status": "PARTIAL",
+        "basis": "PRIOR_RECORD",
+        "latestResult": "NOT_RUN",
+        "testFiles": [
+          "tests/e2e/page-move.spec.ts"
+        ],
+        "testTitles": [
+          "S2 tree input: edited source becomes target child with stable identity",
+          "S2 menu F11: delayed load preserves local edit and page hierarchy through restart",
+          "S2 tree order, root, cancellation and cycle rejection"
+        ],
+        "priorRecord": "docs/validation/next-round/results.json",
+        "note": "既存の全体E2Eではページツリー移動F11がFAILし、根本原因は未特定。最新の再実行結果でPASS/PARTIALを再判定するが、1回のPASSで既知の間欠失敗を解消扱いにしない。"
+      },
+      "reference": {
+        "status": "NOT_RUN",
+        "permitted": false,
+        "observedAt": null,
+        "environmentRef": "environment.json#/notion",
+        "reason": "許可されたNotionテスト領域がない"
+      },
+      "official": {
+        "basis": "DOCUMENTED_REFERENCE",
+        "sourceIds": [
+          "REF-03",
+          "REF-04"
+        ],
+        "sources": [
+          {
+            "id": "REF-03",
+            "title": "Navigate Notion with the sidebar",
+            "url": "https://www.notion.com/help/navigate-with-the-sidebar",
+            "retrievedAt": "2026-10-27"
+          },
+          {
+            "id": "REF-04",
+            "title": "Create a subpage",
+            "url": "https://www.notion.com/help/create-a-subpage",
+            "retrievedAt": "2026-10-27"
+          }
+        ],
+        "limits": [
+          "ページをドラッグして再編成できること、親の内外へ移動できることは記載されている",
+          "ドロップ可能領域、ドラッグ中の表示、選択・フォーカス、取消、失敗時の状態は記載されていない"
+        ]
+      },
+      "comparison": "UNKNOWN",
+      "matchJustification": null,
+      "differences": [],
+      "hypotheses": [
+        "H8"
+      ],
+      "unresolved": [
+        "U01",
+        "U04",
+        "U05"
+      ],
+      "firstAction": "Folio側の既知FAILを再現・切り分け、Notion側は許可後に同一階層で観測する。比較はFolio側の状態が安定してから行う。",
+      "note": "Folio側のPARTIALをNotionとの差分と読み替えない。"
+    }
+  ],
+  "unresolvedIds": [
+    "U01",
+    "U02",
+    "U03",
+    "U04",
+    "U05",
+    "U06",
+    "U07",
+    "U08",
+    "U09",
+    "U10"
+  ],
+  "hypothesisIds": [
+    "H1",
+    "H2",
+    "H3",
+    "H4",
+    "H5",
+    "H6",
+    "H7",
+    "H8"
+  ],
+  "latestRunResult": "NOT_RUN",
+  "latestRunReason": "Harnessのworkspace-write sandboxでChromiumのsandboxを初期化できず、Electronが.page-titleを表示する前に終了した。アプリのアサーション失敗ではない。既存のFolio記録は保持する。"
+}

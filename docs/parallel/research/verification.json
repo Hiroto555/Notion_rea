@@ -1,0 +1,155 @@
+{
+  "schemaVersion": 1,
+  "recordedAt": "2026-10-27T12:26:45+09:00",
+  "sourceCommit": "0c85f9a5ad29147c5da422b88ed984ba26b44315",
+  "baseCommit": "b7c150d15739c59edf6ba9a62ebda4794748d46b",
+  "branch": "sprint/research",
+  "retries": 0,
+  "commands": [
+    {
+      "label": "research-check",
+      "command": "node scripts/folio-agent.mjs check",
+      "startedAt": "2026-10-27T03:09:03.565Z",
+      "endedAt": "2026-10-27T03:09:08.067Z",
+      "exitCode": 0,
+      "status": "PASS",
+      "log": "output/agent-workspace/logs/2026-10-27T03-09-03-565Z-check-2512ef30.log"
+    },
+    {
+      "label": "research-build",
+      "command": "node scripts/folio-agent.mjs build",
+      "startedAt": "2026-10-27T03:09:28.051Z",
+      "endedAt": "2026-10-27T03:09:33.616Z",
+      "exitCode": 0,
+      "status": "PASS",
+      "log": "output/agent-workspace/logs/2026-10-27T03-09-28-051Z-build-0403437b.log"
+    },
+    {
+      "label": "research-parity-e2e-attempt-1",
+      "command": "node scripts/folio-agent.mjs test:e2e --retries=0 --reporter=list --output=output/research/parity-e2e --grep \"F01 same-page|F02 full-text|selected text link|stale link|N04 slash|R2 short original|R2 top-level matrix|R3 DB Escape|R3 search/link/record|nested native UI|synthetic composition|S2 tree input|S2 menu F11|S2 tree order\"",
+      "startedAt": "2026-10-27T03:09:47.669Z",
+      "endedAt": "2026-10-27T03:09:56.357Z",
+      "exitCode": 1,
+      "status": "FAIL",
+      "log": "output/agent-workspace/logs/2026-10-27T03-09-47-669Z-test-e2e-8882abf6.log",
+      "note": "親環境の ELECTRON_RUN_AS_NODE=1 を継承し、Electron が Node として起動して `bad option: --remote-debugging-port=0` で14件すべて起動前に失敗。アプリの失敗ではない。"
+    },
+    {
+      "label": "research-parity-e2e-attempt-2",
+      "command": "env -u ELECTRON_RUN_AS_NODE node scripts/folio-agent.mjs test:e2e --retries=0 --reporter=list --output=output/research/parity-e2e --grep \"F01 same-page|F02 full-text|selected text link|stale link|N04 slash|R2 short original|R2 top-level matrix|R3 DB Escape|R3 search/link/record|nested native UI|synthetic composition|S2 tree input|S2 menu F11|S2 tree order\"",
+      "startedAt": "2026-10-27T03:12:44.286Z",
+      "endedAt": "2026-10-27T03:20:11.274Z",
+      "exitCode": 1,
+      "status": "FAIL",
+      "log": "output/agent-workspace/logs/2026-10-27T03-12-44-286Z-test-e2e-b6115999.log",
+      "note": "Electron は起動したが、workspace-write sandbox 下で Chromium の子プロセス sandbox を初期化できず、.page-title の表示前に終了。14件すべて起動待ちで失敗し、アプリのアサーションには到達していない。環境要因として NOT_RUN。"
+    },
+    {
+      "label": "research-dev-diagnostic",
+      "command": "env -u ELECTRON_RUN_AS_NODE node scripts/folio-agent.mjs dev",
+      "startedAt": "2026-10-27T03:20:39.898Z",
+      "endedAt": "2026-10-27T03:20:45.425Z",
+      "exitCode": 1,
+      "status": "FAIL",
+      "log": "output/agent-workspace/logs/2026-10-27T03-20-39-898Z-dev-7fa514d6.log",
+      "note": "sandbox initialization failed: Operation not permitted / GPU process isn't usable. Goodbye. / signal SIGTRAP。Chromium sandbox を初期化できない環境であることの診断。起動試験であり、機能試験の代用ではない。"
+    },
+    {
+      "label": "research-unit",
+      "command": "node scripts/folio-agent.mjs test",
+      "startedAt": "2026-10-27T03:23:52.483Z",
+      "endedAt": "2026-10-27T03:24:02.439Z",
+      "exitCode": 0,
+      "status": "PASS",
+      "log": "output/agent-workspace/logs/2026-10-27T03-23-52-483Z-test-d148af9b.log",
+      "note": "60/60 passed。研究用 parity-docs.test.ts は10件を含む。このエントリは実行後に追記したが、既存エントリの形状検証は変わらない。"
+    },
+    {
+      "label": "research-check-final",
+      "command": "node scripts/folio-agent.mjs check",
+      "startedAt": "2026-10-27T03:25:10.596Z",
+      "endedAt": "2026-10-27T03:25:12.876Z",
+      "exitCode": 0,
+      "status": "PASS",
+      "log": "output/agent-workspace/logs/2026-10-27T03-25-10-596Z-check-74b8c733.log",
+      "note": "研究用テストの型編集後の再検査。"
+    },
+    {
+      "label": "research-unit-final",
+      "command": "node scripts/folio-agent.mjs test",
+      "startedAt": "2026-10-27T03:26:27.619Z",
+      "endedAt": "2026-10-27T03:26:37.881Z",
+      "exitCode": 0,
+      "status": "PASS",
+      "log": "output/agent-workspace/logs/2026-10-27T03-26-27-619Z-test-7cfdb438.log",
+      "note": "最終単体試験。60/60 passed（研究用10件を含む）。U10・README更新後。"
+    }
+  ],
+  "buildHashes": [
+    {
+      "path": "dist/main.cjs",
+      "sha256": "67e22b9a6fa1401940cb239fe43457e5381777ff730c5d077e88a4bde9c3d06d"
+    },
+    {
+      "path": "dist/preload.cjs",
+      "sha256": "3e39ba8560acf6abee58233896192a26f313dc2402abf82ad260650b42f1fc26"
+    },
+    {
+      "path": "dist/renderer/index.html",
+      "sha256": "4f6c9fc28d9e33fc3ccc59e8c98f0a87d487fae6ff24dbdad98a252dbc672202"
+    },
+    {
+      "path": "dist/renderer/assets/index-CX80fyFr.js",
+      "sha256": "917c513640467998305e428a375262ad37781563c750c8f673dd720a95dab7a8"
+    },
+    {
+      "path": "dist/renderer/assets/index-BtpcpHR6.css",
+      "sha256": "3275e27f8e4525fe93a74fd7ddd960de04daf264cecd949187a3307e6607498f"
+    }
+  ],
+  "parityE2E": {
+    "runId": "parity-e2e-2026-10-27",
+    "exitCode": 1,
+    "artifactDir": "output/research/parity-e2e",
+    "failureCategory": "ENVIRONMENT",
+    "results": {
+      "parity-e2e-2026-10-27": "NOT_RUN"
+    },
+    "tests": {
+      "discovered": 14,
+      "passed": 0,
+      "failed": 14
+    },
+    "summary": "2回の試行はいずれも起動前に失敗。1回目は ELECTRON_RUN_AS_NODE、2回目は Chromium sandbox 初期化不能。Folio の機能アサーションは未実行。"
+  },
+  "scopeAudit": {
+    "diffBase": "0c85f9a5ad29147c5da422b88ed984ba26b44315",
+    "forbiddenPaths": [
+      "src",
+      "docs/NOTION-PARITY-BASELINE.md",
+      "docs/validation",
+      "docs/parallel/CONTRACTS.md",
+      "docs/parallel/SETUP-research.md",
+      "AGENT_TASK.md",
+      "folio-agent.json",
+      "scripts",
+      "package.json",
+      "package-lock.json"
+    ],
+    "diffOutput": "",
+    "forbiddenChanges": []
+  },
+  "notes": [
+    "check と build は docs 追加前の source (0c85f9a) に対して実行し、dist/main.cjs の hash を固定した。",
+    "E2E の失敗は環境要因であり、既存の Folio 自動回帰記録 (0bf710e) を置き換えない。",
+    "Notion 側は許可がなく NOT_RUN。比較判定は全件 UNKNOWN。",
+    "研究用テストはローカルの文書・JSON だけを読み、ネットワークや Notion に触れない。"
+  ],
+  "unitSummary": {
+    "files": 7,
+    "tests": 60,
+    "researchTests": 10,
+    "status": "PASS",
+    "finalLabel": "research-unit-final"
+  }
+}
