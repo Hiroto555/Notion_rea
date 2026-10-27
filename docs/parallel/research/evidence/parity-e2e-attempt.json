@@ -1,0 +1,94 @@
+{
+  "schemaVersion": 1,
+  "recordedAt": "2026-10-27T12:22:00+09:00",
+  "status": "NOT_RUN",
+  "runId": "parity-e2e-2026-10-27",
+  "source": {
+    "commit": "0c85f9a5ad29147c5da422b88ed984ba26b44315",
+    "baseCommit": "b7c150d15739c59edf6ba9a62ebda4794748d46b",
+    "branch": "sprint/research",
+    "buildArtifacts": [
+      {
+        "path": "dist/main.cjs",
+        "sha256": "67e22b9a6fa1401940cb239fe43457e5381777ff730c5d077e88a4bde9c3d06d"
+      },
+      {
+        "path": "dist/preload.cjs",
+        "sha256": "3e39ba8560acf6abee58233896192a26f313dc2402abf82ad260650b42f1fc26"
+      },
+      {
+        "path": "dist/renderer/index.html",
+        "sha256": "4f6c9fc28d9e33fc3ccc59e8c98f0a87d487fae6ff24dbdad98a252dbc672202"
+      },
+      {
+        "path": "dist/renderer/assets/index-CX80fyFr.js",
+        "sha256": "917c513640467998305e428a375262ad37781563c750c8f673dd720a95dab7a8"
+      },
+      {
+        "path": "dist/renderer/assets/index-BtpcpHR6.css",
+        "sha256": "3275e27f8e4525fe93a74fd7ddd960de04daf264cecd949187a3307e6607498f"
+      }
+    ]
+  },
+  "command": "env -u ELECTRON_RUN_AS_NODE node scripts/folio-agent.mjs test:e2e --retries=0 --reporter=list --output=output/research/parity-e2e --grep \"F01 same-page|F02 full-text|selected text link|stale link|N04 slash|R2 short original|R2 top-level matrix|R3 DB Escape|R3 search/link/record|nested native UI|synthetic composition|S2 tree input|S2 menu F11|S2 tree order\"",
+  "attempts": [
+    {
+      "attempt": 1,
+      "startedAt": "2026-10-27T03:09:47.669Z",
+      "endedAt": "2026-10-27T03:09:56.357Z",
+      "exitCode": 1,
+      "tests": {
+        "discovered": 14,
+        "failed": 14,
+        "passed": 0
+      },
+      "failure": "ELECTRON_RUN_AS_NODE=1 を継承したため、Electron が Node として起動し、`bad option: --remote-debugging-port=0` で全件が起動前に失敗した。",
+      "log": {
+        "path": "output/agent-workspace/logs/2026-10-27T03-09-47-669Z-test-e2e-8882abf6.log",
+        "bytes": 44160,
+        "sha256": "3222747241954cc281543660e4a11bfde68d76974d4e2da4a54db3748beea309"
+      }
+    },
+    {
+      "attempt": 2,
+      "startedAt": "2026-10-27T03:12:44.286Z",
+      "endedAt": "2026-10-27T03:20:11.274Z",
+      "exitCode": 1,
+      "tests": {
+        "discovered": 14,
+        "failed": 14,
+        "passed": 0
+      },
+      "failure": "Electron は起動したが、`.page-title` が表示される前にページ/プロセスが終了した。14件すべてが起動待ちの30秒タイムアウト（またはその後処理の例外）で失敗し、アプリのアサーションには到達していない。",
+      "log": {
+        "path": "output/agent-workspace/logs/2026-10-27T03-12-44-286Z-test-e2e-b6115999.log",
+        "bytes": 31102,
+        "sha256": "60e69fc0f5a7c3056fea18b4deaaf2d5d4bd78e778f470f76aa36c360c43d901"
+      }
+    }
+  ],
+  "sandboxDiagnosis": {
+    "command": "env -u ELECTRON_RUN_AS_NODE node scripts/folio-agent.mjs dev",
+    "startedAt": "2026-10-27T03:20:39.898Z",
+    "endedAt": "2026-10-27T03:20:45.425Z",
+    "exitCode": 1,
+    "observations": [
+      "sandbox initialization failed: Operation not permitted",
+      "Failed to initialize sandbox.",
+      "GPU process isn't usable. Goodbye.",
+      "Electron exited with signal SIGTRAP"
+    ],
+    "interpretation": "DSH の workspace-write sandbox 下では Chromium の子プロセス sandbox を初期化できない。アプリのコード・テストの期待値・fixture の問題ではない。同じコマンドは sandbox のない通常のデスクトップセッションで再実行する必要がある。",
+    "log": {
+      "path": "output/agent-workspace/logs/2026-10-27T03-20-39-898Z-dev-7fa514d6.log",
+      "bytes": 3516,
+      "sha256": "c609b0f4965ad55b45b9bc2747e11f12e08d79ec7290ca8cf3585d869dc61922"
+    }
+  },
+  "evidenceRetention": {
+    "traceDirectory": "output/research/parity-e2e",
+    "note": "各失敗の trace / error-context はローカルに保持し、個人データを含む画面はない。実データ・ユーザーappDataは参照していない。",
+    "gitIgnored": true
+  },
+  "conclusion": "このセッションの Folio 実行は NOT_RUN。既存の Folio 自動回帰の記録（0bf710e 時点）は保持し、今回の結果で置き換えない。参照実測の Notion 側も NOT_RUN のため、比較判定は UNKNOWN のまま。"
+}

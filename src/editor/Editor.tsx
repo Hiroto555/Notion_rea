@@ -19,7 +19,7 @@ import {
 } from "lucide-react";
 import { composing } from "../shared/keyboard";
 import type { Doc } from "../shared/types";
-import { editBlocks } from "./blocks";
+import { editBlocks, editNestedBlock } from "./blocks";
 import { closeHistory } from "@tiptap/pm/history";
 import { Selection } from "@tiptap/pm/state";
 export { extensions } from "../shared/editor-schema";
@@ -126,6 +126,13 @@ export function Editor({
     } | null>(null),
     [choice, setChoice] = useState(0),
     [selected, setSelected] = useState<number[]>([]),
+    [nestedSelected, setNestedSelected] = useState<{
+      id: string;
+      path: number[];
+    } | null>(null),
+    [nestedHandles, setNestedHandles] = useState<
+      { top: number; left: number; id: string; path: number[] }[]
+    >([]),
     [handles, setHandles] = useState<
       { top: number; index: number; pos: number }[]
     >([]);
@@ -134,6 +141,7 @@ export function Editor({
     choiceRef = useRef(choice),
     changeRef = useRef(onChange),
     drag = useRef<number[]>([]),
+    nestedDrag = useRef<string | null>(null),
     selectionRef = useRef(selected),
     invalid = useRef(false);
   changeRef.current = onChange;
@@ -192,7 +200,10 @@ export function Editor({
       if (!invalid.current)
         changeRef.current({ ...e.getJSON(), schemaVersion: 1 } as Doc);
     },
-    onSelectionUpdate: () => setSelected([]),
+    onSelectionUpdate: () => {
+      setSelected([]);
+      setNestedSelected(null);
+    },
   });
   useEffect(() => {
     if (!editor) return;
@@ -211,6 +222,46 @@ export function Editor({
           });
       });
       setHandles(result);
+      const nested: {
+        top: number;
+        left: number;
+        id: string;
+        path: number[];
+      }[] = [];
+      editor.state.doc.descendants((node, pos, parent, index) => {
+        if (parent?.type.name === "doc" || !node.attrs.id) return;
+        if (!(
+          node.isTextblock ||
+          node.isAtom ||
+          ["listItem", "taskItem"].includes(node.type.name)
+        ))
+          return;
+        if (["detailsSummary", "detailsContent"].includes(node.type.name))
+          return;
+        // The first paragraph of a list item occupies the same line as the item;
+        // its parent handle already gives access without covering the text.
+        if (
+          node.type.name === "paragraph" &&
+          index === 0 &&
+          ["listItem", "taskItem"].includes(parent?.type.name ?? "")
+        )
+          return;
+        const el = editor.view.nodeDOM(pos);
+        if (!(el instanceof HTMLElement)) return;
+        const rect = el.getBoundingClientRect();
+        if (!rect.width || !rect.height) return;
+        const $pos = editor.state.doc.resolve(pos);
+        const path = Array.from({ length: $pos.depth + 1 }, (_, depth) =>
+          $pos.index(depth),
+        );
+        nested.push({
+          top: rect.top - base.top,
+          left: Math.max(-27, rect.left - base.left - 24),
+          id: node.attrs.id,
+          path,
+        });
+      });
+      setNestedHandles(nested);
     };
     const update = () => {
       layout();
@@ -278,6 +329,56 @@ export function Editor({
     // pointer operation to that cursor while the user starts the next drag.
     editor.commands.focus(undefined, { scrollIntoView: false });
   }
+  function manipulateNested(
+    action: "duplicate" | "delete" | "up" | "down" | "before",
+    id: string,
+    beforeId?: string,
+  ) {
+    if (!editor) return;
+    try {
+      const changed = editNestedBlock(
+        editor.getJSON() as Doc,
+        id,
+        action,
+        beforeId,
+      );
+      const next = editor.schema.nodeFromJSON(changed);
+      next.check();
+      if (next.eq(editor.state.doc)) return;
+      const tr = closeHistory(editor.state.tr).replaceWith(
+        0,
+        editor.state.doc.content.size,
+        next.content,
+      );
+      tr.setSelection(
+        Selection.near(
+          tr.doc.resolve(
+            Math.min(tr.doc.content.size, editor.state.selection.from),
+          ),
+        ),
+      );
+      editor.view.dispatch(tr);
+      setNestedSelected(null);
+      editor.commands.focus(undefined, { scrollIntoView: false });
+    } catch (error) {
+      onError(error instanceof Error ? error.message : String(error));
+    }
+  }
+  function selectNestedAtCursor() {
+    if (!editor) return;
+    const $from = editor.state.selection.$from;
+    for (let depth = $from.depth; depth >= 2; depth--) {
+      const node = $from.node(depth);
+      if (node.isBlock && typeof node.attrs.id === "string") {
+        const path = Array.from({ length: depth }, (_, index) =>
+          $from.index(index),
+        );
+        setSelected([]);
+        setNestedSelected({ id: node.attrs.id, path });
+        return;
+      }
+    }
+  }
   if (!editor) return null;
   const filtered = commands.filter((c) =>
     (c.name + " " + c.key).toLowerCase().includes(slash?.query ?? ""),
@@ -306,6 +407,13 @@ export function Editor({
         </button>
         <button title="ページへのリンク" onClick={onLink}>
           <Link2 size={15} />
+        </button>
+        <button
+          title="カーソルのネストブロックを選択"
+          aria-label="カーソルのネストブロックを選択"
+          onClick={selectNestedAtCursor}
+        >
+          <GripVertical size={15} />
         </button>
         <span />
         <button
@@ -353,12 +461,52 @@ export function Editor({
           </button>
         </div>
       )}
+      {nestedSelected && (
+        <div className="block-actions" aria-label="ネストブロック操作">
+          <span>ネスト {nestedSelected.path.map((n) => n + 1).join(".")}</span>
+          <button
+            aria-label="ネストブロックを上へ"
+            onClick={() => manipulateNested("up", nestedSelected.id)}
+          >
+            <ArrowUp size={14} />
+          </button>
+          <button
+            aria-label="ネストブロックを下へ"
+            onClick={() => manipulateNested("down", nestedSelected.id)}
+          >
+            <ArrowDown size={14} />
+          </button>
+          <button
+            aria-label="ネストブロックを複製"
+            onClick={() => manipulateNested("duplicate", nestedSelected.id)}
+          >
+            <Copy size={14} />
+          </button>
+          <button
+            aria-label="ネストブロックを削除"
+            onClick={() => manipulateNested("delete", nestedSelected.id)}
+          >
+            <Trash2 size={14} />
+          </button>
+        </div>
+      )}
       <div
         ref={host}
         className="editor-host"
         onKeyDown={(event) => {
           if (event.defaultPrevented || composing(event.nativeEvent)) return;
-          if (selected.length && event.key === "Escape") setSelected([]);
+          if ((selected.length || nestedSelected) && event.key === "Escape") {
+            setSelected([]);
+            setNestedSelected(null);
+          }
+          if (
+            nestedSelected &&
+            (event.key === "Backspace" || event.key === "Delete")
+          ) {
+            event.preventDefault();
+            manipulateNested("delete", nestedSelected.id);
+            return;
+          }
           if (
             selected.length &&
             (event.key === "Backspace" || event.key === "Delete")
@@ -399,6 +547,7 @@ export function Editor({
               manipulate("move", h.index);
             }}
             onClick={(event) => {
+              setNestedSelected(null);
               setSelected((prev) =>
                 event.shiftKey && prev.length
                   ? Array.from(
@@ -407,6 +556,53 @@ export function Editor({
                     )
                   : [h.index],
               );
+            }}
+          >
+            <GripVertical size={15} />
+          </button>
+        ))}
+        {nestedHandles.map((h) => (
+          <button
+            key={h.id}
+            aria-label={`ネストブロック ${h.path.map((n) => n + 1).join(".")} を選択`}
+            title="ドラッグで対象の前へ移動"
+            className={
+              "block-handle " + (nestedSelected?.id === h.id ? "selected" : "")
+            }
+            style={{ top: h.top, left: h.left, width: 18 }}
+            draggable
+            onDragStart={(event) => {
+              nestedDrag.current = h.id;
+              event.dataTransfer.setData(
+                "application/x-folio-nested-block",
+                h.id,
+              );
+              event.dataTransfer.effectAllowed = "move";
+            }}
+            onDragEnd={() => {
+              nestedDrag.current = null;
+            }}
+            onDragOver={(event) => {
+              if (
+                event.dataTransfer.types.includes(
+                  "application/x-folio-nested-block",
+                )
+              )
+                event.preventDefault();
+            }}
+            onDrop={(event) => {
+              event.preventDefault();
+              event.stopPropagation();
+              const id = event.dataTransfer.getData(
+                "application/x-folio-nested-block",
+              );
+              if (id && id === nestedDrag.current)
+                manipulateNested("before", id, h.id);
+            }}
+            onClick={(event) => {
+              event.stopPropagation();
+              setSelected([]);
+              setNestedSelected({ id: h.id, path: h.path });
             }}
           >
             <GripVertical size={15} />

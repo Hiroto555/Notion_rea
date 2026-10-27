@@ -1,0 +1,72 @@
+{"command":"npm","args":["run","test","--","tests/integration-migration.test.ts"],"branch":"codex/folio-integration-v2","role":"integration","started":"2026-10-27T04:44:47.131Z"}
+
+> folio-desktop@0.1.0 test
+> vitest run tests/integration-migration.test.ts
+
+
+ RUN  v3.2.7 <integration-worktree>
+
+ ❯ tests/integration-migration.test.ts (2 tests | 1 failed) 37ms
+   ✓ migrates an isolated legacy database page while preserving its document and asset across ID and view edits 18ms
+   × preserves unknown editor documents byte-for-byte during database migration 19ms
+     → expected '{"id":"b20017b2-671c-432c-a583-b8b9f6…' to be '{\n  "id": "b20017b2-671c-432c-a583-b…' // Object.is equality
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/integration-migration.test.ts > preserves unknown editor documents byte-for-byte during database migration
+AssertionError: expected '{"id":"b20017b2-671c-432c-a583-b8b9f6…' to be '{\n  "id": "b20017b2-671c-432c-a583-b…' // Object.is equality
+
+- Expected
++ Received
+
+- {
+-   "id": "b20017b2-671c-432c-a583-b8b9f64d4b18",
+-   "schemaVersion": 1,
+-   "parentId": null,
+-   "title": "未知文書",
+-   "icon": "▦",
+-   "cover": "",
+-   "position": 1,
+-   "doc": {
+-     "type": "doc",
+-     "schemaVersion": 99,
+-     "content": [
+-       {
+-         "type": "paragraph"
+-       }
+-     ]
+-   },
+-   "kind": "database",
+-   "database": {
+-     "properties": [],
+-     "rows": [],
+-     "view": "table",
+-     "filter": "",
+-     "sort": ""
+-   },
+-   "favorite": false,
+-   "createdAt": 1793076288297,
+-   "updatedAt": 1793076288297,
+-   "revision": 0,
+-   "deletedAt": null
+- }
++ {"id":"b20017b2-671c-432c-a583-b8b9f64d4b18","schemaVersion":1,"parentId":null,"title":"未知文書","icon":"▦","cover":"","position":1,"doc":{"type":"doc","schemaVersion":99,"content":[{"type":"paragraph"}]},"kind":"database","database":{"schemaVersion":2,"properties":[],"rows":[],"views":[{"id":"view-default","name":"テーブル","type":"table","filterText":"","filter":{"kind":"group","id":"filter-legacy","conjunction":"and","conditions":[]},"sorts":[],"groupBy":null}],"activeViewId":"view-default","view":"table","filter":"","sort":""},"favorite":false,"createdAt":1793076288297,"updatedAt":1793076288297,"revision":0,"deletedAt":null}
+
+ ❯ tests/integration-migration.test.ts:152:63
+    150|     store = new Store(dbPath);
+    151|     expect(store.get(page.id).documentError).toBeTruthy();
+    152|     expect(store.handle({ type: "pageSource", id: page.id })).toBe(sou…
+       |                                                               ^
+    153|     expect(() =>
+    154|       store!.update(page.id, page.revision, { title: "上書き" }),
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  1 failed | 1 passed (2)
+   Start at  13:44:47
+   Duration  568ms (transform 114ms, setup 0ms, collect 222ms, tests 37ms, environment 0ms, prepare 131ms)
+
+
+exit_code=1 signal=none

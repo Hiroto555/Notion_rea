@@ -1,0 +1,263 @@
+{
+  "readings": [
+    {
+      "size": "1024x720",
+      "reading": {
+        "viewport": {
+          "width": 1024,
+          "height": 720,
+          "dpr": 2
+        },
+        "theme": "light",
+        "horizontalOverflow": 0,
+        "documentOverflow": 0,
+        "boxes": {
+          "sidebar": {
+            "x": 0,
+            "y": 0,
+            "width": 220,
+            "height": 720
+          },
+          "topbar": {
+            "x": 220,
+            "y": 0,
+            "width": 804,
+            "height": 54
+          },
+          "topbarActions": {
+            "x": 835,
+            "y": 11.5,
+            "width": 177,
+            "height": 30
+          },
+          "breadcrumbs": {
+            "x": 357,
+            "y": 14.8,
+            "width": 110.8,
+            "height": 23.5
+          },
+          "saveState": {
+            "x": 837,
+            "y": 14.5,
+            "width": 73,
+            "height": 24
+          },
+          "menuButton": {
+            "x": 982,
+            "y": 11.5,
+            "width": 30,
+            "height": 30
+          },
+          "documentScroll": {
+            "x": 220,
+            "y": 54,
+            "width": 580,
+            "height": 666
+          },
+          "content": {
+            "x": 220,
+            "y": 182,
+            "width": 569,
+            "height": 841.3
+          },
+          "title": {
+            "x": 266,
+            "y": 252,
+            "width": 477,
+            "height": 44.5
+          },
+          "inspector": {
+            "x": 800,
+            "y": 54,
+            "width": 224,
+            "height": 666
+          },
+          "activeRow": {
+            "x": 8,
+            "y": 269.5,
+            "width": 203,
+            "height": 31
+          }
+        },
+        "styles": {
+          "bodyBackground": "rgb(251, 251, 248)",
+          "bodyColor": "rgb(47, 50, 43)",
+          "sidebarBackground": "rgb(242, 242, 236)",
+          "line": "rgb(229, 229, 219)",
+          "titleSize": "33px",
+          "titleWeight": "700",
+          "titleColor": "rgb(47, 50, 43)",
+          "subtitleColor": "rgb(113, 116, 106)",
+          "contentPaddingLeft": "46px",
+          "inspectorPosition": "static",
+          "inspectorBackground": "rgb(247, 247, 242)",
+          "crumbSize": "11.5px",
+          "treeAddOpacity": "0",
+          "pageToolsOpacity": "0",
+          "focusOutline": ""
+        },
+        "a11y": {
+          "activeLabelCurrent": "✳️ようこそ、Folioへ",
+          "sidebarPressed": "true",
+          "inspectorPressed": "true",
+          "toggleExpanded": "false",
+          "saveStateText": "保存済み",
+          "focusableCount": 48
+        },
+        "tree": [
+          {
+            "text": "✳️ようこそ、Folioへ",
+            "left": 8,
+            "depth": "0",
+            "active": true
+          },
+          {
+            "text": "💡アイデアノート",
+            "left": 8,
+            "depth": "0",
+            "active": false
+          },
+          {
+            "text": "◈プロジェクト",
+            "left": 8,
+            "depth": "0",
+            "active": false
+          }
+        ]
+      }
+    },
+    {
+      "size": "960x700",
+      "reading": {
+        "viewport": {
+          "width": 960,
+          "height": 700,
+          "dpr": 2
+        },
+        "theme": "light",
+        "horizontalOverflow": 0,
+        "documentOverflow": 0,
+        "boxes": {
+          "sidebar": {
+            "x": 0,
+            "y": 0,
+            "width": 208,
+            "height": 700
+          },
+          "topbar": {
+            "x": 208,
+            "y": 0,
+            "width": 752,
+            "height": 54
+          },
+          "topbarActions": {
+            "x": 779,
+            "y": 11.5,
+            "width": 173,
+            "height": 30
+          },
+          "breadcrumbs": {
+            "x": 333,
+            "y": 14.8,
+            "width": 110.8,
+            "height": 23.5
+          },
+          "saveState": {
+            "x": 781,
+            "y": 14.5,
+            "width": 73,
+            "height": 24
+          },
+          "menuButton": {
+            "x": 922,
+            "y": 11.5,
+            "width": 30,
+            "height": 30
+          },
+          "documentScroll": {
+            "x": 208,
+            "y": 54,
+            "width": 752,
+            "height": 646
+          },
+          "content": {
+            "x": 208,
+            "y": 182,
+            "width": 741,
+            "height": 780.8
+          },
+          "title": {
+            "x": 242,
+            "y": 252,
+            "width": 673,
+            "height": 39.1
+          },
+          "inspector": {
+            "x": 680,
+            "y": 66,
+            "width": 268,
+            "height": 622
+          },
+          "activeRow": {
+            "x": 6,
+            "y": 266.5,
+            "width": 195,
+            "height": 31
+          }
+        },
+        "styles": {
+          "bodyBackground": "rgb(251, 251, 248)",
+          "bodyColor": "rgb(47, 50, 43)",
+          "sidebarBackground": "rgb(242, 242, 236)",
+          "line": "rgb(229, 229, 219)",
+          "titleSize": "29px",
+          "titleWeight": "700",
+          "titleColor": "rgb(47, 50, 43)",
+          "subtitleColor": "rgb(113, 116, 106)",
+          "contentPaddingLeft": "34px",
+          "inspectorPosition": "absolute",
+          "inspectorBackground": "rgb(247, 247, 242)",
+          "crumbSize": "11.5px",
+          "treeAddOpacity": "0",
+          "pageToolsOpacity": "0",
+          "focusOutline": ""
+        },
+        "a11y": {
+          "activeLabelCurrent": "✳️ようこそ、Folioへ",
+          "sidebarPressed": "true",
+          "inspectorPressed": "true",
+          "toggleExpanded": "false",
+          "saveStateText": "保存済み",
+          "focusableCount": 48
+        },
+        "tree": [
+          {
+            "text": "✳️ようこそ、Folioへ",
+            "left": 6,
+            "depth": "0",
+            "active": true
+          },
+          {
+            "text": "💡アイデアノート",
+            "left": 6,
+            "depth": "0",
+            "active": false
+          },
+          {
+            "text": "◈プロジェクト",
+            "left": 6,
+            "depth": "0",
+            "active": false
+          }
+        ]
+      }
+    }
+  ],
+  "toggles": {
+    "inspectorCloseButton": true,
+    "inspectorReopenedFromTopbar": true,
+    "sidebarHidden": true,
+    "topbarLeftAfterSidebarHidden": "88px",
+    "overflowWhileSidebarHidden": 0
+  }
+}

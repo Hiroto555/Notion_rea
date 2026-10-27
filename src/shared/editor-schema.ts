@@ -1,3 +1,4 @@
+import { BlockIdentity } from "../editor/block-identity";
 import StarterKit from "@tiptap/starter-kit";
 import Placeholder from "@tiptap/extension-placeholder";
 import TaskList from "@tiptap/extension-task-list";
@@ -30,6 +31,7 @@ const Toggle = Details.extend({
 });
 import { getSchema } from "@tiptap/core";
 export const extensions = () => [
+  BlockIdentity,
   StarterKit.configure({
     blockquote: false,
     link: { openOnClick: false, protocols: ["folio-page", "folio-asset"] },

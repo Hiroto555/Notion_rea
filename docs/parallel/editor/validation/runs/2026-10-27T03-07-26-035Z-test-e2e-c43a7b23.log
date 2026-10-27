@@ -1,0 +1,68 @@
+{"command":"npm","args":["run","test:e2e","--","tests/e2e/editor-identity.spec.ts","--retries=0","--reporter=list","--output=output/agent-workspace/evidence/editor-v2/nested-e2e"],"branch":"sprint/editor-v2","role":"editor","started":"2026-10-27T03:07:26.036Z"}
+
+> folio-desktop@0.1.0 test:e2e
+> playwright test tests/e2e/editor-identity.spec.ts --retries=0 --reporter=list --output=output/agent-workspace/evidence/editor-v2/nested-e2e
+
+
+Running 2 tests using 1 worker
+
+(node:55040) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓  1 tests/e2e/editor-identity.spec.ts:4:1 › Editor 2.0: legacy document obtains IDs on edit, survives restart and copy paste (5.7s)
+  ✘  2 tests/e2e/editor-identity.spec.ts:53:1 › Editor 2.0: nested sibling move, duplicate, undo/redo and restart (32.0s)
+
+
+  1) tests/e2e/editor-identity.spec.ts:53:1 › Editor 2.0: nested sibling move, duplicate, undo/redo and restart 
+
+    TimeoutError: locator.click: Timeout 30000ms exceeded.
+    Call log:
+      - waiting for getByLabel('ネストブロック 1.2 を選択', { exact: true })
+        - locator resolved to <button draggable="true" title="同じ階層でドラッグして移動" class="block-handle " aria-label="ネストブロック 1.2 を選択">…</button>
+      - attempting click action
+        2 × waiting for element to be visible, enabled and stable
+          - element is visible, enabled and stable
+          - scrolling into view if needed
+          - done scrolling
+          - <svg width="15" height="15" fill="none" stroke-width="2" viewBox="0 0 24 24" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg" class="lucide lucide-grip-vertical">…</svg> from <button draggable="true" title="同じ階層でドラッグして移動" class="block-handle " aria-label="ネストブロック 1.2.1 を選択">…</button> subtree intercepts pointer events
+        - retrying click action
+        - waiting 20ms
+        2 × waiting for element to be visible, enabled and stable
+          - element is visible, enabled and stable
+          - scrolling into view if needed
+          - done scrolling
+          - <svg width="15" height="15" fill="none" stroke-width="2" viewBox="0 0 24 24" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg" class="lucide lucide-grip-vertical">…</svg> from <button draggable="true" title="同じ階層でドラッグして移動" class="block-handle " aria-label="ネストブロック 1.2.1 を選択">…</button> subtree intercepts pointer events
+        - retrying click action
+          - waiting 100ms
+        57 × waiting for element to be visible, enabled and stable
+           - element is visible, enabled and stable
+           - scrolling into view if needed
+           - done scrolling
+           - <svg width="15" height="15" fill="none" stroke-width="2" viewBox="0 0 24 24" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg" class="lucide lucide-grip-vertical">…</svg> from <button draggable="true" title="同じ階層でドラッグして移動" class="block-handle " aria-label="ネストブロック 1.2.1 を選択">…</button> subtree intercepts pointer events
+         - retrying click action
+           - waiting 500ms
+
+
+      66 |   await expect.poll(async () => (await current()).every((n: any) => !!n.attrs.id)).toBe(true);
+      67 |   const initial = await current();
+    > 68 |   await w.getByLabel("ネストブロック 1.2 を選択", { exact: true }).click();
+         |                                                          ^
+      69 |   await w.getByLabel("ネストブロックを上へ", { exact: true }).click();
+      70 |   await expect.poll(async () => (await current()).map((n: any) => n.attrs.id)).toEqual([initial[1].attrs.id, initial[0].attrs.id]);
+      71 |   await w.getByLabel("ネストブロック 1.2 を選択", { exact: true }).click();
+        at /Users/shiroto/Documents/ChatGPT/Folio-editor/tests/e2e/editor-identity.spec.ts:68:58
+
+    Error Context: output/agent-workspace/evidence/editor-v2/nested-e2e/editor-identity-Editor-2-0-0ce64-icate-undo-redo-and-restart/error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    output/agent-workspace/evidence/editor-v2/nested-e2e/editor-identity-Editor-2-0-0ce64-icate-undo-redo-and-restart/trace.zip
+    Usage:
+
+        npx playwright show-trace output/agent-workspace/evidence/editor-v2/nested-e2e/editor-identity-Editor-2-0-0ce64-icate-undo-redo-and-restart/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  1 failed
+    tests/e2e/editor-identity.spec.ts:53:1 › Editor 2.0: nested sibling move, duplicate, undo/redo and restart 
+  1 passed (38.1s)
+
+exit_code=1 signal=none

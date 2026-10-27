@@ -1,0 +1,45 @@
+{"command":"npm","args":["run","test:e2e","--","tests/e2e/integration-v2.spec.ts","--retries=0","--reporter=list","--output=output/agent-workspace/evidence/integration-focused"],"branch":"codex/folio-integration-v2","role":"integration","started":"2026-10-27T04:40:14.507Z"}
+
+> folio-desktop@0.1.0 test:e2e
+> playwright test tests/e2e/integration-v2.spec.ts --retries=0 --reporter=list --output=output/agent-workspace/evidence/integration-focused
+
+
+Running 1 test using 1 worker
+
+(node:2881) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+Downloading Electron binary...
+(node:2890) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+  ✘  1 tests/e2e/integration-v2.spec.ts:6:1 › integrated editor, attachment, independent database views and theme persist together through restart (41.4s)
+
+
+  1) tests/e2e/integration-v2.spec.ts:6:1 › integrated editor, attachment, independent database views and theme persist together through restart
+
+    TypeError: Cannot read properties of undefined (reading 'map')
+
+      94 |   expect(noteDoc.content[0].content[0].marks).toContainEqual({ type: "bold" });
+      95 |   expect(
+    > 96 |     noteDoc.content[1].content.map((x: any) => x.content[0].content[0].text),
+         |                                ^
+      97 |   ).toEqual(["項目B", "項目A"]);
+      98 |   const ids: string[] = [];
+      99 |   const visit = (node: any) => {
+        at <integration-worktree>/tests/e2e/integration-v2.spec.ts:96:32
+
+    Error Context: output/agent-workspace/evidence/integration-focused/integration-v2-integrated--c717a-st-together-through-restart/error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    output/agent-workspace/evidence/integration-focused/integration-v2-integrated--c717a-st-together-through-restart/trace.zip
+    Usage:
+
+        npx playwright show-trace output/agent-workspace/evidence/integration-focused/integration-v2-integrated--c717a-st-together-through-restart/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  1 failed
+    tests/e2e/integration-v2.spec.ts:6:1 › integrated editor, attachment, independent database views and theme persist together through restart
+
+exit_code=1 signal=none

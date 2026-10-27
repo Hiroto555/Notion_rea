@@ -1,0 +1,73 @@
+{
+  "description": "Synthetic Folio workspace, isolated E2E data only. Captured by tests/e2e/ui-v2.spec.ts with the folio-agent launcher. New binaries are not yet in docs/review-policy.json reviewedBinaries.",
+  "generatedAt": "2026-10-27T04:05:00Z",
+  "files": {
+    "ui-dark-1440x907.png": {
+      "capture": "UI 2.0 dark",
+      "viewport": "1440x907",
+      "theme": "dark",
+      "test": "UI 2.0 dark: theme tokens, menu surface and contrast",
+      "sha256": "c14e5b188caac0516cfd457404b7594b2085062268a5b1e32b26660d1e1654cf",
+      "bytes": 491960
+    },
+    "ui-dark-metrics.json": {
+      "capture": "measured geometry and computed tokens",
+      "viewport": "1440x907",
+      "theme": "dark",
+      "sha256": "5023b25c9b7e490bbeb14a0ecfa69122949e285245e74de0e97960aba9e26b1e",
+      "bytes": 2857
+    },
+    "ui-hover-state.json": {
+      "capture": "real :hover state before/after pointer move",
+      "viewport": "1440x907",
+      "theme": "light",
+      "sha256": "d56eb697078b205ef3e7086280b99e5a2bf1b2102cfca9dd43f5577df555df99",
+      "bytes": 660
+    },
+    "ui-keyboard-metrics.json": {
+      "capture": "keyboard focus ring and shortcut observations",
+      "viewport": "1440x907",
+      "theme": "light",
+      "sha256": "a914621f4a72c00c76ebaa9db1978ae4e908bdddb0a14e8ee1577963e1db0639",
+      "bytes": 303
+    },
+    "ui-light-1024x720.png": {
+      "capture": "UI 2.0 responsive",
+      "viewport": "1024x720",
+      "theme": "light",
+      "test": "UI 2.0 responsive: 1024 and 960 keep panels usable without overflow",
+      "sha256": "9e6d1833252af8e27c268c636ee1fb618b08d2506da125f84b04a6b83ba1dfd9",
+      "bytes": 387572
+    },
+    "ui-light-1440x907.png": {
+      "capture": "UI 2.0 light",
+      "viewport": "1440x907",
+      "theme": "light",
+      "test": "UI 2.0 light: hierarchy, hover reveal, menu bounds and contrast",
+      "sha256": "63d59939d51fdc44b1840072d9096ceb731e62dd99ccca323bd690e47d1bdd34",
+      "bytes": 560102
+    },
+    "ui-light-960x700.png": {
+      "capture": "UI 2.0 responsive",
+      "viewport": "960x700",
+      "theme": "light",
+      "test": "UI 2.0 responsive: 1024 and 960 keep panels usable without overflow",
+      "sha256": "2288c6c98a0848e9bfbb4f0e49a67018d878d09452f740b67deedee46a634a69",
+      "bytes": 383150
+    },
+    "ui-light-metrics.json": {
+      "capture": "measured geometry and computed tokens",
+      "viewport": "1440x907",
+      "theme": "light",
+      "sha256": "f65dfd003b53905fd559bbc042e635b6b58896dfa273d97a9fada25adae754ba",
+      "bytes": 4366
+    },
+    "ui-responsive-metrics.json": {
+      "capture": "measured geometry at 1024x720 and 960x700",
+      "viewport": "1024x720, 960x700",
+      "theme": "light",
+      "sha256": "7698c862dfc811a7fda86a2aa896fbe092fa920b459d7e8cc3234696c7da4d28",
+      "bytes": 6529
+    }
+  }
+}

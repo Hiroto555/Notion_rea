@@ -1,0 +1,34 @@
+{
+  "before": {
+    "rowHover": false,
+    "addHover": false,
+    "focusWithin": false,
+    "opacity": "0",
+    "pointTag": "SPAN",
+    "pointClass": "page-emoji",
+    "documentFocused": true,
+    "activeElement": "tree-toggle ",
+    "rowBox": {
+      "x": 8,
+      "y": 283.5,
+      "width": 235,
+      "height": 31
+    }
+  },
+  "moved": {
+    "rowHover": true,
+    "addHover": false,
+    "focusWithin": false,
+    "opacity": "0.300534",
+    "pointTag": "SPAN",
+    "pointClass": "page-emoji",
+    "documentFocused": true,
+    "activeElement": "tree-toggle ",
+    "rowBox": {
+      "x": 8,
+      "y": 283.5,
+      "width": 235,
+      "height": 31
+    }
+  }
+}

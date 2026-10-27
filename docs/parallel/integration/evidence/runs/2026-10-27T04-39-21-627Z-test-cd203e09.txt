@@ -1,0 +1,36 @@
+{"command":"npm","args":["run","test"],"branch":"codex/folio-integration-v2","role":"integration","started":"2026-10-27T04:39:21.628Z"}
+
+> folio-desktop@0.1.0 test
+> vitest run
+
+
+ RUN  v3.2.7 <integration-worktree>
+
+ ✓ tests/research/parity-docs.test.ts (10 tests) 14ms
+ ✓ tests/editor-identity.test.ts (5 tests) 232ms
+ ✓ tests/gate-a.test.ts (11 tests) 255ms
+ ✓ tests/database-v2.test.ts (19 tests) 344ms
+ ✓ tests/workspace.test.ts (6 tests) 230ms
+ ✓ tests/store.test.ts (13 tests) 587ms
+   ✓ SQLite integrity > handles 150 nested pages and refuses cycles without partial mutation  340ms
+ ✓ tests/pending-edits.test.ts (3 tests) 6ms
+ ✓ tests/output-path.test.ts (1 test) 18ms
+ ✓ tests/editor-legacy-compat.test.ts (1 test) 586ms
+   ✓ the baseline validator accepts legacy content and rejects new ID attributes instead of silently reading them  584ms
+ ✓ tests/recovery.test.ts (16 tests) 16886ms
+   ✓ R1 actual export schema rejects UTF-8 bytes above the recover file limit  497ms
+   ✓ R1 x UTF-8 boundary -1: schema/file/store/reopen  4835ms
+   ✓ R1 x UTF-8 boundary 0: schema/file/store/reopen  2836ms
+   ✓ R1 x UTF-8 boundary 1: schema/file/store/reopen  470ms
+   ✓ R1 あ UTF-8 boundary -1: schema/file/store/reopen  1318ms
+   ✓ R1 あ UTF-8 boundary 0: schema/file/store/reopen  1185ms
+   ✓ R1 😀 UTF-8 boundary -1: schema/file/store/reopen  1523ms
+   ✓ R1 😀 UTF-8 boundary 0: schema/file/store/reopen  3711ms
+
+ Test Files  10 passed (10)
+      Tests  85 passed (85)
+   Start at  13:39:23
+   Duration  18.69s (transform 768ms, setup 0ms, collect 7.56s, tests 19.16s, environment 2ms, prepare 2.49s)
+
+
+exit_code=0 signal=none

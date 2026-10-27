@@ -1,0 +1,17 @@
+{"command":"npm","args":["run","test:e2e","--","--grep","R2 short original regression|R3 selected text link|R1 multiple pending","--retries=0","--reporter=list","--output=output/agent-workspace/evidence/editor-v2/baseline-e2e"],"branch":"sprint/editor-v2","role":"editor","started":"2026-10-27T03:03:06.919Z"}
+
+> folio-desktop@0.1.0 test:e2e
+> playwright test --grep R2 short original regression|R3 selected text link|R1 multiple pending --retries=0 --reporter=list --output=output/agent-workspace/evidence/editor-v2/baseline-e2e
+
+
+Running 3 tests using 1 worker
+
+(node:52091) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓  1 tests/e2e/dialogs.spec.ts:113:1 › R3 selected text link cancel/confirm restores exact range, wording and marks (5.8s)
+  ✓  2 tests/e2e/drag.spec.ts:4:1 › R2 short original regression: checkbox edit then real handle drag (3.3s)
+  ✓  3 tests/e2e/recovery.spec.ts:102:1 › R1 multiple pending pages survive cancel/write/reload failures; copies retain original and attachment (8.6s)
+
+  3 passed (18.1s)
+
+exit_code=0 signal=none

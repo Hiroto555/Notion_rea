@@ -10,8 +10,48 @@ import {
   ArrowLeft,
   ArrowRight,
 } from "lucide-react";
-import type { DatabaseData, Property, RecordRow } from "../shared/types";
-import { queryRows, monthDays } from "./model";
+import type {
+  DatabaseData,
+  DatabaseView,
+  DatabaseViewType,
+  Property,
+  RecordRow,
+  SortRule,
+} from "../shared/types";
+import {
+  VIEW_TYPE_LABELS,
+  activeView,
+  addView,
+  deleteView,
+  duplicateView,
+  filterConditions,
+  groupRows,
+  monthDays,
+  moveView,
+  newId,
+  propertyById,
+  propertyType as propertyKind,
+  queryRows,
+  renameView,
+  setActiveView,
+  updateView,
+  legacySortValue,
+} from "./model";
+import { FilterBuilder } from "./FilterBuilder";
+
+const VIEW_ICONS = {
+  table: Table2,
+  board: Columns3,
+  calendar: CalendarDays,
+  gallery: LayoutGrid,
+} as const;
+const VIEW_TYPES: readonly DatabaseViewType[] = [
+  "table",
+  "board",
+  "calendar",
+  "gallery",
+];
+
 export function Database({
   value,
   onChange: persist,
@@ -32,19 +72,50 @@ export function Database({
     [month, setMonth] = useState(() =>
       new Date().toLocaleDateString("sv-SE").slice(0, 7),
     ),
-    [editing, setEditing] = useState<string | null>(null);
-  const rows = queryRows(value),
-    status = value.properties.find((p) => p.type === "select"),
+    [editing, setEditing] = useState<string | null>(null),
+    [filterOpen, setFilterOpen] = useState(false),
+    [newViewType, setNewViewType] = useState<DatabaseViewType>("table");
+
+  const view = activeView(value);
+  const rows = queryRows(value);
+  const status = value.properties.find((p) => p.type === "select"),
     date = value.properties.find((p) => p.type === "date");
+  const boardPropertyId = view.groupBy?.propertyId ?? status?.id ?? null;
+  const boardView: DatabaseView | null = boardPropertyId
+    ? {
+        ...view,
+        groupBy: { propertyId: boardPropertyId, direction: "asc" },
+      }
+    : null;
+  const boardGroups = boardView
+    ? groupRows(value, boardView, rows, { includeEmpty: true })
+    : [];
+  const calendarProperty =
+    view.groupBy && propertyKind(value, view.groupBy.propertyId) === "date"
+      ? propertyById(value, view.groupBy.propertyId)
+      : date;
+  const groupedRows = view.groupBy
+    ? groupRows(value, view, rows)
+    : [{ key: "", label: "", propertyId: "", value: undefined, rows }];
+  const filterCount = [...filterConditions(view.filter)].length;
+  const changeView = (patch: Partial<Omit<DatabaseView, "id">>) =>
+    onChange(updateView(value, view.id, patch));
   const update = (id: string, patch: Partial<RecordRow>) =>
     onChange({
       ...value,
       rows: value.rows.map((r) => (r.id === id ? { ...r, ...patch } : r)),
     });
+  const setRowValue = (
+    row: RecordRow,
+    propertyId: string,
+    cell: string | number | boolean,
+  ) => {
+    if (propertyId === "title") update(row.id, { title: String(cell) });
+    else update(row.id, { values: { ...row.values, [propertyId]: cell } });
+  };
   const cell = (row: RecordRow, p: Property) => {
     const v = row.values[p.id] ?? "";
-    const change = (val: string | number | boolean) =>
-      update(row.id, { values: { ...row.values, [p.id]: val } });
+    const change = (val: string | number | boolean) => setRowValue(row, p.id, val);
     if (p.type === "select")
       return (
         <select
@@ -84,11 +155,11 @@ export function Database({
       />
     );
   };
-  const add = (values: RecordRow["values"] = {}) => {
+  const add = (values: RecordRow["values"] = {}, title = "新しいアイテム") => {
     const id = crypto.randomUUID();
     onChange({
       ...value,
-      rows: [...value.rows, { id, title: "新しいアイテム", values }],
+      rows: [...value.rows, { id, title, values }],
     });
     setEditing(id);
   };
@@ -126,26 +197,135 @@ export function Database({
     </button>
   );
   const active = value.rows.find((r) => r.id === editing);
+  const switchType = (type: DatabaseViewType) => {
+    if (view.type === type) return;
+    const existing = value.views.find((candidate) => candidate.type === type);
+    onChange(
+      existing
+        ? setActiveView(value, existing.id)
+        : addView(value, type, { copyActive: true }),
+    );
+  };
+  const mainSort = legacySortValue(view.sorts[0]);
+  const setMainSort = (text: string) => {
+    if (!text) {
+      changeView({ sorts: view.sorts.slice(1) });
+      return;
+    }
+    const desc = text.startsWith("-");
+    const propertyId = desc ? text.slice(1) : text;
+    const first: SortRule = {
+      id: view.sorts[0]?.id ?? newId(),
+      propertyId,
+      direction: desc ? "desc" : "asc",
+    };
+    changeView({ sorts: [first, ...view.sorts.slice(1)] });
+  };
+  const addSort = () => {
+    const used = new Set(view.sorts.map((sort) => sort.propertyId));
+    const property =
+      value.properties.find((candidate) => !used.has(candidate.id)) ??
+      value.properties[0];
+    changeView({
+      sorts: [
+        ...view.sorts,
+        {
+          id: newId(),
+          propertyId: property?.id ?? "title",
+          direction: "asc",
+        },
+      ],
+    });
+  };
+  const updateSort = (id: string, patch: Partial<Omit<SortRule, "id">>) =>
+    changeView({
+      sorts: view.sorts.map((sort) =>
+        sort.id === id ? { ...sort, ...patch } : sort,
+      ),
+    });
+  const removeSort = (id: string) =>
+    changeView({ sorts: view.sorts.filter((sort) => sort.id !== id) });
+
+  const table = (tableRows: RecordRow[]) => (
+    <div className="table-scroll">
+      <table>
+        <thead>
+          <tr>
+            <th>Aa 名前</th>
+            {value.properties.map((p) => (
+              <th key={p.id}>{p.name}</th>
+            ))}
+            <th />
+          </tr>
+        </thead>
+        <tbody>
+          {tableRows.map((r) => (
+            <tr key={r.id}>
+              <td>
+                <input
+                  aria-label="アイテム名"
+                  value={r.title}
+                  onChange={(e) => update(r.id, { title: e.target.value })}
+                />
+              </td>
+              {value.properties.map((p) => (
+                <td key={p.id}>{cell(r, p)}</td>
+              ))}
+              <td>
+                <button
+                  aria-label={"削除 " + r.title}
+                  onClick={() =>
+                    onChange({
+                      ...value,
+                      rows: value.rows.filter((x) => x.id !== r.id),
+                    })
+                  }
+                >
+                  <Trash2 size={14} />
+                </button>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      <button className="new-row" onClick={() => add()}>
+        ＋ 新しいアイテム
+      </button>
+    </div>
+  );
+
   return (
     <div className="database">
       <div className="db-tabs">
-        {(
-          [
-            { id: "table", label: "テーブル", Icon: Table2 },
-            { id: "board", label: "ボード", Icon: Columns3 },
-            { id: "calendar", label: "カレンダー", Icon: CalendarDays },
-            { id: "gallery", label: "ギャラリー", Icon: LayoutGrid },
-          ] as const
-        ).map(({ id, label, Icon }) => (
-          <button
-            key={id}
-            className={value.view === id ? "active" : ""}
-            onClick={() => onChange({ ...value, view: id })}
-          >
-            <Icon size={15} />
-            {label}
-          </button>
-        ))}
+        {value.views.map((candidate) => {
+          const Icon = VIEW_ICONS[candidate.type];
+          return (
+            <button
+              key={candidate.id}
+              aria-label={
+                "ビュー: " + (candidate.name || VIEW_TYPE_LABELS[candidate.type])
+              }
+              className={candidate.id === view.id ? "active" : ""}
+              onClick={() => onChange(setActiveView(value, candidate.id))}
+            >
+              <Icon size={15} />
+              {candidate.name || VIEW_TYPE_LABELS[candidate.type]}
+            </button>
+          );
+        })}
+        {VIEW_TYPES.map((type) => {
+          const Icon = VIEW_ICONS[type];
+          return (
+            <button
+              key={type}
+              className={view.type === type ? "active" : ""}
+              onClick={() => switchType(type)}
+            >
+              <Icon size={15} />
+              {VIEW_TYPE_LABELS[type]}
+            </button>
+          );
+        })}
       </div>
       <div className="db-toolbar">
         <button
@@ -160,13 +340,13 @@ export function Database({
         <input
           aria-label="データベースを絞り込む"
           placeholder="絞り込み…"
-          value={value.filter}
-          onChange={(e) => onChange({ ...value, filter: e.target.value })}
+          value={view.filterText}
+          onChange={(e) => changeView({ filterText: e.target.value })}
         />
         <select
           aria-label="並べ替え"
-          value={value.sort}
-          onChange={(e) => onChange({ ...value, sort: e.target.value })}
+          value={mainSort}
+          onChange={(e) => setMainSort(e.target.value)}
         >
           <option value="">並べ替え</option>
           {[{ id: "title", name: "名前" }, ...value.properties].flatMap((p) => [
@@ -178,6 +358,38 @@ export function Database({
             </option>,
           ])}
         </select>
+        <button
+          aria-label="複数並べ替えを追加"
+          onClick={addSort}
+          title="複数並べ替えを追加"
+        >
+          ＋ 並べ替え
+        </button>
+        <button
+          aria-expanded={filterOpen}
+          onClick={() => setFilterOpen((open) => !open)}
+        >
+          フィルター{filterCount ? ` (${filterCount})` : ""}
+        </button>
+        <select
+          aria-label="グループ化"
+          value={view.groupBy?.propertyId ?? ""}
+          onChange={(e) =>
+            changeView({
+              groupBy: e.target.value
+                ? { propertyId: e.target.value, direction: "asc" }
+                : null,
+            })
+          }
+        >
+          <option value="">グループ化なし</option>
+          <option value="title">名前</option>
+          {value.properties.map((p) => (
+            <option key={p.id} value={p.id}>
+              {p.name}
+            </option>
+          ))}
+        </select>
         <div className="spacer" />
         <button onClick={() => setPropertyForm(!propertyForm)}>
           ＋ プロパティ
@@ -187,6 +399,133 @@ export function Database({
           新規
         </button>
       </div>
+      <div className="db-toolbar">
+        <input
+          aria-label="ビュー名"
+          value={view.name}
+          onChange={(e) => onChange(renameView(value, view.id, e.target.value))}
+          placeholder="ビュー名"
+        />
+        <select
+          aria-label="ビューの種類"
+          value={view.type}
+          onChange={(e) =>
+            changeView({ type: e.target.value as DatabaseViewType })
+          }
+        >
+          {VIEW_TYPES.map((type) => (
+            <option key={type} value={type}>
+              {VIEW_TYPE_LABELS[type]}
+            </option>
+          ))}
+        </select>
+        <button
+          aria-label="ビューを複製"
+          disabled={value.views.length >= 100}
+          onClick={() => onChange(duplicateView(value, view.id))}
+        >
+          複製
+        </button>
+        <button
+          aria-label="ビューを削除"
+          disabled={value.views.length <= 1}
+          onClick={() => onChange(deleteView(value, view.id))}
+        >
+          削除
+        </button>
+        <button
+          aria-label="ビューを左へ移動"
+          disabled={value.views[0]?.id === view.id}
+          onClick={() => onChange(moveView(value, view.id, -1))}
+        >
+          ←
+        </button>
+        <button
+          aria-label="ビューを右へ移動"
+          disabled={value.views.at(-1)?.id === view.id}
+          onClick={() => onChange(moveView(value, view.id, 1))}
+        >
+          →
+        </button>
+        <select
+          aria-label="追加するビューの種類"
+          value={newViewType}
+          onChange={(e) => setNewViewType(e.target.value as DatabaseViewType)}
+        >
+          {VIEW_TYPES.map((type) => (
+            <option key={type} value={type}>
+              {VIEW_TYPE_LABELS[type]}
+            </option>
+          ))}
+        </select>
+        <button
+          aria-label="ビューを追加"
+          onClick={() =>
+            onChange(addView(value, newViewType, { copyActive: true }))
+          }
+        >
+          ＋ ビュー
+        </button>
+      </div>
+      {view.sorts.length > 1 && (
+        <div className="db-sort-rules" style={{ padding: "0 16px" }}>
+          {view.sorts.slice(1).map((sort, index) => (
+            <div
+              key={sort.id}
+              style={{ display: "flex", gap: 6, alignItems: "center" }}
+            >
+              <span>並べ替え {index + 2}</span>
+              <select
+                aria-label={`並べ替え対象 ${index + 2}`}
+                value={sort.propertyId}
+                onChange={(e) =>
+                  updateSort(sort.id, { propertyId: e.target.value })
+                }
+              >
+                <option value="title">名前</option>
+                {value.properties.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.name}
+                  </option>
+                ))}
+              </select>
+              <select
+                aria-label={`並べ替え順 ${index + 2}`}
+                value={sort.direction}
+                onChange={(e) =>
+                  updateSort(sort.id, {
+                    direction: e.target.value as "asc" | "desc",
+                  })
+                }
+              >
+                <option value="asc">昇順</option>
+                <option value="desc">降順</option>
+              </select>
+              <button
+                aria-label={`並べ替えを削除 ${index + 2}`}
+                onClick={() => removeSort(sort.id)}
+              >
+                ×
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+      {filterOpen && (
+        <div
+          className="db-filter-panel"
+          style={{
+            padding: "8px 16px",
+            borderTop: "1px solid rgba(128,128,128,.2)",
+          }}
+        >
+          <FilterBuilder
+            data={value}
+            view={view}
+            onChange={(filter) => changeView({ filter })}
+          />
+        </div>
+      )}
       {propertyForm && (
         <form
           className="property-form"
@@ -249,59 +588,32 @@ export function Database({
           </button>
         </form>
       )}
-      {value.view === "table" && (
-        <div className="table-scroll">
-          <table>
-            <thead>
-              <tr>
-                <th>Aa 名前</th>
-                {value.properties.map((p) => (
-                  <th key={p.id}>{p.name}</th>
-                ))}
-                <th />
-              </tr>
-            </thead>
-            <tbody>
-              {rows.map((r) => (
-                <tr key={r.id}>
-                  <td>
-                    <input
-                      aria-label="アイテム名"
-                      value={r.title}
-                      onChange={(e) => update(r.id, { title: e.target.value })}
-                    />
-                  </td>
-                  {value.properties.map((p) => (
-                    <td key={p.id}>{cell(r, p)}</td>
-                  ))}
-                  <td>
-                    <button
-                      aria-label={"削除 " + r.title}
-                      onClick={() =>
-                        onChange({
-                          ...value,
-                          rows: value.rows.filter((x) => x.id !== r.id),
-                        })
-                      }
-                    >
-                      <Trash2 size={14} />
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          <button className="new-row" onClick={() => add()}>
-            ＋ 新しいアイテム
-          </button>
-        </div>
-      )}
-      {value.view === "board" &&
-        (status ? (
-          <div className="board">
-            {["", ...(status.options ?? [])].map((group) => (
+      {view.type === "table" &&
+        (view.groupBy ? (
+          <div className="db-groups">
+            {groupedRows.map((group) => (
               <section
-                key={group}
+                key={group.key}
+                className="db-group"
+                style={{ marginTop: 10 }}
+              >
+                <h4 style={{ margin: "4px 16px" }}>
+                  {group.label || "グループ"}{" "}
+                  <small>{group.rows.length}</small>
+                </h4>
+                {table(group.rows)}
+              </section>
+            ))}
+          </div>
+        ) : (
+          table(rows)
+        ))}
+      {view.type === "board" &&
+        (boardPropertyId ? (
+          <div className="board">
+            {boardGroups.map((group) => (
+              <section
+                key={group.key}
                 className="board-column"
                 onDragOver={(e) => e.preventDefault()}
                 onDrop={(e) => {
@@ -311,31 +623,41 @@ export function Database({
                       e.dataTransfer.getData("application/x-folio-row"),
                   );
                   if (row)
-                    update(row.id, {
-                      values: { ...row.values, [status.id]: group },
-                    });
+                    setRowValue(
+                      row,
+                      boardPropertyId,
+                      group.value === undefined
+                        ? propertyKind(value, boardPropertyId) === "checkbox"
+                          ? false
+                          : ""
+                        : group.value,
+                    );
                 }}
               >
                 <h4>
                   <span className="status-dot" />
-                  {group || "未設定"}{" "}
-                  <small>
-                    {
-                      rows.filter(
-                        (r) => String(r.values[status.id] ?? "") === group,
-                      ).length
-                    }
-                  </small>
+                  {group.label || "未設定"}{" "}
+                  <small>{group.rows.length}</small>
                 </h4>
-                {rows
-                  .filter((r) => String(r.values[status.id] ?? "") === group)
-                  .map(card)}
-                <button
-                  className="new-row"
-                  onClick={() => add({ [status.id]: group })}
-                >
-                  ＋ 新規
-                </button>
+                {group.rows.map(card)}
+                {boardPropertyId !== "title" && (
+                  <button
+                    className="new-row"
+                    onClick={() =>
+                      add({
+                        [boardPropertyId]:
+                          group.value === undefined
+                            ? propertyKind(value, boardPropertyId) ===
+                              "checkbox"
+                              ? false
+                              : ""
+                            : group.value,
+                      })
+                    }
+                  >
+                    ＋ 新規
+                  </button>
+                )}
               </section>
             ))}
           </div>
@@ -344,11 +666,24 @@ export function Database({
             セレクト型のプロパティを追加すると、ボードを使えます。
           </p>
         ))}
-      {value.view === "gallery" && (
-        <div className="gallery">{rows.map(card)}</div>
-      )}
-      {value.view === "calendar" &&
-        (date ? (
+      {view.type === "gallery" &&
+        (view.groupBy ? (
+          <div className="db-groups">
+            {groupedRows.map((group) => (
+              <section key={group.key} className="db-group">
+                <h4 style={{ margin: "4px 16px" }}>
+                  {group.label || "グループ"}{" "}
+                  <small>{group.rows.length}</small>
+                </h4>
+                <div className="gallery">{group.rows.map(card)}</div>
+              </section>
+            ))}
+          </div>
+        ) : (
+          <div className="gallery">{rows.map(card)}</div>
+        ))}
+      {view.type === "calendar" &&
+        (calendarProperty ? (
           <>
             <div className="month-nav">
               <button
@@ -390,22 +725,27 @@ export function Database({
                         r.id ===
                         e.dataTransfer.getData("application/x-folio-row"),
                     );
-                    if (r)
-                      update(r.id, { values: { ...r.values, [date.id]: day } });
+                    if (r) setRowValue(r, calendarProperty.id, day);
                   }}
                 >
                   <button
                     className="day-number"
-                    onClick={() => add({ [date.id]: day })}
+                    onClick={() => add({ [calendarProperty.id]: day })}
                   >
                     {Number(day.slice(-2))}
                   </button>
-                  {rows.filter((r) => r.values[date.id] === day).map(card)}
+                  {rows
+                    .filter(
+                      (r) =>
+                        String(r.values[calendarProperty.id] ?? "") === day,
+                    )
+                    .map(card)}
                 </div>
               ))}
             </div>
             <p className="db-count">
-              日付未設定：{rows.filter((r) => !r.values[date.id]).length}{" "}
+              日付未設定：
+              {rows.filter((r) => !r.values[calendarProperty.id]).length}{" "}
               件（テーブルで編集できます）
             </p>
           </>

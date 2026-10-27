@@ -2,6 +2,7 @@ import { z } from "zod";
 import { validDocument } from "./validation";
 import { parseAssetURL } from "./assets";
 import { fileFits } from "./limits";
+import { normalizeDatabaseData } from "../database/model";
 export type Doc = {
   type: string;
   schemaVersion?: number;
@@ -24,13 +25,83 @@ export type RecordRow = {
   title: string;
   values: Record<string, string | number | boolean>;
 };
+export const DATABASE_SCHEMA_VERSION = 2;
+export type DatabaseViewType = "table" | "board" | "calendar" | "gallery";
+export type FilterOperator =
+  | "contains"
+  | "not_contains"
+  | "equals"
+  | "not_equals"
+  | "starts_with"
+  | "ends_with"
+  | "is_empty"
+  | "is_not_empty"
+  | "greater_than"
+  | "greater_than_or_equal"
+  | "less_than"
+  | "less_than_or_equal"
+  | "before"
+  | "after"
+  | "on_or_before"
+  | "on_or_after"
+  | "is_checked"
+  | "is_not_checked";
+export type FilterValue = string | number | boolean;
+export type FilterCondition = {
+  kind: "condition";
+  id: string;
+  propertyId: string;
+  operator: FilterOperator;
+  value?: FilterValue;
+};
+export type FilterGroup = {
+  kind: "group";
+  id: string;
+  conjunction: "and" | "or";
+  conditions: FilterNode[];
+};
+export type FilterNode = FilterCondition | FilterGroup;
+export type SortDirection = "asc" | "desc";
+export type SortRule = {
+  id: string;
+  propertyId: string;
+  direction: SortDirection;
+};
+export type GroupRule = {
+  propertyId: string;
+  direction: SortDirection;
+};
+export type DatabaseView = {
+  id: string;
+  name: string;
+  type: DatabaseViewType;
+  filterText: string;
+  filter: FilterGroup;
+  sorts: SortRule[];
+  groupBy: GroupRule | null;
+};
 export type DatabaseData = {
+  schemaVersion: typeof DATABASE_SCHEMA_VERSION;
   properties: Property[];
   rows: RecordRow[];
-  view: "table" | "board" | "calendar" | "gallery";
+  views: DatabaseView[];
+  activeViewId: string;
+  /** @deprecated Compatibility projection of the active view's type. */
+  view: DatabaseViewType;
+  /** @deprecated Compatibility projection of the active view's text filter. */
+  filter: string;
+  /** @deprecated Compatibility projection of the active view's first sort. */
+  sort: string;
+};
+export type LegacyDatabaseData = {
+  schemaVersion?: 1;
+  properties: Property[];
+  rows: RecordRow[];
+  view: DatabaseViewType;
   filter: string;
   sort: string;
 };
+
 export type Page = {
   id: string;
   schemaVersion?: number;
@@ -62,6 +133,20 @@ export type Version = {
   doc: Doc;
   database?: DatabaseData | null;
 };
+/**
+ * Accepts both the pre-v2 single view shape and the v2 multi-view shape and
+ * returns an independent, normalized v2 value. Unknown versions and malformed
+ * structures fail closed so a caller can preserve the original bytes.
+ */
+export const databaseDataSchema = z
+  .custom<unknown>((value) => normalizeDatabaseData(value).ok, {
+    message: "データベースの構造が不正か、未対応のversionです。",
+  })
+  .transform((value): DatabaseData => {
+    const result = normalizeDatabaseData(value);
+    if (!result.ok) throw new Error(result.error);
+    return result.data;
+  });
 export const requestSchema = z.discriminatedUnion("type", [
   z.object({ type: z.literal("load") }),
   z.object({
@@ -82,31 +167,7 @@ export const requestSchema = z.discriminatedUnion("type", [
         doc: z
           .custom<Doc>(isDocument, "Invalid or excessively nested document")
           .optional(),
-        database: z
-          .object({
-            properties: z.array(
-              z.object({
-                id: z.string(),
-                name: z.string(),
-                type: z.enum(["text", "number", "select", "date", "checkbox"]),
-                options: z.array(z.string()).optional(),
-              }),
-            ),
-            rows: z.array(
-              z.object({
-                id: z.string(),
-                title: z.string(),
-                values: z.record(
-                  z.union([z.string(), z.number().finite(), z.boolean()]),
-                ),
-              }),
-            ),
-            view: z.enum(["table", "board", "calendar", "gallery"]),
-            filter: z.string(),
-            sort: z.string(),
-          })
-          .nullable()
-          .optional(),
+        database: databaseDataSchema.nullable().optional(),
         favorite: z.boolean().optional(),
       })
       .strict(),
@@ -197,6 +258,7 @@ export function textOf(node: Doc): string {
     );
 }
 export const emptyDatabase = (): DatabaseData => ({
+  schemaVersion: DATABASE_SCHEMA_VERSION,
   properties: [
     {
       id: "status",
@@ -207,6 +269,23 @@ export const emptyDatabase = (): DatabaseData => ({
     { id: "date", name: "期日", type: "date" },
   ],
   rows: [],
+  views: [
+    {
+      id: "view-default",
+      name: "テーブル",
+      type: "table",
+      filterText: "",
+      filter: {
+        kind: "group",
+        id: "filter-default",
+        conjunction: "and",
+        conditions: [],
+      },
+      sorts: [],
+      groupBy: null,
+    },
+  ],
+  activeViewId: "view-default",
   view: "table",
   filter: "",
   sort: "",

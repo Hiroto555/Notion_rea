@@ -1,0 +1,7 @@
+{"command":"npm","args":["run","check"],"branch":"sprint/editor-v2","role":"editor","started":"2026-10-27T03:05:23.936Z"}
+
+> folio-desktop@0.1.0 check
+> tsc --noEmit
+
+
+exit_code=0 signal=none
