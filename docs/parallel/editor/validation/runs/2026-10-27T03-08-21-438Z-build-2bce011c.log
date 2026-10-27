@@ -1,0 +1,27 @@
+{"command":"npm","args":["run","build"],"branch":"sprint/editor-v2","role":"editor","started":"2026-10-27T03:08:21.439Z"}
+
+> folio-desktop@0.1.0 build
+> tsc --noEmit && vite build && node scripts/build.mjs
+
+vite v7.3.7 building client environment for production...
+transforming...
+✓ 1671 modules transformed.
+[plugin vite:reporter] 
+(!) /Users/shiroto/Documents/ChatGPT/Folio-editor/node_modules/@tiptap/core/dist/index.js is dynamically imported by /Users/shiroto/Documents/ChatGPT/Folio-editor/src/renderer/App.tsx but also statically imported by /Users/shiroto/Documents/ChatGPT/Folio-editor/node_modules/@tiptap/extension-blockquote/dist/index.js, /Users/shiroto/Documents/ChatGPT/Folio-editor/node_modules/@tiptap/extension-bold/dist/index.js, /Users/shiroto/Documents/ChatGPT/Folio-editor/node_modules/@tiptap/extension-code-block/dist/index.js, /Users/shiroto/Documents/ChatGPT/Folio-editor/node_modules/@tiptap/extension-code/dist/index.js, /Users/shiroto/Documents/ChatGPT/Folio-editor/node_modules/@tiptap/extension-details/dist/index.js, /Users/shiroto/Documents/ChatGPT/Folio-editor/node_modules/@tiptap/extension-document/dist/index.js, /Users/shiroto/Documents/ChatGPT/Folio-editor/node_modules/@tiptap/extension-hard-break/dist/index.js, /Users/shiroto/Documents/ChatGPT/Folio-editor/node_modules/@tiptap/extension-heading/dist/index.js, /Users/shiroto/Documents/ChatGPT/Folio-editor/node_modules/@tiptap/extension-horizontal-rule/dist/index.js, /Users/shiroto/Documents/ChatGPT/Folio-editor/node_modules/@tiptap/extension-image/dist/index.js, /Users/shiroto/Documents/ChatGPT/Folio-editor/node_modules/@tiptap/extension-italic/dist/index.js, /Users/shiroto/Documents/ChatGPT/Folio-editor/node_modules/@tiptap/extension-link/dist/index.js, /Users/shiroto/Documents/ChatGPT/Folio-editor/node_modules/@tiptap/extension-list/dist/index.js, /Users/shiroto/Documents/ChatGPT/Folio-editor/node_modules/@tiptap/extension-paragraph/dist/index.js, /Users/shiroto/Documents/ChatGPT/Folio-editor/node_modules/@tiptap/extension-strike/dist/index.js, /Users/shiroto/Documents/ChatGPT/Folio-editor/node_modules/@tiptap/extension-text/dist/index.js, /Users/shiroto/Documents/ChatGPT/Folio-editor/node_modules/@tiptap/extension-underline/dist/index.js, /Users/shiroto/Documents/ChatGPT/Folio-editor/node_modules/@tiptap/extensions/dist/index.js, /Users/shiroto/Documents/ChatGPT/Folio-editor/node_modules/@tiptap/markdown/dist/index.js, /Users/shiroto/Documents/ChatGPT/Folio-editor/node_modules/@tiptap/react/dist/index.js, /Users/shiroto/Documents/ChatGPT/Folio-editor/node_modules/@tiptap/starter-kit/dist/index.js, /Users/shiroto/Documents/ChatGPT/Folio-editor/src/editor/block-identity.ts, /Users/shiroto/Documents/ChatGPT/Folio-editor/src/shared/editor-schema.ts, dynamic import will not move module into another chunk.
+
+[plugin vite:reporter] 
+(!) /Users/shiroto/Documents/ChatGPT/Folio-editor/src/editor/Editor.tsx is dynamically imported by /Users/shiroto/Documents/ChatGPT/Folio-editor/src/renderer/App.tsx but also statically imported by /Users/shiroto/Documents/ChatGPT/Folio-editor/src/renderer/App.tsx, dynamic import will not move module into another chunk.
+
+rendering chunks...
+computing gzip size...
+dist/renderer/index.html                   0.60 kB │ gzip:   0.38 kB
+dist/renderer/assets/index-BtpcpHR6.css   20.75 kB │ gzip:   5.26 kB
+dist/renderer/assets/index-CZYEGOB-.js   844.25 kB │ gzip: 262.18 kB
+✓ built in 1.73s
+
+(!) Some chunks are larger than 500 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+
+exit_code=0 signal=none

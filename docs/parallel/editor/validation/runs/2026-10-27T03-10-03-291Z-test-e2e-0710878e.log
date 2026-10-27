@@ -1,0 +1,35 @@
+{"command":"npm","args":["run","test:e2e","--","tests/e2e/editor-identity.spec.ts","--grep","between lists|stale legacy edit","--retries=0","--reporter=list","--output=output/agent-workspace/evidence/editor-v2/extended-e2e"],"branch":"sprint/editor-v2","role":"editor","started":"2026-10-27T03:10:03.291Z"}
+
+> folio-desktop@0.1.0 test:e2e
+> playwright test tests/e2e/editor-identity.spec.ts --grep between lists|stale legacy edit --retries=0 --reporter=list --output=output/agent-workspace/evidence/editor-v2/extended-e2e
+
+
+Running 2 tests using 1 worker
+
+(node:56985) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✘  1 tests/e2e/editor-identity.spec.ts:95:1 › Editor 2.0: drag a nested item between lists without changing identity (1.4m)
+(node:58044) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓  2 tests/e2e/editor-identity.spec.ts:124:1 › Editor 2.0: a stale legacy edit retains IDs and content in recovery (18.9s)
+
+
+  1) tests/e2e/editor-identity.spec.ts:95:1 › Editor 2.0: drag a nested item between lists without changing identity 
+
+    Tearing down "folio" exceeded the test timeout of 60000ms.
+
+    Error Context: output/agent-workspace/evidence/editor-v2/extended-e2e/editor-identity-Editor-2-0-b29a6-s-without-changing-identity/error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    output/agent-workspace/evidence/editor-v2/extended-e2e/editor-identity-Editor-2-0-b29a6-s-without-changing-identity/trace.zip
+    Usage:
+
+        npx playwright show-trace output/agent-workspace/evidence/editor-v2/extended-e2e/editor-identity-Editor-2-0-b29a6-s-without-changing-identity/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  1 failed
+    tests/e2e/editor-identity.spec.ts:95:1 › Editor 2.0: drag a nested item between lists without changing identity 
+  1 passed (2.7m)
+
+exit_code=1 signal=none

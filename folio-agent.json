@@ -1,0 +1,6 @@
+{
+  "role": "editor",
+  "branch": "sprint/editor-v2",
+  "baseCommit": "b7c150d15739c59edf6ba9a62ebda4794748d46b",
+  "port": 56131
+}
