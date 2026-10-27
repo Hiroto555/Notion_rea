@@ -1,0 +1,17 @@
+
+> folio-desktop@0.1.0 test
+> vitest run tests/workspace.test.ts tests/output-path.test.ts
+
+
+ RUN  v3.2.7 <repo>
+
+ ✓ tests/output-path.test.ts (1 test) 5ms
+ ✓ tests/workspace.test.ts (6 tests) 53ms
+
+ Test Files  2 passed (2)
+      Tests  7 passed (7)
+   Start at  10:01:26
+   Duration  615ms (transform 113ms, setup 0ms, collect 277ms, tests 58ms, environment 1ms, prepare 227ms)
+
+
+exit_code=0

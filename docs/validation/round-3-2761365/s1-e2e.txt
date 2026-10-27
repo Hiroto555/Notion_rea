@@ -1,0 +1,23 @@
+
+Running 14 tests using 1 worker
+
+(node:90038) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓   1 tests/e2e/gate-a.spec.ts:99:1 › F01 same-page sidebar/search reselection keeps editor, attachment, link and exports (3.0s)
+  ✓   2 tests/e2e/gate-a.spec.ts:162:3 › F05 attachment roundtrip LICENSE (1.5s)
+  ✓   3 tests/e2e/gate-a.spec.ts:162:3 › F05 attachment roundtrip 資料.日本語 (1.3s)
+  ✓   4 tests/e2e/gate-a.spec.ts:162:3 › F05 attachment roundtrip file.abcdefghijklmnop (964ms)
+  ✓   5 tests/e2e/gate-a.spec.ts:162:3 › F05 attachment roundtrip archive.tar.gz (1.3s)
+  ✓   6 tests/e2e/gate-a.spec.ts:162:3 › F05 attachment roundtrip IMAGE.PNG (1.3s)
+  ✓   7 tests/e2e/gate-a.spec.ts:526:1 › F11 failed write exports pending patch and persisted state, then recovers a separate page (2.6s)
+  ✓   8 tests/e2e/output-boundary.spec.ts:5:1 › S1 real IPC protects workspace outputs and permits external namesake (1.5s)
+  ✓   9 tests/e2e/recovery.spec.ts:12:1 › R1 legacy export file → recovery → restart preserves a 500 character title (2.2s)
+  ✓  10 tests/e2e/recovery.spec.ts:57:3 › R1 real IPC v2 byte boundary -1 with escaping → file → restart (13.0s)
+  ✓  11 tests/e2e/recovery.spec.ts:57:3 › R1 real IPC v2 byte boundary 0 with escaping → file → restart (16.3s)
+  ✓  12 tests/e2e/recovery.spec.ts:57:3 › R1 real IPC v2 byte boundary 1 with escaping → file → restart (9.1s)
+  ✓  13 tests/e2e/recovery.spec.ts:102:1 › R1 multiple pending pages survive cancel/write/reload failures; copies retain original and attachment (4.9s)
+  ✓  14 tests/e2e/recovery.spec.ts:262:1 › R1 real IPC rejects the 30.3MB Japanese export previously accepted (1.3s)
+
+  14 passed (1.0m)
+
+exit_code=0

@@ -1,0 +1,123 @@
+
+Running 40 tests using 1 worker
+
+(node:93438) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓   1 tests/e2e/drag.spec.ts:4:1 › R2 short original regression: checkbox edit then real handle drag (2.7s)
+  ✓   2 tests/e2e/drag.spec.ts:41:1 › R2 top-level matrix: single/multiple/start/end/same/cancel/scroll/undo/redo/restart (4.2s)
+(node:93494) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓   3 tests/e2e/drag.spec.ts:4:1 › R2 short original regression: checkbox edit then real handle drag (1.7s)
+  ✓   4 tests/e2e/drag.spec.ts:41:1 › R2 top-level matrix: single/multiple/start/end/same/cancel/scroll/undo/redo/restart (4.4s)
+(node:93545) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓   5 tests/e2e/drag.spec.ts:4:1 › R2 short original regression: checkbox edit then real handle drag (1.5s)
+  ✓   6 tests/e2e/drag.spec.ts:41:1 › R2 top-level matrix: single/multiple/start/end/same/cancel/scroll/undo/redo/restart (4.7s)
+(node:93616) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓   7 tests/e2e/drag.spec.ts:4:1 › R2 short original regression: checkbox edit then real handle drag (1.5s)
+  ✓   8 tests/e2e/drag.spec.ts:41:1 › R2 top-level matrix: single/multiple/start/end/same/cancel/scroll/undo/redo/restart (4.4s)
+(node:93703) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓   9 tests/e2e/drag.spec.ts:4:1 › R2 short original regression: checkbox edit then real handle drag (1.6s)
+  ✓  10 tests/e2e/drag.spec.ts:41:1 › R2 top-level matrix: single/multiple/start/end/same/cancel/scroll/undo/redo/restart (4.3s)
+(node:93801) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓  11 tests/e2e/drag.spec.ts:4:1 › R2 short original regression: checkbox edit then real handle drag (1.6s)
+  ✓  12 tests/e2e/drag.spec.ts:41:1 › R2 top-level matrix: single/multiple/start/end/same/cancel/scroll/undo/redo/restart (4.9s)
+(node:93901) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓  13 tests/e2e/drag.spec.ts:4:1 › R2 short original regression: checkbox edit then real handle drag (1.7s)
+  ✓  14 tests/e2e/drag.spec.ts:41:1 › R2 top-level matrix: single/multiple/start/end/same/cancel/scroll/undo/redo/restart (4.4s)
+(node:93993) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓  15 tests/e2e/drag.spec.ts:4:1 › R2 short original regression: checkbox edit then real handle drag (1.6s)
+  ✓  16 tests/e2e/drag.spec.ts:41:1 › R2 top-level matrix: single/multiple/start/end/same/cancel/scroll/undo/redo/restart (5.8s)
+(node:94084) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓  17 tests/e2e/drag.spec.ts:4:1 › R2 short original regression: checkbox edit then real handle drag (2.3s)
+  ✓  18 tests/e2e/drag.spec.ts:41:1 › R2 top-level matrix: single/multiple/start/end/same/cancel/scroll/undo/redo/restart (5.8s)
+(node:94181) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓  19 tests/e2e/drag.spec.ts:4:1 › R2 short original regression: checkbox edit then real handle drag (2.4s)
+  ✓  20 tests/e2e/drag.spec.ts:41:1 › R2 top-level matrix: single/multiple/start/end/same/cancel/scroll/undo/redo/restart (5.2s)
+(node:94228) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓  21 tests/e2e/drag.spec.ts:4:1 › R2 short original regression: checkbox edit then real handle drag (1.9s)
+  ✓  22 tests/e2e/drag.spec.ts:41:1 › R2 top-level matrix: single/multiple/start/end/same/cancel/scroll/undo/redo/restart (4.7s)
+(node:94279) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓  23 tests/e2e/drag.spec.ts:4:1 › R2 short original regression: checkbox edit then real handle drag (1.6s)
+  ✓  24 tests/e2e/drag.spec.ts:41:1 › R2 top-level matrix: single/multiple/start/end/same/cancel/scroll/undo/redo/restart (5.8s)
+(node:94320) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓  25 tests/e2e/drag.spec.ts:4:1 › R2 short original regression: checkbox edit then real handle drag (2.0s)
+  ✓  26 tests/e2e/drag.spec.ts:41:1 › R2 top-level matrix: single/multiple/start/end/same/cancel/scroll/undo/redo/restart (5.2s)
+(node:94375) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓  27 tests/e2e/drag.spec.ts:4:1 › R2 short original regression: checkbox edit then real handle drag (1.8s)
+  ✓  28 tests/e2e/drag.spec.ts:41:1 › R2 top-level matrix: single/multiple/start/end/same/cancel/scroll/undo/redo/restart (5.6s)
+(node:94417) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓  29 tests/e2e/drag.spec.ts:4:1 › R2 short original regression: checkbox edit then real handle drag (2.0s)
+  ✓  30 tests/e2e/drag.spec.ts:41:1 › R2 top-level matrix: single/multiple/start/end/same/cancel/scroll/undo/redo/restart (5.5s)
+(node:94478) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓  31 tests/e2e/drag.spec.ts:4:1 › R2 short original regression: checkbox edit then real handle drag (2.2s)
+  ✘  32 tests/e2e/drag.spec.ts:41:1 › R2 top-level matrix: single/multiple/start/end/same/cancel/scroll/undo/redo/restart (7.1s)
+(node:94577) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓  33 tests/e2e/drag.spec.ts:4:1 › R2 short original regression: checkbox edit then real handle drag (2.3s)
+  ✓  34 tests/e2e/drag.spec.ts:41:1 › R2 top-level matrix: single/multiple/start/end/same/cancel/scroll/undo/redo/restart (5.2s)
+(node:94668) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓  35 tests/e2e/drag.spec.ts:4:1 › R2 short original regression: checkbox edit then real handle drag (1.9s)
+  ✓  36 tests/e2e/drag.spec.ts:41:1 › R2 top-level matrix: single/multiple/start/end/same/cancel/scroll/undo/redo/restart (5.1s)
+(node:94727) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓  37 tests/e2e/drag.spec.ts:4:1 › R2 short original regression: checkbox edit then real handle drag (1.8s)
+  ✓  38 tests/e2e/drag.spec.ts:41:1 › R2 top-level matrix: single/multiple/start/end/same/cancel/scroll/undo/redo/restart (4.6s)
+(node:94773) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓  39 tests/e2e/drag.spec.ts:4:1 › R2 short original regression: checkbox edit then real handle drag (1.6s)
+  ✓  40 tests/e2e/drag.spec.ts:41:1 › R2 top-level matrix: single/multiple/start/end/same/cancel/scroll/undo/redo/restart (4.7s)
+
+
+  1) tests/e2e/drag.spec.ts:41:1 › R2 top-level matrix: single/multiple/start/end/same/cancel/scroll/undo/redo/restart 
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: true
+    Received: false
+
+    Call Log:
+    - Timeout 5000ms exceeded while waiting on the predicate
+
+       at real-drag.ts:39
+
+      37 |     await page.mouse.down();
+      38 |     await page.mouse.move(rect.x + rect.width / 2 + 40, rect.y + rect.height / 2, { steps: 10 });
+    > 39 |     await expect.poll(() => page.evaluate(() => (globalThis as any).pointerDragStarted)).toBe(true);
+         |                                                                                          ^
+      40 |     return { id, cleanup };
+      41 |   } catch (error) { await cleanup(); throw error; }
+      42 | }
+        at beginRealDrag (<repo>/tests/e2e/real-drag.ts:39:90)
+        at realDrag (<repo>/tests/e2e/real-drag.ts:44:19)
+        at <repo>/tests/e2e/drag.spec.ts:112:5
+
+    Error Context: output/round-3-2761365/evidence/s2-block40/drag-R2-top-level-matrix-s-0df63-el-scroll-undo-redo-restart-repeat15/error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    output/round-3-2761365/evidence/s2-block40/drag-R2-top-level-matrix-s-0df63-el-scroll-undo-redo-restart-repeat15/trace.zip
+    Usage:
+
+        npx playwright show-trace output/round-3-2761365/evidence/s2-block40/drag-R2-top-level-matrix-s-0df63-el-scroll-undo-redo-restart-repeat15/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  1 failed
+    tests/e2e/drag.spec.ts:41:1 › R2 top-level matrix: single/multiple/start/end/same/cancel/scroll/undo/redo/restart 
+  39 passed (2.5m)
+
+exit_code=1

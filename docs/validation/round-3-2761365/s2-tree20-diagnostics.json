@@ -1,0 +1,3282 @@
+[
+  {
+    "evidence": "output/round-3-2761365/evidence/s2-tree20/page-move-S2-tree-input-ed-0ded1--child-with-stable-identity/drag-events.json",
+    "attemptId": "1e4a555c-d439-4991-a345-fb7a8b0db9c4",
+    "before": {
+      "type": "before",
+      "source": {
+        "tag": "DIV",
+        "className": "page-tree-row active",
+        "label": null,
+        "text": "📄Move Source",
+        "connected": true
+      },
+      "rect": {
+        "x": 9,
+        "y": 473,
+        "width": 225,
+        "height": 34
+      },
+      "hit": {
+        "tag": "SPAN",
+        "className": null,
+        "label": null,
+        "text": "Move Source",
+        "connected": true
+      },
+      "focused": true,
+      "active": {
+        "tag": "DIV",
+        "className": "tiptap ProseMirror folio-editor ProseMirror-focused",
+        "label": "ページ本文",
+        "text": "移動前本文 保存",
+        "connected": true
+      },
+      "scroll": {
+        "x": 0,
+        "y": 0
+      }
+    },
+    "mousedown": {
+      "type": "mousedown",
+      "time": 843.3000000715256,
+      "target": {
+        "tag": "SPAN",
+        "className": null,
+        "label": null,
+        "text": "Move Source",
+        "connected": true
+      },
+      "hit": {
+        "tag": "SPAN",
+        "className": null,
+        "label": null,
+        "text": "Move Source",
+        "connected": true
+      },
+      "x": 121,
+      "y": 490,
+      "sourceConnected": true,
+      "active": {
+        "tag": "DIV",
+        "className": "tiptap ProseMirror folio-editor ProseMirror-focused",
+        "label": "ページ本文",
+        "text": "移動前本文 保存",
+        "connected": true
+      },
+      "focused": true,
+      "types": []
+    },
+    "dragstart": {
+      "type": "dragstart",
+      "time": 878.7000000476837,
+      "target": {
+        "tag": "DIV",
+        "className": "page-tree-row active",
+        "label": null,
+        "text": "📄Move Source",
+        "connected": true
+      },
+      "hit": {
+        "tag": "SPAN",
+        "className": null,
+        "label": null,
+        "text": "Move Source",
+        "connected": true
+      },
+      "x": 121,
+      "y": 490,
+      "sourceConnected": true,
+      "active": {
+        "tag": "BUTTON",
+        "className": "page-tree-label",
+        "label": null,
+        "text": "📄Move Source",
+        "connected": true
+      },
+      "focused": true,
+      "types": []
+    },
+    "drop": {
+      "type": "drop",
+      "time": 1021.7000000476837,
+      "target": {
+        "tag": "SPAN",
+        "className": null,
+        "label": null,
+        "text": "Move Target",
+        "connected": true
+      },
+      "hit": {
+        "tag": "SPAN",
+        "className": null,
+        "label": null,
+        "text": "Move Target",
+        "connected": true
+      },
+      "x": 121,
+      "y": 455,
+      "sourceConnected": true,
+      "active": {
+        "tag": "BUTTON",
+        "className": "page-tree-label",
+        "label": null,
+        "text": "📄Move Source",
+        "connected": true
+      },
+      "focused": true,
+      "types": [
+        "application/x-folio-page"
+      ],
+      "pageId": "02351960-891e-44a0-a1af-5bf73739d6cc"
+    },
+    "dragend": {
+      "type": "dragend",
+      "time": 1023.5,
+      "target": {
+        "tag": "DIV",
+        "className": "page-tree-row active",
+        "label": null,
+        "text": "📄Move Source",
+        "connected": true
+      },
+      "hit": {
+        "tag": "SPAN",
+        "className": null,
+        "label": null,
+        "text": "Move Target",
+        "connected": true
+      },
+      "x": 121,
+      "y": 455,
+      "sourceConnected": true,
+      "active": {
+        "tag": "BUTTON",
+        "className": "page-tree-label",
+        "label": null,
+        "text": "📄Move Source",
+        "connected": true
+      },
+      "focused": true,
+      "types": [
+        "application/x-folio-page"
+      ]
+    }
+  },
+  {
+    "evidence": "output/round-3-2761365/evidence/s2-tree20/page-move-S2-tree-input-ed-0ded1--child-with-stable-identity-repeat1/drag-events.json",
+    "attemptId": "9e717d98-f440-41c6-8406-7fcf94eb623a",
+    "before": {
+      "type": "before",
+      "source": {
+        "tag": "DIV",
+        "className": "page-tree-row active",
+        "label": null,
+        "text": "📄Move Source",
+        "connected": true
+      },
+      "rect": {
+        "x": 9,
+        "y": 473,
+        "width": 225,
+        "height": 34
+      },
+      "hit": {
+        "tag": "SPAN",
+        "className": null,
+        "label": null,
+        "text": "Move Source",
+        "connected": true
+      },
+      "focused": true,
+      "active": {
+        "tag": "DIV",
+        "className": "tiptap ProseMirror folio-editor ProseMirror-focused",
+        "label": "ページ本文",
+        "text": "移動前本文 保存",
+        "connected": true
+      },
+      "scroll": {
+        "x": 0,
+        "y": 0
+      }
+    },
+    "mousedown": {
+      "type": "mousedown",
+      "time": 838.1000000238419,
+      "target": {
+        "tag": "SPAN",
+        "className": null,
+        "label": null,
+        "text": "Move Source",
+        "connected": true
+      },
+      "hit": {
+        "tag": "SPAN",
+        "className": null,
+        "label": null,
+        "text": "Move Source",
+        "connected": true
+      },
+      "x": 121,
+      "y": 490,
+      "sourceConnected": true,
+      "active": {
+        "tag": "DIV",
+        "className": "tiptap ProseMirror folio-editor ProseMirror-focused",
+        "label": "ページ本文",
+        "text": "移動前本文 保存",
+        "connected": true
+      },
+      "focused": true,
+      "types": []
+    },
+    "dragstart": {
+      "type": "dragstart",
+      "time": 853.8999999761581,
+      "target": {
+        "tag": "DIV",
+        "className": "page-tree-row active",
+        "label": null,
+        "text": "📄Move Source",
+        "connected": true
+      },
+      "hit": {
+        "tag": "SPAN",
+        "className": null,
+        "label": null,
+        "text": "Move Source",
+        "connected": true
+      },
+      "x": 121,
+      "y": 490,
+      "sourceConnected": true,
+      "active": {
+        "tag": "BUTTON",
+        "className": "page-tree-label",
+        "label": null,
+        "text": "📄Move Source",
+        "connected": true
+      },
+      "focused": true,
+      "types": []
+    },
+    "drop": {
+      "type": "drop",
+      "time": 910.2999999523163,
+      "target": {
+        "tag": "SPAN",
+        "className": null,
+        "label": null,
+        "text": "Move Target",
+        "connected": true
+      },
+      "hit": {
+        "tag": "SPAN",
+        "className": null,
+        "label": null,
+        "text": "Move Target",
+        "connected": true
+      },
+      "x": 121,
+      "y": 455,
+      "sourceConnected": true,
+      "active": {
+        "tag": "BUTTON",
+        "className": "page-tree-label",
+        "label": null,
+        "text": "📄Move Source",
+        "connected": true
+      },
+      "focused": true,
+      "types": [
+        "application/x-folio-page"
+      ],
+      "pageId": "c00cda2d-4843-4aae-80c8-895b02e2fb37"
+    },
+    "dragend": {
+      "type": "dragend",
+      "time": 915,
+      "target": {
+        "tag": "DIV",
+        "className": "page-tree-row active",
+        "label": null,
+        "text": "📄Move Source",
+        "connected": true
+      },
+      "hit": {
+        "tag": "SPAN",
+        "className": null,
+        "label": null,
+        "text": "Move Target",
+        "connected": true
+      },
+      "x": 121,
+      "y": 455,
+      "sourceConnected": true,
+      "active": {
+        "tag": "BUTTON",
+        "className": "page-tree-label",
+        "label": null,
+        "text": "📄Move Source",
+        "connected": true
+      },
+      "focused": true,
+      "types": [
+        "application/x-folio-page"
+      ]
+    }
+  },
+  {
+    "evidence": "output/round-3-2761365/evidence/s2-tree20/page-move-S2-tree-input-ed-0ded1--child-with-stable-identity-repeat10/drag-events.json",
+    "attemptId": "352fd225-d7d8-4f2c-b9e9-68f54dc6bf59",
+    "before": {
+      "type": "before",
+      "source": {
+        "tag": "DIV",
+        "className": "page-tree-row active",
+        "label": null,
+        "text": "📄Move Source",
+        "connected": true
+      },
+      "rect": {
+        "x": 9,
+        "y": 473,
+        "width": 225,
+        "height": 34
+      },
+      "hit": {
+        "tag": "SPAN",
+        "className": null,
+        "label": null,
+        "text": "Move Source",
+        "connected": true
+      },
+      "focused": true,
+      "active": {
+        "tag": "DIV",
+        "className": "tiptap ProseMirror folio-editor ProseMirror-focused",
+        "label": "ページ本文",
+        "text": "移動前本文 保存",
+        "connected": true
+      },
+      "scroll": {
+        "x": 0,
+        "y": 0
+      }
+    },
+    "mousedown": {
+      "type": "mousedown",
+      "time": 354.8000000715256,
+      "target": {
+        "tag": "SPAN",
+        "className": null,
+        "label": null,
+        "text": "Move Source",
+        "connected": true
+      },
+      "hit": {
+        "tag": "SPAN",
+        "className": null,
+        "label": null,
+        "text": "Move Source",
+        "connected": true
+      },
+      "x": 121,
+      "y": 490,
+      "sourceConnected": true,
+      "active": {
+        "tag": "DIV",
+        "className": "tiptap ProseMirror folio-editor ProseMirror-focused",
+        "label": "ページ本文",
+        "text": "移動前本文 保存",
+        "connected": true
+      },
+      "focused": true,
+      "types": []
+    },
+    "dragstart": {
+      "type": "dragstart",
+      "time": 365.2000000476837,
+      "target": {
+        "tag": "DIV",
+        "className": "page-tree-row active",
+        "label": null,
+        "text": "📄Move Source",
+        "connected": true
+      },
+      "hit": {
+        "tag": "SPAN",
+        "className": null,
+        "label": null,
+        "text": "Move Source",
+        "connected": true
+      },
+      "x": 121,
+      "y": 490,
+      "sourceConnected": true,
+      "active": {
+        "tag": "BUTTON",
+        "className": "page-tree-label",
+        "label": null,
+        "text": "📄Move Source",
+        "connected": true
+      },
+      "focused": true,
+      "types": []
+    },
+    "drop": {
+      "type": "drop",
+      "time": 446.5,
+      "target": {
+        "tag": "SPAN",
+        "className": null,
+        "label": null,
+        "text": "Move Target",
+        "connected": true
+      },
+      "hit": {
+        "tag": "SPAN",
+        "className": null,
+        "label": null,
+        "text": "Move Target",
+        "connected": true
+      },
+      "x": 121,
+      "y": 455,
+      "sourceConnected": true,
+      "active": {
+        "tag": "BUTTON",
+        "className": "page-tree-label",
+        "label": null,
+        "text": "📄Move Source",
+        "connected": true
+      },
+      "focused": true,
+      "types": [
+        "application/x-folio-page"
+      ],
+      "pageId": "d972a5e0-49d2-4ab3-b5c7-e3867cd92b1d"
+    },
+    "dragend": {
+      "type": "dragend",
+      "time": 448.8000000715256,
+      "target": {
+        "tag": "DIV",
+        "className": "page-tree-row active",
+        "label": null,
+        "text": "📄Move Source",
+        "connected": true
+      },
+      "hit": {
+        "tag": "SPAN",
+        "className": null,
+        "label": null,
+        "text": "Move Target",
+        "connected": true
+      },
+      "x": 121,
+      "y": 455,
+      "sourceConnected": true,
+      "active": {
+        "tag": "BUTTON",
+        "className": "page-tree-label",
+        "label": null,
+        "text": "📄Move Source",
+        "connected": true
+      },
+      "focused": true,
+      "types": [
+        "application/x-folio-page"
+      ]
+    }
+  },
+  {
+    "evidence": "output/round-3-2761365/evidence/s2-tree20/page-move-S2-tree-input-ed-0ded1--child-with-stable-identity-repeat11/drag-events.json",
+    "attemptId": "dfb08e32-cf6f-4740-a168-e659144ce33b",
+    "before": {
+      "type": "before",
+      "source": {
+        "tag": "DIV",
+        "className": "page-tree-row active",
+        "label": null,
+        "text": "📄Move Source",
+        "connected": true
+      },
+      "rect": {
+        "x": 9,
+        "y": 473,
+        "width": 225,
+        "height": 34
+      },
+      "hit": {
+        "tag": "SPAN",
+        "className": null,
+        "label": null,
+        "text": "Move Source",
+        "connected": true
+      },
+      "focused": true,
+      "active": {
+        "tag": "DIV",
+        "className": "tiptap ProseMirror folio-editor ProseMirror-focused",
+        "label": "ページ本文",
+        "text": "移動前本文 保存",
+        "connected": true
+      },
+      "scroll": {
+        "x": 0,
+        "y": 0
+      }
+    },
+    "mousedown": {
+      "type": "mousedown",
+      "time": 280.60000002384186,
+      "target": {
+        "tag": "SPAN",
+        "className": null,
+        "label": null,
+        "text": "Move Source",
+        "connected": true
+      },
+      "hit": {
+        "tag": "SPAN",
+        "className": null,
+        "label": null,
+        "text": "Move Source",
+        "connected": true
+      },
+      "x": 121,
+      "y": 490,
+      "sourceConnected": true,
+      "active": {
+        "tag": "DIV",
+        "className": "tiptap ProseMirror folio-editor ProseMirror-focused",
+        "label": "ページ本文",
+        "text": "移動前本文 保存",
+        "connected": true
+      },
+      "focused": true,
+      "types": []
+    },
+    "dragstart": {
+      "type": "dragstart",
+      "time": 295.60000002384186,
+      "target": {
+        "tag": "DIV",
+        "className": "page-tree-row active",
+        "label": null,
+        "text": "📄Move Source",
+        "connected": true
+      },
+      "hit": {
+        "tag": "SPAN",
+        "className": null,
+        "label": null,
+        "text": "Move Source",
+        "connected": true
+      },
+      "x": 121,
+      "y": 490,
+      "sourceConnected": true,
+      "active": {
+        "tag": "BUTTON",
+        "className": "page-tree-label",
+        "label": null,
+        "text": "📄Move Source",
+        "connected": true
+      },
+      "focused": true,
+      "types": []
+    },
+    "drop": {
+      "type": "drop",
+      "time": 636.3999999761581,
+      "target": {
+        "tag": "SPAN",
+        "className": null,
+        "label": null,
+        "text": "Move Target",
+        "connected": true
+      },
+      "hit": {
+        "tag": "SPAN",
+        "className": null,
+        "label": null,
+        "text": "Move Target",
+        "connected": true
+      },
+      "x": 121,
+      "y": 455,
+      "sourceConnected": true,
+      "active": {
+        "tag": "BUTTON",
+        "className": "page-tree-label",
+        "label": null,
+        "text": "📄Move Source",
+        "connected": true
+      },
+      "focused": true,
+      "types": [
+        "application/x-folio-page"
+      ],
+      "pageId": "cdff439d-a64e-4a29-8ec8-35be5ec14543"
+    },
+    "dragend": {
+      "type": "dragend",
+      "time": 637.8999999761581,
+      "target": {
+        "tag": "DIV",
+        "className": "page-tree-row active",
+        "label": null,
+        "text": "📄Move Source",
+        "connected": true
+      },
+      "hit": {
+        "tag": "SPAN",
+        "className": null,
+        "label": null,
+        "text": "Move Target",
+        "connected": true
+      },
+      "x": 121,
+      "y": 455,
+      "sourceConnected": true,
+      "active": {
+        "tag": "BUTTON",
+        "className": "page-tree-label",
+        "label": null,
+        "text": "📄Move Source",
+        "connected": true
+      },
+      "focused": true,
+      "types": [
+        "application/x-folio-page"
+      ]
+    }
+  },
+  {
+    "evidence": "output/round-3-2761365/evidence/s2-tree20/page-move-S2-tree-input-ed-0ded1--child-with-stable-identity-repeat12/drag-events.json",
+    "attemptId": "34a986a8-43c5-417d-afe7-918c6deaa9c7",
+    "before": {
+      "type": "before",
+      "source": {
+        "tag": "DIV",
+        "className": "page-tree-row active",
+        "label": null,
+        "text": "📄Move Source",
+        "connected": true
+      },
+      "rect": {
+        "x": 9,
+        "y": 473,
+        "width": 225,
+        "height": 34
+      },
+      "hit": {
+        "tag": "SPAN",
+        "className": null,
+        "label": null,
+        "text": "Move Source",
+        "connected": true
+      },
+      "focused": true,
+      "active": {
+        "tag": "DIV",
+        "className": "tiptap ProseMirror folio-editor ProseMirror-focused",
+        "label": "ページ本文",
+        "text": "移動前本文 保存",
+        "connected": true
+      },
+      "scroll": {
+        "x": 0,
+        "y": 0
+      }
+    },
+    "mousedown": {
+      "type": "mousedown",
+      "time": 304.60000002384186,
+      "target": {
+        "tag": "SPAN",
+        "className": null,
+        "label": null,
+        "text": "Move Source",
+        "connected": true
+      },
+      "hit": {
+        "tag": "SPAN",
+        "className": null,
+        "label": null,
+        "text": "Move Source",
+        "connected": true
+      },
+      "x": 121,
+      "y": 490,
+      "sourceConnected": true,
+      "active": {
+        "tag": "DIV",
+        "className": "tiptap ProseMirror folio-editor ProseMirror-focused",
+        "label": "ページ本文",
+        "text": "移動前本文 保存",
+        "connected": true
+      },
+      "focused": true,
+      "types": []
+    },
+    "dragstart": {
+      "type": "dragstart",
+      "time": 317.5,
+      "target": {
+        "tag": "DIV",
+        "className": "page-tree-row active",
+        "label": null,
+        "text": "📄Move Source",
+        "connected": true
+      },
+      "hit": {
+        "tag": "SPAN",
+        "className": null,
+        "label": null,
+        "text": "Move Source",
+        "connected": true
+      },
+      "x": 121,
+      "y": 490,
+      "sourceConnected": true,
+      "active": {
+        "tag": "BUTTON",
+        "className": "page-tree-label",
+        "label": null,
+        "text": "📄Move Source",
+        "connected": true
+      },
+      "focused": true,
+      "types": []
+    },
+    "drop": {
+      "type": "drop",
+      "time": 406.89999997615814,
+      "target": {
+        "tag": "SPAN",
+        "className": null,
+        "label": null,
+        "text": "Move Target",
+        "connected": true
+      },
+      "hit": {
+        "tag": "SPAN",
+        "className": null,
+        "label": null,
+        "text": "Move Target",
+        "connected": true
+      },
+      "x": 121,
+      "y": 455,
+      "sourceConnected": true,
+      "active": {
+        "tag": "BUTTON",
+        "className": "page-tree-label",
+        "label": null,
+        "text": "📄Move Source",
+        "connected": true
+      },
+      "focused": true,
+      "types": [
+        "application/x-folio-page"
+      ],
+      "pageId": "e9cc5056-000e-467a-a42d-881ca1bbed42"
+    },
+    "dragend": {
+      "type": "dragend",
+      "time": 408.5,
+      "target": {
+        "tag": "DIV",
+        "className": "page-tree-row active",
+        "label": null,
+        "text": "📄Move Source",
+        "connected": true
+      },
+      "hit": {
+        "tag": "SPAN",
+        "className": null,
+        "label": null,
+        "text": "Move Target",
+        "connected": true
+      },
+      "x": 121,
+      "y": 455,
+      "sourceConnected": true,
+      "active": {
+        "tag": "BUTTON",
+        "className": "page-tree-label",
+        "label": null,
+        "text": "📄Move Source",
+        "connected": true
+      },
+      "focused": true,
+      "types": [
+        "application/x-folio-page"
+      ]
+    }
+  },
+  {
+    "evidence": "output/round-3-2761365/evidence/s2-tree20/page-move-S2-tree-input-ed-0ded1--child-with-stable-identity-repeat13/drag-events.json",
+    "attemptId": "190660ba-65ac-4c78-8da2-6a5848f1a70a",
+    "before": {
+      "type": "before",
+      "source": {
+        "tag": "DIV",
+        "className": "page-tree-row active",
+        "label": null,
+        "text": "📄Move Source",
+        "connected": true
+      },
+      "rect": {
+        "x": 9,
+        "y": 473,
+        "width": 225,
+        "height": 34
+      },
+      "hit": {
+        "tag": "SPAN",
+        "className": null,
+        "label": null,
+        "text": "Move Source",
+        "connected": true
+      },
+      "focused": true,
+      "active": {
+        "tag": "DIV",
+        "className": "tiptap ProseMirror folio-editor ProseMirror-focused",
+        "label": "ページ本文",
+        "text": "移動前本文 保存",
+        "connected": true
+      },
+      "scroll": {
+        "x": 0,
+        "y": 0
+      }
+    },
+    "mousedown": {
+      "type": "mousedown",
+      "time": 327.5,
+      "target": {
+        "tag": "SPAN",
+        "className": null,
+        "label": null,
+        "text": "Move Source",
+        "connected": true
+      },
+      "hit": {
+        "tag": "SPAN",
+        "className": null,
+        "label": null,
+        "text": "Move Source",
+        "connected": true
+      },
+      "x": 121,
+      "y": 490,
+      "sourceConnected": true,
+      "active": {
+        "tag": "DIV",
+        "className": "tiptap ProseMirror folio-editor ProseMirror-focused",
+        "label": "ページ本文",
+        "text": "移動前本文 保存",
+        "connected": true
+      },
+      "focused": true,
+      "types": []
+    },
+    "dragstart": {
+      "type": "dragstart",
+      "time": 339.89999997615814,
+      "target": {
+        "tag": "DIV",
+        "className": "page-tree-row active",
+        "label": null,
+        "text": "📄Move Source",
+        "connected": true
+      },
+      "hit": {
+        "tag": "SPAN",
+        "className": null,
+        "label": null,
+        "text": "Move Source",
+        "connected": true
+      },
+      "x": 121,
+      "y": 490,
+      "sourceConnected": true,
+      "active": {
+        "tag": "BUTTON",
+        "className": "page-tree-label",
+        "label": null,
+        "text": "📄Move Source",
+        "connected": true
+      },
+      "focused": true,
+      "types": []
+    },
+    "drop": {
+      "type": "drop",
+      "time": 435.09999990463257,
+      "target": {
+        "tag": "SPAN",
+        "className": null,
+        "label": null,
+        "text": "Move Target",
+        "connected": true
+      },
+      "hit": {
+        "tag": "SPAN",
+        "className": null,
+        "label": null,
+        "text": "Move Target",
+        "connected": true
+      },
+      "x": 121,
+      "y": 455,
+      "sourceConnected": true,
+      "active": {
+        "tag": "BUTTON",
+        "className": "page-tree-label",
+        "label": null,
+        "text": "📄Move Source",
+        "connected": true
+      },
+      "focused": true,
+      "types": [
+        "application/x-folio-page"
+      ],
+      "pageId": "14c17162-b36e-4b12-a7e1-65e6ce398f33"
+    },
+    "dragend": {
+      "type": "dragend",
+      "time": 438,
+      "target": {
+        "tag": "DIV",
+        "className": "page-tree-row active",
+        "label": null,
+        "text": "📄Move Source",
+        "connected": true
+      },
+      "hit": {
+        "tag": "SPAN",
+        "className": null,
+        "label": null,
+        "text": "Move Target",
+        "connected": true
+      },
+      "x": 121,
+      "y": 455,
+      "sourceConnected": true,
+      "active": {
+        "tag": "BUTTON",
+        "className": "page-tree-label",
+        "label": null,
+        "text": "📄Move Source",
+        "connected": true
+      },
+      "focused": true,
+      "types": [
+        "application/x-folio-page"
+      ]
+    }
+  },
+  {
+    "evidence": "output/round-3-2761365/evidence/s2-tree20/page-move-S2-tree-input-ed-0ded1--child-with-stable-identity-repeat14/drag-events.json",
+    "attemptId": "274819e3-9459-41fc-ac7b-15bc37ed788a",
+    "before": {
+      "type": "before",
+      "source": {
+        "tag": "DIV",
+        "className": "page-tree-row active",
+        "label": null,
+        "text": "📄Move Source",
+        "connected": true
+      },
+      "rect": {
+        "x": 9,
+        "y": 473,
+        "width": 225,
+        "height": 34
+      },
+      "hit": {
+        "tag": "SPAN",
+        "className": null,
+        "label": null,
+        "text": "Move Source",
+        "connected": true
+      },
+      "focused": true,
+      "active": {
+        "tag": "DIV",
+        "className": "tiptap ProseMirror folio-editor ProseMirror-focused",
+        "label": "ページ本文",
+        "text": "移動前本文 保存",
+        "connected": true
+      },
+      "scroll": {
+        "x": 0,
+        "y": 0
+      }
+    },
+    "mousedown": {
+      "type": "mousedown",
+      "time": 429.10000002384186,
+      "target": {
+        "tag": "SPAN",
+        "className": null,
+        "label": null,
+        "text": "Move Source",
+        "connected": true
+      },
+      "hit": {
+        "tag": "SPAN",
+        "className": null,
+        "label": null,
+        "text": "Move Source",
+        "connected": true
+      },
+      "x": 121,
+      "y": 490,
+      "sourceConnected": true,
+      "active": {
+        "tag": "DIV",
+        "className": "tiptap ProseMirror folio-editor ProseMirror-focused",
+        "label": "ページ本文",
+        "text": "移動前本文 保存",
+        "connected": true
+      },
+      "focused": true,
+      "types": []
+    },
+    "dragstart": {
+      "type": "dragstart",
+      "time": 442.10000002384186,
+      "target": {
+        "tag": "DIV",
+        "className": "page-tree-row active",
+        "label": null,
+        "text": "📄Move Source",
+        "connected": true
+      },
+      "hit": {
+        "tag": "SPAN",
+        "className": null,
+        "label": null,
+        "text": "Move Source",
+        "connected": true
+      },
+      "x": 121,
+      "y": 490,
+      "sourceConnected": true,
+      "active": {
+        "tag": "BUTTON",
+        "className": "page-tree-label",
+        "label": null,
+        "text": "📄Move Source",
+        "connected": true
+      },
+      "focused": true,
+      "types": []
+    },
+    "drop": {
+      "type": "drop",
+      "time": 516.7000000476837,
+      "target": {
+        "tag": "SPAN",
+        "className": null,
+        "label": null,
+        "text": "Move Target",
+        "connected": true
+      },
+      "hit": {
+        "tag": "SPAN",
+        "className": null,
+        "label": null,
+        "text": "Move Target",
+        "connected": true
+      },
+      "x": 121,
+      "y": 455,
+      "sourceConnected": true,
+      "active": {
+        "tag": "BUTTON",
+        "className": "page-tree-label",
+        "label": null,
+        "text": "📄Move Source",
+        "connected": true
+      },
+      "focused": true,
+      "types": [
+        "application/x-folio-page"
+      ],
+      "pageId": "6e09270f-9987-4d7f-89ba-a455e9855d6b"
+    },
+    "dragend": {
+      "type": "dragend",
+      "time": 518.5,
+      "target": {
+        "tag": "DIV",
+        "className": "page-tree-row active",
+        "label": null,
+        "text": "📄Move Source",
+        "connected": true
+      },
+      "hit": {
+        "tag": "SPAN",
+        "className": null,
+        "label": null,
+        "text": "Move Target",
+        "connected": true
+      },
+      "x": 121,
+      "y": 455,
+      "sourceConnected": true,
+      "active": {
+        "tag": "BUTTON",
+        "className": "page-tree-label",
+        "label": null,
+        "text": "📄Move Source",
+        "connected": true
+      },
+      "focused": true,
+      "types": [
+        "application/x-folio-page"
+      ]
+    }
+  },
+  {
+    "evidence": "output/round-3-2761365/evidence/s2-tree20/page-move-S2-tree-input-ed-0ded1--child-with-stable-identity-repeat15/drag-events.json",
+    "attemptId": "fb3bcf0d-c6b0-4d5b-8eb0-bfb0c01c6b85",
+    "before": {
+      "type": "before",
+      "source": {
+        "tag": "DIV",
+        "className": "page-tree-row active",
+        "label": null,
+        "text": "📄Move Source",
+        "connected": true
+      },
+      "rect": {
+        "x": 9,
+        "y": 473,
+        "width": 225,
+        "height": 34
+      },
+      "hit": {
+        "tag": "SPAN",
+        "className": null,
+        "label": null,
+        "text": "Move Source",
+        "connected": true
+      },
+      "focused": true,
+      "active": {
+        "tag": "DIV",
+        "className": "tiptap ProseMirror folio-editor ProseMirror-focused",
+        "label": "ページ本文",
+        "text": "移動前本文 保存",
+        "connected": true
+      },
+      "scroll": {
+        "x": 0,
+        "y": 0
+      }
+    },
+    "mousedown": {
+      "type": "mousedown",
+      "time": 358.60000002384186,
+      "target": {
+        "tag": "SPAN",
+        "className": null,
+        "label": null,
+        "text": "Move Source",
+        "connected": true
+      },
+      "hit": {
+        "tag": "SPAN",
+        "className": null,
+        "label": null,
+        "text": "Move Source",
+        "connected": true
+      },
+      "x": 121,
+      "y": 490,
+      "sourceConnected": true,
+      "active": {
+        "tag": "DIV",
+        "className": "tiptap ProseMirror folio-editor ProseMirror-focused",
+        "label": "ページ本文",
+        "text": "移動前本文 保存",
+        "connected": true
+      },
+      "focused": true,
+      "types": []
+    },
+    "dragstart": {
+      "type": "dragstart",
+      "time": 373.7000000476837,
+      "target": {
+        "tag": "DIV",
+        "className": "page-tree-row active",
+        "label": null,
+        "text": "📄Move Source",
+        "connected": true
+      },
+      "hit": {
+        "tag": "SPAN",
+        "className": null,
+        "label": null,
+        "text": "Move Source",
+        "connected": true
+      },
+      "x": 121,
+      "y": 490,
+      "sourceConnected": true,
+      "active": {
+        "tag": "BUTTON",
+        "className": "page-tree-label",
+        "label": null,
+        "text": "📄Move Source",
+        "connected": true
+      },
+      "focused": true,
+      "types": []
+    },
+    "drop": {
+      "type": "drop",
+      "time": 454.39999997615814,
+      "target": {
+        "tag": "SPAN",
+        "className": null,
+        "label": null,
+        "text": "Move Target",
+        "connected": true
+      },
+      "hit": {
+        "tag": "SPAN",
+        "className": null,
+        "label": null,
+        "text": "Move Target",
+        "connected": true
+      },
+      "x": 121,
+      "y": 455,
+      "sourceConnected": true,
+      "active": {
+        "tag": "BUTTON",
+        "className": "page-tree-label",
+        "label": null,
+        "text": "📄Move Source",
+        "connected": true
+      },
+      "focused": true,
+      "types": [
+        "application/x-folio-page"
+      ],
+      "pageId": "124a0478-1e1d-40a9-b462-d61f7c9ba50c"
+    },
+    "dragend": {
+      "type": "dragend",
+      "time": 456,
+      "target": {
+        "tag": "DIV",
+        "className": "page-tree-row active",
+        "label": null,
+        "text": "📄Move Source",
+        "connected": true
+      },
+      "hit": {
+        "tag": "SPAN",
+        "className": null,
+        "label": null,
+        "text": "Move Target",
+        "connected": true
+      },
+      "x": 121,
+      "y": 455,
+      "sourceConnected": true,
+      "active": {
+        "tag": "BUTTON",
+        "className": "page-tree-label",
+        "label": null,
+        "text": "📄Move Source",
+        "connected": true
+      },
+      "focused": true,
+      "types": [
+        "application/x-folio-page"
+      ]
+    }
+  },
+  {
+    "evidence": "output/round-3-2761365/evidence/s2-tree20/page-move-S2-tree-input-ed-0ded1--child-with-stable-identity-repeat16/drag-events.json",
+    "attemptId": "3474a3bd-d01a-4192-95e6-6d17593fae46",
+    "before": {
+      "type": "before",
+      "source": {
+        "tag": "DIV",
+        "className": "page-tree-row active",
+        "label": null,
+        "text": "📄Move Source",
+        "connected": true
+      },
+      "rect": {
+        "x": 9,
+        "y": 473,
+        "width": 225,
+        "height": 34
+      },
+      "hit": {
+        "tag": "SPAN",
+        "className": null,
+        "label": null,
+        "text": "Move Source",
+        "connected": true
+      },
+      "focused": true,
+      "active": {
+        "tag": "DIV",
+        "className": "tiptap ProseMirror folio-editor ProseMirror-focused",
+        "label": "ページ本文",
+        "text": "移動前本文 保存",
+        "connected": true
+      },
+      "scroll": {
+        "x": 0,
+        "y": 0
+      }
+    },
+    "mousedown": {
+      "type": "mousedown",
+      "time": 412.2999999523163,
+      "target": {
+        "tag": "SPAN",
+        "className": null,
+        "label": null,
+        "text": "Move Source",
+        "connected": true
+      },
+      "hit": {
+        "tag": "SPAN",
+        "className": null,
+        "label": null,
+        "text": "Move Source",
+        "connected": true
+      },
+      "x": 121,
+      "y": 490,
+      "sourceConnected": true,
+      "active": {
+        "tag": "DIV",
+        "className": "tiptap ProseMirror folio-editor ProseMirror-focused",
+        "label": "ページ本文",
+        "text": "移動前本文 保存",
+        "connected": true
+      },
+      "focused": true,
+      "types": []
+    },
+    "dragstart": {
+      "type": "dragstart",
+      "time": 419.7999999523163,
+      "target": {
+        "tag": "DIV",
+        "className": "page-tree-row active",
+        "label": null,
+        "text": "📄Move Source",
+        "connected": true
+      },
+      "hit": {
+        "tag": "SPAN",
+        "className": null,
+        "label": null,
+        "text": "Move Source",
+        "connected": true
+      },
+      "x": 121,
+      "y": 490,
+      "sourceConnected": true,
+      "active": {
+        "tag": "BUTTON",
+        "className": "page-tree-label",
+        "label": null,
+        "text": "📄Move Source",
+        "connected": true
+      },
+      "focused": true,
+      "types": []
+    },
+    "drop": {
+      "type": "drop",
+      "time": 505.89999997615814,
+      "target": {
+        "tag": "SPAN",
+        "className": null,
+        "label": null,
+        "text": "Move Target",
+        "connected": true
+      },
+      "hit": {
+        "tag": "SPAN",
+        "className": null,
+        "label": null,
+        "text": "Move Target",
+        "connected": true
+      },
+      "x": 121,
+      "y": 455,
+      "sourceConnected": true,
+      "active": {
+        "tag": "BUTTON",
+        "className": "page-tree-label",
+        "label": null,
+        "text": "📄Move Source",
+        "connected": true
+      },
+      "focused": true,
+      "types": [
+        "application/x-folio-page"
+      ],
+      "pageId": "69228f29-5518-426f-8f2e-284e43f9b350"
+    },
+    "dragend": {
+      "type": "dragend",
+      "time": 507.89999997615814,
+      "target": {
+        "tag": "DIV",
+        "className": "page-tree-row active",
+        "label": null,
+        "text": "📄Move Source",
+        "connected": true
+      },
+      "hit": {
+        "tag": "SPAN",
+        "className": null,
+        "label": null,
+        "text": "Move Target",
+        "connected": true
+      },
+      "x": 121,
+      "y": 455,
+      "sourceConnected": true,
+      "active": {
+        "tag": "BUTTON",
+        "className": "page-tree-label",
+        "label": null,
+        "text": "📄Move Source",
+        "connected": true
+      },
+      "focused": true,
+      "types": [
+        "application/x-folio-page"
+      ]
+    }
+  },
+  {
+    "evidence": "output/round-3-2761365/evidence/s2-tree20/page-move-S2-tree-input-ed-0ded1--child-with-stable-identity-repeat17/drag-events.json",
+    "attemptId": "caddac65-5e5a-4aee-853e-019eea11b2ab",
+    "before": {
+      "type": "before",
+      "source": {
+        "tag": "DIV",
+        "className": "page-tree-row active",
+        "label": null,
+        "text": "📄Move Source",
+        "connected": true
+      },
+      "rect": {
+        "x": 9,
+        "y": 473,
+        "width": 225,
+        "height": 34
+      },
+      "hit": {
+        "tag": "SPAN",
+        "className": null,
+        "label": null,
+        "text": "Move Source",
+        "connected": true
+      },
+      "focused": true,
+      "active": {
+        "tag": "DIV",
+        "className": "tiptap ProseMirror folio-editor ProseMirror-focused",
+        "label": "ページ本文",
+        "text": "移動前本文 保存",
+        "connected": true
+      },
+      "scroll": {
+        "x": 0,
+        "y": 0
+      }
+    },
+    "mousedown": {
+      "type": "mousedown",
+      "time": 443.7000000476837,
+      "target": {
+        "tag": "SPAN",
+        "className": null,
+        "label": null,
+        "text": "Move Source",
+        "connected": true
+      },
+      "hit": {
+        "tag": "SPAN",
+        "className": null,
+        "label": null,
+        "text": "Move Source",
+        "connected": true
+      },
+      "x": 121,
+      "y": 490,
+      "sourceConnected": true,
+      "active": {
+        "tag": "DIV",
+        "className": "tiptap ProseMirror folio-editor ProseMirror-focused",
+        "label": "ページ本文",
+        "text": "移動前本文 保存",
+        "connected": true
+      },
+      "focused": true,
+      "types": []
+    },
+    "dragstart": {
+      "type": "dragstart",
+      "time": 471,
+      "target": {
+        "tag": "DIV",
+        "className": "page-tree-row active",
+        "label": null,
+        "text": "📄Move Source",
+        "connected": true
+      },
+      "hit": {
+        "tag": "SPAN",
+        "className": null,
+        "label": null,
+        "text": "Move Source",
+        "connected": true
+      },
+      "x": 121,
+      "y": 490,
+      "sourceConnected": true,
+      "active": {
+        "tag": "BUTTON",
+        "className": "page-tree-label",
+        "label": null,
+        "text": "📄Move Source",
+        "connected": true
+      },
+      "focused": true,
+      "types": []
+    },
+    "drop": {
+      "type": "drop",
+      "time": 525.7000000476837,
+      "target": {
+        "tag": "SPAN",
+        "className": null,
+        "label": null,
+        "text": "Move Target",
+        "connected": true
+      },
+      "hit": {
+        "tag": "SPAN",
+        "className": null,
+        "label": null,
+        "text": "Move Target",
+        "connected": true
+      },
+      "x": 121,
+      "y": 455,
+      "sourceConnected": true,
+      "active": {
+        "tag": "BUTTON",
+        "className": "page-tree-label",
+        "label": null,
+        "text": "📄Move Source",
+        "connected": true
+      },
+      "focused": true,
+      "types": [
+        "application/x-folio-page"
+      ],
+      "pageId": "98e98b0e-61fb-4e88-ad92-ab6f44b55c42"
+    },
+    "dragend": {
+      "type": "dragend",
+      "time": 527.3000000715256,
+      "target": {
+        "tag": "DIV",
+        "className": "page-tree-row active",
+        "label": null,
+        "text": "📄Move Source",
+        "connected": true
+      },
+      "hit": {
+        "tag": "SPAN",
+        "className": null,
+        "label": null,
+        "text": "Move Target",
+        "connected": true
+      },
+      "x": 121,
+      "y": 455,
+      "sourceConnected": true,
+      "active": {
+        "tag": "BUTTON",
+        "className": "page-tree-label",
+        "label": null,
+        "text": "📄Move Source",
+        "connected": true
+      },
+      "focused": true,
+      "types": [
+        "application/x-folio-page"
+      ]
+    }
+  },
+  {
+    "evidence": "output/round-3-2761365/evidence/s2-tree20/page-move-S2-tree-input-ed-0ded1--child-with-stable-identity-repeat18/drag-events.json",
+    "attemptId": "985cee44-71cb-449d-853a-01ec0689f0e2",
+    "before": {
+      "type": "before",
+      "source": {
+        "tag": "DIV",
+        "className": "page-tree-row active",
+        "label": null,
+        "text": "📄Move Source",
+        "connected": true
+      },
+      "rect": {
+        "x": 9,
+        "y": 473,
+        "width": 225,
+        "height": 34
+      },
+      "hit": {
+        "tag": "SPAN",
+        "className": null,
+        "label": null,
+        "text": "Move Source",
+        "connected": true
+      },
+      "focused": true,
+      "active": {
+        "tag": "DIV",
+        "className": "tiptap ProseMirror folio-editor ProseMirror-focused",
+        "label": "ページ本文",
+        "text": "移動前本文 保存",
+        "connected": true
+      },
+      "scroll": {
+        "x": 0,
+        "y": 0
+      }
+    },
+    "mousedown": {
+      "type": "mousedown",
+      "time": 489.59999990463257,
+      "target": {
+        "tag": "SPAN",
+        "className": null,
+        "label": null,
+        "text": "Move Source",
+        "connected": true
+      },
+      "hit": {
+        "tag": "SPAN",
+        "className": null,
+        "label": null,
+        "text": "Move Source",
+        "connected": true
+      },
+      "x": 121,
+      "y": 490,
+      "sourceConnected": true,
+      "active": {
+        "tag": "DIV",
+        "className": "tiptap ProseMirror folio-editor ProseMirror-focused",
+        "label": "ページ本文",
+        "text": "移動前本文 保存",
+        "connected": true
+      },
+      "focused": true,
+      "types": []
+    },
+    "dragstart": {
+      "type": "dragstart",
+      "time": 504.1999999284744,
+      "target": {
+        "tag": "DIV",
+        "className": "page-tree-row active",
+        "label": null,
+        "text": "📄Move Source",
+        "connected": true
+      },
+      "hit": {
+        "tag": "SPAN",
+        "className": null,
+        "label": null,
+        "text": "Move Source",
+        "connected": true
+      },
+      "x": 121,
+      "y": 490,
+      "sourceConnected": true,
+      "active": {
+        "tag": "BUTTON",
+        "className": "page-tree-label",
+        "label": null,
+        "text": "📄Move Source",
+        "connected": true
+      },
+      "focused": true,
+      "types": []
+    },
+    "drop": {
+      "type": "drop",
+      "time": 569,
+      "target": {
+        "tag": "SPAN",
+        "className": null,
+        "label": null,
+        "text": "Move Target",
+        "connected": true
+      },
+      "hit": {
+        "tag": "SPAN",
+        "className": null,
+        "label": null,
+        "text": "Move Target",
+        "connected": true
+      },
+      "x": 121,
+      "y": 455,
+      "sourceConnected": true,
+      "active": {
+        "tag": "BUTTON",
+        "className": "page-tree-label",
+        "label": null,
+        "text": "📄Move Source",
+        "connected": true
+      },
+      "focused": true,
+      "types": [
+        "application/x-folio-page"
+      ],
+      "pageId": "09f2e78c-eb0c-412d-a73a-fe1480b0f288"
+    },
+    "dragend": {
+      "type": "dragend",
+      "time": 571.1999999284744,
+      "target": {
+        "tag": "DIV",
+        "className": "page-tree-row active",
+        "label": null,
+        "text": "📄Move Source",
+        "connected": true
+      },
+      "hit": {
+        "tag": "SPAN",
+        "className": null,
+        "label": null,
+        "text": "Move Target",
+        "connected": true
+      },
+      "x": 121,
+      "y": 455,
+      "sourceConnected": true,
+      "active": {
+        "tag": "BUTTON",
+        "className": "page-tree-label",
+        "label": null,
+        "text": "📄Move Source",
+        "connected": true
+      },
+      "focused": true,
+      "types": [
+        "application/x-folio-page"
+      ]
+    }
+  },
+  {
+    "evidence": "output/round-3-2761365/evidence/s2-tree20/page-move-S2-tree-input-ed-0ded1--child-with-stable-identity-repeat19/drag-events.json",
+    "attemptId": "8c32d01f-14bc-4c7e-9d75-b2f0e61c35b7",
+    "before": {
+      "type": "before",
+      "source": {
+        "tag": "DIV",
+        "className": "page-tree-row active",
+        "label": null,
+        "text": "📄Move Source",
+        "connected": true
+      },
+      "rect": {
+        "x": 9,
+        "y": 473,
+        "width": 225,
+        "height": 34
+      },
+      "hit": {
+        "tag": "SPAN",
+        "className": null,
+        "label": null,
+        "text": "Move Source",
+        "connected": true
+      },
+      "focused": true,
+      "active": {
+        "tag": "DIV",
+        "className": "tiptap ProseMirror folio-editor ProseMirror-focused",
+        "label": "ページ本文",
+        "text": "移動前本文 保存",
+        "connected": true
+      },
+      "scroll": {
+        "x": 0,
+        "y": 0
+      }
+    },
+    "mousedown": {
+      "type": "mousedown",
+      "time": 193.19999992847443,
+      "target": {
+        "tag": "SPAN",
+        "className": null,
+        "label": null,
+        "text": "Move Source",
+        "connected": true
+      },
+      "hit": {
+        "tag": "SPAN",
+        "className": null,
+        "label": null,
+        "text": "Move Source",
+        "connected": true
+      },
+      "x": 121,
+      "y": 490,
+      "sourceConnected": true,
+      "active": {
+        "tag": "DIV",
+        "className": "tiptap ProseMirror folio-editor ProseMirror-focused",
+        "label": "ページ本文",
+        "text": "移動前本文 保存",
+        "connected": true
+      },
+      "focused": true,
+      "types": []
+    },
+    "dragstart": {
+      "type": "dragstart",
+      "time": 200.19999992847443,
+      "target": {
+        "tag": "DIV",
+        "className": "page-tree-row active",
+        "label": null,
+        "text": "📄Move Source",
+        "connected": true
+      },
+      "hit": {
+        "tag": "SPAN",
+        "className": null,
+        "label": null,
+        "text": "Move Source",
+        "connected": true
+      },
+      "x": 121,
+      "y": 490,
+      "sourceConnected": true,
+      "active": {
+        "tag": "BUTTON",
+        "className": "page-tree-label",
+        "label": null,
+        "text": "📄Move Source",
+        "connected": true
+      },
+      "focused": true,
+      "types": []
+    },
+    "drop": {
+      "type": "drop",
+      "time": 249.79999995231628,
+      "target": {
+        "tag": "SPAN",
+        "className": null,
+        "label": null,
+        "text": "Move Target",
+        "connected": true
+      },
+      "hit": {
+        "tag": "SPAN",
+        "className": null,
+        "label": null,
+        "text": "Move Target",
+        "connected": true
+      },
+      "x": 121,
+      "y": 455,
+      "sourceConnected": true,
+      "active": {
+        "tag": "BUTTON",
+        "className": "page-tree-label",
+        "label": null,
+        "text": "📄Move Source",
+        "connected": true
+      },
+      "focused": true,
+      "types": [
+        "application/x-folio-page"
+      ],
+      "pageId": "8f61a804-b1ac-44a8-a76c-9f52f2813eac"
+    },
+    "dragend": {
+      "type": "dragend",
+      "time": 251.5,
+      "target": {
+        "tag": "DIV",
+        "className": "page-tree-row active",
+        "label": null,
+        "text": "📄Move Source",
+        "connected": true
+      },
+      "hit": {
+        "tag": "SPAN",
+        "className": null,
+        "label": null,
+        "text": "Move Target",
+        "connected": true
+      },
+      "x": 121,
+      "y": 455,
+      "sourceConnected": true,
+      "active": {
+        "tag": "BUTTON",
+        "className": "page-tree-label",
+        "label": null,
+        "text": "📄Move Source",
+        "connected": true
+      },
+      "focused": true,
+      "types": [
+        "application/x-folio-page"
+      ]
+    }
+  },
+  {
+    "evidence": "output/round-3-2761365/evidence/s2-tree20/page-move-S2-tree-input-ed-0ded1--child-with-stable-identity-repeat2/drag-events.json",
+    "attemptId": "255c1c35-3afc-49a2-bba5-d26a7abd3ae7",
+    "before": {
+      "type": "before",
+      "source": {
+        "tag": "DIV",
+        "className": "page-tree-row active",
+        "label": null,
+        "text": "📄Move Source",
+        "connected": true
+      },
+      "rect": {
+        "x": 9,
+        "y": 473,
+        "width": 225,
+        "height": 34
+      },
+      "hit": {
+        "tag": "SPAN",
+        "className": null,
+        "label": null,
+        "text": "Move Source",
+        "connected": true
+      },
+      "focused": true,
+      "active": {
+        "tag": "DIV",
+        "className": "tiptap ProseMirror folio-editor ProseMirror-focused",
+        "label": "ページ本文",
+        "text": "移動前本文 保存",
+        "connected": true
+      },
+      "scroll": {
+        "x": 0,
+        "y": 0
+      }
+    },
+    "mousedown": {
+      "type": "mousedown",
+      "time": 840.6000000238419,
+      "target": {
+        "tag": "SPAN",
+        "className": null,
+        "label": null,
+        "text": "Move Source",
+        "connected": true
+      },
+      "hit": {
+        "tag": "SPAN",
+        "className": null,
+        "label": null,
+        "text": "Move Source",
+        "connected": true
+      },
+      "x": 121,
+      "y": 490,
+      "sourceConnected": true,
+      "active": {
+        "tag": "DIV",
+        "className": "tiptap ProseMirror folio-editor ProseMirror-focused",
+        "label": "ページ本文",
+        "text": "移動前本文 保存",
+        "connected": true
+      },
+      "focused": true,
+      "types": []
+    },
+    "dragstart": {
+      "type": "dragstart",
+      "time": 854.5,
+      "target": {
+        "tag": "DIV",
+        "className": "page-tree-row active",
+        "label": null,
+        "text": "📄Move Source",
+        "connected": true
+      },
+      "hit": {
+        "tag": "SPAN",
+        "className": null,
+        "label": null,
+        "text": "Move Source",
+        "connected": true
+      },
+      "x": 121,
+      "y": 490,
+      "sourceConnected": true,
+      "active": {
+        "tag": "BUTTON",
+        "className": "page-tree-label",
+        "label": null,
+        "text": "📄Move Source",
+        "connected": true
+      },
+      "focused": true,
+      "types": []
+    },
+    "drop": {
+      "type": "drop",
+      "time": 931.8000000715256,
+      "target": {
+        "tag": "SPAN",
+        "className": null,
+        "label": null,
+        "text": "Move Target",
+        "connected": true
+      },
+      "hit": {
+        "tag": "SPAN",
+        "className": null,
+        "label": null,
+        "text": "Move Target",
+        "connected": true
+      },
+      "x": 121,
+      "y": 455,
+      "sourceConnected": true,
+      "active": {
+        "tag": "BUTTON",
+        "className": "page-tree-label",
+        "label": null,
+        "text": "📄Move Source",
+        "connected": true
+      },
+      "focused": true,
+      "types": [
+        "application/x-folio-page"
+      ],
+      "pageId": "0d22c980-9860-4923-a7e5-408550affb37"
+    },
+    "dragend": {
+      "type": "dragend",
+      "time": 933.7000000476837,
+      "target": {
+        "tag": "DIV",
+        "className": "page-tree-row active",
+        "label": null,
+        "text": "📄Move Source",
+        "connected": true
+      },
+      "hit": {
+        "tag": "SPAN",
+        "className": null,
+        "label": null,
+        "text": "Move Target",
+        "connected": true
+      },
+      "x": 121,
+      "y": 455,
+      "sourceConnected": true,
+      "active": {
+        "tag": "BUTTON",
+        "className": "page-tree-label",
+        "label": null,
+        "text": "📄Move Source",
+        "connected": true
+      },
+      "focused": true,
+      "types": [
+        "application/x-folio-page"
+      ]
+    }
+  },
+  {
+    "evidence": "output/round-3-2761365/evidence/s2-tree20/page-move-S2-tree-input-ed-0ded1--child-with-stable-identity-repeat3/drag-events.json",
+    "attemptId": "074ef51f-eca4-4354-a5bd-38e302b99c02",
+    "before": {
+      "type": "before",
+      "source": {
+        "tag": "DIV",
+        "className": "page-tree-row active",
+        "label": null,
+        "text": "📄Move Source",
+        "connected": true
+      },
+      "rect": {
+        "x": 9,
+        "y": 473,
+        "width": 225,
+        "height": 34
+      },
+      "hit": {
+        "tag": "SPAN",
+        "className": null,
+        "label": null,
+        "text": "Move Source",
+        "connected": true
+      },
+      "focused": true,
+      "active": {
+        "tag": "DIV",
+        "className": "tiptap ProseMirror folio-editor ProseMirror-focused",
+        "label": "ページ本文",
+        "text": "移動前本文 保存",
+        "connected": true
+      },
+      "scroll": {
+        "x": 0,
+        "y": 0
+      }
+    },
+    "mousedown": {
+      "type": "mousedown",
+      "time": 347,
+      "target": {
+        "tag": "SPAN",
+        "className": null,
+        "label": null,
+        "text": "Move Source",
+        "connected": true
+      },
+      "hit": {
+        "tag": "SPAN",
+        "className": null,
+        "label": null,
+        "text": "Move Source",
+        "connected": true
+      },
+      "x": 121,
+      "y": 490,
+      "sourceConnected": true,
+      "active": {
+        "tag": "DIV",
+        "className": "tiptap ProseMirror folio-editor ProseMirror-focused",
+        "label": "ページ本文",
+        "text": "移動前本文 保存",
+        "connected": true
+      },
+      "focused": true,
+      "types": []
+    },
+    "dragstart": {
+      "type": "dragstart",
+      "time": 363,
+      "target": {
+        "tag": "DIV",
+        "className": "page-tree-row active",
+        "label": null,
+        "text": "📄Move Source",
+        "connected": true
+      },
+      "hit": {
+        "tag": "SPAN",
+        "className": null,
+        "label": null,
+        "text": "Move Source",
+        "connected": true
+      },
+      "x": 121,
+      "y": 490,
+      "sourceConnected": true,
+      "active": {
+        "tag": "BUTTON",
+        "className": "page-tree-label",
+        "label": null,
+        "text": "📄Move Source",
+        "connected": true
+      },
+      "focused": true,
+      "types": []
+    },
+    "drop": {
+      "type": "drop",
+      "time": 450.7999999523163,
+      "target": {
+        "tag": "SPAN",
+        "className": null,
+        "label": null,
+        "text": "Move Target",
+        "connected": true
+      },
+      "hit": {
+        "tag": "SPAN",
+        "className": null,
+        "label": null,
+        "text": "Move Target",
+        "connected": true
+      },
+      "x": 121,
+      "y": 455,
+      "sourceConnected": true,
+      "active": {
+        "tag": "BUTTON",
+        "className": "page-tree-label",
+        "label": null,
+        "text": "📄Move Source",
+        "connected": true
+      },
+      "focused": true,
+      "types": [
+        "application/x-folio-page"
+      ],
+      "pageId": "dae0675a-f50c-48f7-93d3-c62f389f27dd"
+    },
+    "dragend": {
+      "type": "dragend",
+      "time": 452.60000002384186,
+      "target": {
+        "tag": "DIV",
+        "className": "page-tree-row active",
+        "label": null,
+        "text": "📄Move Source",
+        "connected": true
+      },
+      "hit": {
+        "tag": "SPAN",
+        "className": null,
+        "label": null,
+        "text": "Move Target",
+        "connected": true
+      },
+      "x": 121,
+      "y": 455,
+      "sourceConnected": true,
+      "active": {
+        "tag": "BUTTON",
+        "className": "page-tree-label",
+        "label": null,
+        "text": "📄Move Source",
+        "connected": true
+      },
+      "focused": true,
+      "types": [
+        "application/x-folio-page"
+      ]
+    }
+  },
+  {
+    "evidence": "output/round-3-2761365/evidence/s2-tree20/page-move-S2-tree-input-ed-0ded1--child-with-stable-identity-repeat4/drag-events.json",
+    "attemptId": "82d7ef77-bfbc-485e-96ad-6f9845ab155a",
+    "before": {
+      "type": "before",
+      "source": {
+        "tag": "DIV",
+        "className": "page-tree-row active",
+        "label": null,
+        "text": "📄Move Source",
+        "connected": true
+      },
+      "rect": {
+        "x": 9,
+        "y": 473,
+        "width": 225,
+        "height": 34
+      },
+      "hit": {
+        "tag": "SPAN",
+        "className": null,
+        "label": null,
+        "text": "Move Source",
+        "connected": true
+      },
+      "focused": true,
+      "active": {
+        "tag": "DIV",
+        "className": "tiptap ProseMirror folio-editor ProseMirror-focused",
+        "label": "ページ本文",
+        "text": "移動前本文 保存",
+        "connected": true
+      },
+      "scroll": {
+        "x": 0,
+        "y": 0
+      }
+    },
+    "mousedown": {
+      "type": "mousedown",
+      "time": 444.89999997615814,
+      "target": {
+        "tag": "SPAN",
+        "className": null,
+        "label": null,
+        "text": "Move Source",
+        "connected": true
+      },
+      "hit": {
+        "tag": "SPAN",
+        "className": null,
+        "label": null,
+        "text": "Move Source",
+        "connected": true
+      },
+      "x": 121,
+      "y": 490,
+      "sourceConnected": true,
+      "active": {
+        "tag": "DIV",
+        "className": "tiptap ProseMirror folio-editor ProseMirror-focused",
+        "label": "ページ本文",
+        "text": "移動前本文 保存",
+        "connected": true
+      },
+      "focused": true,
+      "types": []
+    },
+    "dragstart": {
+      "type": "dragstart",
+      "time": 458.1999999284744,
+      "target": {
+        "tag": "DIV",
+        "className": "page-tree-row active",
+        "label": null,
+        "text": "📄Move Source",
+        "connected": true
+      },
+      "hit": {
+        "tag": "SPAN",
+        "className": null,
+        "label": null,
+        "text": "Move Source",
+        "connected": true
+      },
+      "x": 121,
+      "y": 490,
+      "sourceConnected": true,
+      "active": {
+        "tag": "BUTTON",
+        "className": "page-tree-label",
+        "label": null,
+        "text": "📄Move Source",
+        "connected": true
+      },
+      "focused": true,
+      "types": []
+    },
+    "drop": {
+      "type": "drop",
+      "time": 532.3999999761581,
+      "target": {
+        "tag": "SPAN",
+        "className": null,
+        "label": null,
+        "text": "Move Target",
+        "connected": true
+      },
+      "hit": {
+        "tag": "SPAN",
+        "className": null,
+        "label": null,
+        "text": "Move Target",
+        "connected": true
+      },
+      "x": 121,
+      "y": 455,
+      "sourceConnected": true,
+      "active": {
+        "tag": "BUTTON",
+        "className": "page-tree-label",
+        "label": null,
+        "text": "📄Move Source",
+        "connected": true
+      },
+      "focused": true,
+      "types": [
+        "application/x-folio-page"
+      ],
+      "pageId": "4d744b60-1cbc-4a54-bf64-4cdeb9355149"
+    },
+    "dragend": {
+      "type": "dragend",
+      "time": 534.3999999761581,
+      "target": {
+        "tag": "DIV",
+        "className": "page-tree-row active",
+        "label": null,
+        "text": "📄Move Source",
+        "connected": true
+      },
+      "hit": {
+        "tag": "SPAN",
+        "className": null,
+        "label": null,
+        "text": "Move Target",
+        "connected": true
+      },
+      "x": 121,
+      "y": 455,
+      "sourceConnected": true,
+      "active": {
+        "tag": "BUTTON",
+        "className": "page-tree-label",
+        "label": null,
+        "text": "📄Move Source",
+        "connected": true
+      },
+      "focused": true,
+      "types": [
+        "application/x-folio-page"
+      ]
+    }
+  },
+  {
+    "evidence": "output/round-3-2761365/evidence/s2-tree20/page-move-S2-tree-input-ed-0ded1--child-with-stable-identity-repeat5/drag-events.json",
+    "attemptId": "586491e0-6dc8-4e04-bb27-f7b4fa8d00a1",
+    "before": {
+      "type": "before",
+      "source": {
+        "tag": "DIV",
+        "className": "page-tree-row active",
+        "label": null,
+        "text": "📄Move Source",
+        "connected": true
+      },
+      "rect": {
+        "x": 9,
+        "y": 473,
+        "width": 225,
+        "height": 34
+      },
+      "hit": {
+        "tag": "SPAN",
+        "className": null,
+        "label": null,
+        "text": "Move Source",
+        "connected": true
+      },
+      "focused": true,
+      "active": {
+        "tag": "DIV",
+        "className": "tiptap ProseMirror folio-editor ProseMirror-focused",
+        "label": "ページ本文",
+        "text": "移動前本文 保存",
+        "connected": true
+      },
+      "scroll": {
+        "x": 0,
+        "y": 0
+      }
+    },
+    "mousedown": {
+      "type": "mousedown",
+      "time": 585.2999999523163,
+      "target": {
+        "tag": "SPAN",
+        "className": null,
+        "label": null,
+        "text": "Move Source",
+        "connected": true
+      },
+      "hit": {
+        "tag": "SPAN",
+        "className": null,
+        "label": null,
+        "text": "Move Source",
+        "connected": true
+      },
+      "x": 121,
+      "y": 490,
+      "sourceConnected": true,
+      "active": {
+        "tag": "DIV",
+        "className": "tiptap ProseMirror folio-editor ProseMirror-focused",
+        "label": "ページ本文",
+        "text": "移動前本文 保存",
+        "connected": true
+      },
+      "focused": true,
+      "types": []
+    },
+    "dragstart": {
+      "type": "dragstart",
+      "time": 618.1999999284744,
+      "target": {
+        "tag": "DIV",
+        "className": "page-tree-row active",
+        "label": null,
+        "text": "📄Move Source",
+        "connected": true
+      },
+      "hit": {
+        "tag": "SPAN",
+        "className": null,
+        "label": null,
+        "text": "Move Source",
+        "connected": true
+      },
+      "x": 121,
+      "y": 490,
+      "sourceConnected": true,
+      "active": {
+        "tag": "BUTTON",
+        "className": "page-tree-label",
+        "label": null,
+        "text": "📄Move Source",
+        "connected": true
+      },
+      "focused": true,
+      "types": []
+    },
+    "drop": {
+      "type": "drop",
+      "time": 707.5,
+      "target": {
+        "tag": "SPAN",
+        "className": null,
+        "label": null,
+        "text": "Move Target",
+        "connected": true
+      },
+      "hit": {
+        "tag": "SPAN",
+        "className": null,
+        "label": null,
+        "text": "Move Target",
+        "connected": true
+      },
+      "x": 121,
+      "y": 455,
+      "sourceConnected": true,
+      "active": {
+        "tag": "BUTTON",
+        "className": "page-tree-label",
+        "label": null,
+        "text": "📄Move Source",
+        "connected": true
+      },
+      "focused": true,
+      "types": [
+        "application/x-folio-page"
+      ],
+      "pageId": "088b4ccb-fe87-450e-a801-66b19581b4ed"
+    },
+    "dragend": {
+      "type": "dragend",
+      "time": 709.0999999046326,
+      "target": {
+        "tag": "DIV",
+        "className": "page-tree-row active",
+        "label": null,
+        "text": "📄Move Source",
+        "connected": true
+      },
+      "hit": {
+        "tag": "SPAN",
+        "className": null,
+        "label": null,
+        "text": "Move Target",
+        "connected": true
+      },
+      "x": 121,
+      "y": 455,
+      "sourceConnected": true,
+      "active": {
+        "tag": "BUTTON",
+        "className": "page-tree-label",
+        "label": null,
+        "text": "📄Move Source",
+        "connected": true
+      },
+      "focused": true,
+      "types": [
+        "application/x-folio-page"
+      ]
+    }
+  },
+  {
+    "evidence": "output/round-3-2761365/evidence/s2-tree20/page-move-S2-tree-input-ed-0ded1--child-with-stable-identity-repeat6/drag-events.json",
+    "attemptId": "73f65510-55f5-4675-8dea-b8d6cca17c8f",
+    "before": {
+      "type": "before",
+      "source": {
+        "tag": "DIV",
+        "className": "page-tree-row active",
+        "label": null,
+        "text": "📄Move Source",
+        "connected": true
+      },
+      "rect": {
+        "x": 9,
+        "y": 473,
+        "width": 225,
+        "height": 34
+      },
+      "hit": {
+        "tag": "SPAN",
+        "className": null,
+        "label": null,
+        "text": "Move Source",
+        "connected": true
+      },
+      "focused": true,
+      "active": {
+        "tag": "DIV",
+        "className": "tiptap ProseMirror folio-editor ProseMirror-focused",
+        "label": "ページ本文",
+        "text": "移動前本文 保存",
+        "connected": true
+      },
+      "scroll": {
+        "x": 0,
+        "y": 0
+      }
+    },
+    "mousedown": {
+      "type": "mousedown",
+      "time": 483.2000000476837,
+      "target": {
+        "tag": "SPAN",
+        "className": null,
+        "label": null,
+        "text": "Move Source",
+        "connected": true
+      },
+      "hit": {
+        "tag": "SPAN",
+        "className": null,
+        "label": null,
+        "text": "Move Source",
+        "connected": true
+      },
+      "x": 121,
+      "y": 490,
+      "sourceConnected": true,
+      "active": {
+        "tag": "DIV",
+        "className": "tiptap ProseMirror folio-editor ProseMirror-focused",
+        "label": "ページ本文",
+        "text": "移動前本文 保存",
+        "connected": true
+      },
+      "focused": true,
+      "types": []
+    },
+    "dragstart": {
+      "type": "dragstart",
+      "time": 496.2000000476837,
+      "target": {
+        "tag": "DIV",
+        "className": "page-tree-row active",
+        "label": null,
+        "text": "📄Move Source",
+        "connected": true
+      },
+      "hit": {
+        "tag": "SPAN",
+        "className": null,
+        "label": null,
+        "text": "Move Source",
+        "connected": true
+      },
+      "x": 121,
+      "y": 490,
+      "sourceConnected": true,
+      "active": {
+        "tag": "BUTTON",
+        "className": "page-tree-label",
+        "label": null,
+        "text": "📄Move Source",
+        "connected": true
+      },
+      "focused": true,
+      "types": []
+    },
+    "drop": {
+      "type": "drop",
+      "time": 542.3999999761581,
+      "target": {
+        "tag": "SPAN",
+        "className": null,
+        "label": null,
+        "text": "Move Target",
+        "connected": true
+      },
+      "hit": {
+        "tag": "SPAN",
+        "className": null,
+        "label": null,
+        "text": "Move Target",
+        "connected": true
+      },
+      "x": 121,
+      "y": 455,
+      "sourceConnected": true,
+      "active": {
+        "tag": "BUTTON",
+        "className": "page-tree-label",
+        "label": null,
+        "text": "📄Move Source",
+        "connected": true
+      },
+      "focused": true,
+      "types": [
+        "application/x-folio-page"
+      ],
+      "pageId": "104782e9-191e-49d9-941d-707cba5e9a13"
+    },
+    "dragend": {
+      "type": "dragend",
+      "time": 544,
+      "target": {
+        "tag": "DIV",
+        "className": "page-tree-row active",
+        "label": null,
+        "text": "📄Move Source",
+        "connected": true
+      },
+      "hit": {
+        "tag": "SPAN",
+        "className": null,
+        "label": null,
+        "text": "Move Target",
+        "connected": true
+      },
+      "x": 121,
+      "y": 455,
+      "sourceConnected": true,
+      "active": {
+        "tag": "BUTTON",
+        "className": "page-tree-label",
+        "label": null,
+        "text": "📄Move Source",
+        "connected": true
+      },
+      "focused": true,
+      "types": [
+        "application/x-folio-page"
+      ]
+    }
+  },
+  {
+    "evidence": "output/round-3-2761365/evidence/s2-tree20/page-move-S2-tree-input-ed-0ded1--child-with-stable-identity-repeat7/drag-events.json",
+    "attemptId": "d015735b-2034-4ace-81c9-39246c4b60c5",
+    "before": {
+      "type": "before",
+      "source": {
+        "tag": "DIV",
+        "className": "page-tree-row active",
+        "label": null,
+        "text": "📄Move Source",
+        "connected": true
+      },
+      "rect": {
+        "x": 9,
+        "y": 473,
+        "width": 225,
+        "height": 34
+      },
+      "hit": {
+        "tag": "SPAN",
+        "className": null,
+        "label": null,
+        "text": "Move Source",
+        "connected": true
+      },
+      "focused": true,
+      "active": {
+        "tag": "DIV",
+        "className": "tiptap ProseMirror folio-editor ProseMirror-focused",
+        "label": "ページ本文",
+        "text": "移動前本文 保存",
+        "connected": true
+      },
+      "scroll": {
+        "x": 0,
+        "y": 0
+      }
+    },
+    "mousedown": {
+      "type": "mousedown",
+      "time": 582.2000000476837,
+      "target": {
+        "tag": "SPAN",
+        "className": null,
+        "label": null,
+        "text": "Move Source",
+        "connected": true
+      },
+      "hit": {
+        "tag": "SPAN",
+        "className": null,
+        "label": null,
+        "text": "Move Source",
+        "connected": true
+      },
+      "x": 121,
+      "y": 490,
+      "sourceConnected": true,
+      "active": {
+        "tag": "DIV",
+        "className": "tiptap ProseMirror folio-editor ProseMirror-focused",
+        "label": "ページ本文",
+        "text": "移動前本文 保存",
+        "connected": true
+      },
+      "focused": true,
+      "types": []
+    },
+    "dragstart": {
+      "type": "dragstart",
+      "time": 593.6000000238419,
+      "target": {
+        "tag": "DIV",
+        "className": "page-tree-row active",
+        "label": null,
+        "text": "📄Move Source",
+        "connected": true
+      },
+      "hit": {
+        "tag": "SPAN",
+        "className": null,
+        "label": null,
+        "text": "Move Source",
+        "connected": true
+      },
+      "x": 121,
+      "y": 490,
+      "sourceConnected": true,
+      "active": {
+        "tag": "BUTTON",
+        "className": "page-tree-label",
+        "label": null,
+        "text": "📄Move Source",
+        "connected": true
+      },
+      "focused": true,
+      "types": []
+    },
+    "drop": {
+      "type": "drop",
+      "time": 665.8000000715256,
+      "target": {
+        "tag": "SPAN",
+        "className": null,
+        "label": null,
+        "text": "Move Target",
+        "connected": true
+      },
+      "hit": {
+        "tag": "SPAN",
+        "className": null,
+        "label": null,
+        "text": "Move Target",
+        "connected": true
+      },
+      "x": 121,
+      "y": 455,
+      "sourceConnected": true,
+      "active": {
+        "tag": "BUTTON",
+        "className": "page-tree-label",
+        "label": null,
+        "text": "📄Move Source",
+        "connected": true
+      },
+      "focused": true,
+      "types": [
+        "application/x-folio-page"
+      ],
+      "pageId": "3ba2aa6f-8b69-4023-998f-4259e8f67ea4"
+    },
+    "dragend": {
+      "type": "dragend",
+      "time": 667.5,
+      "target": {
+        "tag": "DIV",
+        "className": "page-tree-row active",
+        "label": null,
+        "text": "📄Move Source",
+        "connected": true
+      },
+      "hit": {
+        "tag": "SPAN",
+        "className": null,
+        "label": null,
+        "text": "Move Target",
+        "connected": true
+      },
+      "x": 121,
+      "y": 455,
+      "sourceConnected": true,
+      "active": {
+        "tag": "BUTTON",
+        "className": "page-tree-label",
+        "label": null,
+        "text": "📄Move Source",
+        "connected": true
+      },
+      "focused": true,
+      "types": [
+        "application/x-folio-page"
+      ]
+    }
+  },
+  {
+    "evidence": "output/round-3-2761365/evidence/s2-tree20/page-move-S2-tree-input-ed-0ded1--child-with-stable-identity-repeat8/drag-events.json",
+    "attemptId": "20ee6238-f5a2-4090-a5d4-e48996b7ad63",
+    "before": {
+      "type": "before",
+      "source": {
+        "tag": "DIV",
+        "className": "page-tree-row active",
+        "label": null,
+        "text": "📄Move Source",
+        "connected": true
+      },
+      "rect": {
+        "x": 9,
+        "y": 473,
+        "width": 225,
+        "height": 34
+      },
+      "hit": {
+        "tag": "SPAN",
+        "className": null,
+        "label": null,
+        "text": "Move Source",
+        "connected": true
+      },
+      "focused": true,
+      "active": {
+        "tag": "DIV",
+        "className": "tiptap ProseMirror folio-editor ProseMirror-focused",
+        "label": "ページ本文",
+        "text": "移動前本文 保存",
+        "connected": true
+      },
+      "scroll": {
+        "x": 0,
+        "y": 0
+      }
+    },
+    "mousedown": {
+      "type": "mousedown",
+      "time": 481.10000002384186,
+      "target": {
+        "tag": "SPAN",
+        "className": null,
+        "label": null,
+        "text": "Move Source",
+        "connected": true
+      },
+      "hit": {
+        "tag": "SPAN",
+        "className": null,
+        "label": null,
+        "text": "Move Source",
+        "connected": true
+      },
+      "x": 121,
+      "y": 490,
+      "sourceConnected": true,
+      "active": {
+        "tag": "DIV",
+        "className": "tiptap ProseMirror folio-editor ProseMirror-focused",
+        "label": "ページ本文",
+        "text": "移動前本文 保存",
+        "connected": true
+      },
+      "focused": true,
+      "types": []
+    },
+    "dragstart": {
+      "type": "dragstart",
+      "time": 537,
+      "target": {
+        "tag": "DIV",
+        "className": "page-tree-row active",
+        "label": null,
+        "text": "📄Move Source",
+        "connected": true
+      },
+      "hit": {
+        "tag": "SPAN",
+        "className": null,
+        "label": null,
+        "text": "Move Source",
+        "connected": true
+      },
+      "x": 121,
+      "y": 490,
+      "sourceConnected": true,
+      "active": {
+        "tag": "BUTTON",
+        "className": "page-tree-label",
+        "label": null,
+        "text": "📄Move Source",
+        "connected": true
+      },
+      "focused": true,
+      "types": []
+    },
+    "drop": {
+      "type": "drop",
+      "time": 640.8999999761581,
+      "target": {
+        "tag": "SPAN",
+        "className": null,
+        "label": null,
+        "text": "Move Target",
+        "connected": true
+      },
+      "hit": {
+        "tag": "SPAN",
+        "className": null,
+        "label": null,
+        "text": "Move Target",
+        "connected": true
+      },
+      "x": 121,
+      "y": 455,
+      "sourceConnected": true,
+      "active": {
+        "tag": "BUTTON",
+        "className": "page-tree-label",
+        "label": null,
+        "text": "📄Move Source",
+        "connected": true
+      },
+      "focused": true,
+      "types": [
+        "application/x-folio-page"
+      ],
+      "pageId": "bfcd3904-a45e-4304-9cfd-3f36e20affed"
+    },
+    "dragend": {
+      "type": "dragend",
+      "time": 643.2000000476837,
+      "target": {
+        "tag": "DIV",
+        "className": "page-tree-row active",
+        "label": null,
+        "text": "📄Move Source",
+        "connected": true
+      },
+      "hit": {
+        "tag": "SPAN",
+        "className": null,
+        "label": null,
+        "text": "Move Target",
+        "connected": true
+      },
+      "x": 121,
+      "y": 455,
+      "sourceConnected": true,
+      "active": {
+        "tag": "BUTTON",
+        "className": "page-tree-label",
+        "label": null,
+        "text": "📄Move Source",
+        "connected": true
+      },
+      "focused": true,
+      "types": [
+        "application/x-folio-page"
+      ]
+    }
+  },
+  {
+    "evidence": "output/round-3-2761365/evidence/s2-tree20/page-move-S2-tree-input-ed-0ded1--child-with-stable-identity-repeat9/drag-events.json",
+    "attemptId": "fc2b860d-9e78-4122-b860-5f61b81e78e1",
+    "before": {
+      "type": "before",
+      "source": {
+        "tag": "DIV",
+        "className": "page-tree-row active",
+        "label": null,
+        "text": "📄Move Source",
+        "connected": true
+      },
+      "rect": {
+        "x": 9,
+        "y": 473,
+        "width": 225,
+        "height": 34
+      },
+      "hit": {
+        "tag": "SPAN",
+        "className": null,
+        "label": null,
+        "text": "Move Source",
+        "connected": true
+      },
+      "focused": true,
+      "active": {
+        "tag": "DIV",
+        "className": "tiptap ProseMirror folio-editor ProseMirror-focused",
+        "label": "ページ本文",
+        "text": "移動前本文 保存",
+        "connected": true
+      },
+      "scroll": {
+        "x": 0,
+        "y": 0
+      }
+    },
+    "mousedown": {
+      "type": "mousedown",
+      "time": 456,
+      "target": {
+        "tag": "SPAN",
+        "className": null,
+        "label": null,
+        "text": "Move Source",
+        "connected": true
+      },
+      "hit": {
+        "tag": "SPAN",
+        "className": null,
+        "label": null,
+        "text": "Move Source",
+        "connected": true
+      },
+      "x": 121,
+      "y": 490,
+      "sourceConnected": true,
+      "active": {
+        "tag": "DIV",
+        "className": "tiptap ProseMirror folio-editor ProseMirror-focused",
+        "label": "ページ本文",
+        "text": "移動前本文 保存",
+        "connected": true
+      },
+      "focused": true,
+      "types": []
+    },
+    "dragstart": {
+      "type": "dragstart",
+      "time": 503,
+      "target": {
+        "tag": "DIV",
+        "className": "page-tree-row active",
+        "label": null,
+        "text": "📄Move Source",
+        "connected": true
+      },
+      "hit": {
+        "tag": "SPAN",
+        "className": null,
+        "label": null,
+        "text": "Move Source",
+        "connected": true
+      },
+      "x": 121,
+      "y": 490,
+      "sourceConnected": true,
+      "active": {
+        "tag": "BUTTON",
+        "className": "page-tree-label",
+        "label": null,
+        "text": "📄Move Source",
+        "connected": true
+      },
+      "focused": true,
+      "types": []
+    },
+    "drop": {
+      "type": "drop",
+      "time": 626,
+      "target": {
+        "tag": "SPAN",
+        "className": null,
+        "label": null,
+        "text": "Move Target",
+        "connected": true
+      },
+      "hit": {
+        "tag": "SPAN",
+        "className": null,
+        "label": null,
+        "text": "Move Target",
+        "connected": true
+      },
+      "x": 121,
+      "y": 455,
+      "sourceConnected": true,
+      "active": {
+        "tag": "BUTTON",
+        "className": "page-tree-label",
+        "label": null,
+        "text": "📄Move Source",
+        "connected": true
+      },
+      "focused": true,
+      "types": [
+        "application/x-folio-page"
+      ],
+      "pageId": "e8a71c62-7da1-4692-8689-071c76d723a1"
+    },
+    "dragend": {
+      "type": "dragend",
+      "time": 627.6999999284744,
+      "target": {
+        "tag": "DIV",
+        "className": "page-tree-row active",
+        "label": null,
+        "text": "📄Move Source",
+        "connected": true
+      },
+      "hit": {
+        "tag": "SPAN",
+        "className": null,
+        "label": null,
+        "text": "Move Target",
+        "connected": true
+      },
+      "x": 121,
+      "y": 455,
+      "sourceConnected": true,
+      "active": {
+        "tag": "BUTTON",
+        "className": "page-tree-label",
+        "label": null,
+        "text": "📄Move Source",
+        "connected": true
+      },
+      "focused": true,
+      "types": [
+        "application/x-folio-page"
+      ]
+    }
+  }
+]

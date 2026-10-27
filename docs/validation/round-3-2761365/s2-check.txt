@@ -1,0 +1,12 @@
+
+> folio-desktop@0.1.0 check
+> tsc --noEmit
+
+tests/e2e/gate-a.spec.ts(277,68): error TS2339: Property 'folio' does not exist on type 'Page'.
+tests/e2e/output-boundary.spec.ts(33,29): error TS2352: Conversion of type '(_win: any, options: any) => Promise<{ canceled: true; filePath: undefined; }>' to type '{ (window: BaseWindow, options: SaveDialogOptions): Promise<SaveDialogReturnValue>; (options: SaveDialogOptions): Promise<...>; }' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+  Type 'Promise<{ canceled: true; filePath: undefined; }>' is not comparable to type 'Promise<SaveDialogReturnValue>'.
+    Type '{ canceled: true; filePath: undefined; }' is not comparable to type 'SaveDialogReturnValue'.
+      Types of property 'filePath' are incompatible.
+        Type 'undefined' is not comparable to type 'string'.
+
+exit_code=2

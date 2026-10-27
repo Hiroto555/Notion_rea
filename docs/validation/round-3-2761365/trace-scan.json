@@ -1,0 +1,9 @@
+{
+  "archives": 329,
+  "text_entries": 2190,
+  "skipped_binary": 11117,
+  "skipped_large": 25,
+  "errors": [],
+  "matches": [],
+  "scope": "synthetic local trace zip text entries only; pattern check is not proof of absence; images inspected by provenance only; archives remain local"
+}

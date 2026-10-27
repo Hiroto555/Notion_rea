@@ -1,0 +1,27 @@
+[BABEL] Note: The code generator has deoptimised the styling of <repo>/output/round-3-2761365/evidence/dev-run-ArzQl3/cache/negative/deps/react-dom_client.js?v=80eabb81 as it exceeds the max of 500KB.
+{"label":"negative","code":1,"pidAlive":false,"portAvailable":true,"trace":true,"ok":true,"port":5173}
+[BABEL] Note: The code generator has deoptimised the styling of <repo>/output/round-3-2761365/evidence/dev-run-ArzQl3/cache/cold-1/deps/react-dom_client.js?v=156f5f3c as it exceeds the max of 500KB.
+{"label":"cold-1","code":0,"pidAlive":false,"portAvailable":true,"trace":true,"ok":true,"port":5173}
+[BABEL] Note: The code generator has deoptimised the styling of <repo>/output/round-3-2761365/evidence/dev-run-ArzQl3/cache/cold-2/deps/react-dom_client.js?v=cbe8fa53 as it exceeds the max of 500KB.
+{"label":"cold-2","code":0,"pidAlive":false,"portAvailable":true,"trace":true,"ok":true,"port":5173}
+[BABEL] Note: The code generator has deoptimised the styling of <repo>/output/round-3-2761365/evidence/dev-run-ArzQl3/cache/cold-3/deps/react-dom_client.js?v=0aaf2669 as it exceeds the max of 500KB.
+{"label":"cold-3","code":0,"pidAlive":false,"portAvailable":true,"trace":true,"ok":true,"port":5173}
+[BABEL] Note: The code generator has deoptimised the styling of <repo>/output/round-3-2761365/evidence/dev-run-ArzQl3/cache/cold-4/deps/react-dom_client.js?v=affc9d66 as it exceeds the max of 500KB.
+{"label":"cold-4","code":0,"pidAlive":false,"portAvailable":true,"trace":true,"ok":true,"port":5173}
+[BABEL] Note: The code generator has deoptimised the styling of <repo>/output/round-3-2761365/evidence/dev-run-ArzQl3/cache/cold-5/deps/react-dom_client.js?v=f803cfdc as it exceeds the max of 500KB.
+{"label":"cold-5","code":0,"pidAlive":false,"portAvailable":true,"trace":true,"ok":true,"port":5173}
+[BABEL] Note: The code generator has deoptimised the styling of <repo>/output/round-3-2761365/evidence/dev-run-ArzQl3/cache/cold-1/deps/react-dom_client.js?v=51ad3326 as it exceeds the max of 500KB.
+{"label":"warm-1","code":0,"pidAlive":false,"portAvailable":true,"trace":true,"ok":true,"port":5173}
+[BABEL] Note: The code generator has deoptimised the styling of <repo>/output/round-3-2761365/evidence/dev-run-ArzQl3/cache/cold-1/deps/react-dom_client.js?v=51ad3326 as it exceeds the max of 500KB.
+{"label":"warm-2","code":0,"pidAlive":false,"portAvailable":true,"trace":true,"ok":true,"port":5173}
+[BABEL] Note: The code generator has deoptimised the styling of <repo>/output/round-3-2761365/evidence/dev-run-ArzQl3/cache/cold-1/deps/react-dom_client.js?v=51ad3326 as it exceeds the max of 500KB.
+{"label":"warm-3","code":0,"pidAlive":false,"portAvailable":true,"trace":true,"ok":true,"port":5173}
+[BABEL] Note: The code generator has deoptimised the styling of <repo>/output/round-3-2761365/evidence/dev-run-ArzQl3/cache/cold-1/deps/react-dom_client.js?v=51ad3326 as it exceeds the max of 500KB.
+{"label":"warm-4","code":0,"pidAlive":false,"portAvailable":true,"trace":true,"ok":true,"port":5173}
+[BABEL] Note: The code generator has deoptimised the styling of <repo>/output/round-3-2761365/evidence/dev-run-ArzQl3/cache/cold-1/deps/react-dom_client.js?v=51ad3326 as it exceeds the max of 500KB.
+{"label":"warm-5","code":0,"pidAlive":false,"portAvailable":true,"trace":true,"ok":true,"port":5173}
+[BABEL] Note: The code generator has deoptimised the styling of <repo>/output/round-3-2761365/evidence/dev-run-ArzQl3/cache/cold-1/deps/react-dom_client.js?v=51ad3326 as it exceeds the max of 500KB.
+{"label":"r3-link","code":0,"pidAlive":false,"portAvailable":true,"trace":true,"ok":true,"port":5173}
+results=<repo>/output/round-3-2761365/evidence/dev-run-ArzQl3/results.json
+
+exit_code=0

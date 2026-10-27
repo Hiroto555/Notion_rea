@@ -1,0 +1,43 @@
+{
+  "target": "276136519164c7a1a1c6366398ed3dc3f09350c0",
+  "runtime": {
+    "node": "v24.20.0",
+    "platform": "darwin",
+    "arch": "arm64"
+  },
+  "source": {
+    "path": "src/persistence/workspace.ts",
+    "gitBlob": "8428eded0cc82c71f50bc7e39b7a1f710c5c6a06",
+    "verified": true
+  },
+  "scope": "Exact workspace module transpiled by TypeScript; output-path/copy logic isolated from main. All data synthetic. No Electron, macOS, Notion, or full-suite execution.",
+  "checks": [
+    {
+      "id": "NORMAL_MIGRATION_CONTROL",
+      "status": "PASS",
+      "sourceDatabaseUnchanged": true,
+      "destinationIndependent": true,
+      "backupIndependent": true
+    },
+    {
+      "id": "ROOT_ASSETS_SYMLINK",
+      "status": "DEFECT_REPRODUCED",
+      "migrationReportedSuccess": true,
+      "destinationAssetsIsSymlink": true,
+      "backupAssetsIsSymlink": true,
+      "destinationAttachmentAvailableAfterSourceRemoval": false,
+      "backupAttachmentAvailableAfterSourceRemoval": false,
+      "sourceDatabaseUnchanged": true
+    },
+    {
+      "id": "ATTACHMENT_OUTPUT_COLLISION",
+      "status": "ISOLATED_LOGIC_REPRODUCED",
+      "proposedDestinationEqualsDatabase": true,
+      "databaseBytesChanged": true,
+      "databaseNowEqualsAttachment": true,
+      "scope": "main path/copy expressions only; not Electron dialog or live database behavior"
+    }
+  ]
+}
+
+exit_code=0

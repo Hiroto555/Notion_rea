@@ -1,0 +1,67 @@
+
+Running 20 tests using 1 worker
+
+(node:92134) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓   1 tests/e2e/page-move.spec.ts:24:1 › S2 tree input: edited source becomes target child with stable identity (5.0s)
+(node:92235) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓   2 tests/e2e/page-move.spec.ts:24:1 › S2 tree input: edited source becomes target child with stable identity (5.1s)
+(node:92341) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓   3 tests/e2e/page-move.spec.ts:24:1 › S2 tree input: edited source becomes target child with stable identity (5.0s)
+(node:92451) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓   4 tests/e2e/page-move.spec.ts:24:1 › S2 tree input: edited source becomes target child with stable identity (2.8s)
+(node:92492) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓   5 tests/e2e/page-move.spec.ts:24:1 › S2 tree input: edited source becomes target child with stable identity (3.4s)
+(node:92523) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓   6 tests/e2e/page-move.spec.ts:24:1 › S2 tree input: edited source becomes target child with stable identity (3.7s)
+(node:92568) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓   7 tests/e2e/page-move.spec.ts:24:1 › S2 tree input: edited source becomes target child with stable identity (2.9s)
+(node:92611) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓   8 tests/e2e/page-move.spec.ts:24:1 › S2 tree input: edited source becomes target child with stable identity (3.2s)
+(node:92648) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓   9 tests/e2e/page-move.spec.ts:24:1 › S2 tree input: edited source becomes target child with stable identity (4.0s)
+(node:92687) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓  10 tests/e2e/page-move.spec.ts:24:1 › S2 tree input: edited source becomes target child with stable identity (3.7s)
+(node:92733) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓  11 tests/e2e/page-move.spec.ts:24:1 › S2 tree input: edited source becomes target child with stable identity (3.3s)
+(node:92769) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓  12 tests/e2e/page-move.spec.ts:24:1 › S2 tree input: edited source becomes target child with stable identity (3.8s)
+(node:92806) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓  13 tests/e2e/page-move.spec.ts:24:1 › S2 tree input: edited source becomes target child with stable identity (2.8s)
+(node:92831) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓  14 tests/e2e/page-move.spec.ts:24:1 › S2 tree input: edited source becomes target child with stable identity (2.8s)
+(node:92865) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓  15 tests/e2e/page-move.spec.ts:24:1 › S2 tree input: edited source becomes target child with stable identity (2.7s)
+(node:92890) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓  16 tests/e2e/page-move.spec.ts:24:1 › S2 tree input: edited source becomes target child with stable identity (2.9s)
+(node:92924) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓  17 tests/e2e/page-move.spec.ts:24:1 › S2 tree input: edited source becomes target child with stable identity (3.0s)
+(node:92959) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓  18 tests/e2e/page-move.spec.ts:24:1 › S2 tree input: edited source becomes target child with stable identity (3.1s)
+(node:92988) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓  19 tests/e2e/page-move.spec.ts:24:1 › S2 tree input: edited source becomes target child with stable identity (3.0s)
+(node:93024) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓  20 tests/e2e/page-move.spec.ts:24:1 › S2 tree input: edited source becomes target child with stable identity (2.6s)
+
+  20 passed (1.3m)
+
+exit_code=0

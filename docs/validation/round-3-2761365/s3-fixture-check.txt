@@ -1,0 +1,8 @@
+
+> folio-desktop@0.1.0 check
+> tsc --noEmit
+
+tests/e2e/next-round-fixture.ts(42,58): error TS18048: 'window' is possibly 'undefined'.
+tests/e2e/next-round-fixture.ts(42,65): error TS2339: Property 'folio' does not exist on type 'Page'.
+
+exit_code=2

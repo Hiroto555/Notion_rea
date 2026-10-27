@@ -1,0 +1,118 @@
+
+Running 41 tests using 1 worker
+
+(node:97990) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓   1 tests/e2e/desktop.spec.ts:45:1 › real Electron: page edit, slash, undo, blocks, search, clone, trash and restart (4.6s)
+  ✓   2 tests/e2e/desktop.spec.ts:149:1 › database table edits, filters, sorts, board drop and calendar persistence (3.6s)
+  ✓   3 tests/e2e/desktop.spec.ts:196:1 › security boundary, page hierarchy, cycle error and versions (1.7s)
+  ✓   4 tests/e2e/desktop.spec.ts:252:1 › native rich HTML paste, Markdown shortcuts, toggle, links and block drag (3.7s)
+  ✓   5 tests/e2e/desktop.spec.ts:322:1 › real import/export, image/file attachments and complete backup (1.7s)
+  ✓   6 tests/e2e/desktop.spec.ts:403:1 › reproducible load: 150 pages, 1000 blocks, input and reopen (3.7s)
+  ✓   7 tests/e2e/desktop.spec.ts:482:1 › stale-write recovery preserves unsaved edits before reload (1.6s)
+  ✓   8 tests/e2e/dialogs.spec.ts:16:1 › R3 DB Escape closes the record and saves the latest input through restart (2.8s)
+  ✓   9 tests/e2e/dialogs.spec.ts:31:1 › R3 search/link/record share initial focus, modal tab cycle, close button and background isolation (2.6s)
+  ✘  10 tests/e2e/dialogs.spec.ts:113:1 › R3 selected text link cancel/confirm restores exact range, wording and marks (1.5s)
+(node:98259) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓  11 tests/e2e/dialogs.spec.ts:140:1 › R3 synthetic composition, prevented Escape and inner menus take priority (not physical IME) (1.8s)
+  ✓  12 tests/e2e/dialogs.spec.ts:178:1 › R3 nested native UI consumes one Escape; search navigation focuses destination (2.2s)
+  ✓  13 tests/e2e/dialogs.spec.ts:243:1 › R3 stale link document is rejected and switching page leaves both pages unchanged (1.9s)
+  ✓  14 tests/e2e/dialogs.spec.ts:284:1 › N04 slash arrow/confirm/cancel retains text and cursor (Folio only) (1.9s)
+  ✓  15 tests/e2e/drag.spec.ts:4:1 › R2 short original regression: checkbox edit then real handle drag (1.8s)
+  ✓  16 tests/e2e/drag.spec.ts:41:1 › R2 top-level matrix: single/multiple/start/end/same/cancel/scroll/undo/redo/restart (4.9s)
+  ✓  17 tests/e2e/gate-a.spec.ts:100:1 › F01 same-page sidebar/search reselection keeps editor, attachment, link and exports (2.1s)
+  ✓  18 tests/e2e/gate-a.spec.ts:163:3 › F05 attachment roundtrip LICENSE (1.0s)
+  ✓  19 tests/e2e/gate-a.spec.ts:163:3 › F05 attachment roundtrip 資料.日本語 (984ms)
+  ✓  20 tests/e2e/gate-a.spec.ts:163:3 › F05 attachment roundtrip file.abcdefghijklmnop (1.0s)
+  ✓  21 tests/e2e/gate-a.spec.ts:163:3 › F05 attachment roundtrip archive.tar.gz (1.0s)
+  ✓  22 tests/e2e/gate-a.spec.ts:163:3 › F05 attachment roundtrip IMAGE.PNG (1.3s)
+  ✓  23 tests/e2e/gate-a.spec.ts:180:1 › F06 synthetic composing Enter does not navigate search or link (not physical IME) (1.5s)
+  ✓  24 tests/e2e/gate-a.spec.ts:210:1 › F11 editing during move and delayed load keeps local patch and durable revision (3.0s)
+  ✓  25 tests/e2e/gate-a.spec.ts:328:1 › F02 full-text search, preview, count and in-page selection cross inline marks (1.6s)
+  ✓  26 tests/e2e/gate-a.spec.ts:406:1 › F04 DB delete Undo, restart history restore and property history retain IDs and values (3.8s)
+  ✘  27 tests/e2e/gate-a.spec.ts:475:1 › F06 editor selection Cmd+K sets page link without replacing text; modal and prevented keys win (6.3s)
+(node:98719) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓  28 tests/e2e/gate-a.spec.ts:513:1 › F07 invalid IPC is rejected and unknown stored schema is read-only with exact source export (1.2s)
+  ✓  29 tests/e2e/gate-a.spec.ts:556:1 › F11 failed write exports pending patch and persisted state, then recovers a separate page (2.3s)
+  ✓  30 tests/e2e/gate-a.spec.ts:611:1 › F03 default userData path and pre-ready directory failure are observable without touching user data (2.9s)
+  ✓  31 tests/e2e/gate-a.spec.ts:668:1 › F07 malformed JSON opens an error screen with backup, and null doc never mounts editor (2.8s)
+  ✓  32 tests/e2e/output-boundary.spec.ts:5:1 › S1 real IPC protects workspace outputs and permits external namesake (1.3s)
+  ✓  33 tests/e2e/page-move.spec.ts:25:1 › S2 tree input: edited source becomes target child with stable identity (2.6s)
+  ✓  34 tests/e2e/page-move.spec.ts:44:1 › S2 menu F11: delayed load preserves local edit and page hierarchy through restart (2.6s)
+  ✓  35 tests/e2e/page-move.spec.ts:79:1 › S2 tree order, root, cancellation and cycle rejection (3.6s)
+  ✓  36 tests/e2e/recovery.spec.ts:12:1 › R1 legacy export file → recovery → restart preserves a 500 character title (2.1s)
+  ✓  37 tests/e2e/recovery.spec.ts:57:3 › R1 real IPC v2 byte boundary -1 with escaping → file → restart (11.3s)
+  ✓  38 tests/e2e/recovery.spec.ts:57:3 › R1 real IPC v2 byte boundary 0 with escaping → file → restart (12.0s)
+  ✓  39 tests/e2e/recovery.spec.ts:57:3 › R1 real IPC v2 byte boundary 1 with escaping → file → restart (7.7s)
+  ✓  40 tests/e2e/recovery.spec.ts:102:1 › R1 multiple pending pages survive cancel/write/reload failures; copies retain original and attachment (5.0s)
+  ✓  41 tests/e2e/recovery.spec.ts:266:1 › R1 real IPC rejects the 30.3MB Japanese export previously accepted (1.3s)
+
+
+  1) tests/e2e/dialogs.spec.ts:113:1 › R3 selected text link cancel/confirm restores exact range, wording and marks 
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: "不動産"
+    Received: "不"
+
+      107 |   await s.window.keyboard.press("Meta+ArrowLeft");
+      108 |   for (let i = 0; i < 3; i++) await s.window.keyboard.press("Shift+ArrowRight");
+    > 109 |   expect(await s.window.evaluate(() => getSelection()?.toString())).toBe(
+          |                                                                     ^
+      110 |     "不動産",
+      111 |   );
+      112 | }
+        at selectWord (<repo>/tests/e2e/dialogs.spec.ts:109:69)
+        at <repo>/tests/e2e/dialogs.spec.ts:117:3
+
+    Error Context: output/round-3-2761365/evidence/s2-full-3/dialogs-R3-selected-text-l-9f56b-act-range-wording-and-marks/error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    output/round-3-2761365/evidence/s2-full-3/dialogs-R3-selected-text-l-9f56b-act-range-wording-and-marks/trace.zip
+    Usage:
+
+        npx playwright show-trace output/round-3-2761365/evidence/s2-full-3/dialogs-R3-selected-text-l-9f56b-act-range-wording-and-marks/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  2) tests/e2e/gate-a.spec.ts:475:1 › F06 editor selection Cmd+K sets page link without replacing text; modal and prevented keys win 
+
+    Error: expect(locator).toHaveText(expected) failed
+
+    Locator: locator('.folio-editor a')
+    Expected: "Keep selected text"
+    Timeout: 5000ms
+    Error: element(s) not found
+
+    Call log:
+      - Expect "toHaveText" locator('.folio-editor a') with timeout 5000ms
+      - waiting for locator('.folio-editor a')
+
+
+      484 |   await window.getByLabel("検索キーワード").fill("アイデアノート");
+      485 |   await window.locator(".search-results button").first().click();
+    > 486 |   await expect(window.locator(".folio-editor a")).toHaveText(
+          |                                                   ^
+      487 |     "Keep selected text",
+      488 |   );
+      489 |   await saved();
+        at <repo>/tests/e2e/gate-a.spec.ts:486:51
+
+    Error Context: output/round-3-2761365/evidence/s2-full-3/gate-a-F06-editor-selectio-eb343-odal-and-prevented-keys-win/error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    output/round-3-2761365/evidence/s2-full-3/gate-a-F06-editor-selectio-eb343-odal-and-prevented-keys-win/trace.zip
+    Usage:
+
+        npx playwright show-trace output/round-3-2761365/evidence/s2-full-3/gate-a-F06-editor-selectio-eb343-odal-and-prevented-keys-win/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  2 failed
+    tests/e2e/dialogs.spec.ts:113:1 › R3 selected text link cancel/confirm restores exact range, wording and marks 
+    tests/e2e/gate-a.spec.ts:475:1 › F06 editor selection Cmd+K sets page link without replacing text; modal and prevented keys win 
+  39 passed (2.1m)
+
+exit_code=1

@@ -96,3 +96,9 @@ R1はタイトル490/491/500/501、UTF-8上限直前/一致/直後、旧形式�
 旧データ6ファイルとlockfileの前後SHA-256一致。既存アプリを終了せず、全試験は専用データ、既定パス試験は隔離appDataを使用。[保護記録](validation/next-round/data-protection.json)。生trace・画面・巨大fixtureはローカルoutputに保持し、匿名化コマンドログとhash indexをGitに保存する。パッケージ済み.appの再生成は今回未実施。Gate A全体完了・絶対安定・Notion 100%一致は宣言しない。
 
 最終全体3回目のF11診断はmousedownのみ、dragstart/dropなし、move IPCなし。根本原因未特定で残件。詳細はacceptance-full-3のtrace/画面/drag-events/move-requests。開発モードの初回起動待ちもFAILとして保持し、Vite依存最適化後の診断起動PASSとリンク回帰1/1 PASS（dev-dialog-smoke-v2）を別記録にした。cold start安定性を確認済みとはしない。
+
+## 2026-10-27 Round 3（2761365）
+
+[詳細・全試行](validation/round-3-2761365/README.md)、[受入と残件](ROUND-3-RESPONSE.md)。最終単体50/50、S2反復 tree 20/20・menu 10/10・既存block 39/40。全体3回41/41・41/41・39/41、fixture変更後の追加全体41/41。開発cold 5/5・warm 5/5と負例cleanupを確認。失敗は除外せず総合PARTIAL。Notion比較UNKNOWN、物理IME NOT_RUN。
+
+全体41/41の後、出力先パス結合を修正。現ビルドはcheck・単体50・build・重点E2E 2件で検証し、全体E2Eは再実行していない。

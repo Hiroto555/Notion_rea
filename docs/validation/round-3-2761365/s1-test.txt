@@ -1,0 +1,33 @@
+command: npm run test
+
+> folio-desktop@0.1.0 test
+> vitest run
+
+
+ RUN  v3.2.7 <repo>
+
+ ✓ tests/output-path.test.ts (1 test) 11ms
+ ✓ tests/pending-edits.test.ts (3 tests) 3ms
+ ✓ tests/gate-a.test.ts (11 tests) 762ms
+   ✓ F07 malformed stored JSON and future document versions stay byte-for-byte intact  353ms
+ ✓ tests/workspace.test.ts (6 tests) 733ms
+   ✓ F04 v1 migration keeps legacy document history and takes a rollback snapshot  393ms
+ ✓ tests/store.test.ts (13 tests) 1382ms
+   ✓ SQLite integrity > handles 150 nested pages and refuses cycles without partial mutation  923ms
+ ✓ tests/recovery.test.ts (16 tests) 17553ms
+   ✓ R1 actual export schema rejects UTF-8 bytes above the recover file limit  603ms
+   ✓ R1 x UTF-8 boundary -1: schema/file/store/reopen  3402ms
+   ✓ R1 x UTF-8 boundary 0: schema/file/store/reopen  2440ms
+   ✓ R1 x UTF-8 boundary 1: schema/file/store/reopen  429ms
+   ✓ R1 あ UTF-8 boundary -1: schema/file/store/reopen  2734ms
+   ✓ R1 あ UTF-8 boundary 0: schema/file/store/reopen  1877ms
+   ✓ R1 😀 UTF-8 boundary -1: schema/file/store/reopen  2574ms
+   ✓ R1 😀 UTF-8 boundary 0: schema/file/store/reopen  2989ms
+
+ Test Files  6 passed (6)
+      Tests  50 passed (50)
+   Start at  09:41:00
+   Duration  18.40s (transform 337ms, setup 0ms, collect 1.55s, tests 20.44s, environment 1ms, prepare 805ms)
+
+
+exit_code=0

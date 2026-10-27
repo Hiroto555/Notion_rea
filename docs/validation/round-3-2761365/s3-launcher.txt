@@ -1,0 +1,4 @@
+{"test":"occupied-port","port":53967,"code":1,"blockerStillListening":true,"rejected":true}
+{"test":"signal-cleanup","port":53967,"exit":{"code":1,"signal":null},"electronPid":4134,"pidAlive":false,"portAvailable":true,"output":"Folio development server http://127.0.0.1:53967/; Electron PID 4134\n"}
+
+exit_code=0

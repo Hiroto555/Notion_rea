@@ -39,3 +39,11 @@ OBSERVED_REFERENCE=実Notionの観測、DOCUMENTED_REFERENCE=公式文書、INFE
 | N08 | 合成compositionの自動試験は補助証拠のみ。物理IMEはNOT_RUN |
 
 各テストの現在のソースhash、コマンド、結果は[実行記録](validation/next-round/README.md)に固定する。アクセシビリティ契約へのPASSをNotionとのMATCHへ読み替えない。
+
+## N09 ページ移動（2026-10-27追加）
+
+| ID | 固定する操作・観測 | 参照根拠 | Folio | Notion実測 | 比較 |
+| --- | --- | --- | --- | --- | --- |
+| N09 | 合成ページ Source / Target と子孫・書式付き本文を用意し、Source を Target 内へ移動→兄弟順変更→ルートへ戻す。開始位置、ドロップ可能領域、階層、選択、フォーカス、本文、再起動後と製品内の同一性を確認 | DOCUMENTED_REFERENCE: [サイドバー](https://www.notion.com/help/navigate-with-the-sidebar) はドラッグによる並べ替えを、[サブページ](https://www.notion.com/help/create-a-subpage) は親への移動と親から出す操作を説明。細かな領域表示・フォーカス等は UNKNOWN | PARTIAL（合成ページの内包・保存・再起動は検証中。全操作の比較条件は未完） | NOT_RUN | UNKNOWN |
+
+許可されたテスト専用 Notion 領域は提示されていない。Notion の版・実測日時・OS・言語・テーマ・viewport・zoom・入力方法は UNKNOWN。公式資料の確認は実測ではない。物理 IME は N08 の NOT_RUN を維持する。

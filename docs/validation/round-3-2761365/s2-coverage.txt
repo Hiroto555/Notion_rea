@@ -1,0 +1,11 @@
+
+Running 2 tests using 1 worker
+
+(node:94960) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓  1 tests/e2e/page-move.spec.ts:79:1 › S2 tree order, root, cancellation and cycle rejection (3.7s)
+  ✓  2 tests/e2e/recovery.spec.ts:102:1 › R1 multiple pending pages survive cancel/write/reload failures; copies retain original and attachment (2.9s)
+
+  2 passed (7.0s)
+
+exit_code=0

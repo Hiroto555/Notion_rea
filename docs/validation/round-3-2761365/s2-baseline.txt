@@ -1,0 +1,10 @@
+
+Running 1 test using 1 worker
+
+(node:90913) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓  1 tests/e2e/gate-a.spec.ts:209:1 › F11 editing during move and delayed load keeps local patch and durable revision (3.2s)
+
+  1 passed (3.7s)
+
+exit_code=0

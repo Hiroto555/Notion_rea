@@ -1,0 +1,37 @@
+
+Running 10 tests using 1 worker
+
+(node:93089) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓   1 tests/e2e/page-move.spec.ts:43:1 › S2 menu F11: delayed load preserves local edit and page hierarchy through restart (3.0s)
+(node:93116) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓   2 tests/e2e/page-move.spec.ts:43:1 › S2 menu F11: delayed load preserves local edit and page hierarchy through restart (2.9s)
+(node:93157) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓   3 tests/e2e/page-move.spec.ts:43:1 › S2 menu F11: delayed load preserves local edit and page hierarchy through restart (2.6s)
+(node:93205) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓   4 tests/e2e/page-move.spec.ts:43:1 › S2 menu F11: delayed load preserves local edit and page hierarchy through restart (2.4s)
+(node:93240) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓   5 tests/e2e/page-move.spec.ts:43:1 › S2 menu F11: delayed load preserves local edit and page hierarchy through restart (2.3s)
+(node:93253) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓   6 tests/e2e/page-move.spec.ts:43:1 › S2 menu F11: delayed load preserves local edit and page hierarchy through restart (2.4s)
+(node:93297) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓   7 tests/e2e/page-move.spec.ts:43:1 › S2 menu F11: delayed load preserves local edit and page hierarchy through restart (2.3s)
+(node:93311) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓   8 tests/e2e/page-move.spec.ts:43:1 › S2 menu F11: delayed load preserves local edit and page hierarchy through restart (2.3s)
+(node:93343) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓   9 tests/e2e/page-move.spec.ts:43:1 › S2 menu F11: delayed load preserves local edit and page hierarchy through restart (2.3s)
+(node:93377) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓  10 tests/e2e/page-move.spec.ts:43:1 › S2 menu F11: delayed load preserves local edit and page hierarchy through restart (2.3s)
+
+  10 passed (28.8s)
+
+exit_code=0

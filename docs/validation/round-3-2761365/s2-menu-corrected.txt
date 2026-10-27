@@ -1,0 +1,10 @@
+
+Running 1 test using 1 worker
+
+(node:91907) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓  1 tests/e2e/page-move.spec.ts:43:1 › S2 menu F11: delayed load preserves local edit and page hierarchy through restart (2.9s)
+
+  1 passed (3.3s)
+
+exit_code=0

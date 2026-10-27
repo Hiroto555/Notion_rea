@@ -1,0 +1,10 @@
+
+> folio-desktop@0.1.0 check
+> tsc --noEmit
+
+tests/e2e/next-round-fixture.ts(31,32): error TS2769: No overload matches this call.
+  The last overload gave the following error.
+    Argument of type '"render-process-gone" | "did-fail-load" | "did-finish-load" | "did-start-loading"' is not assignable to parameter of type '"zoom-changed"'.
+      Type '"render-process-gone"' is not assignable to type '"zoom-changed"'.
+
+exit_code=2

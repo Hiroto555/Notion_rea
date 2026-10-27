@@ -1,0 +1,47 @@
+
+Running 5 tests using 1 worker
+
+(node:91435) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓  1 tests/e2e/drag.spec.ts:4:1 › R2 short original regression: checkbox edit then real handle drag (4.2s)
+  ✓  2 tests/e2e/drag.spec.ts:41:1 › R2 top-level matrix: single/multiple/start/end/same/cancel/scroll/undo/redo/restart (7.8s)
+  ✓  3 tests/e2e/gate-a.spec.ts:210:1 › F11 editing during move and delayed load keeps local patch and durable revision (2.9s)
+  ✓  4 tests/e2e/page-move.spec.ts:24:1 › S2 tree input: edited source becomes target child with stable identity (3.3s)
+  ✘  5 tests/e2e/page-move.spec.ts:43:1 › S2 menu F11: delayed load preserves local edit and page hierarchy through restart (1.4s)
+
+
+  1) tests/e2e/page-move.spec.ts:43:1 › S2 menu F11: delayed load preserves local edit and page hierarchy through restart 
+
+    Error: locator.click: Error: strict mode violation: getByRole('button', { name: /Move Target/ }) resolved to 3 elements:
+        1) <button class="page-tree-label">…</button> aka getByText('📄Move Target')
+        2) <button class="tree-add" aria-label="Move Target に子ページを作成">…</button> aka getByRole('button', { name: 'Move Target に子ページを作成' })
+        3) <button>📄 Move Target</button> aka getByText('📄 Move Target')
+
+    Call log:
+      - waiting for getByRole('button', { name: /Move Target/ })
+
+
+      59 |     await w.getByLabel("ページメニュー", { exact: true }).click();
+      60 |     await w.getByRole("button", { name: "移動する", exact: true }).click();
+    > 61 |     await w.getByRole("button", { name: /Move Target/ }).click();
+         |                                                          ^
+      62 |     await expect.poll(() => s.app.evaluate(() => (globalThis as any).heldLoad)).toBe(true);
+      63 |     await w.getByLabel("ページタイトル", { exact: true }).fill("Move Source edited");
+      64 |     await s.app.evaluate(() => (globalThis as any).releaseLoad());
+        at <repo>/tests/e2e/page-move.spec.ts:61:58
+
+    Error Context: output/round-3-2761365/evidence/s2-first/page-move-S2-menu-F11-dela-398b6-e-hierarchy-through-restart/error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    output/round-3-2761365/evidence/s2-first/page-move-S2-menu-F11-dela-398b6-e-hierarchy-through-restart/trace.zip
+    Usage:
+
+        npx playwright show-trace output/round-3-2761365/evidence/s2-first/page-move-S2-menu-F11-dela-398b6-e-hierarchy-through-restart/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  1 failed
+    tests/e2e/page-move.spec.ts:43:1 › S2 menu F11: delayed load preserves local edit and page hierarchy through restart 
+  4 passed (20.4s)
+
+exit_code=1

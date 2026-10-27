@@ -1,0 +1,11 @@
+
+Running 2 tests using 1 worker
+
+(node:8889) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓  1 tests/e2e/output-boundary.spec.ts:5:1 › S1 real IPC protects workspace outputs and permits external namesake (3.0s)
+  ✓  2 tests/e2e/recovery.spec.ts:102:1 › R1 multiple pending pages survive cancel/write/reload failures; copies retain original and attachment (3.1s)
+
+  2 passed (6.4s)
+
+exit_code=0
