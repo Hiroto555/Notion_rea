@@ -15,6 +15,8 @@ import {
   type Version,
 } from "../shared/types";
 import { recoveryPages } from "../shared/recovery";
+import { normalizeDatabaseData } from "../database/model";
+const STORE_VERSION = 3;
 export class Store {
   readonly db: DatabaseSync;
   constructor(readonly path: string) {
@@ -26,28 +28,88 @@ export class Store {
     const v = this.db.prepare("PRAGMA user_version").get() as {
       user_version: number;
     };
-    if (v.user_version > 2) {
+    const originalVersion = v.user_version;
+    if (originalVersion > STORE_VERSION) {
       this.db.close();
       throw new Error("This workspace requires a newer Folio version.");
     }
-    this.db.exec(
-      `CREATE TABLE IF NOT EXISTS pages(id TEXT PRIMARY KEY, data TEXT NOT NULL, body TEXT NOT NULL); CREATE TABLE IF NOT EXISTS settings(key TEXT PRIMARY KEY,value TEXT NOT NULL); CREATE TABLE IF NOT EXISTS versions(id INTEGER PRIMARY KEY AUTOINCREMENT,pageId TEXT NOT NULL,createdAt INTEGER NOT NULL,title TEXT NOT NULL,doc TEXT NOT NULL); CREATE INDEX IF NOT EXISTS versions_page ON versions(pageId,createdAt); `,
-    );
-    if (v.user_version < 2) {
-      // A standalone SQLite snapshot makes schema rollback possible. Assets stay
-      // beside the original database and are never moved by this migration.
-      const backup = path + ".pre-v2.sqlite";
-      if (v.user_version === 1 && !existsSync(backup))
-        this.db.prepare("VACUUM INTO ?").run(backup);
-      this.transaction(() => {
-        this.db.exec(
-          "ALTER TABLE versions ADD COLUMN database TEXT; PRAGMA user_version=2;",
-        );
-      });
+    try {
+      this.db.exec(
+        `CREATE TABLE IF NOT EXISTS pages(id TEXT PRIMARY KEY, data TEXT NOT NULL, body TEXT NOT NULL); CREATE TABLE IF NOT EXISTS settings(key TEXT PRIMARY KEY,value TEXT NOT NULL); CREATE TABLE IF NOT EXISTS versions(id INTEGER PRIMARY KEY AUTOINCREMENT,pageId TEXT NOT NULL,createdAt INTEGER NOT NULL,title TEXT NOT NULL,doc TEXT NOT NULL); CREATE INDEX IF NOT EXISTS versions_page ON versions(pageId,createdAt); `,
+      );
+      if (originalVersion < 2) {
+        // A standalone SQLite snapshot makes schema rollback possible. Assets stay
+        // beside the original database and are never moved by this migration.
+        const backup = path + ".pre-v2.sqlite";
+        if (originalVersion === 1 && !existsSync(backup))
+          this.db.prepare("VACUUM INTO ?").run(backup);
+        this.transaction(() => {
+          this.db.exec(
+            "ALTER TABLE versions ADD COLUMN database TEXT; PRAGMA user_version=2;",
+          );
+        });
+      }
+      this.db.exec(
+        "CREATE TABLE IF NOT EXISTS assets(id TEXT PRIMARY KEY, metadata TEXT NOT NULL)",
+      );
+      if (originalVersion < 3) {
+        // v3 changes the shape of page.database only. A VACUUM snapshot of a
+        // real v2 workspace is kept before the page/version JSON is rewritten;
+        // the rewrite itself and the version bump commit atomically.
+        if (originalVersion === 2) {
+          const backup = path + ".pre-v3.sqlite";
+          if (!existsSync(backup))
+            this.db.prepare("VACUUM INTO ?").run(backup);
+        }
+        this.transaction(() => {
+          this.migrateStoredDatabases();
+          this.db.exec(`PRAGMA user_version=${STORE_VERSION}`);
+        });
+      }
+    } catch (error) {
+      try {
+        this.db.close();
+      } catch {}
+      throw error;
     }
-    this.db.exec(
-      "CREATE TABLE IF NOT EXISTS assets(id TEXT PRIMARY KEY, metadata TEXT NOT NULL)",
-    );
+  }
+  private migrateStoredDatabases() {
+    const pages = this.db
+      .prepare("SELECT id,data FROM pages")
+      .all() as { id: string; data: string }[];
+    for (const row of pages) {
+      let page: any;
+      try {
+        page = JSON.parse(row.data);
+      } catch {
+        // Corrupt JSON is left byte-for-byte intact for pageSource/recovery.
+        continue;
+      }
+      if (!page || typeof page !== "object" || page.database == null) continue;
+      const database = normalizeDatabaseData(page.database);
+      // Unknown database versions and malformed values also stay untouched.
+      if (!database.ok || !database.migrated) continue;
+      this.db
+        .prepare("UPDATE pages SET data=? WHERE id=?")
+        .run(JSON.stringify({ ...page, database: database.data }), row.id);
+    }
+    const versions = this.db
+      .prepare("SELECT id,database FROM versions WHERE database IS NOT NULL")
+      .all() as { id: number; database: string }[];
+    for (const row of versions) {
+      let value: unknown;
+      try {
+        value = JSON.parse(row.database);
+      } catch {
+        continue;
+      }
+      if (!value || typeof value !== "object") continue;
+      const database = normalizeDatabaseData(value);
+      if (!database.ok || !database.migrated) continue;
+      this.db
+        .prepare("UPDATE versions SET database=? WHERE id=?")
+        .run(JSON.stringify(database.data), row.id);
+    }
   }
   decode(data: string): Page {
     let p: Page;
@@ -60,14 +122,27 @@ export class Store {
     }
     if (!p || typeof p !== "object" || !p.id)
       throw new Error("ページを読めません。原本は変更していません。");
-    return (p.schemaVersion === undefined || p.schemaVersion === 1) &&
-      isDocument(p.doc)
-      ? p
-      : {
-          ...p,
-          documentError:
-            "未対応または不正な文書です。原本を保全し、編集を停止しています。",
-        };
+    const documentValid =
+      (p.schemaVersion === undefined || p.schemaVersion === 1) &&
+      isDocument(p.doc);
+    let database = p.database === undefined ? null : p.database;
+    let databaseError = "";
+    if (database !== null) {
+      const normalized = normalizeDatabaseData(database);
+      if (normalized.ok) database = normalized.data;
+      else {
+        databaseError = normalized.error;
+        database = null;
+      }
+    }
+    if (documentValid && !databaseError) return { ...p, database };
+    return {
+      ...p,
+      database,
+      documentError: documentValid
+        ? databaseError
+        : "未対応または不正な文書です。原本を保全し、編集を停止しています。",
+    };
   }
   transaction<T>(f: () => T): T {
     this.db.exec("BEGIN IMMEDIATE");
@@ -100,22 +175,32 @@ export class Store {
       !isDocument(p.doc)
     )
       throw new Error("不正な文書は保存できません。原本を保全しています。");
+    let database = p.database === undefined ? null : p.database;
+    if (database !== null) {
+      const normalized = normalizeDatabaseData(database);
+      if (!normalized.ok)
+        throw new Error(
+          normalized.error + " 不正なデータベースは保存できません。",
+        );
+      database = normalized.data;
+    }
+    const page = { ...p, database };
     this.db
       .prepare(
         "INSERT INTO pages(id,data,body) VALUES(?,?,?) ON CONFLICT(id) DO UPDATE SET data=excluded.data,body=excluded.body",
       )
       .run(
-        p.id,
-        JSON.stringify(p),
+        page.id,
+        JSON.stringify(page),
         [
-          p.title,
-          textOf(p.doc),
-          ...(p.database?.rows.map(
+          page.title,
+          textOf(page.doc),
+          ...(page.database?.rows.map(
             (r) => r.title + " " + Object.values(r.values).join(" "),
           ) ?? []),
         ].join("\n"),
       );
-    return p;
+    return page;
   }
   load(): Snapshot {
     return {
@@ -163,7 +248,9 @@ export class Store {
     });
   }
   update(id: string, revision: number, patch: PagePatch): Page {
-    requestSchema.parse({ type: "update", id, revision, patch });
+    const parsed = requestSchema.parse({ type: "update", id, revision, patch });
+    if (parsed.type !== "update") throw new Error("Unsupported storage request");
+    const cleanPatch: PagePatch = parsed.patch;
     return this.transaction(() => {
       const p = this.get(id);
       if (p.revision !== revision)
@@ -172,14 +259,14 @@ export class Store {
         );
       if (p.documentError) throw new Error(p.documentError);
       if (
-        patch.doc !== undefined ||
-        patch.database !== undefined ||
-        patch.title !== undefined
+        cleanPatch.doc !== undefined ||
+        cleanPatch.database !== undefined ||
+        cleanPatch.title !== undefined
       )
         this.recordVersion(p);
       return this.write({
         ...p,
-        ...patch,
+        ...cleanPatch,
         updatedAt: Date.now(),
         revision: p.revision + 1,
       });
@@ -301,11 +388,21 @@ export class Store {
         doc: string;
         database: string | null;
       })[]
-    ).map((v) => ({
-      ...v,
-      doc: JSON.parse(v.doc),
-      database: v.database === null ? undefined : JSON.parse(v.database),
-    }));
+    ).map((v) => {
+      const parsed = v.database === null ? undefined : JSON.parse(v.database);
+      const normalized =
+        parsed === undefined ? undefined : normalizeDatabaseData(parsed);
+      return {
+        ...v,
+        doc: JSON.parse(v.doc),
+        database:
+          parsed === undefined
+            ? undefined
+            : normalized?.ok
+              ? normalized.data
+              : (parsed as Version["database"]),
+      };
+    });
   }
   handle(r: Request): unknown {
     switch (r.type) {
