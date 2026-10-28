@@ -1,0 +1,110 @@
+{
+  "created": "2026-10-27T16:34:41+09:00",
+  "run": {
+    "command": "env -u ELECTRON_RUN_AS_NODE node scripts/folio-agent.mjs test:e2e --retries=0 --reporter=list tests/e2e/r3-fidelity.spec.ts",
+    "started": "2026-10-27T07:20:35.872Z",
+    "duration": "1.2m",
+    "tests": 4,
+    "passed": 4,
+    "failed": 0,
+    "retries": 0,
+    "shared_lock_acquired": true,
+    "log": "output/agent-workspace/logs/2026-10-27T07-20-35-872Z-test-e2e-a29ba222.log",
+    "build": {
+      "renderer_css": "dist/renderer/assets/index-HclxMr0T.css",
+      "renderer_css_sha256": "0703f28eba837bb132b060d2b7c53491d1e72f3d674cff36103d1eddc4526803",
+      "renderer_js": "dist/renderer/assets/index-BH2kIirw.js",
+      "renderer_js_sha256": "02deb3a8a709a986f4e87034ea81f9d8cff3f1627ce7211e6bff5f81a43edda9",
+      "note": "E2E 直前の build は 2026-10-27T07:17:31Z。E2E 後に Modal/テスト/文書を Prettier 整形し、再 build（07:44Z）が同一の css/js sha256 を再現した。styles.css と App の実装は変更していない。"
+    }
+  },
+  "environment": {
+    "os": "macOS 26.6.2 (25G83) arm64",
+    "node": "24.20.0",
+    "npm": "11.19.0",
+    "electron": "45.0.0",
+    "chromium": "156.0.8078.48",
+    "locale": "ja",
+    "zoom": 1,
+    "dpr": 2,
+    "viewports": [
+      "1440x907",
+      "1024x720",
+      "960x700"
+    ],
+    "input": "Playwright pointer/keyboard; synthetic composition only; physical Japanese IME NOT_RUN",
+    "data": "isolated synthetic temp workspace per test; no real user data"
+  },
+  "evidence": {
+    "r3-db-record-display.json": {
+      "sha256": "e0a01cfb7b0c64a6d00d2218e4a80249ac4e728c9c3edf85719353d9bc4a8d83",
+      "bytes": 3090
+    },
+    "r3-focus-contract.json": {
+      "sha256": "3cc6985791d067c0d36be41d270a5e7a42f5dd8a53d936ddd7bd5c64b1e8588a",
+      "bytes": 1098
+    },
+    "r3-long-title-keyboard-motion.json": {
+      "sha256": "2bd7f42d181625aa57da240975aac54737a6fc59446fb9587b1aecf3c6c6b0ec",
+      "bytes": 1037
+    },
+    "r3-responsive.json": {
+      "sha256": "ce4f38b03c11815f2c15501bbbc400fd74438dd7a474822e165ab1f0a0a3f78d",
+      "bytes": 6117
+    }
+  },
+  "screenshots": {
+    "r3-fidelity-db-1024x720.png": {
+      "sha256": "79cf1dc48ae2788ff058907c41dac73081accc490f1ea38ff0b5196d6e61c141",
+      "committed": false,
+      "location": "output/playwright/results/<run>/*.png (git 管理外)"
+    },
+    "r3-fidelity-db-1440x907.png": {
+      "sha256": "a094ca0bb3a1c24ab1aef639cd59540736cf7048b052d4458f74bd7e932bdd9e",
+      "committed": false,
+      "location": "output/playwright/results/<run>/*.png (git 管理外)"
+    },
+    "r3-fidelity-db-960x700.png": {
+      "sha256": "2ae40c22e3080cea54d04bb029631dbe53f059b4c9136d3c5188fbd7a7705610",
+      "committed": false,
+      "location": "output/playwright/results/<run>/*.png (git 管理外)"
+    },
+    "r3-fidelity-960-long-title.png": {
+      "sha256": "b3d3f7f57d895bba2f2dc43cbd96560fc49b536d01266fa0a7245d0531fb164c",
+      "committed": false,
+      "location": "output/playwright/results/<run>/*.png (git 管理外)"
+    },
+    "r3-fidelity-960-reduced-motion.png": {
+      "sha256": "19a0281595664e613a11b6e143c6e6f37267efdb60234e285f439481fa1225b1",
+      "committed": false,
+      "location": "output/playwright/results/<run>/*.png (git 管理外)"
+    },
+    "r3-fidelity-1024x720-light.png": {
+      "sha256": "33c70e9ba8f61a4c33a0dd63eb2be5283a7857e76eb2a69d6b165d91062b38b1",
+      "committed": false,
+      "location": "output/playwright/results/<run>/*.png (git 管理外)"
+    },
+    "r3-fidelity-1440x907-dark.png": {
+      "sha256": "ba0b2214319000f3fea23b36b7dddfa20c83abaf35ab82f4eb670c3aeb152983",
+      "committed": false,
+      "location": "output/playwright/results/<run>/*.png (git 管理外)"
+    },
+    "r3-fidelity-1440x907-light.png": {
+      "sha256": "7c37fa3fd25bdb662e6952508e06cc80aa4128c0e190524046321b82a41248a1",
+      "committed": false,
+      "location": "output/playwright/results/<run>/*.png (git 管理外)"
+    },
+    "r3-fidelity-960-slash-menu.png": {
+      "sha256": "ad0d6fc0b31cf32c1807f9403fb974128929129a5a65f306b87931ac6e310501",
+      "committed": false,
+      "location": "output/playwright/results/<run>/*.png (git 管理外)"
+    },
+    "r3-fidelity-960x700-light.png": {
+      "sha256": "1b63d84bc5e641f422cfb14f71099a47df0d4cfb51b71beae9273df4898a0b67",
+      "committed": false,
+      "location": "output/playwright/results/<run>/*.png (git 管理外)"
+    }
+  },
+  "notion": "NOT_RUN / UNKNOWN: no permitted test-only area or access evidence was confirmed; no Notion page was opened or created",
+  "physicalIme": "NOT_RUN"
+}

@@ -1,6 +1,6 @@
 {
-  "role": "integration",
-  "branch": "codex/folio-integration-v2",
-  "baseCommit": "b7c150d15739c59edf6ba9a62ebda4794748d46b",
-  "port": 56135
+  "role": "github",
+  "branch": "codex/folio-r6-20261028",
+  "baseCommit": "bd0f1e753258b8f29c3a436753f3bad9a1f84b16",
+  "port": 56505
 }

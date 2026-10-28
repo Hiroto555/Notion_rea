@@ -1,0 +1,18 @@
+{
+  "commit": "f0dcf237b6ccf0a338004b4a3c4622721fed819b",
+  "syntheticDataOnly": true,
+  "data": "output/r6-demo/data",
+  "migration": "UI explicit",
+  "typeChange": "text to number",
+  "columnAdded": "date",
+  "sigkill": "actual owned child",
+  "rawDraftRestored": "-",
+  "restartBodyVerified": true,
+  "ownerId": "2adcf5c9-5ccd-497e-a0fb-8435095922a5",
+  "recordIds": [
+    "de590d41-b0be-4bbb-82e4-01b6713d4e5b",
+    "ad59968d-d916-4d69-80f7-e8bebb0dba86"
+  ],
+  "pages": 4,
+  "note": "Synthetic local exercise; database, assets and screenshots are not included in this publication."
+}

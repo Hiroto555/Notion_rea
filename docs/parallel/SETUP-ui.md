@@ -1,6 +1,6 @@
 # 開発環境の準備結果 — ui
 
-- 共通の開始コミット: `b7c150d15739c59edf6ba9a62ebda4794748d46b`。branch: `sprint/ui-v2`。このworktree: `/Users/shiroto/Documents/ChatGPT/Folio-ui`。
+- 共通の開始コミット: `b7c150d15739c59edf6ba9a62ebda4794748d46b`。branch: `sprint/ui-v2`。このworktree: `<workspace-root>/Folio-ui`。
 - macOS 26.6.2 arm64、Node.js 24.20.0、npm 11.19.0、Electron 45.0.0。各worktreeで `npm ci --no-audit --no-fund`、Electron実行バイナリ、型検査、buildを確認し、各終了コード0。`output/agent-workspace/logs/` に記録。npm install-scripts警告は残るが、実際のビルドは通過。
 - データ: `output/agent-workspace/data/`、入力・出力: `inputs/`, `exports/`、cache: `cache/`、ログ: `logs/`、検証: `evidence/`。dev port `56133`、127.0.0.1でstrictPort。
 - 4本のdevを同時実行し各HTTP 200・所有Electron PID・独立SQLite4ページ・integrity_check=okを確認。テスト自身のプロセスをSIGINTで停止、PIDとportの解放確認。SIGINT停止の終了1は意図した停止であり機能の失敗ではない。詳細は `evidence/concurrent-dev*.json` と該当dev log。画面の全操作や長時間稼働はこの同時起動試験では未検証。

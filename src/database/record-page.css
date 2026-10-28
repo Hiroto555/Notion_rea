@@ -1,0 +1,88 @@
+/* Opt-in layouts: the article and Editor slot stay mounted across mode changes. */
+.r4-record-surface {
+  position: absolute;
+  inset: 0 0 0 auto;
+  z-index: 30;
+  width: min(720px, 100%);
+  height: 100%;
+  margin: 0;
+  padding: 0 var(--content-gutter, 40px) 80px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  background: var(--bg, #fff);
+  border-left: 1px solid var(--line, #e7e5e4);
+  box-shadow: -12px 0 36px rgb(0 0 0 / 7%);
+  box-sizing: border-box;
+}
+.r4-record-surface[data-record-mode="full"] {
+  width: 100%;
+  padding-inline: max(
+    var(--content-gutter, 40px),
+    calc((100% - var(--content-width, 860px)) / 2)
+  );
+  border-left: 0;
+  box-shadow: none;
+}
+.r4-record-surface .r3-record-header {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  min-height: 48px;
+  padding-block: 8px;
+  background: var(--bg, #fff);
+  border-bottom: 1px solid var(--line, #e7e5e4);
+}
+.r4-record-surface .r3-record-header button {
+  min-height: var(--control-height, 32px);
+}
+.r4-record-mode,
+.r4-record-close {
+  justify-content: center;
+  min-width: 32px;
+}
+.r4-record-surface .r3-record-icon {
+  margin-top: 36px;
+}
+.r4-record-surface .r3-record-title {
+  font-size: var(--page-title-size, 34px);
+  line-height: 1.25;
+  margin-top: 12px;
+}
+.r4-record-surface .r3-record-meta {
+  margin-block: 8px var(--section-gap, 24px);
+  font-size: 11px;
+}
+.r4-record-surface .r3-record-property {
+  min-height: var(--row-height, 36px);
+  grid-template-columns: minmax(100px, 28%) minmax(0, 1fr);
+}
+.r4-record-surface .r3-record-body {
+  font-size: var(--body-font-size, 15px);
+  line-height: var(--body-line-height, 1.75);
+}
+.r3-record-save:is(
+  [data-save-state="conflict"],
+  [data-save-state="unknown"],
+  [data-save-state="blocked"],
+  [data-save-state="error"]
+) {
+  color: var(--warning, #9c651b);
+}
+.r4-record-surface .r3-record-alert {
+  margin-block: 16px;
+}
+@media (max-width: 620px) {
+  .r4-record-surface,
+  .r4-record-surface[data-record-mode="full"] {
+    width: 100%;
+    padding-inline: 20px;
+  }
+  .r4-record-surface .r3-record-property {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 4px;
+    padding-block: 7px;
+  }
+  .r4-record-surface .r3-record-save {
+    max-width: 150px;
+  }
+}

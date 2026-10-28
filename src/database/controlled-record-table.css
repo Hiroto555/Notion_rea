@@ -1,0 +1,46 @@
+.r4-record-table .r4-record-name {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+.r4-record-table .r4-record-open {
+  flex: 0 0 28px;
+  min-height: var(--control-height, 32px);
+  padding: 3px;
+  color: var(--muted);
+}
+.r4-record-table .r4-record-open:hover,
+.r4-record-table .r4-record-open:focus-visible {
+  color: var(--text);
+  background: var(--hover);
+}
+.r4-record-table .r4-record-status {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 6px;
+  font-size: 11px;
+  line-height: 1.5;
+  color: var(--muted);
+  min-width: 138px;
+  max-width: 250px;
+  overflow-wrap: anywhere;
+}
+.r4-record-table .r4-record-status span {
+  flex: 1;
+}
+.r4-record-table .r4-record-status button {
+  flex-shrink: 0;
+  padding: 4px 6px;
+  border: 1px solid var(--line);
+}
+.r4-record-table tr:is([data-save-state="unknown"], [data-save-state="conflict"], [data-save-state="blocked"], [data-save-state="error"]) .r4-record-status {
+  color: var(--warning);
+}
+.r4-record-table input:disabled,
+.r4-record-table select:disabled {
+  opacity: 0.75;
+}
+.r4-record-table input[aria-invalid="true"] {
+  border-color: var(--warning);
+}

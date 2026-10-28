@@ -1,0 +1,45 @@
+.legacy-migration-dialog {
+  width: min(620px, calc(100vw - 48px));
+  max-height: calc(100vh - 48px);
+  padding: 24px;
+  overflow: auto;
+}
+.legacy-migration-dialog header,
+.legacy-migration-dialog footer {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.legacy-migration-dialog header {
+  justify-content: space-between;
+}
+.legacy-migration-dialog h2 {
+  margin: 0;
+  font-size: 20px;
+}
+.legacy-migration-dialog p {
+  line-height: 1.7;
+}
+.legacy-migration-dialog footer {
+  margin-top: 24px;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+}
+.legacy-migration-counts {
+  display: grid;
+  gap: 12px;
+  margin: 20px 0;
+}
+.legacy-migration-counts > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+}
+.legacy-migration-counts dd {
+  margin: 0;
+  font-variant-numeric: tabular-nums;
+}
+.legacy-migration-path {
+  overflow-wrap: anywhere;
+  font-size: 12px;
+}

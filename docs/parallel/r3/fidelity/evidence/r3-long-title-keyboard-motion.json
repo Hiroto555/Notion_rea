@@ -1,0 +1,41 @@
+{
+  "title": {
+    "length": 119,
+    "valuePreserved": true,
+    "inputScrolls": true
+  },
+  "truncation": {
+    "sidebar": "ellipsis (scrollWidth > clientWidth)",
+    "breadcrumb": "ellipsis (scrollWidth > clientWidth)",
+    "inspectorPage": "wraps (overflow-wrap: anywhere)",
+    "pageTitle": "single-line input scrolls internally; wrapping remains App-owned NOT_RUN"
+  },
+  "focusRing": {
+    "label": "ページタイトル",
+    "focusVisible": true,
+    "outlineStyle": "solid",
+    "outlineWidth": 2,
+    "outlineColor": "rgb(85, 119, 93)"
+  },
+  "mouseFocus": {
+    "tag": "INPUT",
+    "label": "ページタイトル",
+    "dialog": false,
+    "focusVisible": true
+  },
+  "sidebarCollapsed": {
+    "horizontalOverflow": 0,
+    "documentOverflow": 0,
+    "contentRight": 657,
+    "inspectorLeft": 680,
+    "paddingRight": "292px"
+  },
+  "reducedMotion": {
+    "scrollBehavior": "auto",
+    "dropdownAnimation": "none",
+    "pageToolsTransitions": [
+      0
+    ]
+  },
+  "input": "Playwright keyboard/pointer; no physical IME"
+}

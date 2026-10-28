@@ -1,0 +1,40 @@
+{
+  "input": "Playwright pointer/keyboard; synthetic composition only; physical Japanese IME NOT_RUN",
+  "search": {
+    "resultCount": 4,
+    "focusReturn": "page-title"
+  },
+  "link": {
+    "selectionAfterCancel": "リンク対象",
+    "focusReturn": "editor"
+  },
+  "templates": {
+    "initialFocus": {
+      "tag": "BUTTON",
+      "firstCard": true,
+      "text": "📄空のページ自由に書きはじめる"
+    },
+    "arrowOrder": "空のページ -> ミーティングノート -> 空のページ",
+    "enterActivation": "created 無題 page, focus returned to sidebar button"
+  },
+  "move": {
+    "initialFocus": {
+      "tag": "BUTTON",
+      "firstRow": true
+    },
+    "focusReturnAfterEscape": "ページメニュー button"
+  },
+  "history": {
+    "focusReturnAfterEscape": "変更履歴を見る button"
+  },
+  "trash": {
+    "focusReturnAfterEscape": "sidebar ゴミ箱 button"
+  },
+  "background": "backdrop click dismissed without page operation",
+  "lastFocus": {
+    "tag": "BUTTON",
+    "label": "テンプレート",
+    "dialog": false,
+    "focusVisible": false
+  }
+}

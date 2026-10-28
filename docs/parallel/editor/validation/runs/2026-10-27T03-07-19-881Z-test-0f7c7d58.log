@@ -4,7 +4,7 @@
 > vitest run tests/editor-identity.test.ts
 
 
- RUN  v3.2.7 /Users/shiroto/Documents/ChatGPT/Folio-editor
+ RUN  v3.2.7 <workspace-root>/Folio-editor
 
  ✓ tests/editor-identity.test.ts (4 tests) 6ms
 

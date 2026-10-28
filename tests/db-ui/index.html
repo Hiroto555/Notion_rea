@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Folio DB UI fixture harness</title>
+    <style>
+      html,
+      body {
+        height: auto;
+      }
+      body {
+        margin: 0;
+      }
+      .harness-shell {
+        max-width: 1180px;
+        margin: 0 auto;
+        padding: 14px 20px 60px;
+      }
+      .harness-controls {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 8px 14px;
+        padding: 8px 10px;
+        margin-bottom: 14px;
+        border: 1px solid var(--line, #ddd);
+        border-radius: 8px;
+        background: var(--panel, #f7f7f2);
+        font-size: 11px;
+        color: var(--text, #333);
+      }
+      .harness-controls label {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+      }
+      .harness-controls select {
+        max-width: 150px;
+      }
+      .harness-controls span[role="status"] {
+        color: var(--muted, #777);
+      }
+      .harness-body p {
+        overflow-wrap: anywhere;
+        margin: 0 0 10px;
+      }
+      .harness-body img {
+        display: block;
+        width: 180px;
+        max-width: 100%;
+        height: auto;
+        margin-top: 10px;
+        border: 1px solid var(--line, #ddd);
+      }
+      @media (max-width: 620px) {
+        .harness-shell {
+          padding: 10px 10px 48px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/tests/db-ui/harness.tsx"></script>
+  </body>
+</html>

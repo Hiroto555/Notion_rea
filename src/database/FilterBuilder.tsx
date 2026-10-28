@@ -1,3 +1,4 @@
+import { PropertyField } from "./PropertyField";
 import type {
   DatabaseData,
   DatabaseView,
@@ -23,6 +24,11 @@ import {
   updateFilterCondition,
 } from "./model";
 
+type FilterInputProps = {
+  inputTexts?: Readonly<Record<string, string>>;
+  onInputTextChange?: (filterId: string, text: string) => void;
+};
+
 const TITLE = { id: "title", name: "名前", type: "text" as const };
 
 function propertyOptions(data: DatabaseData) {
@@ -42,12 +48,11 @@ function valueControl(
   node: FilterCondition,
   path: string,
   onChange: (value: FilterValue) => void,
+  inputProps: FilterInputProps,
 ) {
   if (!operatorNeedsValue(node.operator)) return null;
   const property =
-    node.propertyId === TITLE.id
-      ? TITLE
-      : propertyById(data, node.propertyId);
+    node.propertyId === TITLE.id ? TITLE : propertyById(data, node.propertyId);
   const type = property?.type ?? "text";
   if (type === "checkbox") return null;
   if (property && property.type === "select" && property.options?.length) {
@@ -66,6 +71,19 @@ function valueControl(
       </select>
     );
   }
+  if (type === "number" && property && inputProps.onInputTextChange)
+    return (
+      <PropertyField
+        property={property}
+        value={node.value}
+        ariaLabel={`フィルター値 ${path}`}
+        inputText={inputProps.inputTexts?.[node.id]}
+        onInputTextChange={(text) =>
+          inputProps.onInputTextChange!(node.id, text)
+        }
+        onChange={(value) => onChange(value === null ? "" : value)}
+      />
+    );
   if (type === "number")
     return (
       <input
@@ -73,9 +91,7 @@ function valueControl(
         type="number"
         value={comparisonValue(property, node.value)}
         onChange={(event) =>
-          onChange(
-            event.target.value === "" ? "" : Number(event.target.value),
-          )
+          onChange(event.target.value === "" ? "" : Number(event.target.value))
         }
       />
     );
@@ -111,13 +127,15 @@ function ConditionRow({
   path,
   onChange,
   onRemove,
+  inputTexts,
+  onInputTextChange,
 }: {
   data: DatabaseData;
   node: FilterCondition;
   path: string;
   onChange: (patch: Partial<Omit<FilterCondition, "id" | "kind">>) => void;
   onRemove: () => void;
-}) {
+} & FilterInputProps) {
   const options = propertyOptions(data);
   const type = propertyType(data, node.propertyId);
   const operators = filterOperatorsFor(type);
@@ -131,13 +149,16 @@ function ConditionRow({
           const nextType =
             next === TITLE.id ? "text" : propertyType(data, next);
           const operator = defaultFilterOperator(nextType);
+          // A condition keeps its ID when its target changes, but its value is
+          // reset below. Reset the parent's raw numeric draft at the same time.
+          onInputTextChange?.(node.id, "");
           onChange({
             propertyId: next,
             operator,
-            value:
-              nextType === "checkbox" || !operatorNeedsValue(operator)
-                ? undefined
-                : "",
+            // Inactive values are ignored by no-value operators. Keep this
+            // reset JSON-stable: an explicit undefined key disappears on save
+            // and would fail the parent's exact ACK comparison.
+            value: "",
           });
         }}
       >
@@ -160,7 +181,10 @@ function ConditionRow({
           </option>
         ))}
       </select>
-      {valueControl(data, node, path, (value) => onChange({ value }))}
+      {valueControl(data, node, path, (value) => onChange({ value }), {
+        inputTexts,
+        onInputTextChange,
+      })}
       <button
         type="button"
         aria-label={`フィルター条件を削除 ${path}`}
@@ -177,12 +201,14 @@ function GroupRows({
   group,
   path,
   onChange,
+  inputTexts,
+  onInputTextChange,
 }: {
   data: DatabaseData;
   group: FilterGroup;
   path: string;
   onChange: (next: FilterGroup) => void;
-}) {
+} & FilterInputProps) {
   const renderNode = (node: FilterNode, index: number) => {
     const childPath = `${path}.${index + 1}`;
     if (node.kind === "condition")
@@ -196,6 +222,8 @@ function GroupRows({
             onChange(updateFilterCondition(group, node.id, patch))
           }
           onRemove={() => onChange(removeFilterNode(group, node.id))}
+          inputTexts={inputTexts}
+          onInputTextChange={onInputTextChange}
         />
       );
     return (
@@ -229,7 +257,9 @@ function GroupRows({
             type="button"
             aria-label={`条件を追加 ${childPath}`}
             onClick={() =>
-              onChange(addFilterCondition(group, node.id, newConditionFor(data)))
+              onChange(
+                addFilterCondition(group, node.id, newConditionFor(data)),
+              )
             }
           >
             ＋ 条件
@@ -299,11 +329,13 @@ export function FilterBuilder({
   data,
   view,
   onChange,
+  inputTexts,
+  onInputTextChange,
 }: {
   data: DatabaseData;
   view: DatabaseView;
   onChange: (filter: FilterGroup) => void;
-}) {
+} & FilterInputProps) {
   return (
     <div className="db-filter-builder">
       <GroupRows
@@ -311,6 +343,8 @@ export function FilterBuilder({
         group={view.filter}
         path="1"
         onChange={onChange}
+        inputTexts={inputTexts}
+        onInputTextChange={onInputTextChange}
       />
     </div>
   );

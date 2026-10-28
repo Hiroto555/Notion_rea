@@ -237,7 +237,7 @@ test("F11 editing during move and delayed load keeps local patch and durable rev
     ipc.handle("folio:request", async (event: any, req: any) => {
       (globalThis as any).moveRequests.push({
         type: req.type,
-        id: req.id,
+        id: req.id ?? req.operation?.pageId,
         parentId: req.parentId,
         stage: "start",
       });

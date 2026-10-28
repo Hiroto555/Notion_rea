@@ -1,6 +1,6 @@
 # Database 2.0 契約提案
 
-- 対象: `sprint/database-v2` / `/Users/shiroto/Documents/ChatGPT/Folio-database`
+- 対象: `sprint/database-v2` / `<workspace-root>/Folio-database`
 - 基準: `b7c150d15739c59edf6ba9a62ebda4794748d46b`
 - 状態: 実装済み。統合レビュー対象。`Doc`・Editor schema・`App.tsx` は変更しない。
 

@@ -38,6 +38,18 @@ import {
   legacySortValue,
 } from "./model";
 import { FilterBuilder } from "./FilterBuilder";
+// Round 3 entry points. App.tsx still imports `Database` (legacy props) until
+// Core connects DatabasePresentationProps, so the new contract surface is
+// exported alongside it rather than silently changing App's props.
+export { DatabasePresentation } from "./DatabasePresentation";
+export type { DatabasePresentationComponentProps } from "./DatabasePresentation";
+export { RecordPage } from "./RecordPage";
+export type {
+  RecordPageProps,
+  RecordSaveState,
+  RecordReadOnlyReason,
+} from "./RecordPage";
+export { PropertyField } from "./PropertyField";
 
 const VIEW_ICONS = {
   table: Table2,
@@ -52,6 +64,12 @@ const VIEW_TYPES: readonly DatabaseViewType[] = [
   "gallery",
 ];
 
+/**
+ * @deprecated Legacy v2 whole-database editor, still mounted by App.tsx until
+ * Core connects DatabasePresentationProps. New code uses DatabasePresentation;
+ * this component's onChange is the old whole-rows write path and must not be
+ * used for migrated records.
+ */
 export function Database({
   value,
   onChange: persist,
@@ -84,7 +102,10 @@ export function Database({
   const boardView: DatabaseView | null = boardPropertyId
     ? {
         ...view,
-        groupBy: { propertyId: boardPropertyId, direction: "asc" },
+        groupBy: {
+          propertyId: boardPropertyId,
+          direction: view.groupBy?.direction ?? "asc",
+        },
       }
     : null;
   const boardGroups = boardView

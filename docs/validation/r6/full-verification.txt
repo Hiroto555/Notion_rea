@@ -1,0 +1,300 @@
+Isolated validation: npm run build
+Log: <workspace-root>/Folio-r6-20261028/validation/output/agent-workspace/logs/2026-10-28T07-05-09-657Z-build-9c6484f7.log
+
+> folio-desktop@0.1.0 build
+> tsc --noEmit && vite build && node scripts/build.mjs
+
+vite v7.3.7 building client environment for production...
+transforming...
+✓ 1715 modules transformed.
+[plugin vite:reporter]
+(!) <workspace-root>/Folio-r6-20261028/validation/node_modules/@tiptap/core/dist/index.js is dynamically imported by <workspace-root>/Folio-r6-20261028/validation/src/renderer/App.tsx but also statically imported by <workspace-root>/Folio-r6-20261028/validation/node_modules/@tiptap/extension-blockquote/dist/index.js, <workspace-root>/Folio-r6-20261028/validation/node_modules/@tiptap/extension-bold/dist/index.js, <workspace-root>/Folio-r6-20261028/validation/node_modules/@tiptap/extension-code-block/dist/index.js, <workspace-root>/Folio-r6-20261028/validation/node_modules/@tiptap/extension-code/dist/index.js, <workspace-root>/Folio-r6-20261028/validation/node_modules/@tiptap/extension-details/dist/index.js, <workspace-root>/Folio-r6-20261028/validation/node_modules/@tiptap/extension-document/dist/index.js, <workspace-root>/Folio-r6-20261028/validation/node_modules/@tiptap/extension-hard-break/dist/index.js, <workspace-root>/Folio-r6-20261028/validation/node_modules/@tiptap/extension-heading/dist/index.js, <workspace-root>/Folio-r6-20261028/validation/node_modules/@tiptap/extension-horizontal-rule/dist/index.js, <workspace-root>/Folio-r6-20261028/validation/node_modules/@tiptap/extension-image/dist/index.js, <workspace-root>/Folio-r6-20261028/validation/node_modules/@tiptap/extension-italic/dist/index.js, <workspace-root>/Folio-r6-20261028/validation/node_modules/@tiptap/extension-link/dist/index.js, <workspace-root>/Folio-r6-20261028/validation/node_modules/@tiptap/extension-list/dist/index.js, <workspace-root>/Folio-r6-20261028/validation/node_modules/@tiptap/extension-paragraph/dist/index.js, <workspace-root>/Folio-r6-20261028/validation/node_modules/@tiptap/extension-strike/dist/index.js, <workspace-root>/Folio-r6-20261028/validation/node_modules/@tiptap/extension-text/dist/index.js, <workspace-root>/Folio-r6-20261028/validation/node_modules/@tiptap/extension-underline/dist/index.js, <workspace-root>/Folio-r6-20261028/validation/node_modules/@tiptap/extensions/dist/index.js, <workspace-root>/Folio-r6-20261028/validation/node_modules/@tiptap/markdown/dist/index.js, <workspace-root>/Folio-r6-20261028/validation/node_modules/@tiptap/react/dist/index.js, <workspace-root>/Folio-r6-20261028/validation/node_modules/@tiptap/starter-kit/dist/index.js, <workspace-root>/Folio-r6-20261028/validation/src/editor/block-identity.ts, <workspace-root>/Folio-r6-20261028/validation/src/shared/editor-schema.ts, dynamic import will not move module into another chunk.
+
+[plugin vite:reporter]
+(!) <workspace-root>/Folio-r6-20261028/validation/src/editor/Editor.tsx is dynamically imported by <workspace-root>/Folio-r6-20261028/validation/src/renderer/App.tsx but also statically imported by <workspace-root>/Folio-r6-20261028/validation/src/renderer/App.tsx, dynamic import will not move module into another chunk.
+
+rendering chunks...
+computing gzip size...
+dist/renderer/index.html                     0.60 kB │ gzip:   0.38 kB
+dist/renderer/assets/index-DU5B3Atk.css     63.37 kB │ gzip:  12.50 kB
+dist/renderer/assets/index-B6UhPoJd.js   1,040.18 kB │ gzip: 314.21 kB
+✓ built in 2.09s
+
+(!) Some chunks are larger than 500 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+Test lock acquired: /private/tmp/folio-e2e-91dc5394ed097e02.lock
+Isolated validation: npm run test -- --maxWorkers=1 --no-file-parallelism
+Log: <workspace-root>/Folio-r6-20261028/validation/output/agent-workspace/logs/2026-10-28T07-05-17-481Z-test-d9c72561.log
+
+> folio-desktop@0.1.0 test
+> vitest run --maxWorkers=1 --no-file-parallelism
+
+
+ RUN  v3.2.7 <workspace-root>/Folio-r6-20261028/validation
+
+ ✓ tests/recovery.test.ts (16 tests) 8754ms
+   ✓ R1 x UTF-8 boundary -1: schema/file/store/reopen  1497ms
+   ✓ R1 x UTF-8 boundary 0: schema/file/store/reopen  1439ms
+   ✓ R1 あ UTF-8 boundary -1: schema/file/store/reopen  1091ms
+   ✓ R1 あ UTF-8 boundary 0: schema/file/store/reopen  1056ms
+   ✓ R1 😀 UTF-8 boundary -1: schema/file/store/reopen  1493ms
+   ✓ R1 😀 UTF-8 boundary 0: schema/file/store/reopen  1574ms
+stdout | tests/record-scale.test.ts > measures synthetic record conversion, load, view-model query, search and saves
+RECORD_SCALE {"size":1000,"migration":117.00479100000001,"open":0.7252080000000092,"samples":[{"load":19.24037500000003,"viewModel":21.018167000000005,"search":32.542708000000005,"bodySave":0.9835829999999532,"propertySave":1.373625000000004},{"load":18.755790999999988,"viewModel":20.106333000000006,"search":27.01833399999998,"bodySave":0.8710419999999885,"propertySave":0.5595839999999725},{"load":15.706917000000033,"viewModel":21.015124999999898,"search":21.536959000000024,"bodySave":0.6704590000000508,"propertySave":0.9994159999999965}],"scope":"synthetic SQLite + model only; no GUI/startup/input timing"}
+RECORD_SCALE {"size":10000,"migration":1143.413417,"open":0.604959000000008,"samples":[{"load":201.964792,"viewModel":200.17937499999994,"search":264.5367080000001,"bodySave":1.0087499999999636,"propertySave":0.7072920000000522},{"load":208.64975000000004,"viewModel":197.11412500000006,"search":247.13749999999982,"bodySave":1.1944579999999405,"propertySave":0.6771669999998267},{"load":210.57170799999994,"viewModel":221.30308300000024,"search":265.33891600000015,"bodySave":1.0989169999998012,"propertySave":0.5943749999996726}],"scope":"synthetic SQLite + model only; no GUI/startup/input timing"}
+
+ ✓ tests/record-scale.test.ts (1 test) 3557ms
+   ✓ measures synthetic record conversion, load, view-model query, search and saves  3556ms
+ ✓ tests/portable-recovery-mixed.test.ts (35 tests) 476ms
+ ✓ tests/record-version.test.ts (2 tests) 322ms
+   ✓ the fetched old Store rejects a synthetic v4 sentinel and can open the pre-conversion snapshot  311ms
+ ✓ tests/crash-recovery.test.ts (13 tests) 293ms
+ ✓ tests/property-operation-r6.test.ts (33 tests) 217ms
+ ✓ tests/portable-recovery.test.ts (12 tests) 216ms
+ ✓ tests/move-record-isolation.test.ts (17 tests) 183ms
+ ✓ tests/pending-journal.test.ts (7 tests) 130ms
+ ✓ tests/store.test.ts (13 tests) 120ms
+ ✓ tests/pending-journal-file.test.ts (10 tests) 120ms
+ ✓ tests/record-page-schema-guard.test.ts (6 tests) 92ms
+ ✓ tests/editor-legacy-compat.test.ts (1 test) 77ms
+ ✓ tests/record-repository.test.ts (16 tests) 94ms
+ ✓ tests/legacy-migration-operation.test.ts (7 tests) 95ms
+ ✓ tests/record-migration.test.ts (10 tests) 84ms
+ ✓ tests/record-page-owner-update.test.ts (11 tests) 62ms
+ ✓ tests/prepare-crash-recovery.test.ts (11 tests) 66ms
+ ✓ tests/database-operations-r5.test.ts (9 tests) 61ms
+ ✓ tests/store-atomic-load.test.ts (15 tests) 143ms
+ ✓ tests/migration-snapshot.test.ts (7 tests) 75ms
+ ✓ tests/record-lifecycle.test.ts (8 tests) 63ms
+ ✓ tests/edit-session-coordinator.test.ts (6 tests) 81ms
+ ✓ tests/database-session-r5.test.ts (6 tests) 86ms
+ ✓ tests/save-receipts.test.ts (8 tests) 57ms
+ ✓ tests/database-v2.test.ts (19 tests) 53ms
+ ✓ tests/workspace.test.ts (7 tests) 59ms
+ ✓ tests/gate-a.test.ts (11 tests) 56ms
+ ✓ tests/store-raw-database-guard.test.ts (7 tests) 42ms
+ ✓ tests/v4-database-create.test.ts (6 tests) 35ms
+ ✓ tests/integration-migration.test.ts (3 tests) 44ms
+ ✓ tests/record-save-coordinator.test.ts (48 tests) 29ms
+ ✓ tests/recovery-checkpoint.test.ts (9 tests) 17ms
+ ✓ tests/settings-owner-lineage.test.ts (16 tests) 18ms
+ ✓ tests/record-read-snapshot.test.ts (2 tests) 20ms
+ ✓ tests/record-projection.test.ts (2 tests) 18ms
+ ✓ tests/editor-r3-clipboard.test.ts (9 tests) 12ms
+ ✓ tests/settings-save-coordinator.test.ts (9 tests) 11ms
+ ✓ tests/record-list-binding.test.ts (12 tests) 10ms
+ ✓ tests/research/parity-docs.test.ts (10 tests) 9ms
+ ✓ tests/editor-identity.test.ts (5 tests) 9ms
+ ✓ tests/database-ui.test.ts (34 tests) 10ms
+ ✓ tests/settings-panel-intents.test.ts (4 tests) 7ms
+ ✓ tests/record-owner-invalidation.test.ts (8 tests) 8ms
+ ✓ tests/database-input-guard.test.ts (11 tests) 7ms
+ ✓ tests/legacy-record-plan.test.ts (3 tests) 7ms
+ ✓ tests/output-path.test.ts (1 test) 6ms
+ ✓ tests/legacy-record-map.test.ts (5 tests) 6ms
+ ✓ tests/record-pending-edits.test.ts (7 tests) 5ms
+ ✓ tests/fidelity-evidence.test.ts (10 tests) 5ms
+ ✓ tests/database-settings-pending.test.ts (6 tests) 5ms
+ ✓ tests/fidelity-display-contract.test.ts (8 tests) 5ms
+ ✓ tests/editor-r3-selection.test.ts (3 tests) 4ms
+ ✓ tests/recovery-file-ownership.test.ts (1 test) 3ms
+ ✓ tests/pending-edits.test.ts (3 tests) 3ms
+ ✓ tests/pending-record-overlay.test.ts (2 tests) 3ms
+ ✓ tests/property-number-input.test.ts (3 tests) 2ms
+ ✓ tests/fidelity-modal-contract.test.ts (8 tests) 2ms
+
+ Test Files  58 passed (58)
+      Tests  572 passed (572)
+   Start at  16:05:17
+   Duration  30.16s (transform 705ms, setup 0ms, collect 4.93s, tests 16.05s, environment 28ms, prepare 2.68s)
+
+Test lock acquired: /private/tmp/folio-e2e-91dc5394ed097e02.lock
+Isolated validation: npm run test:e2e -- --workers=1 --retries=0
+Log: <workspace-root>/Folio-r6-20261028/validation/output/agent-workspace/logs/2026-10-28T07-05-48-261Z-test-e2e-f45fd453.log
+
+> folio-desktop@0.1.0 test:e2e
+> playwright test --workers=1 --retries=0
+
+
+Running 156 tests using 1 worker
+
+(node:3469) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓    1 tests/e2e/create-gate.spec.ts:3:1 › delayed page creation cannot redirect immediate input into the previous page (3.9s)
+  ✓    2 tests/e2e/create-gate.spec.ts:63:1 › a delayed create does not override a later explicit navigation (6.7s)
+  ✓    3 tests/e2e/create-gate.spec.ts:102:1 › a failed create restores the same Editor and its saved content (6.0s)
+  ✓    4 tests/e2e/create-gate.spec.ts:151:1 › a second create is refused while the first is pending (3.6s)
+  ✓    5 tests/e2e/create-gate.spec.ts:192:1 › page creation from the sidebar is refused during synthetic composition (2.5s)
+  ✓    6 tests/e2e/database-v2.spec.ts:3:1 › DB 2.0 independent views, AND/OR filter, multiple sorts and grouping survive restart (8.1s)
+  ✓    7 tests/e2e/db-ui-legacy.spec.ts:10:1 › legacy board keeps a saved descending group direction (4.8s)
+  ✓    8 tests/e2e/desktop.spec.ts:47:1 › real Electron: page edit, slash, undo, blocks, search, clone, trash and restart (9.7s)
+  ✓    9 tests/e2e/desktop.spec.ts:151:1 › database table edits, filters, sorts, board drop and calendar persistence (7.5s)
+  ✓   10 tests/e2e/desktop.spec.ts:198:1 › security boundary, page hierarchy, cycle error and versions (3.6s)
+  ✓   11 tests/e2e/desktop.spec.ts:254:1 › native rich HTML paste, Markdown shortcuts, toggle, links and block drag (4.6s)
+  ✓   12 tests/e2e/desktop.spec.ts:327:1 › real import/export, image/file attachments and complete backup (3.8s)
+  ✓   13 tests/e2e/desktop.spec.ts:408:1 › reproducible load: 150 pages, 1000 blocks, input and reopen (9.1s)
+  ✓   14 tests/e2e/desktop.spec.ts:487:1 › stale-write recovery preserves unsaved edits before reload (3.1s)
+  ✓   15 tests/e2e/dialogs.spec.ts:16:1 › R3 DB Escape closes the record and saves the latest input through restart (5.7s)
+  ✓   16 tests/e2e/dialogs.spec.ts:31:1 › R3 search/link/record share initial focus, modal tab cycle, close button and background isolation (3.1s)
+  ✓   17 tests/e2e/dialogs.spec.ts:113:1 › R3 selected text link cancel/confirm restores exact range, wording and marks (2.5s)
+  ✓   18 tests/e2e/dialogs.spec.ts:208:1 › R3 synthetic composition, prevented Escape and inner menus take priority (not physical IME) (4.1s)
+  ✓   19 tests/e2e/dialogs.spec.ts:246:1 › R3 nested native UI consumes one Escape; search navigation focuses destination (2.9s)
+  ✓   20 tests/e2e/dialogs.spec.ts:311:1 › R3 stale link document is rejected and switching page leaves both pages unchanged (3.4s)
+  ✓   21 tests/e2e/dialogs.spec.ts:352:1 › N04 slash arrow/confirm/cancel retains text and cursor (Folio only) (3.4s)
+  ✓   22 tests/e2e/drag.spec.ts:4:1 › R2 short original regression: checkbox edit then real handle drag (3.9s)
+  ✓   23 tests/e2e/drag.spec.ts:41:1 › R2 top-level matrix: single/multiple/start/end/same/cancel/scroll/undo/redo/restart (7.6s)
+  ✓   24 tests/e2e/editor-identity.spec.ts:13:1 › Editor 2.0: legacy document obtains IDs on edit, survives restart and copy paste (6.1s)
+  ✓   25 tests/e2e/editor-identity.spec.ts:130:1 › Editor 2.0: nested sibling move, duplicate, undo/redo and restart (5.0s)
+  ✓   26 tests/e2e/editor-identity.spec.ts:252:1 › Editor 2.0: drag a nested item between lists without changing identity (4.0s)
+  ✓   27 tests/e2e/editor-identity.spec.ts:324:1 › Editor 2.0: a stale legacy edit retains IDs and content in recovery (4.2s)
+  ✓   28 tests/e2e/editor-r3-clipboard.spec.ts:5:1 › Editor 3 synthetic block cut/paste retains IDs once and reopens (3.9s)
+  ✓   29 tests/e2e/editor-r3-clipboard.spec.ts:120:1 › Editor 3 clipboard write failure does not delete selected blocks (1.9s)
+  ✓   30 tests/e2e/editor-r3-clipboard.spec.ts:148:1 › Editor 3 selects and cuts nested siblings and preserves IDs on paste (3.8s)
+  ✓   31 tests/e2e/editor-r3-clipboard.spec.ts:247:1 › Editor 3 preserves plain text boundaries and rejects grouped nested drag (1.8s)
+  ✓   32 tests/e2e/editor-r3-clipboard.spec.ts:352:1 › Editor 3 does not cut when either fallback clipboard format fails silently (2.0s)
+  ✓   33 tests/e2e/editor-r3-clipboard.spec.ts:383:1 › Editor 3 rejects direct block mutation in a read-only editor (1.9s)
+  ✓   34 tests/e2e/gate-a.spec.ts:102:1 › F01 same-page sidebar/search reselection keeps editor, attachment, link and exports (3.0s)
+  ✓   35 tests/e2e/gate-a.spec.ts:165:3 › F05 attachment roundtrip LICENSE (1.4s)
+  ✓   36 tests/e2e/gate-a.spec.ts:165:3 › F05 attachment roundtrip 資料.日本語 (1.3s)
+  ✓   37 tests/e2e/gate-a.spec.ts:165:3 › F05 attachment roundtrip file.abcdefghijklmnop (1.2s)
+  ✓   38 tests/e2e/gate-a.spec.ts:165:3 › F05 attachment roundtrip archive.tar.gz (1.3s)
+  ✓   39 tests/e2e/gate-a.spec.ts:165:3 › F05 attachment roundtrip IMAGE.PNG (1.5s)
+  ✓   40 tests/e2e/gate-a.spec.ts:182:1 › F06 synthetic composing Enter does not navigate search or link (not physical IME) (1.9s)
+  ✓   41 tests/e2e/gate-a.spec.ts:212:1 › F11 editing during move and delayed load keeps local patch and durable revision (4.0s)
+  ✓   42 tests/e2e/gate-a.spec.ts:330:1 › F02 full-text search, preview, count and in-page selection cross inline marks (2.5s)
+  ✓   43 tests/e2e/gate-a.spec.ts:408:1 › F04 DB delete Undo, restart history restore and property history retain IDs and values (5.6s)
+  ✓   44 tests/e2e/gate-a.spec.ts:477:1 › F06 editor selection Cmd+K sets page link without replacing text; modal and prevented keys win (2.9s)
+  ✓   45 tests/e2e/gate-a.spec.ts:515:1 › F07 invalid IPC is rejected and unknown stored schema is read-only with exact source export (1.8s)
+  ✓   46 tests/e2e/gate-a.spec.ts:558:1 › F11 failed write exports pending patch and persisted state, then recovers a separate page (3.4s)
+  ✓   47 tests/e2e/gate-a.spec.ts:613:1 › F03 default userData path and pre-ready directory failure are observable without touching user data (4.1s)
+  ✓   48 tests/e2e/gate-a.spec.ts:670:1 › F07 malformed JSON opens an error screen with backup, and null doc never mounts editor (3.0s)
+  ✓   49 tests/e2e/integration-v2.spec.ts:6:1 › integrated editor, attachment, independent database views and theme persist together through restart (5.4s)
+  ✓   50 tests/e2e/output-boundary.spec.ts:5:1 › S1 real IPC protects workspace outputs and permits external namesake (2.2s)
+  ✓   51 tests/e2e/page-move.spec.ts:25:1 › S2 tree input: edited source becomes target child with stable identity (3.9s)
+  ✓   52 tests/e2e/page-move.spec.ts:44:1 › S2 menu F11: delayed load preserves local edit and page hierarchy through restart (3.9s)
+  ✓   53 tests/e2e/page-move.spec.ts:145:1 › S2 tree order, root, cancellation and cycle rejection (4.5s)
+  ✓   54 tests/e2e/pending-journal.spec.ts:5:1 › manual unsaved journal preserves later input and never overwrites an existing file (1.8s)
+  ✓   55 tests/e2e/pending-journal.spec.ts:80:1 › cancelling a manual journal leaves the original and pending input unchanged (1.5s)
+  ✓   56 tests/e2e/queued-failure-guard.spec.ts:10:1 › a failed first save blocks later queued input without discarding it (1.4s)
+R3-FIDELITY r3-responsive.json {"captures":"1440x907, 1024x720, 960x700; light and dark","input":"Playwright pointer/keyboard; synthetic composition elsewhere; physical IME NOT_RUN","readings":[{"size":"1440x907","reading":{"viewport":{"width":1440,"height":907,"dpr":2},"theme":"light","horizontalOverflow":0,"documentOverflow":0,"scroll":{"clientHeight":853,"scrollHeight":1010,"scrollTop":0},"boxes":{"sidebar":{"x":0,"y":0,"width":240,"height":907},"topbar":{"x":240,"y":0,"width":1200,"height":54},"topbarActions":{"x":1251,"y":11.5,"width":177,"height":30},"documentScroll":{"x":240,"y":54,"width":960,"height":853},"content":{"x":284.5,"y":216,"width":860,"height":791.8},"title":{"x":340.5,"y":292,"width":748,"height":50.5},"inspector":{"x":1200,"y":54,"width":240,"height":853},"inspectorPage":{"x":1221,"y":148,"width":199,"height":20},"saveState":{"x":1253,"y":14.5,"width":73,"height":24}},"styles":{"inspectorPosition":"static","documentScrollPaddingRight":"0px","titleSize":"37.44px","editorWidth":"748px"}}},{"size":"1024x720","reading":{"viewport":{"width":1024,"height":720,"dpr":2},"theme":"light","horizontalOverflow":0,"documentOverflow":0,"scroll":{"clientHeight":666,"scrollHeight":992,"scrollTop":137},"boxes":{"sidebar":{"x":0,"y":0,"width":220,"height":720},"topbar":{"x":220,"y":0,"width":804,"height":54},"topbarActions":{"x":835,"y":11.5,"width":177,"height":30},"documentScroll":{"x":220,"y":54,"width":580,"height":666},"content":{"x":220,"y":45,"width":569,"height":807.7},"title":{"x":256,"y":115,"width":497,"height":45.9},"inspector":{"x":800,"y":54,"width":224,"height":666},"inspectorPage":{"x":821,"y":148,"width":183,"height":20},"saveState":{"x":837,"y":14.5,"width":73,"height":24}},"styles":{"inspectorPosition":"static","documentScrollPaddingRight":"0px","titleSize":"34px","editorWidth":"497px"}}},{"size":"960x700","reading":{"viewport":{"width":960,"height":700,"dpr":2},"theme":"light","horizontalOverflow":0,"documentOverflow":0,"scroll":{"clientHeight":646,"scrollHeight":1013,"scrollTop":103},"boxes":{"sidebar":{"x":0,"y":0,"width":208,"height":700},"topbar":{"x":208,"y":0,"width":752,"height":54},"topbarActions":{"x":779,"y":11.5,"width":173,"height":30},"documentScroll":{"x":208,"y":54,"width":752,"height":646},"content":{"x":208,"y":79,"width":449,"height":828.5},"title":{"x":236,"y":149,"width":393,"height":40.5},"inspector":{"x":680,"y":66,"width":268,"height":622},"inspectorPage":{"x":699,"y":166.5,"width":230,"height":20},"saveState":{"x":781,"y":14.5,"width":73,"height":24}},"styles":{"inspectorPosition":"absolute","documentScrollPaddingRight":"292px","titleSize":"30px","editorWidth":"393px"}}}],"slashMenu":{"insideViewport":true,"viewport":{"width":960,"height":700},"box":{"x":295.1796875,"y":332.5,"width":300,"height":197}},"contrast":{"light":{"theme":"light","title":12.57,"editor":12.57,"muted":4.59,"inspector":6.58,"sidebar":6.29},"dark":{"theme":"dark","title":13.28,"editor":13.28,"muted":6.83,"inspector":9.79,"sidebar":2.65}}}
+  ✓   57 tests/e2e/r3-fidelity.spec.ts:93:1 › R3 fidelity responsive: 1440/1024/960, inspector footprint, popovers and theme (4.5s)
+R3-FIDELITY r3-db-record-display.json {"storage":"legacy DatabaseData v2 fixture through the existing onChange handler; DatabaseProjection/RecordRequest are not implemented and live record persistence is NOT_RUN","readings":[{"size":"1440x907","view":"ギャラリー","panel":{"x":410,"y":108.8359375,"width":620,"height":245},"fieldCount":2,"tabbable":4,"insideViewport":true,"escapeRestoredCardFocus":true},{"size":"1440x907","view":"ボード","panel":{"x":410,"y":108.8359375,"width":620,"height":245},"fieldCount":2,"tabbable":4,"insideViewport":true,"escapeRestoredCardFocus":true},{"size":"1440x907","view":"カレンダー","panel":{"x":410,"y":108.8359375,"width":620,"height":245},"fieldCount":2,"tabbable":4,"insideViewport":true,"escapeRestoredCardFocus":true},{"size":"1024x720","view":"ギャラリー","panel":{"x":202,"y":86.3984375,"width":620,"height":245},"fieldCount":2,"tabbable":4,"insideViewport":true,"escapeRestoredCardFocus":true},{"size":"1024x720","view":"ボード","panel":{"x":202,"y":86.3984375,"width":620,"height":245},"fieldCount":2,"tabbable":4,"insideViewport":true,"escapeRestoredCardFocus":true},{"size":"1024x720","view":"カレンダー","panel":{"x":202,"y":86.3984375,"width":620,"height":245},"fieldCount":2,"tabbable":4,"insideViewport":true,"escapeRestoredCardFocus":true},{"size":"960x700","view":"ギャラリー","panel":{"x":170,"y":84,"width":620,"height":245},"fieldCount":2,"tabbable":4,"insideViewport":true,"escapeRestoredCardFocus":true},{"size":"960x700","view":"ボード","panel":{"x":170,"y":84,"width":620,"height":245},"fieldCount":2,"tabbable":4,"insideViewport":true,"escapeRestoredCardFocus":true},{"size":"960x700","view":"カレンダー","panel":{"x":170,"y":84,"width":620,"height":245},"fieldCount":2,"tabbable":4,"insideViewport":true,"escapeRestoredCardFocus":true}],"tableViewObservation":{"inlineTitleInputs":3,"recordDialog":false,"fullPageRecordFromTable":"NOT_IMPLEMENTED_OBSERVED","inlineTitleSave":"PASS (legacy fixture path)"},"restart":{"longJapaneseTitlePreserved":true}}
+  ✓   58 tests/e2e/r3-fidelity.spec.ts:305:1 › R3 fidelity DB display: board/calendar/gallery record dialog is modal, bounded and focus-returning (9.7s)
+R3-FIDELITY r3-focus-contract.json {"input":"Playwright pointer/keyboard; synthetic composition only; physical Japanese IME NOT_RUN","search":{"resultCount":4,"focusReturn":"page-title"},"link":{"selectionAfterCancel":"リンク対象","focusReturn":"editor"},"templates":{"initialFocus":{"tag":"BUTTON","firstCard":true,"text":"📄空のページ自由に書きはじめる"},"arrowOrder":"空のページ -> ミーティングノート -> 空のページ","enterActivation":"created 無題 page, focus returned to sidebar button"},"move":{"initialFocus":{"tag":"BUTTON","firstRow":true},"focusReturnAfterEscape":"ページメニュー button"},"history":{"focusReturnAfterEscape":"変更履歴を見る button"},"trash":{"focusReturnAfterEscape":"sidebar ゴミ箱 button"},"background":"backdrop click dismissed without page operation","lastFocus":{"tag":"BUTTON","label":"テンプレート","dialog":false,"focusVisible":false}}
+  ✓   59 tests/e2e/r3-fidelity.spec.ts:441:1 › R3 fidelity keyboard contract: search/link/record and older dialogs share focus entry, loop, Escape and return (3.9s)
+R3-FIDELITY r3-long-title-keyboard-motion.json {"title":{"length":119,"valuePreserved":true,"inputScrolls":true},"truncation":{"sidebar":"ellipsis (scrollWidth > clientWidth)","breadcrumb":"ellipsis (scrollWidth > clientWidth)","inspectorPage":"wraps (overflow-wrap: anywhere)","pageTitle":"single-line input scrolls internally; wrapping remains App-owned NOT_RUN"},"focusRing":{"label":"ページタイトル","focusVisible":true,"outlineStyle":"solid","outlineWidth":2,"outlineColor":"rgb(85, 119, 93)"},"mouseFocus":{"tag":"INPUT","label":"ページタイトル","dialog":false,"focusVisible":true},"sidebarCollapsed":{"horizontalOverflow":0,"documentOverflow":0,"contentRight":657,"inspectorLeft":680,"paddingRight":"292px"},"reducedMotion":{"scrollBehavior":"auto","dropdownAnimation":"none","pageToolsTransitions":[0]},"input":"Playwright keyboard/pointer; no physical IME"}
+  ✓   60 tests/e2e/r3-fidelity.spec.ts:662:1 › R3 fidelity long title, visible focus, sidebar width and reduced motion at 960 (3.0s)
+  ✓   61 tests/e2e/r4-editor.spec.ts:26:1 › R4 slash heading choice is one Undo step and survives SQLite restart (4.4s)
+  ✓   62 tests/e2e/r4-editor.spec.ts:70:1 › R4 Escape keeps slash text dismissed until input changes; todo conversion is undoable (4.3s)
+  ✓   63 tests/e2e/r4-editor.spec.ts:113:1 › R4 Escape cancels block selection before parent navigation (2.3s)
+  ✓   64 tests/e2e/r4-page-save.spec.ts:5:3 › closing history while restore-ack is held keeps old content locked until the restored snapshot is installed (2.5s)
+  ✓   65 tests/e2e/r4-page-save.spec.ts:5:3 › closing history while post-restore-load is held keeps old content locked until the restored snapshot is installed (2.3s)
+  ✓   66 tests/e2e/r4-page-save.spec.ts:108:1 › ordinary Page refresh cannot pair an old Editor document with an external revision (1.7s)
+  ✓   67 tests/e2e/r4-page-save.spec.ts:169:1 › ordinary Page delayed ACK keeps later input and does not replace another selected Page (1.9s)
+  ✓   68 tests/e2e/r4-record-edit.spec.ts:12:1 › record body, title and three property types persist through cells, panel and Electron restart (3.9s)
+  ✓   69 tests/e2e/r4-record-edit.spec.ts:81:1 › side/full preserves the Editor and undo history and close restores origin focus and scroll (1.8s)
+  ✓   70 tests/e2e/r4-record-edit.spec.ts:139:1 › held record ACK retains later input across close, another record and reopen without cross-target writes (1.7s)
+  ✓   71 tests/e2e/r4-record-edit.spec.ts:214:1 › lost post-COMMIT ACK resolves from receipt without duplicate application and protects normal close and reload (2.1s)
+  ✓   72 tests/e2e/r4-record-edit.spec.ts:313:1 › incomplete numeric input survives close and reopen and blocks reload until completed (2.5s)
+  ✓   73 tests/e2e/r4-visual.spec.ts:8:1 › R4 fixed viewport synthetic Page, database and record captures (2.4s)
+  ✓   74 tests/e2e/r5-create.spec.ts:20:1 › UI creates the first registered DB and record; real Editor and three properties survive restart without migrating the legacy DB (4.3s)
+  ✓   75 tests/e2e/r5-create.spec.ts:98:1 › create DB lost post-COMMIT ACK resolves the same receipt and cannot create a duplicate (2.0s)
+  ✓   76 tests/e2e/r5-create.spec.ts:159:1 › add row lost post-COMMIT ACK resolves without a second membership or owner revision increment (1.7s)
+  ✓   77 tests/e2e/r5-interactions.spec.ts:31:1 › numeric filter raw input survives navigation; changing its target resets both valid and incomplete text and clears the reload guard (2.6s)
+  ✓   78 tests/e2e/r5-interactions.spec.ts:110:1 › continuous typing in a grouping property keeps the same focused input until row blur and then moves the saved row (2.8s)
+  ✓   79 tests/e2e/r5-interactions.spec.ts:186:1 › board groups and gallery filtering use saved views and open the same records after restart (4.1s)
+  ✓   80 tests/e2e/r5-interactions.spec.ts:310:1 › late database creation ACK does not replace an existing record opened after its dialog was closed (2.3s)
+  ✓   81 tests/e2e/r5-settings.spec.ts:19:1 › UI view creation, rename, switch, typed filters, sort and grouping persist after Electron restart (5.6s)
+  ✓   82 tests/e2e/r5-settings.spec.ts:219:1 › held settings ACK preserves later settings and owner title through navigation using one revision lane (2.4s)
+  ✓   83 tests/e2e/r5-settings.spec.ts:292:1 › unknown settings retain their identity across navigation and resolve without duplicate apply (3.6s)
+  ✓   84 tests/e2e/r5-settings.spec.ts:369:1 › external owner revision conflicts with local settings without promoting the draft onto the new revision (2.0s)
+  ✓   85 tests/e2e/r6-migration.spec.ts:21:1 › explicit selected legacy migration preserves mixed workspace bytes, history and verified assets and supports record editing after restart (3.4s)
+  ✓   86 tests/e2e/r6-migration.spec.ts:116:1 › migration preview rejects an incompatible legacy value without changing original bytes or creating a snapshot (1.5s)
+  ✓   87 tests/e2e/r6-migration.spec.ts:143:1 › post-COMMIT migration ACK loss locks the modal and resolves the original receipt without duplicate conversion (2.9s)
+  ✓   88 tests/e2e/r6-migration.spec.ts:217:1 › migration apply rejects an external owner change after preview and leaves the external state intact (1.4s)
+  ✓   89 tests/e2e/r6-recovery.spec.ts:252:3 › SIGKILL after page COMMIT and later input restores the latest title and body without applying the receipt twice (4.1s)
+  ✓   90 tests/e2e/r6-recovery.spec.ts:252:3 › SIGKILL after record COMMIT and later input restores the latest title and body without applying the receipt twice (5.4s)
+  ✓   91 tests/e2e/r6-recovery.spec.ts:350:1 › SIGKILL after database creation COMMIT retains an unknown lookup and resolves the same operation later without resending or duplicating it (3.2s)
+  ✓   92 tests/e2e/r6-recovery.spec.ts:431:1 › SIGKILL after row creation COMMIT restores later owner input and retains exactly the original row (3.5s)
+  ✓   93 tests/e2e/r6-recovery.spec.ts:483:1 › SIGKILL after settings COMMIT preserves later view input without replaying the acknowledged owner revision (3.7s)
+  ✓   94 tests/e2e/r6-recovery.spec.ts:543:1 › SIGKILL retains incomplete record and numeric-filter '-' as raw input without converting either to a saved number (4.4s)
+  ✓   95 tests/e2e/r6-recovery.spec.ts:640:1 › external revision after SIGKILL blocks resume; copy ACK loss retries once without changing the original or duplicating the recovery page (3.5s)
+  ✓   96 tests/e2e/r6-recovery.spec.ts:735:1 › a corrupt recovery journal stays byte-for-byte intact and blocks resume, copy, and dialog dismissal (2.5s)
+  ✓   97 tests/e2e/r6-schema.spec.ts:64:1 › five column types, select/date live fields and stable rename survive actual Electron restart (6.5s)
+  ✓   98 tests/e2e/r6-schema.spec.ts:110:1 › lossless type changes persist, keep column IDs, and reject the pre-conversion record revision (4.7s)
+  ✓   99 tests/e2e/r6-schema.spec.ts:140:1 › nonconvertible values and dependent view filters reject visibly without changing stored data (2.9s)
+  ✓  100 tests/e2e/r6-schema.spec.ts:171:1 › post-COMMIT ACK loss resolves the same property operation once and reloads the confirmed schema (2.6s)
+  ✓  101 tests/e2e/r6-schema.spec.ts:198:1 › a record changed after UI preview makes apply reject while preserving the external value (2.0s)
+  ✓  102 tests/e2e/r6-structural-retry.spec.ts:53:1 › failed durable retention stays unsent, modal retry repeats the exact checkpoint then commits once (2.5s)
+  ✓  103 tests/e2e/r6-structural-retry.spec.ts:100:1 › explicit re-preview reads the external owner revision without applying, then commits that exact preview (2.4s)
+  ✓  104 tests/e2e/record-core.spec.ts:13:1 › isolated record can be found and edited with the normal full-page editor (3.7s)
+  ✓  105 tests/e2e/record-core.spec.ts:139:1 › record Editor rejects an external update after its initial installation (2.3s)
+  ✓  106 tests/e2e/record-core.spec.ts:251:1 › registered database displays records without enabling legacy row writes (1.9s)
+  ✓  107 tests/e2e/record-core.spec.ts:348:1 › new v4 database is identified before enabling record cells and blocks unsupported owner actions (1.8s)
+  ✓  108 tests/e2e/record-core.spec.ts:426:1 › editable record body still rejects generic Page writes (2.1s)
+  ✓  109 tests/e2e/record-core.spec.ts:509:1 › record patch IPC requires the observed owner and preserves the page body (1.8s)
+  ✓  110 tests/e2e/record-open-order.spec.ts:15:3 › last requested record wins when older-first response is released (1.9s)
+  ✓  111 tests/e2e/record-open-order.spec.ts:15:3 › last requested record wins when newer-first response is released (1.9s)
+  ✓  112 tests/e2e/record-open-order.spec.ts:128:1 › a delayed record read cannot supersede a committed database creation (2.3s)
+  ✓  113 tests/e2e/record-open-order.spec.ts:258:1 › a trashed registered record cannot be restored through the generic UI (1.5s)
+  ✓  114 tests/e2e/recovery-race-guard.spec.ts:143:3 › Page-only recovery retains pending after later-input during the save dialog (1.9s)
+  ✓  115 tests/e2e/recovery-race-guard.spec.ts:143:3 › Page-only recovery retains pending after selection-change during the save dialog (2.2s)
+  ✓  116 tests/e2e/recovery-race-guard.spec.ts:143:3 › Page-only recovery retains pending after synthetic-ime during the save dialog (1.8s)
+  ✓  117 tests/e2e/recovery-race-guard.spec.ts:190:1 › Page-only recovery cancellation and write failure retain original and pending edits (1.7s)
+  ✓  118 tests/e2e/recovery.spec.ts:12:1 › R1 legacy export file → recovery → restart preserves a 500 character title (3.5s)
+  ✓  119 tests/e2e/recovery.spec.ts:57:3 › R1 real IPC v2 byte boundary -1 with escaping → file → restart (13.0s)
+  ✓  120 tests/e2e/recovery.spec.ts:57:3 › R1 real IPC v2 byte boundary 0 with escaping → file → restart (14.3s)
+  ✓  121 tests/e2e/recovery.spec.ts:57:3 › R1 real IPC v2 byte boundary 1 with escaping → file → restart (7.5s)
+  ✓  122 tests/e2e/recovery.spec.ts:102:1 › R1 multiple pending pages survive cancel/write/reload failures; copies retain original and attachment (6.1s)
+  ✓  123 tests/e2e/recovery.spec.ts:266:1 › R1 real IPC rejects the 30.3MB Japanese export previously accepted (2.4s)
+  ✓  124 tests/e2e/store-runtime.spec.ts:3:1 › Electron SQLite exposes the transaction and connection state used by workspace snapshots (1.9s)
+UI-EVIDENCE ui-hover-state.json {"before":{"rowHover":false,"addHover":false,"focusWithin":false,"opacity":"0","pointTag":"SPAN","pointClass":"page-emoji","documentFocused":true,"activeElement":"tree-toggle ","rowBox":{"x":8,"y":318.5,"width":212,"height":32}},"moved":{"rowHover":true,"addHover":false,"focusWithin":false,"opacity":"0.710585","pointTag":"SPAN","pointClass":"page-emoji","documentFocused":true,"activeElement":"tree-toggle ","rowBox":{"x":8,"y":318.5,"width":212,"height":32}}}
+UI-EVIDENCE ui-light-metrics.json {"capture":"1440x960 light","reading":{"viewport":{"width":1440,"height":908,"dpr":2},"theme":"light","horizontalOverflow":0,"documentOverflow":0,"boxes":{"sidebar":{"x":0,"y":0,"width":240,"height":908},"topbar":{"x":240,"y":0,"width":1200,"height":54},"topbarActions":{"x":1251,"y":11.5,"width":177,"height":30},"breadcrumbs":{"x":377,"y":14.8,"width":110.8,"height":23.5},"saveState":{"x":1253,"y":14.5,"width":73,"height":24},"menuButton":{"x":1398,"y":11.5,"width":30,"height":30},"documentScroll":{"x":240,"y":54,"width":960,"height":854},"content":{"x":284.5,"y":216,"width":860,"height":791.8},"title":{"x":340.5,"y":292,"width":748,"height":50.5},"inspector":{"x":1200,"y":54,"width":240,"height":854},"activeRow":{"x":8,"y":318.5,"width":212,"height":32}},"styles":{"bodyBackground":"rgb(251, 251, 248)","bodyColor":"rgb(47, 50, 43)","sidebarBackground":"rgb(242, 242, 236)","line":"rgb(229, 229, 219)","titleSize":"37.44px","titleWeight":"700","titleColor":"rgb(47, 50, 43)","subtitleColor":"rgb(113, 116, 106)","contentPaddingLeft":"56px","inspectorPosition":"static","inspectorBackground":"rgb(247, 247, 242)","crumbSize":"11.5px","treeAddOpacity":"0","pageToolsOpacity":"0","focusOutline":""},"a11y":{"activeLabelCurrent":"✳️ようこそ、Folioへ","sidebarPressed":"true","inspectorPressed":"true","toggleExpanded":"true","saveStateText":"保存済み","focusableCount":57},"tree":[{"text":"✳️ようこそ、Folioへ","left":8,"depth":"0","active":true},{"text":"💡アイデアノート","left":8,"depth":"0","active":false},{"text":"📄いつか、やりたいこと","left":33,"depth":"1","active":false},{"text":"◈プロジェクト","left":8,"depth":"0","active":false}]},"contrast":{"body":12.57,"title":12.57,"meta":4.59},"menu":{"box":{"x":1156.948974609375,"y":53.2823486328125,"width":270.10205078125,"height":447.8529357910156},"sectionLabel":"ページ","hoverBackgroundChanged":true,"escapeClosed":true,"clickOutsideClosed":true},"hover":{"treeAddHiddenUntilHover":true,"treeAddVisibleOnFocus":true,"pageToolsHiddenUntilHover":true,"before":{"rowHover":false,"addHover":false,"focusWithin":false,"opacity":"0","pointTag":"SPAN","pointClass":"page-emoji","documentFocused":true,"activeElement":"tree-toggle ","rowBox":{"x":8,"y":318.5,"width":212,"height":32}},"moved":{"rowHover":true,"addHover":false,"focusWithin":false,"opacity":"0.710585","pointTag":"SPAN","pointClass":"page-emoji","documentFocused":true,"activeElement":"tree-toggle ","rowBox":{"x":8,"y":318.5,"width":212,"height":32}},"after":{"rowHover":true,"addHover":false,"focusWithin":false,"opacity":"1","pointTag":"SPAN","pointClass":"page-emoji","documentFocused":true,"activeElement":"tree-toggle ","rowBox":{"x":8,"y":318.5,"width":212,"height":32}}}}
+  ✓  125 tests/e2e/ui-v2.spec.ts:227:1 › UI 2.0 light: hierarchy, hover reveal, menu bounds and contrast (4.6s)
+UI-EVIDENCE ui-dark-metrics.json {"capture":"1440x960 dark","reading":{"viewport":{"width":1440,"height":908,"dpr":2},"theme":"dark","horizontalOverflow":0,"documentOverflow":0,"boxes":{"sidebar":{"x":0,"y":0,"width":240,"height":908},"topbar":{"x":240,"y":0,"width":1200,"height":54},"topbarActions":{"x":1251,"y":11.5,"width":177,"height":30},"breadcrumbs":{"x":377,"y":14.8,"width":110.8,"height":23.5},"saveState":{"x":1253,"y":14.5,"width":73,"height":24},"menuButton":{"x":1398,"y":11.5,"width":30,"height":30},"documentScroll":{"x":240,"y":54,"width":960,"height":854},"content":{"x":284.5,"y":216,"width":860,"height":791.8},"title":{"x":340.5,"y":292,"width":748,"height":50.5},"inspector":{"x":1200,"y":54,"width":240,"height":854},"activeRow":{"x":8,"y":318.5,"width":212,"height":32}},"styles":{"bodyBackground":"rgb(30, 33, 28)","bodyColor":"rgb(231, 233, 224)","sidebarBackground":"rgb(25, 27, 23)","line":"rgb(52, 56, 48)","titleSize":"37.44px","titleWeight":"700","titleColor":"rgb(231, 233, 224)","subtitleColor":"rgb(164, 170, 155)","contentPaddingLeft":"56px","inspectorPosition":"static","inspectorBackground":"rgb(27, 30, 25)","crumbSize":"11.5px","treeAddOpacity":"0","pageToolsOpacity":"0","focusOutline":""},"a11y":{"activeLabelCurrent":"✳️ようこそ、Folioへ","sidebarPressed":"true","inspectorPressed":"true","toggleExpanded":"false","saveStateText":"保存済み","focusableCount":54},"tree":[{"text":"✳️ようこそ、Folioへ","left":8,"depth":"0","active":true},{"text":"💡アイデアノート","left":8,"depth":"0","active":false},{"text":"◈プロジェクト","left":8,"depth":"0","active":false}]},"reopenedTheme":"dark","contrast":{"body":13.28,"title":13.28,"meta":6.83,"sidebar":14.15},"menuSurface":"rgb(38, 42, 35)","menuSurfaceDiffersFromPage":true}
+  ✓  126 tests/e2e/ui-v2.spec.ts:387:1 › UI 2.0 dark: theme tokens, menu surface and contrast (3.1s)
+UI-EVIDENCE ui-responsive-metrics.json {"readings":[{"size":"1024x720","reading":{"viewport":{"width":1024,"height":720,"dpr":2},"theme":"light","horizontalOverflow":0,"documentOverflow":0,"boxes":{"sidebar":{"x":0,"y":0,"width":220,"height":720},"topbar":{"x":220,"y":0,"width":804,"height":54},"topbarActions":{"x":835,"y":11.5,"width":177,"height":30},"breadcrumbs":{"x":357,"y":14.8,"width":110.8,"height":23.5},"saveState":{"x":837,"y":14.5,"width":73,"height":24},"menuButton":{"x":982,"y":11.5,"width":30,"height":30},"documentScroll":{"x":220,"y":54,"width":580,"height":666},"content":{"x":220,"y":182,"width":569,"height":807.7},"title":{"x":256,"y":252,"width":497,"height":45.9},"inspector":{"x":800,"y":54,"width":224,"height":666},"activeRow":{"x":8,"y":304.5,"width":192,"height":32}},"styles":{"bodyBackground":"rgb(251, 251, 248)","bodyColor":"rgb(47, 50, 43)","sidebarBackground":"rgb(242, 242, 236)","line":"rgb(229, 229, 219)","titleSize":"34px","titleWeight":"700","titleColor":"rgb(47, 50, 43)","subtitleColor":"rgb(113, 116, 106)","contentPaddingLeft":"36px","inspectorPosition":"static","inspectorBackground":"rgb(247, 247, 242)","crumbSize":"11.5px","treeAddOpacity":"0","pageToolsOpacity":"0","focusOutline":""},"a11y":{"activeLabelCurrent":"✳️ようこそ、Folioへ","sidebarPressed":"true","inspectorPressed":"true","toggleExpanded":"false","saveStateText":"保存済み","focusableCount":54},"tree":[{"text":"✳️ようこそ、Folioへ","left":8,"depth":"0","active":true},{"text":"💡アイデアノート","left":8,"depth":"0","active":false},{"text":"◈プロジェクト","left":8,"depth":"0","active":false}]}},{"size":"960x700","reading":{"viewport":{"width":960,"height":700,"dpr":2},"theme":"light","horizontalOverflow":0,"documentOverflow":0,"boxes":{"sidebar":{"x":0,"y":0,"width":208,"height":700},"topbar":{"x":208,"y":0,"width":752,"height":54},"topbarActions":{"x":779,"y":11.5,"width":173,"height":30},"breadcrumbs":{"x":333,"y":14.8,"width":110.8,"height":23.5},"saveState":{"x":781,"y":14.5,"width":73,"height":24},"menuButton":{"x":922,"y":11.5,"width":30,"height":30},"documentScroll":{"x":208,"y":54,"width":752,"height":646},"content":{"x":208,"y":182,"width":449,"height":828.5},"title":{"x":236,"y":252,"width":393,"height":40.5},"inspector":{"x":680,"y":66,"width":268,"height":622},"activeRow":{"x":6,"y":301.5,"width":184,"height":32}},"styles":{"bodyBackground":"rgb(251, 251, 248)","bodyColor":"rgb(47, 50, 43)","sidebarBackground":"rgb(242, 242, 236)","line":"rgb(229, 229, 219)","titleSize":"30px","titleWeight":"700","titleColor":"rgb(47, 50, 43)","subtitleColor":"rgb(113, 116, 106)","contentPaddingLeft":"28px","inspectorPosition":"absolute","inspectorBackground":"rgb(247, 247, 242)","crumbSize":"11.5px","treeAddOpacity":"0","pageToolsOpacity":"0","focusOutline":""},"a11y":{"activeLabelCurrent":"✳️ようこそ、Folioへ","sidebarPressed":"true","inspectorPressed":"true","toggleExpanded":"false","saveStateText":"保存済み","focusableCount":54},"tree":[{"text":"✳️ようこそ、Folioへ","left":6,"depth":"0","active":true},{"text":"💡アイデアノート","left":6,"depth":"0","active":false},{"text":"◈プロジェクト","left":6,"depth":"0","active":false}]}}],"toggles":{"inspectorCloseButton":true,"inspectorReopenedFromTopbar":true,"sidebarHidden":true,"topbarLeftAfterSidebarHidden":"88px","overflowWhileSidebarHidden":0}}
+  ✓  127 tests/e2e/ui-v2.spec.ts:469:1 › UI 2.0 responsive: 1024 and 960 keep panels usable without overflow (2.4s)
+UI-EVIDENCE ui-keyboard-metrics.json {"tabFocus":{"tag":"BUTTON","label":"太字","outlineStyle":"solid","outlineWidth":"2px"},"searchDialogOpened":true,"searchDialogClosed":true,"menuOpenedFromKeyboard":true,"menuClosedWithEscape":true,"resultNavigation":"ArrowDown moved aria-current"}
+  ✓  128 tests/e2e/ui-v2.spec.ts:557:1 › UI 2.0 keyboard: focus visibility, shortcuts and menu Escape (2.9s)
+(node:7536) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+[BABEL] Note: The code generator has deoptimised the styling of <workspace-root>/Folio-r6-20261028/validation/output/agent-workspace/cache/vite/db-ui-readonly/deps/react-dom_client.js?v=d35bf07b as it exceeds the max of 500KB.
+  ✓  129 tests/e2e/db-ui-readonly.spec.ts:52:1 › view-only modes permit local navigation without creating drafts or mutation callbacks (2.5s)
+  ✓  130 tests/e2e/db-ui-readonly.spec.ts:77:1 › opening a live uniquely owned row sends only the navigation callback (765ms)
+  ✓  131 tests/e2e/db-ui-readonly.spec.ts:83:1 › a mismatched owner or duplicated page identity cannot navigate (769ms)
+(node:7642) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+[BABEL] Note: The code generator has deoptimised the styling of <workspace-root>/Folio-r6-20261028/validation/output/agent-workspace/cache/vite/db-ui-harness/deps/react-dom_client.js?v=220fad7a as it exceeds the max of 500KB.
+  ✓  132 tests/e2e/db-ui.spec.ts:127:1 › table, board, gallery and calendar open the same record identity and values (2.6s)
+  ✓  133 tests/e2e/db-ui.spec.ts:168:1 › record page saves, retains a failed edit, retries and handles trash/restore and read-only (6.0s)
+  ✓  134 tests/e2e/db-ui.spec.ts:226:1 › inline table edits call record patches with pageId and never save rows (1.5s)
+  ✓  135 tests/e2e/db-ui.spec.ts:286:1 › filter, multiple sorts, grouping and view CRUD persist through updateSettings (1.2s)
+  ✓  136 tests/e2e/db-ui.spec.ts:332:1 › filter builder adds a typed condition and a settings failure can be retried (1.2s)
+  ✓  137 tests/e2e/db-ui.spec.ts:356:1 › a pending settings write is rebased onto an external projection (2.6s)
+  ✓  138 tests/e2e/db-ui.spec.ts:394:1 › board grouping follows the saved direction and the direction control (992ms)
+  ✓  139 tests/e2e/db-ui.spec.ts:409:1 › board drag moves a record between groups through patchRecord (1.2s)
+  ✓  140 tests/e2e/db-ui.spec.ts:431:1 › keyboard handoff, Escape return, origin focus and scroll restoration (1.2s)
+  ✓  141 tests/e2e/db-ui.spec.ts:491:1 › a filtered-out record stays open and returning does not focus a hidden row (1.2s)
+  ✓  142 tests/e2e/db-ui.spec.ts:510:1 › create, duplicate, trash and restore show ACKs and update the projection (1.5s)
+  ✓  143 tests/e2e/db-ui.spec.ts:551:1 › a failed cell stays retryable after another cell succeeds (949ms)
+  ✓  144 tests/e2e/db-ui.spec.ts:581:1 › retry retains a failed cell when another writer changed the same cell (1.1s)
+  ✓  145 tests/e2e/db-ui.spec.ts:614:1 › Escape on an absent cell writes nothing and deletes after a value (1.1s)
+  ✓  146 tests/e2e/db-ui.spec.ts:646:1 › an optimistic view keeps its id through a failed add and queued rename (1.2s)
+  ✓  147 tests/e2e/db-ui.spec.ts:689:1 › an optimistic duplicate keeps its id through a failed write and queued rename (1.3s)
+  ✓  148 tests/e2e/db-ui.spec.ts:730:1 › a same-field external change is reported instead of overwritten (1.8s)
+  ✓  149 tests/e2e/db-ui.spec.ts:764:1 › filter and view-name edits are sent before navigation without blur (886ms)
+  ✓  150 tests/e2e/db-ui.spec.ts:809:1 › deleting a view is rejected after the same view changed externally (1.8s)
+  ✓  151 tests/e2e/db-ui.spec.ts:846:1 › a newer cell edit supersedes an older failed patch before its ACK (2.9s)
+  ✓  152 tests/e2e/db-ui.spec.ts:901:1 › a failed new view keeps stable filter/sort ids for queued edits (1.6s)
+  ✓  153 tests/e2e/db-ui.spec.ts:947:1 › 960/1024/1440 and narrow layout, dark theme, long text and an image do not overflow (1.2s)
+(node:7806) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+[BABEL] Note: The code generator has deoptimised the styling of <workspace-root>/Folio-r6-20261028/validation/output/agent-workspace/cache/vite/record-page-harness/deps/react-dom_client.js?v=549bcc7f as it exceeds the max of 500KB.
+  ✓  154 tests/e2e/record-page-presentation.spec.ts:80:1 › side/full changes preserve the real Editor instance and its undo history (2.4s)
+  ✓  155 tests/e2e/record-page-presentation.spec.ts:108:1 › unknown offers result lookup, preserves input and applies the parent edit lock (804ms)
+  ✓  156 tests/e2e/record-page-presentation.spec.ts:140:1 › Escape cancels the slash menu before closing and ignores composition (848ms)
+
+  156 passed (8.5m)

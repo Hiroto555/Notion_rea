@@ -9,15 +9,32 @@ export async function observeDrag(s: Pick<Session, "app" | "window">) {
     (globalThis as any).dragACK = [];
     m.removeHandler("folio:request");
     m.handle("folio:request", async (e: any, r: any) => {
-      if (["move", "load", "update"].includes(r.type)) (globalThis as any).dragACK.push({ type: r.type, id: r.id, parentId: r.parentId, stage: "start", time: Date.now() });
-      const result = await handler(e, r);
-      if (["move", "load", "update"].includes(r.type)) (globalThis as any).dragACK.push({ type: r.type, id: r.id, parentId: r.parentId, stage: "ack", time: Date.now() });
-      if (r.type === "update")
+      if (["move", "load", "update", "save:commit"].includes(r.type))
         (globalThis as any).dragACK.push({
-          id: r.id,
-          revision: result.revision,
-          doc: result.doc,
-          database: result.database,
+          type: r.type,
+          id: r.id ?? r.operation?.pageId,
+          parentId: r.parentId,
+          stage: "start",
+          time: Date.now(),
+        });
+      const result = await handler(e, r);
+      if (["move", "load", "update", "save:commit"].includes(r.type))
+        (globalThis as any).dragACK.push({
+          type: r.type,
+          id: r.id ?? r.operation?.pageId,
+          parentId: r.parentId,
+          stage: "ack",
+          time: Date.now(),
+        });
+      if (
+        r.type === "update" ||
+        (r.type === "save:commit" && result.status === "applied")
+      )
+        (globalThis as any).dragACK.push({
+          id: r.id ?? r.operation?.pageId,
+          revision: (result.page ?? result).revision,
+          doc: (result.page ?? result).doc,
+          database: (result.page ?? result).database,
           time: Date.now(),
         });
       return result;
@@ -95,7 +112,10 @@ export async function observeDrag(s: Pick<Session, "app" | "window">) {
     });
   });
 }
-export async function dragEvidence(s: Pick<Session, "app" | "window">, info: TestInfo) {
+export async function dragEvidence(
+  s: Pick<Session, "app" | "window">,
+  info: TestInfo,
+) {
   const events = await s.window.evaluate(() => ({
     events: (globalThis as any).dragJournal,
     attempt: (globalThis as any).dragAttempt,

@@ -1,0 +1,773 @@
+/* ==========================================================================
+   Round 3 database surface (DB UI lane)
+   Dedicated to src/database/DatabasePresentation.tsx and RecordPage.tsx.
+   Shared styles.css / Modal.tsx are owned by Fidelity and are not modified.
+   ========================================================================== */
+
+.r3-db {
+  margin-top: 20px;
+  font-size: 12px;
+  color: var(--text);
+  min-width: 0;
+}
+.r3-db button,
+.r3-record-page button {
+  font-size: 11px;
+}
+.r3-db button:focus-visible,
+.r3-record-page button:focus-visible,
+.r3-db input:focus-visible,
+.r3-db select:focus-visible,
+.r3-record-page input:focus-visible,
+.r3-record-page select:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 1px;
+}
+
+/* Tabs ------------------------------------------------------------------ */
+.r3-db-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+  border-bottom: 1px solid var(--line);
+  margin-bottom: 10px;
+}
+.r3-db-tabs button {
+  gap: 6px;
+  padding: 8px 10px;
+  color: var(--muted);
+  border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+  border-bottom: 2px solid transparent;
+}
+.r3-db-tabs button:hover {
+  color: var(--text-soft);
+  background: var(--hover);
+}
+.r3-db-tabs button.r3-tab-active {
+  color: var(--accent-strong);
+  border-bottom-color: var(--accent);
+  background: var(--panel);
+}
+:root[data-theme="dark"] .r3-db-tabs button.r3-tab-active {
+  color: var(--accent);
+}
+
+/* Toolbars -------------------------------------------------------------- */
+.r3-db-toolbar,
+.r3-db-viewbar,
+.r3-db-sort-rules,
+.r3-property-form {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 7px 0;
+}
+.r3-db-toolbar input,
+.r3-db-viewbar input,
+.r3-property-form input {
+  min-width: 0;
+  width: 150px;
+  padding: 6px 8px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+}
+.r3-db-toolbar select,
+.r3-db-viewbar select,
+.r3-property-form select {
+  max-width: 160px;
+  padding: 6px 8px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+}
+.r3-db-toolbar > button,
+.r3-db-viewbar > button,
+.r3-property-form > button {
+  white-space: nowrap;
+  padding: 7px 8px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  color: var(--text-soft);
+}
+.r3-db-toolbar > button:hover,
+.r3-db-viewbar > button:hover,
+.r3-property-form > button:hover {
+  border-color: var(--line);
+  background: var(--hover);
+}
+.r3-db-toolbar > button:disabled,
+.r3-db-viewbar > button:disabled,
+.r3-property-form > button:disabled {
+  opacity: 0.4;
+}
+.r3-primary {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent) !important;
+}
+.r3-primary:hover {
+  background: var(--accent-strong) !important;
+}
+:root[data-theme="dark"] .r3-primary {
+  color: #1b1e19;
+}
+.r3-toolbar-spacer {
+  flex: 1;
+}
+.r3-db-status {
+  font-size: 10px;
+  color: var(--muted);
+  min-height: 16px;
+}
+.r3-db-viewbar {
+  padding-top: 0;
+}
+.r3-db-sort-rules {
+  padding-top: 0;
+  gap: 10px;
+  font-size: 10px;
+  color: var(--muted);
+}
+.r3-sort-rule {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.r3-sort-rule select {
+  padding: 4px 6px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+}
+.r3-sort-rule button {
+  padding: 2px 6px;
+}
+.r3-db-filter {
+  padding: 8px 10px;
+  margin: 2px 0 8px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--panel);
+}
+.r3-property-form {
+  padding: 10px;
+  margin-bottom: 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--panel);
+}
+
+/* Alerts and status ---------------------------------------------------- */
+.r3-db-alert,
+.r3-record-alert,
+.r3-record-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 8px 10px;
+  margin: 8px 0;
+  font-size: 11px;
+  line-height: 1.5;
+  color: var(--danger);
+  background: var(--danger-soft);
+  border: 1px solid color-mix(in srgb, var(--danger) 26%, transparent);
+  border-radius: var(--radius-sm);
+}
+.r3-record-banner {
+  color: var(--warning);
+  background: color-mix(in srgb, var(--warning) 12%, var(--surface));
+  border-color: color-mix(in srgb, var(--warning) 30%, transparent);
+}
+.r3-db-alert span,
+.r3-record-alert span,
+.r3-record-banner span {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.r3-db-unsaved {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  margin: 6px 0;
+  font-size: 11px;
+  color: var(--warning);
+  background: color-mix(in srgb, var(--warning) 10%, var(--surface));
+  border-radius: var(--radius-sm);
+}
+.r3-inline-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 7px;
+  font-size: 10px;
+  border: 1px solid color-mix(in srgb, currentColor 30%, transparent);
+  border-radius: var(--radius-sm);
+  color: inherit;
+  white-space: nowrap;
+}
+.r3-inline-action:hover {
+  background: color-mix(in srgb, currentColor 10%, transparent);
+}
+
+/* Table ----------------------------------------------------------------- */
+.r3-db-scroll {
+  overflow: auto;
+  max-height: min(68vh, 640px);
+  border-radius: var(--radius);
+  overscroll-behavior: contain;
+}
+.r3-table-wrap {
+  overflow-x: auto;
+}
+.r3-table {
+  width: 100%;
+  min-width: 720px;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: 12px;
+}
+.r3-table th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  padding: 9px 8px;
+  text-align: left;
+  white-space: nowrap;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--muted);
+  background: var(--panel);
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+  border-left: 1px solid var(--line);
+}
+.r3-table th:last-child {
+  border-right: 1px solid var(--line);
+  width: 104px;
+}
+.r3-table td {
+  padding: 2px;
+  border-bottom: 1px solid var(--line);
+  border-left: 1px solid var(--line);
+  min-width: 120px;
+  vertical-align: middle;
+}
+.r3-table td:last-child {
+  border-right: 1px solid var(--line);
+  min-width: 104px;
+}
+.r3-table th:first-child,
+.r3-table td:first-child {
+  min-width: 220px;
+}
+.r3-table tbody tr:hover td {
+  background: var(--panel);
+}
+.r3-cell-title {
+  vertical-align: middle;
+}
+.r3-title-input,
+.r3-property-control {
+  width: 100%;
+  min-width: 0;
+  padding: 7px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-xs);
+  background: transparent;
+  color: inherit;
+}
+.r3-title-input:hover,
+.r3-property-control:hover:not(:focus) {
+  border-color: var(--line);
+}
+.r3-title-input:focus,
+.r3-property-control:focus {
+  background: var(--surface);
+  border-color: var(--accent);
+  outline: none;
+}
+.r3-property-checkbox {
+  width: auto;
+}
+.r3-row-actions {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 2px 4px !important;
+}
+.r3-row-actions button {
+  padding: 4px;
+  color: var(--muted);
+  border-radius: var(--radius-xs);
+}
+.r3-row-actions button:hover {
+  color: var(--text);
+  background: var(--hover);
+}
+.r3-row-actions button:disabled {
+  opacity: 0.4;
+}
+.r3-new-row {
+  display: block;
+  width: 100%;
+  padding: 9px 8px;
+  margin-top: 4px;
+  text-align: left;
+  color: var(--muted);
+  font-size: 11px;
+}
+.r3-new-row:hover {
+  color: var(--text-soft);
+  background: var(--hover);
+}
+.r3-empty {
+  padding: 18px 8px;
+  color: var(--muted);
+  font-size: 11px;
+}
+.r3-db-count {
+  padding: 10px 0 2px;
+  font-size: 10px;
+  color: var(--muted);
+}
+
+/* Grouped table / gallery ---------------------------------------------- */
+.r3-groups {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.r3-group > h4 {
+  margin: 0 0 6px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-soft);
+}
+.r3-group > h4 small {
+  margin-left: 4px;
+  color: var(--muted);
+  font-weight: 400;
+}
+
+/* Board ----------------------------------------------------------------- */
+.r3-board {
+  display: flex;
+  gap: 12px;
+  min-height: 240px;
+  padding-bottom: 4px;
+}
+.r3-board-column {
+  flex: 1 0 200px;
+  min-width: 200px;
+  max-width: 320px;
+  padding: 10px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+}
+.r3-board-column > h4 {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0 0 10px;
+  font-size: 11px;
+  font-weight: 600;
+}
+.r3-board-column > h4 small {
+  margin-left: auto;
+  color: var(--muted);
+  font-weight: 400;
+}
+.r3-status-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--accent);
+}
+
+/* Cards / gallery ------------------------------------------------------- */
+.r3-card {
+  position: relative;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-sm);
+  margin-bottom: 8px;
+}
+.r3-card:hover {
+  border-color: var(--line-strong);
+}
+.r3-card-open {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  width: 100%;
+  padding: 12px;
+  text-align: left;
+  border-radius: var(--radius);
+}
+.r3-card-open:hover {
+  background: var(--panel);
+}
+.r3-card-icon {
+  font-size: 18px;
+  line-height: 1;
+}
+.r3-card-title {
+  font-size: 12px;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+.r3-card-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  max-width: 100%;
+}
+.r3-chip {
+  max-width: 100%;
+  padding: 3px 6px;
+  font-size: 9px;
+  color: var(--muted);
+  background: var(--panel);
+  border-radius: 999px;
+  overflow-wrap: anywhere;
+}
+.r3-chip-status {
+  color: var(--accent-strong);
+  background: var(--accent-soft);
+}
+:root[data-theme="dark"] .r3-chip-status {
+  color: var(--accent);
+}
+.r3-card-actions {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  display: flex;
+  gap: 1px;
+  opacity: 0;
+  transition: opacity 0.12s ease;
+}
+.r3-card:hover .r3-card-actions,
+.r3-card:focus-within .r3-card-actions {
+  opacity: 1;
+}
+.r3-card-actions button {
+  padding: 3px;
+  color: var(--muted);
+  border-radius: var(--radius-xs);
+}
+.r3-card-actions button:hover {
+  color: var(--text);
+  background: var(--hover);
+}
+.r3-card-compact {
+  margin: 3px 0;
+  box-shadow: none;
+}
+.r3-card-compact .r3-card-open {
+  padding: 5px 6px;
+  gap: 2px;
+}
+.r3-card-compact .r3-card-icon {
+  display: none;
+}
+.r3-card-compact .r3-card-title {
+  font-size: 9px;
+  font-weight: 500;
+}
+.r3-gallery {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+  gap: 10px;
+}
+.r3-gallery .r3-card {
+  margin-bottom: 0;
+}
+.r3-gallery .r3-card-icon {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 72px;
+  font-size: 28px;
+  background: var(--panel);
+  border-radius: var(--radius-sm);
+}
+
+/* Calendar -------------------------------------------------------------- */
+.r3-month-nav {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  padding: 4px 0 10px;
+  font-size: 12px;
+}
+.r3-month-nav button {
+  padding: 4px 8px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+}
+.r3-calendar {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  min-width: 560px;
+  border-top: 1px solid var(--line);
+  border-left: 1px solid var(--line);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+.r3-weekday {
+  padding: 7px;
+  text-align: center;
+  font-size: 10px;
+  color: var(--muted);
+  background: var(--panel);
+  border-right: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+}
+.r3-day {
+  min-height: 92px;
+  min-width: 0;
+  padding: 4px;
+  border-right: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+}
+.r3-day:hover {
+  background: var(--panel);
+}
+.r3-day-muted {
+  opacity: 0.55;
+  background: var(--sidebar);
+}
+.r3-day-number {
+  padding: 2px 5px;
+  font-size: 10px;
+  color: var(--muted);
+}
+.r3-day-number:hover {
+  color: var(--text);
+  background: var(--hover);
+}
+
+/* Trash ----------------------------------------------------------------- */
+.r3-trash {
+  margin-top: 10px;
+  font-size: 11px;
+  color: var(--muted);
+}
+.r3-trash summary {
+  cursor: pointer;
+  padding: 6px 0;
+}
+.r3-trash ul {
+  margin: 4px 0;
+  padding: 0;
+  list-style: none;
+}
+.r3-trash li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 6px;
+  border-bottom: 1px solid var(--line);
+}
+.r3-trash-name {
+  flex: 1;
+  min-width: 0;
+  text-align: left;
+  color: var(--text-soft);
+  overflow-wrap: anywhere;
+}
+
+/* Record page ----------------------------------------------------------- */
+.r3-record-page {
+  width: min(100%, 830px);
+  margin: 0 auto;
+  padding: 22px 40px 80px;
+  color: var(--text);
+  font-size: 14px;
+}
+.r3-record-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 28px;
+  flex-wrap: wrap;
+}
+.r3-record-back,
+.r3-record-action,
+.r3-record-save {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 8px;
+  font-size: 11px;
+  color: var(--muted);
+  border-radius: var(--radius-sm);
+}
+.r3-record-back:hover,
+.r3-record-action:hover {
+  color: var(--text);
+  background: var(--hover);
+}
+.r3-record-action:disabled {
+  opacity: 0.4;
+}
+.r3-record-danger {
+  color: var(--danger);
+}
+.r3-record-save {
+  padding: 0 4px;
+  font-size: 10px;
+}
+.r3-record-header-spacer {
+  flex: 1;
+}
+.r3-record-icon {
+  margin-top: 20px;
+  font-size: 40px;
+  line-height: 1;
+}
+.r3-record-title {
+  width: 100%;
+  margin: 8px 0 0;
+  padding: 4px 0;
+  border: 0;
+  border-bottom: 1px solid transparent;
+  background: transparent;
+  font-size: 30px;
+  font-weight: 650;
+  letter-spacing: -0.02em;
+  color: var(--text);
+}
+.r3-record-title:hover {
+  border-bottom-color: var(--line);
+}
+.r3-record-title:focus {
+  outline: none;
+  border-bottom-color: var(--accent);
+}
+.r3-record-title:disabled {
+  opacity: 0.8;
+  border-bottom-color: transparent;
+}
+.r3-record-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 4px 0 18px;
+  font-size: 10px;
+  color: var(--muted);
+}
+.r3-record-readonly {
+  padding: 2px 6px;
+  color: var(--warning);
+  background: color-mix(in srgb, var(--warning) 12%, transparent);
+  border-radius: 999px;
+}
+.r3-record-properties {
+  margin: 10px 0 26px;
+  padding: 10px 0;
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+}
+.r3-record-properties dl {
+  margin: 0;
+}
+.r3-record-property {
+  display: grid;
+  grid-template-columns: 150px minmax(0, 1fr);
+  gap: 10px;
+  align-items: center;
+  padding: 3px 0;
+}
+.r3-record-property dt {
+  min-width: 0;
+  font-size: 11px;
+  color: var(--muted);
+  overflow-wrap: anywhere;
+}
+.r3-record-property dd {
+  margin: 0;
+  min-width: 0;
+}
+.r3-record-property .r3-property-control {
+  max-width: 420px;
+}
+.r3-record-empty {
+  color: var(--muted);
+  font-size: 11px;
+}
+.r3-record-body {
+  min-height: 240px;
+  outline: none;
+  overflow-wrap: anywhere;
+}
+.r3-record-body img {
+  max-width: 100%;
+  height: auto;
+  border-radius: var(--radius-sm);
+}
+.r3-record-body .harness-body {
+  padding: 8px 0;
+  line-height: 1.75;
+}
+.r3-record-body [contenteditable="true"] {
+  min-height: 180px;
+  outline: none;
+}
+
+/* Narrow widths --------------------------------------------------------- */
+@media (max-width: 860px) {
+  .r3-db-toolbar > input,
+  .r3-db-viewbar > input {
+    width: 120px;
+  }
+  .r3-record-page {
+    padding: 16px 20px 60px;
+  }
+  .r3-record-title {
+    font-size: 24px;
+  }
+}
+@media (max-width: 620px) {
+  .r3-db-toolbar,
+  .r3-db-viewbar {
+    gap: 4px;
+  }
+  .r3-db-toolbar > input,
+  .r3-db-viewbar > input {
+    flex: 1 1 140px;
+    width: auto;
+  }
+  .r3-db-toolbar select,
+  .r3-db-viewbar select {
+    max-width: 132px;
+  }
+  .r3-record-page {
+    padding: 12px 14px 48px;
+  }
+  .r3-record-property {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 2px;
+  }
+  .r3-record-property .r3-property-control {
+    max-width: none;
+  }
+  .r3-record-title {
+    font-size: 22px;
+  }
+  .r3-record-icon {
+    font-size: 32px;
+  }
+  .r3-card-actions {
+    opacity: 1;
+  }
+}

@@ -1,0 +1,58 @@
+.common-dialog.crash-recovery-dialog {
+  margin: 24px auto;
+  box-sizing: border-box;
+  width: min(560px, calc(100vw - 48px));
+  max-height: calc(100vh - 48px);
+  padding: 24px;
+  overflow: auto;
+}
+
+.crash-recovery-dialog h2 {
+  margin: 0;
+  font-size: 20px;
+}
+
+.crash-recovery-dialog p {
+  line-height: 1.7;
+  overflow-wrap: anywhere;
+}
+
+.crash-recovery-counts {
+  display: grid;
+  gap: 10px;
+  margin: 20px 0;
+}
+
+.crash-recovery-counts > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.crash-recovery-counts dd {
+  margin: 0;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.crash-recovery-options {
+  margin-top: 20px;
+}
+
+.crash-recovery-options strong {
+  display: block;
+  margin-bottom: 4px;
+}
+
+.crash-recovery-notice {
+  border-inline-start: 3px solid currentColor;
+  padding-inline-start: 12px;
+}
+
+.crash-recovery-dialog footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 24px;
+}
