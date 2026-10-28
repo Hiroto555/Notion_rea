@@ -27,6 +27,8 @@ function checkTree(path: string) {
 export function backupWorkspace(source: string, destination: string) {
   if (existsSync(destination))
     throw new Error("バックアップ先が既に存在します");
+  if (existsSync(join(source, "FOLIO-RECOVERY-INCOMPLETE")))
+    throw new Error("未完了の復旧ワークスペースはコピーできません");
   const sourceStat = lstatSync(source);
   const dbStat = lstatSync(join(source, "workspace.sqlite"));
   if (sourceStat.isSymbolicLink() || dbStat.isSymbolicLink())

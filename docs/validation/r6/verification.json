@@ -1,0 +1,74 @@
+{
+  "commit": "688b85a92323537cbfaffaa765c93d00f2b3ed02",
+  "tree": "d0cec7a39ddf84001745ddf1c64bea9d5ed8781a",
+  "dirty": "",
+  "environment": {
+    "node": "v24.20.0",
+    "platform": "darwin",
+    "arch": "arm64",
+    "release": "25.6.0",
+    "cpuCount": 8
+  },
+  "workers": 1,
+  "retries": 0,
+  "syntheticDataOnly": true,
+  "runs": [
+    {
+      "command": [
+        "/opt/homebrew/Cellar/node@24/24.20.0/bin/node",
+        "scripts/folio-agent.mjs",
+        "build"
+      ],
+      "started": "2026-10-28T07:05:09.590Z",
+      "finished": "2026-10-28T07:05:17.422Z",
+      "exitCode": 0,
+      "signal": null
+    },
+    {
+      "command": [
+        "/opt/homebrew/Cellar/node@24/24.20.0/bin/node",
+        "scripts/folio-agent.mjs",
+        "test",
+        "--maxWorkers=1",
+        "--no-file-parallelism"
+      ],
+      "started": "2026-10-28T07:05:17.423Z",
+      "finished": "2026-10-28T07:05:48.194Z",
+      "exitCode": 0,
+      "signal": null
+    },
+    {
+      "command": [
+        "/opt/homebrew/Cellar/node@24/24.20.0/bin/node",
+        "scripts/folio-agent.mjs",
+        "test:e2e",
+        "--workers=1",
+        "--retries=0"
+      ],
+      "started": "2026-10-28T07:05:48.196Z",
+      "finished": "2026-10-28T07:14:19.132Z",
+      "exitCode": 0,
+      "signal": null
+    }
+  ],
+  "unit": {
+    "passed": 572,
+    "failed": 0,
+    "skipped": 0,
+    "files": 58
+  },
+  "e2e": {
+    "passed": 156,
+    "failed": 0,
+    "skipped": 0,
+    "electron": 128,
+    "chromiumComponents": 28
+  },
+  "log": {
+    "path": "docs/validation/r6/full-verification.txt",
+    "originalSha256": "11c9ad703782f36d42033d64336eeeb1de271cc556bef835ffd966309239797e",
+    "publishedSha256": "809d33bc9ba37da2f9d1c4a52499e889755f163a1cdab4c31ea0599fc7529669",
+    "localPathsRedacted": true,
+    "trailingWhitespaceNormalized": true
+  }
+}

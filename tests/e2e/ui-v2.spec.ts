@@ -237,7 +237,8 @@ test("UI 2.0 light: hierarchy, hover reveal, menu bounds and contrast", async ({
   const light = await measure(s);
 
   expect(light.viewport.width).toBeGreaterThanOrEqual(1400);
-  expect(light.boxes.sidebar!.width).toBeCloseTo(252, 0);
+  // R4 shared shell contract: 240px at the desktop viewport.
+  expect(light.boxes.sidebar!.width).toBeCloseTo(240, 0);
   expect(light.boxes.inspector!.width).toBeCloseTo(240, 0);
   expect(light.boxes.topbar!.height).toBeCloseTo(54, 0);
   expect(light.horizontalOverflow).toBeLessThanOrEqual(0);
@@ -472,8 +473,8 @@ test("UI 2.0 responsive: 1024 and 960 keep panels usable without overflow", asyn
   await focusWindow(s);
   const readings: { size: string; reading: Reading }[] = [];
   for (const size of [
-    { width: 1024, height: 720, panel: "static", sidebar: 220, title: 33 },
-    { width: 960, height: 700, panel: "absolute", sidebar: 208, title: 29 },
+    { width: 1024, height: 720, panel: "static", sidebar: 220, title: 34, gutter: 36 },
+    { width: 960, height: 700, panel: "absolute", sidebar: 208, title: 30, gutter: 28 },
   ] as const) {
     await resize(s, size.width, size.height);
     const reading = await measure(s);
@@ -499,7 +500,7 @@ test("UI 2.0 responsive: 1024 and 960 keep panels usable without overflow", asyn
     expect(parseFloat(reading.styles.titleSize)).toBeCloseTo(size.title, 0);
     expect(
       parseFloat(reading.styles.contentPaddingLeft),
-    ).toBeGreaterThanOrEqual(30);
+    ).toBeCloseTo(size.gutter, 0);
     if (size.panel === "static") {
       // In-flow panel: the reading column ends before the inspector starts.
       expect(

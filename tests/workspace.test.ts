@@ -13,7 +13,7 @@ import { resolve, join } from "node:path";
 import { createHash } from "node:crypto";
 import { DatabaseSync } from "node:sqlite";
 import { Store } from "../src/persistence/store";
-import { workspacePath, migrateWorkspace } from "../src/persistence/workspace";
+import { workspacePath, migrateWorkspace, backupWorkspace } from "../src/persistence/workspace";
 import { attachFile, resolveAsset } from "../src/persistence/assets";
 import { parseAssetURL } from "../src/shared/assets";
 const roots: string[] = [];
@@ -43,6 +43,19 @@ it("F03 default workspace is inside userData; explicit override wins", () => {
   const userData = "/profiles/example/Library/Application Support/Folio";
   expect(workspacePath(userData)).toBe(userData + "/workspace");
   expect(workspacePath(userData, "/test/isolated")).toBe("/test/isolated");
+});
+it("refuses to copy an incomplete recovery without creating either destination", () => {
+  const r = root(), source = join(r, "incomplete"), s = store(source);
+  s.create(null);
+  s.close();
+  const marker = join(source, "FOLIO-RECOVERY-INCOMPLETE");
+  writeFileSync(marker, "do not open");
+  const backup = join(r, "backup"), destination = join(r, "destination");
+  expect(() => backupWorkspace(source, backup)).toThrow(/未完了/);
+  expect(() => migrateWorkspace(source, destination)).toThrow(/未完了/);
+  expect(existsSync(backup)).toBe(false);
+  expect(existsSync(destination)).toBe(false);
+  expect(readFileSync(marker, "utf8")).toBe("do not open");
 });
 it("F03 migration and backup restoration preserve pages, DB rows and attachment bytes, retaining original", () => {
   const r = root(),

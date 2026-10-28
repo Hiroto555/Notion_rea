@@ -1,0 +1,277 @@
+{
+  "captures": "1440x907, 1024x720, 960x700; light and dark",
+  "input": "Playwright pointer/keyboard; synthetic composition elsewhere; physical IME NOT_RUN",
+  "readings": [
+    {
+      "size": "1440x907",
+      "reading": {
+        "viewport": {
+          "width": 1440,
+          "height": 907,
+          "dpr": 2
+        },
+        "theme": "light",
+        "horizontalOverflow": 0,
+        "documentOverflow": 0,
+        "scroll": {
+          "clientHeight": 853,
+          "scrollHeight": 1046,
+          "scrollTop": 0
+        },
+        "boxes": {
+          "sidebar": {
+            "x": 0,
+            "y": 0,
+            "width": 252,
+            "height": 907
+          },
+          "topbar": {
+            "x": 252,
+            "y": 0,
+            "width": 1188,
+            "height": 54
+          },
+          "topbarActions": {
+            "x": 1251,
+            "y": 11.5,
+            "width": 177,
+            "height": 30
+          },
+          "documentScroll": {
+            "x": 252,
+            "y": 54,
+            "width": 948,
+            "height": 853
+          },
+          "content": {
+            "x": 305.5,
+            "y": 216,
+            "width": 830,
+            "height": 828.3
+          },
+          "title": {
+            "x": 369.5,
+            "y": 292,
+            "width": 702,
+            "height": 48.6
+          },
+          "inspector": {
+            "x": 1200,
+            "y": 54,
+            "width": 240,
+            "height": 853
+          },
+          "inspectorPage": {
+            "x": 1221,
+            "y": 148,
+            "width": 199,
+            "height": 20
+          },
+          "saveState": {
+            "x": 1253,
+            "y": 14.5,
+            "width": 73,
+            "height": 24
+          }
+        },
+        "styles": {
+          "inspectorPosition": "static",
+          "documentScrollPaddingRight": "0px",
+          "titleSize": "36px",
+          "editorWidth": "702px"
+        }
+      }
+    },
+    {
+      "size": "1024x720",
+      "reading": {
+        "viewport": {
+          "width": 1024,
+          "height": 720,
+          "dpr": 2
+        },
+        "theme": "light",
+        "horizontalOverflow": 0,
+        "documentOverflow": 0,
+        "scroll": {
+          "clientHeight": 666,
+          "scrollHeight": 1025,
+          "scrollTop": 137
+        },
+        "boxes": {
+          "sidebar": {
+            "x": 0,
+            "y": 0,
+            "width": 220,
+            "height": 720
+          },
+          "topbar": {
+            "x": 220,
+            "y": 0,
+            "width": 804,
+            "height": 54
+          },
+          "topbarActions": {
+            "x": 835,
+            "y": 11.5,
+            "width": 177,
+            "height": 30
+          },
+          "documentScroll": {
+            "x": 220,
+            "y": 54,
+            "width": 580,
+            "height": 666
+          },
+          "content": {
+            "x": 220,
+            "y": 45,
+            "width": 569,
+            "height": 841.3
+          },
+          "title": {
+            "x": 266,
+            "y": 115,
+            "width": 477,
+            "height": 44.5
+          },
+          "inspector": {
+            "x": 800,
+            "y": 54,
+            "width": 224,
+            "height": 666
+          },
+          "inspectorPage": {
+            "x": 821,
+            "y": 148,
+            "width": 183,
+            "height": 20
+          },
+          "saveState": {
+            "x": 837,
+            "y": 14.5,
+            "width": 73,
+            "height": 24
+          }
+        },
+        "styles": {
+          "inspectorPosition": "static",
+          "documentScrollPaddingRight": "0px",
+          "titleSize": "33px",
+          "editorWidth": "477px"
+        }
+      }
+    },
+    {
+      "size": "960x700",
+      "reading": {
+        "viewport": {
+          "width": 960,
+          "height": 700,
+          "dpr": 2
+        },
+        "theme": "light",
+        "horizontalOverflow": 0,
+        "documentOverflow": 0,
+        "scroll": {
+          "clientHeight": 646,
+          "scrollHeight": 1047,
+          "scrollTop": 103
+        },
+        "boxes": {
+          "sidebar": {
+            "x": 0,
+            "y": 0,
+            "width": 208,
+            "height": 700
+          },
+          "topbar": {
+            "x": 208,
+            "y": 0,
+            "width": 752,
+            "height": 54
+          },
+          "topbarActions": {
+            "x": 779,
+            "y": 11.5,
+            "width": 173,
+            "height": 30
+          },
+          "documentScroll": {
+            "x": 208,
+            "y": 54,
+            "width": 752,
+            "height": 646
+          },
+          "content": {
+            "x": 208,
+            "y": 79,
+            "width": 449,
+            "height": 863.5
+          },
+          "title": {
+            "x": 242,
+            "y": 149,
+            "width": 381,
+            "height": 39.1
+          },
+          "inspector": {
+            "x": 680,
+            "y": 66,
+            "width": 268,
+            "height": 622
+          },
+          "inspectorPage": {
+            "x": 699,
+            "y": 166.5,
+            "width": 230,
+            "height": 20
+          },
+          "saveState": {
+            "x": 781,
+            "y": 14.5,
+            "width": 73,
+            "height": 24
+          }
+        },
+        "styles": {
+          "inspectorPosition": "absolute",
+          "documentScrollPaddingRight": "292px",
+          "titleSize": "29px",
+          "editorWidth": "381px"
+        }
+      }
+    }
+  ],
+  "slashMenu": {
+    "insideViewport": true,
+    "viewport": {
+      "width": 960,
+      "height": 700
+    },
+    "box": {
+      "x": 299.484375,
+      "y": 333.6484375,
+      "width": 300,
+      "height": 197
+    }
+  },
+  "contrast": {
+    "light": {
+      "theme": "light",
+      "title": 12.57,
+      "editor": 12.57,
+      "muted": 4.59,
+      "inspector": 6.58,
+      "sidebar": 6.29
+    },
+    "dark": {
+      "theme": "dark",
+      "title": 13.28,
+      "editor": 13.28,
+      "muted": 6.83,
+      "inspector": 9.79,
+      "sidebar": 5.74
+    }
+  }
+}

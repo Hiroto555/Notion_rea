@@ -1,0 +1,15 @@
+.r5-create-database { width: min(480px, calc(100vw - 40px)); padding: 24px; }
+.r5-create-heading { display: flex; align-items: center; gap: 12px; }
+.r5-create-heading h2 { flex: 1; margin: 0; font-size: 20px; }
+.r5-create-database p { color: var(--muted); line-height: 1.7; }
+.r5-create-database label { display: grid; gap: 8px; font-size: 13px; }
+.r5-create-database input { width: 100%; border: 1px solid var(--line); border-radius: 6px; padding: 10px 12px; }
+.r5-create-actions { display: flex; justify-content: flex-end; gap: 12px; margin-top: 22px; }
+.r5-create-actions button { padding: 8px 14px; }
+.r5-database-actions { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin: 12px 0; }
+.r5-database-actions button { display: inline-flex; align-items: center; gap: 6px; padding: 7px 12px; border: 1px solid var(--line); border-radius: 6px; }
+.r5-database-actions p { margin: 0; color: var(--muted); font-size: 12px; }
+.r5-database-operation { display: flex; gap: 12px; align-items: center; padding: 10px 20px; border-bottom: 1px solid var(--line); font-size: 13px; }
+.r5-database-operation button { border: 1px solid var(--line); border-radius: 5px; padding: 4px 8px; }
+.r5-record-groups > section { margin-top: 16px; }
+.r5-record-groups h4 { margin: 8px 0; font-weight: 600; }

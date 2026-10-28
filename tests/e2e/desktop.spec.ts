@@ -260,7 +260,9 @@ test("native rich HTML paste, Markdown shortcuts, toggle, links and block drag",
     (
       globalThis as unknown as { folioClipboard: Electron.ClipboardItem[] }
     ).folioClipboard = await Promise.all(
-      (await clipboard.read()).map(
+      // An empty native clipboard can contain an item with no exposed MIME
+      // types. It has no payload to clone, and ClipboardItem rejects {}.
+      (await clipboard.read()).filter((item) => item.types.length > 0).map(
         async (item) =>
           new ClipboardItem(
             Object.fromEntries(
@@ -294,10 +296,11 @@ test("native rich HTML paste, Markdown shortcuts, toggle, links and block drag",
     await expect(window.locator(".folio-editor")).toContainText("長文コピー");
   } finally {
     await app.evaluate(async ({ clipboard }) => {
-      await clipboard.write(
+      const saved =
         (globalThis as unknown as { folioClipboard: Electron.ClipboardItem[] })
-          .folioClipboard,
-      );
+          .folioClipboard;
+      if (saved.length) await clipboard.write(saved);
+      else clipboard.clear();
     });
   }
   await window.keyboard.press("Meta+End");

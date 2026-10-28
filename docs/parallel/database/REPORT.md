@@ -2,7 +2,7 @@
 
 - 担当: Database
 - branch: `sprint/database-v2`
-- worktree: `/Users/shiroto/Documents/ChatGPT/Folio-database`
+- worktree: `<workspace-root>/Folio-database`
 - 開始 commit: `b43f713`（共通基準 `b7c150d15739c59edf6ba9a62ebda4794748d46b` + 環境準備）
 - 変更範囲: `src/database/`, `src/shared/types.ts`, `src/persistence/store.ts`, Database専用テスト、`docs/parallel/`
 - 未変更: `src/editor/`, `src/shared/editor-schema.ts`, `src/shared/validation.ts`, `src/renderer/App.tsx`, `src/renderer/styles.css`, `src/main/`, `src/preload/`, 他worktree, master

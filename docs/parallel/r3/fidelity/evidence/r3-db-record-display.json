@@ -1,0 +1,140 @@
+{
+  "storage": "legacy DatabaseData v2 fixture through the existing onChange handler; DatabaseProjection/RecordRequest are not implemented and live record persistence is NOT_RUN",
+  "readings": [
+    {
+      "size": "1440x907",
+      "view": "ギャラリー",
+      "panel": {
+        "x": 410,
+        "y": 108.8359375,
+        "width": 620,
+        "height": 245
+      },
+      "fieldCount": 2,
+      "tabbable": 4,
+      "insideViewport": true,
+      "escapeRestoredCardFocus": true
+    },
+    {
+      "size": "1440x907",
+      "view": "ボード",
+      "panel": {
+        "x": 410,
+        "y": 108.8359375,
+        "width": 620,
+        "height": 245
+      },
+      "fieldCount": 2,
+      "tabbable": 4,
+      "insideViewport": true,
+      "escapeRestoredCardFocus": true
+    },
+    {
+      "size": "1440x907",
+      "view": "カレンダー",
+      "panel": {
+        "x": 410,
+        "y": 108.8359375,
+        "width": 620,
+        "height": 245
+      },
+      "fieldCount": 2,
+      "tabbable": 4,
+      "insideViewport": true,
+      "escapeRestoredCardFocus": true
+    },
+    {
+      "size": "1024x720",
+      "view": "ギャラリー",
+      "panel": {
+        "x": 202,
+        "y": 86.3984375,
+        "width": 620,
+        "height": 245
+      },
+      "fieldCount": 2,
+      "tabbable": 4,
+      "insideViewport": true,
+      "escapeRestoredCardFocus": true
+    },
+    {
+      "size": "1024x720",
+      "view": "ボード",
+      "panel": {
+        "x": 202,
+        "y": 86.3984375,
+        "width": 620,
+        "height": 245
+      },
+      "fieldCount": 2,
+      "tabbable": 4,
+      "insideViewport": true,
+      "escapeRestoredCardFocus": true
+    },
+    {
+      "size": "1024x720",
+      "view": "カレンダー",
+      "panel": {
+        "x": 202,
+        "y": 86.3984375,
+        "width": 620,
+        "height": 245
+      },
+      "fieldCount": 2,
+      "tabbable": 4,
+      "insideViewport": true,
+      "escapeRestoredCardFocus": true
+    },
+    {
+      "size": "960x700",
+      "view": "ギャラリー",
+      "panel": {
+        "x": 170,
+        "y": 84,
+        "width": 620,
+        "height": 245
+      },
+      "fieldCount": 2,
+      "tabbable": 4,
+      "insideViewport": true,
+      "escapeRestoredCardFocus": true
+    },
+    {
+      "size": "960x700",
+      "view": "ボード",
+      "panel": {
+        "x": 170,
+        "y": 84,
+        "width": 620,
+        "height": 245
+      },
+      "fieldCount": 2,
+      "tabbable": 4,
+      "insideViewport": true,
+      "escapeRestoredCardFocus": true
+    },
+    {
+      "size": "960x700",
+      "view": "カレンダー",
+      "panel": {
+        "x": 170,
+        "y": 84,
+        "width": 620,
+        "height": 245
+      },
+      "fieldCount": 2,
+      "tabbable": 4,
+      "insideViewport": true,
+      "escapeRestoredCardFocus": true
+    }
+  ],
+  "tableViewObservation": {
+    "inlineTitleInputs": 3,
+    "recordDialog": false,
+    "fullPageRecordFromTable": "NOT_IMPLEMENTED_OBSERVED",
+    "inlineTitleSave": "PASS (legacy fixture path)"
+  },
+  "restart": {
+    "longJapaneseTitlePreserved": true
+  }
+}

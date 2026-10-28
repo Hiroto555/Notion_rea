@@ -42,38 +42,104 @@ test("S2 tree input: edited source becomes target child with stable identity", a
 });
 
 test("S2 menu F11: delayed load preserves local edit and page hierarchy through restart", async ({ folio: s }, info) => {
-  const ids = await setup(s), w = s.window;
-  await s.app.evaluate(({ ipcMain }) => {
-    const ipc = ipcMain as any, original = ipc._invokeHandlers.get("folio:request"); let armed = false;
-    (globalThis as any).moveJournal = [];
-    ipc.removeHandler("folio:request");
-    ipc.handle("folio:request", async (event: any, req: any) => {
-      (globalThis as any).moveJournal.push({ type: req.type, id: req.id, parentId: req.parentId, stage: "start" });
-      const result = await original(event, req);
-      (globalThis as any).moveJournal.push({ type: req.type, stage: "ack" });
-      if (req.type === "move") armed = true;
-      else if (req.type === "load" && armed) { armed = false; (globalThis as any).heldLoad = true; await new Promise<void>(r => (globalThis as any).releaseLoad = r); }
-      return result;
-    });
-  });
+  let originalApp: typeof s.app | undefined, originalWindow: typeof s.window | undefined;
+  let beforeRestart: unknown;
+  const checkpoints: { time: number; stage: string }[] = [];
+  const mark = (stage: string) => checkpoints.push({ time: Date.now(), stage });
   try {
+    const ids = await setup(s), w = s.window;
+    originalWindow = w;
+    originalApp = s.app;
+    await w.evaluate(() => {
+      const journal: unknown[] = [];
+      (globalThis as any).f11RendererJournal = journal;
+      const clock = () => ({ time: Date.now(), monotonicMs: performance.now() });
+      const recordState = () => {
+        const state = document.querySelector(".save-state"), title = document.querySelector<HTMLInputElement>(".page-title");
+        return { state: state?.getAttribute("data-state"), text: state?.textContent?.trim(), title: title?.value };
+      };
+      let lastState = "";
+      const captureState = () => {
+        const state = recordState(), serialized = JSON.stringify(state);
+        if (serialized !== lastState) { lastState = serialized; journal.push({ ...clock(), kind: "save-state", ...state }); }
+      };
+      for (const type of ["beforeinput", "input", "change", "compositionstart", "compositionend"]) {
+        document.addEventListener(type, (event) => {
+          const target = event.target as HTMLElement | null;
+          if (!target?.closest(".page-title, .folio-editor")) return;
+          const input = event as InputEvent;
+          journal.push({ ...clock(), kind: "input-event", type, target: target.matches(".page-title") ? "title" : "editor",
+            value: target instanceof HTMLInputElement ? target.value : undefined,
+            inputType: input.inputType, data: input.data, isComposing: input.isComposing, ...recordState() });
+        }, true);
+      }
+      new MutationObserver(captureState).observe(document.documentElement, { subtree: true, childList: true, characterData: true, attributes: true, attributeFilter: ["data-state"] });
+      captureState();
+    });
+    await s.app.evaluate(({ ipcMain }, ids) => {
+      const ipc = ipcMain as any, original = ipc._invokeHandlers.get("folio:request"); let armed = false, serial = 0;
+      const journal: unknown[] = [];
+      (globalThis as any).moveJournal = journal;
+      const clock = () => ({ time: Date.now(), monotonicMs: performance.now() });
+      ipc.removeHandler("folio:request");
+      ipc.handle("folio:request", async (event: any, req: any) => {
+        if (!["move", "load", "update", "save:commit"].includes(req.type)) return original(event, req);
+        const call = ++serial;
+        const operation = req.operation ?? req;
+        journal.push({ ...clock(), call, type: req.type, stage: "request", id: req.id ?? operation.pageId, parentId: req.parentId,
+          beforeId: req.beforeId, revision: operation.revision, patch: operation.patch });
+        try {
+          const result = await original(event, req);
+          const pages = req.type === "load" ? result?.pages?.filter((p: any) => [ids.source, ids.target, ids.child].includes(p.id)).map((p: any) => ({ id: p.id, parentId: p.parentId, title: p.title, revision: p.revision })) : undefined;
+          const saved = result?.page ?? result;
+          journal.push({ ...clock(), call, type: req.type, stage: "store-result", id: saved?.id, revision: saved?.revision, title: saved?.title, pages });
+          if (req.type === "move") armed = true;
+          else if (req.type === "load" && armed) {
+            armed = false;
+            (globalThis as any).heldLoad = true;
+            journal.push({ ...clock(), call, type: req.type, stage: "held" });
+            await new Promise<void>(r => (globalThis as any).releaseLoad = r);
+            journal.push({ ...clock(), call, type: req.type, stage: "released" });
+          }
+          journal.push({ ...clock(), call, type: req.type, stage: "ack" });
+          return result;
+        } catch (error) {
+          journal.push({ ...clock(), call, type: req.type, stage: "error", message: error instanceof Error ? error.message : String(error) });
+          throw error;
+        }
+      });
+    }, ids);
+    mark("instrumented");
     await w.getByLabel("ページメニュー", { exact: true }).click();
     await w.getByRole("button", { name: "移動する", exact: true }).click();
     await w.locator(".dialog-list").getByRole("button", { name: /Move Target/ }).click();
     await expect.poll(() => s.app.evaluate(() => (globalThis as any).heldLoad)).toBe(true);
+    mark("load held");
     await w.getByLabel("ページタイトル", { exact: true }).fill("Move Source edited");
+    mark("title filled");
     await s.app.evaluate(() => (globalThis as any).releaseLoad());
+    mark("load release requested");
     await saved(s);
+    mark("saved observed");
     const after = await load(s, ids);
     expect(after.source.id).toBe(ids.source); expect(after.source.title).toBe("Move Source edited");
     expect(after.source.parentId).toBe(ids.target); expect(after.source.doc).toEqual(ids.doc);
     expect(after.child.parentId).toBe(ids.source); expect(after.siblings).toContain(ids.source);
-    writeFileSync(info.outputPath("move-journal.json"), JSON.stringify(await s.app.evaluate(() => (globalThis as any).moveJournal), null, 2));
+    beforeRestart = {
+      ipc: await s.app.evaluate(() => (globalThis as any).moveJournal),
+      renderer: await w.evaluate(() => (globalThis as any).f11RendererJournal),
+    };
+    mark("before restart");
     await s.restart();
     const reopened = await load(s, ids);
     expect(reopened.source.title).toBe(after.source.title); expect(reopened.source.parentId).toBe(ids.target);
     expect(reopened.source.doc).toEqual(ids.doc); expect(reopened.child.parentId).toBe(ids.source); expect(reopened.siblings).toEqual(after.siblings);
-  } finally { await s.app.evaluate(() => (globalThis as any).releaseLoad?.()).catch(() => {}); }
+  } finally {
+    await originalApp?.evaluate(() => (globalThis as any).releaseLoad?.()).catch(() => {});
+    const ipc = await originalApp?.evaluate(() => (globalThis as any).moveJournal).catch((error: unknown) => ({ unavailable: String(error) }));
+    const renderer = await originalWindow?.evaluate(() => (globalThis as any).f11RendererJournal).catch((error: unknown) => ({ unavailable: String(error) }));
+    writeFileSync(info.outputPath("f11-journal.json"), JSON.stringify({ checkpoints, beforeRestart, final: { ipc, renderer } }, null, 2));
+  }
 });
 
 test("S2 tree order, root, cancellation and cycle rejection", async ({ folio: s }, info) => {

@@ -28,7 +28,7 @@ Running 1 test using 1 worker
       20 |   const initial = await editorDoc(s), initialIds = gather(initial);
       21 |   expect(new Set(initialIds).size).toBe(initialIds.length);
       22 |   const untouched = await readPage();
-        at /Users/shiroto/Documents/ChatGPT/Folio-editor/tests/e2e/editor-identity.spec.ts:19:68
+        at <workspace-root>/Folio-editor/tests/e2e/editor-identity.spec.ts:19:68
 
     Error Context: output/agent-workspace/evidence/editor-v2/identity-e2e/editor-identity-Editor-2-0-101d4-ives-restart-and-copy-paste/error-context.md
 

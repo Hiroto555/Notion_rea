@@ -1,0 +1,20 @@
+.r6-schema { display: grid; gap: 16px; min-width: 0; }
+.r6-schema p { margin: 0; line-height: 1.6; }
+.r6-schema fieldset { border: 1px solid var(--border, #e6e5e2); border-radius: 8px; padding: 14px; margin: 0; min-width: 0; }
+.r6-schema legend { padding: 0 5px; font-weight: 600; }
+.r6-property-list { list-style: none; padding: 0; margin: 0 0 12px; display: grid; gap: 8px; }
+.r6-property-list li { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.r6-property-list li > span { flex: 1; min-width: 130px; overflow-wrap: anywhere; }
+.r6-property-list small { display: block; color: var(--text-muted, #777); font-size: 12px; }
+.r6-property-form { display: grid; gap: 12px; }
+.r6-property-form label { display: grid; gap: 6px; }
+.r6-property-form input, .r6-property-form select, .r6-property-form textarea { width: 100%; box-sizing: border-box; min-height: 34px; }
+.r6-property-form textarea { min-height: 96px; resize: vertical; }
+.r6-schema-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.r6-schema-preview { display: grid; gap: 12px; }
+.r6-schema-preview h3 { margin: 0; font-size: 15px; }
+.r6-schema-preview ul { margin: 0; padding-left: 20px; }
+.r6-conversion-scroll { max-height: 260px; overflow: auto; border: 1px solid var(--border, #e6e5e2); border-radius: 6px; }
+.r6-conversion-scroll table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.r6-conversion-scroll th, .r6-conversion-scroll td { padding: 8px 10px; text-align: left; border-bottom: 1px solid var(--border, #e6e5e2); overflow-wrap: anywhere; max-width: 250px; }
+.r6-conversion-scroll th { position: sticky; top: 0; background: var(--bg, white); }

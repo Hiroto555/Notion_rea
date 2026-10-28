@@ -112,30 +112,98 @@ async function selectWord(s: Session) {
 }
 test("R3 selected text link cancel/confirm restores exact range, wording and marks", async ({
   folio: s,
-}) => {
-  await linkDocument(s);
-  await selectWord(s);
-  const before = await editorDoc(s);
-  await s.window.keyboard.press("Meta+k");
-  await s.window.keyboard.press("Escape");
-  expect(await editorDoc(s)).toEqual(before);
-  await expect(s.window.locator(".folio-editor")).toBeFocused();
-  expect(await s.window.evaluate(() => getSelection()?.toString())).toBe(
-    "不動産",
-  );
-  await s.window.getByTitle("ページへのリンク", { exact: true }).click();
-  await s.window.getByLabel("検索キーワード").fill("アイデアノート");
-  await expect(s.window.locator(".search-results button")).toHaveCount(1);
-  // Guard against selection drift while the modal is open; use the captured range.
-  await s.window
-    .locator(".folio-editor")
-    .evaluate((el) => (el as any).editor.commands.setTextSelection(5));
-  await s.window.locator(".search-results button").click();
-  await expect(s.window.locator(".folio-editor a")).toHaveText("不動産");
-  await expect(s.window.locator(".folio-editor strong")).toHaveText("動");
-  await expect(s.window.locator(".folio-editor")).toHaveText("不動産 software");
-  await saved(s);
-  await expect(s.window.locator(".folio-editor")).toBeFocused();
+}, info) => {
+  let diagnosticInstalled = false;
+  try {
+    await linkDocument(s);
+    await s.window.evaluate(() => {
+      const events: unknown[] = [];
+      const describe = (node: Node | null) => {
+        if (!node) return null;
+        const path: number[] = [];
+        for (let current: Node | null = node; current?.parentNode; current = current.parentNode)
+          path.unshift(Array.prototype.indexOf.call(current.parentNode.childNodes, current));
+        return { nodeName: node.nodeName, path, text: node.nodeType === Node.TEXT_NODE ? node.textContent : null };
+      };
+      const snapshot = (type: string, event?: Event) => {
+        const selection = window.getSelection();
+        const editorElement = document.querySelector(".folio-editor") as (HTMLElement & { editor?: any }) | null;
+        const keyEvent = event instanceof KeyboardEvent ? event : null;
+        const editorSelection = editorElement?.editor?.state?.selection;
+        events.push({
+          type,
+          time: new Date().toISOString(),
+          elapsedMs: performance.now(),
+          key: keyEvent?.key ?? null,
+          code: keyEvent?.code ?? null,
+          metaKey: keyEvent?.metaKey ?? null,
+          shiftKey: keyEvent?.shiftKey ?? null,
+          defaultPrevented: event?.defaultPrevented ?? null,
+          target: describe(event?.target instanceof Node ? event.target : null),
+          activeElement: describe(document.activeElement),
+          documentId: editorElement?.dataset.documentId ?? null,
+          selection: {
+            text: selection?.toString() ?? null,
+            anchor: describe(selection?.anchorNode ?? null),
+            anchorOffset: selection?.anchorOffset ?? null,
+            focus: describe(selection?.focusNode ?? null),
+            focusOffset: selection?.focusOffset ?? null,
+          },
+          editorSelection: editorSelection ? {
+            from: editorSelection.from,
+            to: editorSelection.to,
+            anchor: editorSelection.anchor,
+            head: editorSelection.head,
+            empty: editorSelection.empty,
+          } : null,
+        });
+      };
+      const types = ["keydown", "keyup", "selectionchange", "focusin", "focusout", "click"];
+      const listener = (event: Event) => snapshot(event.type, event);
+      for (const type of types) document.addEventListener(type, listener, true);
+      snapshot("installed");
+      (window as any).__folioSelectionDiagnostics = {
+        finish: () => {
+          snapshot("finished");
+          for (const type of types) document.removeEventListener(type, listener, true);
+          return events;
+        },
+      };
+    });
+    diagnosticInstalled = true;
+    await selectWord(s);
+    const before = await editorDoc(s);
+    await s.window.keyboard.press("Meta+k");
+    await s.window.keyboard.press("Escape");
+    expect(await editorDoc(s)).toEqual(before);
+    await expect(s.window.locator(".folio-editor")).toBeFocused();
+    expect(await s.window.evaluate(() => getSelection()?.toString())).toBe(
+      "不動産",
+    );
+    await s.window.getByTitle("ページへのリンク", { exact: true }).click();
+    await s.window.getByLabel("検索キーワード").fill("アイデアノート");
+    await expect(s.window.locator(".search-results button")).toHaveCount(1);
+    // Guard against selection drift while the modal is open; use the captured range.
+    await s.window
+      .locator(".folio-editor")
+      .evaluate((el) => (el as any).editor.commands.setTextSelection(5));
+    await s.window.locator(".search-results button").click();
+    await expect(s.window.locator(".folio-editor a")).toHaveText("不動産");
+    await expect(s.window.locator(".folio-editor strong")).toHaveText("動");
+    await expect(s.window.locator(".folio-editor")).toHaveText("不動産 software");
+    await saved(s);
+    await expect(s.window.locator(".folio-editor")).toBeFocused();
+  } finally {
+    let diagnostic: unknown = { error: "diagnostic listener was not installed" };
+    if (diagnosticInstalled) {
+      try {
+        diagnostic = await s.window.evaluate(() => (window as any).__folioSelectionDiagnostics?.finish() ?? { error: "diagnostic listener unavailable" });
+      } catch (error) {
+        diagnostic = { error: `could not retrieve browser diagnostics: ${String(error)}` };
+      }
+    }
+    writeFileSync(info.outputPath("selection-diagnostics.json"), JSON.stringify(diagnostic, null, 2) + "\n");
+  }
 });
 test("R3 synthetic composition, prevented Escape and inner menus take priority (not physical IME)", async ({
   folio: s,

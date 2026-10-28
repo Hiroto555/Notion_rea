@@ -87,3 +87,88 @@ export function editNestedBlock(
   }
   return copy;
 }
+
+/** Resolve only a still-contiguous top-level selection, never stale positions. */
+export function resolveTopSelection(content: Doc[], ids: string[]): number[] {
+  if (!ids.length || new Set(ids).size !== ids.length) return [];
+  const positions = ids.map((id) =>
+    content.findIndex((node) => node.attrs?.id === id),
+  );
+  if (positions.some((i) => i < 0) || new Set(positions).size !== ids.length)
+    return [];
+  positions.sort((a, b) => a - b);
+  if (positions.some((n, i) => i > 0 && n !== positions[i - 1] + 1)) return [];
+  return positions;
+}
+
+/** Select a contiguous range only when both IDs are current siblings. */
+export function nestedSiblingRange(
+  doc: Doc,
+  anchor: string,
+  target: string,
+): string[] {
+  const findSiblings = (nodes: Doc[]): Doc[] | undefined => {
+    if (nodes.some((node) => node.attrs?.id === anchor)) return nodes;
+    for (const node of nodes) {
+      const found = node.content && findSiblings(node.content);
+      if (found) return found;
+    }
+  };
+  const siblings = findSiblings(doc.content ?? []);
+  if (!siblings) return [];
+  const a = siblings.findIndex((node) => node.attrs?.id === anchor),
+    b = siblings.findIndex((node) => node.attrs?.id === target);
+  if (b < 0) return [];
+  const ids = siblings
+    .slice(Math.min(a, b), Math.max(a, b) + 1)
+    .map((node) => node.attrs?.id);
+  return ids.every((id): id is string => typeof id === "string" && !!id)
+    ? ids
+    : [];
+}
+
+export function editNestedSiblings(
+  doc: Doc,
+  ids: string[],
+  action: "duplicate" | "delete" | "up" | "down",
+): Doc {
+  const copy = structuredClone(doc);
+  const findSiblings = (nodes: Doc[]): Doc[] | undefined => {
+    if (nodes.some((node) => node.attrs?.id === ids[0])) return nodes;
+    for (const node of nodes) {
+      const found = node.content && findSiblings(node.content);
+      if (found) return found;
+    }
+  };
+  if (!ids.length) throw new Error("対象ブロックがありません");
+  const siblings = findSiblings(copy.content ?? []);
+  if (!siblings) throw new Error("対象ブロックが見つかりません");
+  const indices = resolveTopSelection(siblings, ids);
+  if (!indices.length)
+    throw new Error("選択したブロックが変更されたため操作を中止しました。");
+  if (action === "delete" && indices.length === siblings.length)
+    throw new Error("最後のブロックは削除できません");
+  const operation = action === "up" || action === "down" ? "move" : action;
+  const target =
+    action === "up" ? indices[0] - 1 : indices[indices.length - 1] + 2;
+  const edited = editBlocks(siblings, indices, operation, target);
+  siblings.splice(0, siblings.length, ...edited);
+  return copy;
+}
+
+/** Resolve both ends against current document IDs, never rendered positions. */
+export function topSiblingRange(
+  content: Doc[],
+  anchorId: string,
+  targetId: string,
+): string[] {
+  const anchor = content.findIndex((node) => node.attrs?.id === anchorId);
+  const target = content.findIndex((node) => node.attrs?.id === targetId);
+  if (anchor < 0 || target < 0) return [];
+  const ids = content
+    .slice(Math.min(anchor, target), Math.max(anchor, target) + 1)
+    .map((node) => node.attrs?.id);
+  return ids.every((id): id is string => typeof id === "string" && !!id)
+    ? ids
+    : [];
+}

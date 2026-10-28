@@ -41,9 +41,16 @@
   --radius-sm: 6px;
   --radius: 8px;
   --radius-lg: 12px;
-  --sidebar-width: 252px;
+  --sidebar-width: 240px;
   --inspector-width: 240px;
-  --content-width: 830px;
+  --content-width: 860px;
+  --content-gutter: 56px;
+  --page-title-size: clamp(30px, 2.6vw, 38px);
+  --body-font-size: 15px;
+  --body-line-height: 1.75;
+  --row-height: 36px;
+  --control-height: 32px;
+  --section-gap: 24px;
 }
 :root[data-theme="dark"] {
   color-scheme: dark;
@@ -123,6 +130,10 @@ button:disabled {
 button:focus-visible,
 a:focus-visible,
 [tabindex]:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+input[type="checkbox"]:focus-visible {
   outline: 2px solid var(--focus);
   outline-offset: 2px;
 }
@@ -354,6 +365,7 @@ kbd {
   overflow: auto;
   flex: 1;
   padding-bottom: 8px;
+  scrollbar-gutter: stable;
 }
 .sidebar-section {
   display: block;
@@ -436,7 +448,7 @@ kbd {
 .page-tree-row {
   display: flex;
   align-items: center;
-  min-height: 31px;
+  min-height: var(--control-height);
   margin: 1px 0;
   gap: 0;
   border-radius: var(--radius-sm);
@@ -866,11 +878,11 @@ kbd {
 .document-content {
   width: 100%;
   max-width: var(--content-width);
-  padding: 0 64px;
+  padding: 0 var(--content-gutter);
   margin: 0 auto;
 }
 .document:not(:has(.cover)) .document-content {
-  padding-top: 56px;
+  padding-top: 48px;
 }
 .page-decoration {
   display: flex;
@@ -944,7 +956,7 @@ kbd {
 }
 .page-title {
   font-family: inherit;
-  font-size: clamp(30px, 2.5vw, 37px);
+  font-size: var(--page-title-size);
   font-weight: 700;
   letter-spacing: -0.025em;
   border: 0;
@@ -960,6 +972,12 @@ kbd {
 .page-title:focus {
   background: transparent;
 }
+/* The title suppresses the input ring for mouse editing; keyboard focus still
+   needs a visible indicator. */
+.page-title:focus-visible {
+  outline: 2px solid var(--focus) !important;
+  outline-offset: 3px;
+}
 .page-title:disabled {
   opacity: 0.7;
 }
@@ -967,8 +985,8 @@ kbd {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding-top: 12px;
-  margin-bottom: 30px;
+  padding-top: 10px;
+  margin-bottom: var(--section-gap);
   color: var(--muted);
   font-size: 10.5px;
 }
@@ -1005,8 +1023,40 @@ kbd {
 }
 .document.wide .document-content {
   max-width: none;
-  padding-left: 40px;
-  padding-right: 40px;
+  padding-left: min(40px, var(--content-gutter));
+  padding-right: min(40px, var(--content-gutter));
+}
+
+/* The registered database and the document share the shell's density and
+   keyboard focus treatment. Database layout and behaviour remain DB-owned. */
+.app-shell .r3-db {
+  margin-top: var(--section-gap);
+  font-size: 13px;
+}
+.app-shell .r3-table {
+  font-size: 13px;
+}
+.app-shell .r3-table th,
+.app-shell .r3-table td {
+  height: var(--row-height);
+}
+.app-shell .r3-table th {
+  font-weight: 500;
+  background: var(--bg);
+}
+.app-shell .r3-table tbody tr:focus-within td {
+  background: var(--panel);
+}
+.app-shell .r3-table :is(.r3-title-input, .r3-property-control):not([type="checkbox"]) {
+  min-height: var(--control-height);
+  padding: 5px 8px;
+}
+.app-shell .r3-db-tabs button {
+  min-height: var(--row-height);
+}
+.app-shell .r3-db :is(input, select, button):focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: -2px;
 }
 
 /* ==========================================================================
@@ -1016,7 +1066,7 @@ kbd {
   display: flex;
   align-items: center;
   gap: 2px;
-  margin-bottom: 16px;
+  margin-bottom: 12px;
   border-bottom: 1px solid var(--line);
   padding-bottom: 9px;
   opacity: 0.72;
@@ -1028,8 +1078,8 @@ kbd {
   opacity: 1;
 }
 .format-bar button {
-  width: 28px;
-  height: 28px;
+  width: var(--control-height);
+  height: var(--control-height);
   padding: 0;
   color: var(--text-soft);
 }
@@ -1055,32 +1105,40 @@ kbd {
 }
 .folio-editor {
   outline: none;
-  line-height: 1.9;
-  font-size: 14.5px;
+  line-height: var(--body-line-height);
+  font-size: var(--body-font-size);
   min-height: 200px;
   overflow-wrap: anywhere;
   color: var(--text);
 }
+.folio-editor:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 8px;
+  border-radius: 2px;
+}
 .folio-editor p {
-  margin: 8px 0 14px;
+  margin: 6px 0 10px;
 }
 .folio-editor h1 {
-  font-size: 30px;
-  margin: 34px 0 14px;
+  font-size: 28px;
+  margin: 32px 0 10px;
   line-height: 1.35;
   letter-spacing: -0.02em;
 }
 .folio-editor h2 {
   font-size: 22px;
-  margin: 30px 0 12px;
+  margin: 28px 0 8px;
   font-weight: 650;
   letter-spacing: -0.015em;
   line-height: 1.45;
 }
 .folio-editor h3 {
-  font-size: 17.5px;
-  margin: 26px 0 10px;
+  font-size: 18px;
+  margin: 24px 0 8px;
   letter-spacing: -0.01em;
+}
+.folio-editor > :first-child {
+  margin-top: 0;
 }
 .folio-editor ul,
 .folio-editor ol {
@@ -1250,7 +1308,8 @@ kbd {
 .slash-menu {
   position: absolute;
   width: 300px;
-  max-height: 360px;
+  max-width: calc(100vw - 32px);
+  max-height: min(360px, 60vh);
   overflow: auto;
   background: var(--surface);
   border: 1px solid var(--line);
@@ -1273,6 +1332,7 @@ kbd {
   gap: 12px;
   text-align: left;
   font-size: 12px;
+  min-height: var(--row-height);
 }
 .slash-menu button.active {
   background: var(--selected);
@@ -1506,6 +1566,7 @@ kbd {
   top: calc(100% + 13px);
   right: 0;
   width: 272px;
+  max-width: calc(100vw - 24px);
   padding: 6px;
   border: 1px solid var(--line);
   border-radius: 10px;
@@ -1519,6 +1580,7 @@ kbd {
 }
 .dropdown button {
   width: 100%;
+  min-height: var(--row-height);
   justify-content: flex-start;
   text-align: left;
   padding: 8px 9px;
@@ -1559,6 +1621,7 @@ kbd {
   top: calc(100% + 8px);
   left: 0;
   width: 240px;
+  max-width: calc(100vw - 24px);
   padding: 8px;
   display: grid;
   grid-template-columns: repeat(4, 1fr);
@@ -1661,6 +1724,11 @@ kbd {
   border: 0;
   box-shadow: none;
 }
+.search-input input:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+  border-radius: 3px;
+}
 .search-input > button {
   padding: 5px 10px;
   border: 1px solid var(--line);
@@ -1708,6 +1776,7 @@ kbd {
   display: block;
   font-size: 13px;
   font-weight: 550;
+  overflow-wrap: anywhere;
 }
 .search-results small {
   display: block;
@@ -1826,6 +1895,10 @@ kbd {
   border-bottom: 1px solid var(--line);
   gap: 20px;
   font-size: 12px;
+}
+.dialog-list > div > span {
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 .dialog-list > div:last-child {
   border-bottom: 0;
@@ -2310,6 +2383,10 @@ kbd {
   box-shadow: none;
   border-color: transparent;
 }
+.record-title:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
 .record-field {
   display: flex;
   align-items: center;
@@ -2352,16 +2429,10 @@ kbd {
    ========================================================================== */
 @media (max-width: 1280px) {
   :root {
-    --sidebar-width: 236px;
+    --sidebar-width: 232px;
     --inspector-width: 224px;
-    --content-width: 800px;
-  }
-  .document-content {
-    padding-left: 54px;
-    padding-right: 54px;
-  }
-  .page-title {
-    font-size: 33px;
+    --content-gutter: 44px;
+    --page-title-size: 34px;
   }
   .format-bar small {
     display: none;
@@ -2370,19 +2441,19 @@ kbd {
 @media (max-width: 1120px) {
   :root {
     --sidebar-width: 220px;
-    --content-width: 780px;
-  }
-  .document-content {
-    padding-left: 46px;
-    padding-right: 46px;
+    --content-gutter: 36px;
   }
 }
 @media (max-width: 1000px) {
   :root {
     --sidebar-width: 208px;
+    --content-gutter: 28px;
+    --page-title-size: 30px;
   }
-  /* Very narrow windows float the inspector above the page instead of
-     squeezing the reading column below its comfortable measure. */
+  /* Very narrow windows float the inspector instead of squeezing the reading
+     column, but the scroll container reserves the panel's footprint so the
+     editing column is never covered by it. The panel stays closable from its
+     header and can still be reopened from the top bar. */
   .inspector {
     position: absolute;
     top: 12px;
@@ -2396,6 +2467,9 @@ kbd {
     background: var(--panel);
     box-shadow: var(--shadow-lg);
     z-index: 20;
+  }
+  .document-layout:has(.inspector) .document-scroll {
+    padding-right: calc(268px + 24px);
   }
   .inspector-close {
     display: inline-flex;
@@ -2424,13 +2498,6 @@ kbd {
   .favorites {
     padding-left: 6px;
     padding-right: 6px;
-  }
-  .document-content {
-    padding-left: 34px;
-    padding-right: 34px;
-  }
-  .page-title {
-    font-size: 29px;
   }
   .topbar {
     padding: 0 8px;

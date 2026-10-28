@@ -1,6 +1,7 @@
 import { useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { composing } from "../shared/keyboard";
+
 type Props = {
   name: string;
   className?: string;
@@ -8,6 +9,57 @@ type Props = {
   onClose: () => void;
   restoreFocus?: () => boolean;
 };
+
+const FOCUSABLE =
+  'a[href], button, input, select, textarea, [tabindex]:not([tabindex="-1"]), [contenteditable="true"]';
+
+function shown(element: HTMLElement) {
+  return (
+    !element.hasAttribute("disabled") &&
+    element.getAttribute("aria-hidden") !== "true" &&
+    !element.closest("[inert]") &&
+    element.getClientRects().length > 0 &&
+    getComputedStyle(element).visibility !== "hidden"
+  );
+}
+
+function focusable(dialog: HTMLElement) {
+  return [...dialog.querySelectorAll<HTMLElement>(FOCUSABLE)].filter(
+    (element) => element.tabIndex >= 0 && shown(element),
+  );
+}
+
+// The dialog itself is the last resort: focusing it announces the accessible
+// name and keeps Tab inside even when a dialog has no controls.
+function initialTarget(dialog: HTMLElement) {
+  const marked = dialog.querySelector<HTMLElement>(
+    "[data-initial-focus],[autofocus]",
+  );
+  if (marked && shown(marked)) return marked;
+  // Search/link/record dialogs mark their own input. The older list dialogs do
+  // not, so the first action in their content list is the predictable entry
+  // point (the header close button stays one Tab away in either direction).
+  const content = dialog.querySelector<HTMLElement>(
+    ".dialog-list, .templates, [role='listbox']",
+  );
+  const first = content
+    ? [
+        ...content.querySelectorAll<HTMLElement>(
+          "button:not([disabled]), a[href]",
+        ),
+      ].find(shown)
+    : undefined;
+  return first ?? focusable(dialog)[0] ?? dialog;
+}
+
+function menuItems(group: HTMLElement) {
+  return [
+    ...group.querySelectorAll<HTMLElement>(
+      "button:not([disabled]), a[href], [role='option']",
+    ),
+  ].filter(shown);
+}
+
 // Native showModal supplies top-layer ordering and an inert background. The
 // explicit Tab loop also keeps focus inside rather than in browser chrome.
 export function Modal({
@@ -22,13 +74,27 @@ export function Modal({
   // Chromium can close a native select popup before dispatching the same
   // Escape to its containing dialog. Remember that inner surface until cancel.
   const selectMenu = useRef<HTMLSelectElement | null>(null);
-  const [origin] = useState(() => document.activeElement as HTMLElement | null);
+  const [origin] = useState(() => {
+    const active = document.activeElement as HTMLElement | null;
+    // A dropdown item that opened the dialog is unmounted in the same commit;
+    // remember its visible trigger so focus can return to the menu button.
+    const anchor = active?.closest?.(".menu-anchor");
+    return {
+      active:
+        active &&
+        active !== document.body &&
+        active !== document.documentElement
+          ? active
+          : null,
+      fallback: anchor?.querySelector<HTMLElement>(":scope > button") ?? null,
+    };
+  });
   const restore = useRef(restoreFocus);
   restore.current = restoreFocus;
   useLayoutEffect(() => {
     const dialog = ref.current!;
-    dialog.showModal();
-    dialog.querySelector<HTMLElement>("[data-initial-focus]")?.focus();
+    if (!dialog.open) dialog.showModal();
+    initialTarget(dialog).focus({ preventScroll: true });
     return () => {
       dialog.close();
       queueMicrotask(() => {
@@ -36,11 +102,16 @@ export function Modal({
         // its effect cleanup; that is not a user dismissal.
         if (dialog.isConnected && dialog.open) return;
         if (restore.current?.()) return;
-        if (origin?.isConnected) origin.focus({ preventScroll: true });
-        else
-          document
-            .querySelector<HTMLElement>(".page-title")
-            ?.focus({ preventScroll: true });
+        if (origin.active?.isConnected) {
+          origin.active.focus({ preventScroll: true });
+          return;
+        }
+        if (origin.fallback?.isConnected) {
+          origin.fallback.focus({ preventScroll: true });
+          return;
+        }
+        const title = document.querySelector<HTMLInputElement>(".page-title");
+        if (title && !title.disabled) title.focus({ preventScroll: true });
       });
     };
   }, [origin]);
@@ -51,6 +122,7 @@ export function Modal({
       role="dialog"
       aria-modal="true"
       aria-label={name}
+      tabIndex={-1}
       onPointerDownCapture={(e) => {
         if (e.target instanceof HTMLSelectElement)
           selectMenu.current = e.target;
@@ -106,19 +178,33 @@ export function Modal({
             (e.key === "ArrowDown" && e.altKey))
         )
           selectMenu.current = e.target;
+        // Arrow keys move through menu-like lists. Search owns its own arrow
+        // handling on the input and prevents the default before this point.
+        if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+          const group = (e.target as HTMLElement).closest<HTMLElement>(
+            ".dialog-list, .templates, [role='listbox']",
+          );
+          if (group) {
+            const items = menuItems(group);
+            if (items.length > 1) {
+              e.preventDefault();
+              const current = items.indexOf(e.target as HTMLElement);
+              const step = e.key === "ArrowDown" ? 1 : -1;
+              const index =
+                current < 0
+                  ? step > 0
+                    ? 0
+                    : items.length - 1
+                  : (current + step + items.length) % items.length;
+              items[index].focus();
+              return;
+            }
+          }
+        }
         // Escape's native cancel event closes only the uppermost dialog. Inner
         // menus can consume keydown with preventDefault before it reaches here.
         if (e.key !== "Tab") return;
-        const nodes = [
-          ...ref.current!.querySelectorAll<HTMLElement>(
-            "button,input,select,textarea,a[href],[tabindex]",
-          ),
-        ].filter(
-          (el) =>
-            !el.hasAttribute("disabled") &&
-            el.tabIndex >= 0 &&
-            el.getClientRects().length > 0,
-        );
+        const nodes = focusable(ref.current!);
         if (!nodes.length) {
           e.preventDefault();
           ref.current!.focus();
@@ -161,19 +247,15 @@ export function Modal({
     document.body,
   );
 }
-// Existing non-target dialogs keep their previous behavior this round.
-export function DialogFrame({ modal, ...props }: Props & { modal: boolean }) {
-  if (modal) return <Modal {...props} />;
-  return (
-    <div className="modal-backdrop" onMouseDown={props.onClose}>
-      <div
-        className={props.className}
-        role="dialog"
-        aria-label={props.name}
-        onMouseDown={(e) => e.stopPropagation()}
-      >
-        {props.children}
-      </div>
-    </div>
-  );
+
+// Every dialog gets the same native top layer and focus contract. The `modal`
+// flag only selects whether App's link-specific focus callback applies: for
+// the older dialogs that callback would treat a stale link origin as the
+// restore target, so those fall back to their own trigger instead.
+export function DialogFrame({
+  modal,
+  restoreFocus,
+  ...props
+}: Props & { modal: boolean }) {
+  return <Modal {...props} restoreFocus={modal ? restoreFocus : undefined} />;
 }

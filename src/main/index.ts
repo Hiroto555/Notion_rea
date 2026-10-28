@@ -29,7 +29,13 @@ import { requestSchema } from "../shared/types";
 import { FILE_MAX_BYTES } from "../shared/limits";
 import { parseRecovery } from "../shared/recovery";
 import { writeRecoveryFile } from "../persistence/recovery-file";
+import { writePendingJournalFile } from "../persistence/pending-journal-file";
+import { parsePendingJournal } from "../shared/pending-journal";
 import { assertExternalOutput } from "../persistence/output-path";
+import { previewPropertyOperation, commitPropertyOperation, resolvePropertyOperation } from "../persistence/property-operations";
+import { previewLegacyMigration, commitLegacyMigration, resolveLegacyMigration } from "../persistence/legacy-migration-operation";
+import { CrashRecoveryFile, crashRecoveryWorkspaceId } from "../persistence/crash-recovery-file";
+import { createRecoveryCopy } from "../persistence/crash-recovery-copy";
 app.setName("Folio");
 const userData = join(app.getPath("appData"), "Folio");
 const dataDir = workspacePath(userData, process.env.FOLIO_DATA_DIR);
@@ -113,6 +119,7 @@ if (startupError) {
       mkdirSync(dataDir, { recursive: true });
       store = new Store(join(dataDir, "workspace.sqlite"));
       seed(store);
+      const crashRecovery = new CrashRecoveryFile(join(dataDir, "crash-recovery.json"), crashRecoveryWorkspaceId(store));
       const assets = join(dataDir, "assets");
       mkdirSync(assets, { recursive: true });
       protocol.handle("folio-asset", async (req) => {
@@ -148,12 +155,21 @@ if (startupError) {
         )
           throw new Error("Unauthorized IPC sender");
         const req = requestSchema.parse(input);
+        // R4 only opens fixed-owner record editing. Historical record/DB
+        // restore lacks the provenance needed to overwrite present contents.
+        if (req.type === "restoreVersion") {
+          const snapshot = store.load();
+          if (snapshot.records?.some((record) => record.pageId === req.id) ||
+            snapshot.recordDatabaseIds?.includes(req.id))
+            throw new Error("レコードと登録済みDBの履歴復元は未対応です。現在の内容を保持しています。");
+        }
         // File payloads are bounded by their actual UTF-8 bytes in the schema.
         // JSON-escaping the entire IPC envelope would double-count quotes and
         // backslashes and reject otherwise readable recovery files.
         if (
           req.type !== "export" &&
           req.type !== "exportRecovery" &&
+          req.type !== "exportPendingJournal" &&
           Buffer.byteLength(JSON.stringify(req)) > 32_000_000
         )
           throw new Error("リクエストが大きすぎます");
@@ -161,6 +177,17 @@ if (startupError) {
           await shell.openExternal(req.url);
           return true;
         }
+        if (req.type === "recovery:read") return crashRecovery.read();
+        if (req.type === "recovery:write") return crashRecovery.write(req.expectedGeneration, req.snapshot);
+        if (req.type === "recovery:copy") return createRecoveryCopy(store, req.recoveryId, {...req.input, payload: req.input.payload});
+        if (req.type === "property:preview") return previewPropertyOperation(store, req);
+        if (req.type === "property:commit") return commitPropertyOperation(store, req.operation);
+        if (req.type === "property:resolve") return resolvePropertyOperation(store, req.operation);
+        if (req.type === "migration:preview") return previewLegacyMigration(store, req.databasePageId);
+        if (req.type === "migration:commit") return commitLegacyMigration(store, req.operation, {
+          assetsPath: assets, snapshotRoot: join(dataDir, "backups", "legacy-migration"),
+        });
+        if (req.type === "migration:resolve") return resolveLegacyMigration(store, req.operation);
         if (req.type === "downloadAttachment") {
           const asset = resolveAsset(store.db, assets, req.url);
           const result = await dialog.showSaveDialog(win, {
@@ -208,6 +235,19 @@ if (startupError) {
           const content = readFileSync(path, "utf8");
           parseRecovery(content);
           return store.recover(JSON.parse(content));
+        }
+        if (req.type === "exportPendingJournal") {
+          parsePendingJournal(req.content);
+          const result = await dialog.showSaveDialog(win, {
+            defaultPath: join(app.getPath("downloads"), "folio-unsaved-changes.json"),
+            filters: [{ name: "Folio unsaved changes", extensions: ["json"] }],
+          });
+          if (result.canceled || !result.filePath) return null;
+          const saved = writePendingJournalFile(result.filePath, req.content, {
+            validate: parsePendingJournal,
+            checkDestination: (path) => assertExternalOutput(dataDir, path),
+          });
+          return saved.path;
         }
         if (req.type === "exportRecovery") {
           parseRecovery(req.content);
@@ -273,7 +313,9 @@ if (startupError) {
           },
         });
         win.webContents.setWindowOpenHandler(() => ({ action: "deny" }));
-        win.webContents.on("will-navigate", (e) => e.preventDefault());
+        // Structural changes reload this exact trusted renderer after clearing its
+        // durable journal. All other renderer-initiated navigation stays blocked.
+        win.webContents.on("will-navigate", (event, target) => {if (target !== url) event.preventDefault();});
         win.loadURL(url);
       }
       Menu.setApplicationMenu(
