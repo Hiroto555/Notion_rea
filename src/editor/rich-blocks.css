@@ -1,0 +1,271 @@
+/* ==========================================================================
+   Contextual rich-block controls (callout / simple table)
+   All selectors stay inside the editor surface or the toolbar's own root.
+   ========================================================================== */
+
+.rich-block-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin: -2px 0 12px;
+  min-width: 0;
+}
+
+.rich-block-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2px;
+  min-width: 0;
+  max-width: 100%;
+  padding: 3px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--panel);
+  box-shadow: var(--shadow-sm);
+}
+
+.rich-block-toolbar__label {
+  padding: 0 6px 0 5px;
+  color: var(--muted);
+  font-size: 10px;
+  line-height: 24px;
+  white-space: nowrap;
+}
+
+.rich-block-toolbar__group {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 1px;
+  min-width: 0;
+}
+
+.rich-block-toolbar__button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  width: auto;
+  min-width: 0;
+  min-height: 24px;
+  padding: 0 7px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-xs);
+  background: transparent;
+  color: var(--text-soft);
+  font-size: 11px;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.rich-block-toolbar__button:hover:not(:disabled) {
+  border-color: var(--line);
+  background: var(--hover);
+  color: var(--text);
+}
+
+.rich-block-toolbar__button[aria-pressed="true"] {
+  border-color: color-mix(in srgb, var(--accent) 30%, var(--line));
+  background: var(--accent-soft);
+  color: var(--accent-strong);
+}
+
+.rich-block-toolbar__button--quiet {
+  color: var(--muted);
+}
+
+.rich-block-toolbar__button--danger {
+  color: var(--danger);
+}
+
+.rich-block-toolbar__button--danger:hover:not(:disabled) {
+  border-color: color-mix(in srgb, var(--danger) 34%, var(--line));
+  background: var(--danger-soft);
+  color: var(--danger);
+}
+
+.rich-block-toolbar__button:disabled {
+  opacity: 0.38;
+  cursor: default;
+}
+
+.rich-block-toolbar__tone {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  background: var(--accent);
+}
+
+.rich-block-toolbar__tone[data-tone="note"] {
+  background: var(--accent);
+}
+
+.rich-block-toolbar__tone[data-tone="tip"] {
+  background: var(--focus);
+}
+
+.rich-block-toolbar__tone[data-tone="warning"] {
+  background: var(--warning);
+}
+
+/* --------------------------------------------------------------------------
+   Callouts
+   -------------------------------------------------------------------------- */
+
+.folio-editor aside[data-folio-callout] {
+  --folio-callout-accent: var(--accent);
+  --folio-callout-bg: color-mix(in srgb, var(--accent) 8%, var(--surface));
+  --folio-callout-icon: "i";
+  position: relative;
+  margin: 18px 0;
+  padding: 12px 16px 12px 46px;
+  border: 1px solid
+    color-mix(in srgb, var(--folio-callout-accent) 25%, var(--line));
+  border-left: 4px solid var(--folio-callout-accent);
+  border-radius: var(--radius-sm);
+  background: var(--folio-callout-bg);
+  color: var(--text);
+}
+
+.folio-editor aside[data-folio-callout][data-tone="note"] {
+  --folio-callout-accent: var(--accent);
+  --folio-callout-bg: color-mix(in srgb, var(--accent) 8%, var(--surface));
+  --folio-callout-icon: "i";
+}
+
+.folio-editor aside[data-folio-callout][data-tone="tip"] {
+  --folio-callout-accent: var(--focus);
+  --folio-callout-bg: color-mix(in srgb, var(--focus) 9%, var(--surface));
+  --folio-callout-icon: "✓";
+}
+
+.folio-editor aside[data-folio-callout][data-tone="warning"] {
+  --folio-callout-accent: var(--warning);
+  --folio-callout-bg: color-mix(in srgb, var(--warning) 11%, var(--surface));
+  --folio-callout-icon: "!";
+}
+
+.folio-editor aside[data-folio-callout]::before {
+  content: var(--folio-callout-icon);
+  position: absolute;
+  top: 12px;
+  left: 13px;
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: color-mix(
+    in srgb,
+    var(--folio-callout-accent) 18%,
+    var(--surface)
+  );
+  color: var(--folio-callout-accent);
+  font-size: 12px;
+  font-weight: 700;
+  font-style: normal;
+  line-height: 1;
+  pointer-events: none;
+  user-select: none;
+  speak: never;
+}
+
+.folio-editor aside[data-folio-callout] > :first-child {
+  margin-top: 0;
+}
+
+.folio-editor aside[data-folio-callout] > :last-child {
+  margin-bottom: 0;
+}
+
+/* --------------------------------------------------------------------------
+   Simple tables
+   -------------------------------------------------------------------------- */
+
+.folio-editor {
+  max-width: 100%;
+}
+
+.folio-editor .tableWrapper {
+  max-width: 100%;
+  margin: 18px 0;
+  overflow-x: auto;
+  overscroll-behavior-inline: contain;
+}
+
+.folio-editor table {
+  width: 100%;
+  max-width: 100%;
+  margin: 18px 0;
+  border: 1px solid var(--line-strong);
+  border-collapse: collapse;
+  border-spacing: 0;
+  table-layout: fixed;
+  background: var(--surface);
+  caret-color: var(--accent);
+}
+
+.folio-editor .tableWrapper > table {
+  margin: 0;
+}
+
+.folio-editor th,
+.folio-editor td {
+  min-width: 5.5rem;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  text-align: left;
+  vertical-align: top;
+  position: relative;
+  overflow-wrap: anywhere;
+}
+
+.folio-editor th {
+  background: var(--panel);
+  color: var(--text);
+  font-weight: 650;
+}
+
+.folio-editor th > :first-child,
+.folio-editor td > :first-child {
+  margin-top: 0;
+}
+
+.folio-editor th > :last-child,
+.folio-editor td > :last-child {
+  margin-bottom: 0;
+}
+
+.folio-editor th p,
+.folio-editor td p {
+  margin: 2px 0;
+}
+
+.folio-editor .selectedCell {
+  outline: 1px solid color-mix(in srgb, var(--accent) 62%, transparent);
+  outline-offset: -1px;
+}
+
+.folio-editor .selectedCell::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  background: color-mix(in srgb, var(--accent) 20%, transparent);
+  pointer-events: none;
+}
+
+@media (max-width: 640px) {
+  .rich-block-toolbar__label {
+    display: none;
+  }
+
+  .rich-block-toolbar__button {
+    padding: 0 6px;
+  }
+}

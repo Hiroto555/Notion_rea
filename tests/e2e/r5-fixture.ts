@@ -255,3 +255,9 @@ export async function r5Gate(app: ElectronApplication) {
     return { commits, resolves, results, operation, result, injected };
   });
 }
+
+/** Open the contextual R7 control surface before exercising retained R5/R6 behavior. */
+export async function openR7Settings(window: Page, menu: 'view-options' | 'filter' | 'sort') {
+  const trigger = r5Settings(window).locator(`[data-settings-menu-trigger="${menu}"]`);
+  if (await trigger.getAttribute('aria-expanded') !== 'true') await trigger.click();
+}

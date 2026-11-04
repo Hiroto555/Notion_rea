@@ -1,3 +1,4 @@
+import { searchPages } from "./search-query";
 import { DatabaseSync } from "node:sqlite";
 import { createHash, randomUUID } from "node:crypto";
 import { existsSync, mkdirSync } from "node:fs";
@@ -203,6 +204,7 @@ export class Store {
       throw new Error("ページを読めません。原本は変更していません。");
     const documentValid =
       (p.schemaVersion === undefined || p.schemaVersion === 1) &&
+      (p.width === undefined || p.width === "standard" || p.width === "wide") &&
       isDocument(p.doc);
     let database = p.database === undefined ? null : p.database;
     let databaseError = "";
@@ -929,7 +931,7 @@ export class Store {
     if (!row) throw new Error("ページが見つかりません");
     let source: unknown;
     try { source = JSON.parse(row.data); } catch { throw new Error("未対応のページ原本は移動できません。"); }
-    const allowed = new Set(["id", "schemaVersion", "parentId", "title", "icon", "cover", "position", "doc", "kind", "database", "favorite", "createdAt", "updatedAt", "revision", "deletedAt", "recoveredFrom"]);
+    const allowed = new Set(["id", "schemaVersion", "parentId", "title", "icon", "cover", "position", "doc", "kind", "database", "favorite", "width", "createdAt", "updatedAt", "revision", "deletedAt", "recoveredFrom"]);
     if (!source || typeof source !== "object" || Array.isArray(source) ||
         Object.keys(source).some((key) => !allowed.has(key)) || JSON.stringify(source) !== row.data ||
         JSON.stringify(this.decode(row.data)) !== row.data)
@@ -947,7 +949,8 @@ export class Store {
         !isDocument(value.doc) || !(value.kind === "page" || value.kind === "database") ||
         (value.kind === "page" && value.database != null) ||
         (value.kind === "database" && (value.database == null || !isLosslessDatabaseData(value.database))) ||
-        typeof value.favorite !== "boolean" || !validTime(value.createdAt) || !validTime(value.updatedAt) ||
+        typeof value.favorite !== "boolean" ||
+        (value.width !== undefined && value.width !== "standard" && value.width !== "wide") || !validTime(value.createdAt) || !validTime(value.updatedAt) ||
         !Number.isSafeInteger(value.revision) || (value.revision as number) < 0 ||
         !(value.deletedAt === null || validTime(value.deletedAt)))
       throw new Error("未対応のページ原本は移動できません。");
@@ -1227,7 +1230,6 @@ export class Store {
           .run(r.key, r.value);
         return true;
       case "search": {
-        const term = r.query.toLocaleLowerCase();
         const hasRecords = !!this.db
           .prepare(
             "SELECT 1 FROM sqlite_master WHERE type='table' AND name='record_memberships'",
@@ -1243,21 +1245,7 @@ export class Store {
             values.set(row.page_id, Object.values(record.values).join(" "));
           }
         }
-        return this.pages().filter(
-          (p) =>
-            !p.deletedAt &&
-            [
-              p.title,
-              p.documentError ? "" : textOf(p.doc),
-              values.get(p.id) ?? "",
-              ...(p.database?.rows.map(
-                (x) => x.title + " " + Object.values(x.values).join(" "),
-              ) ?? []),
-            ]
-              .join("\n")
-              .toLocaleLowerCase()
-              .includes(term),
-        );
+        return searchPages(this.pages(), r.query, values);
       }
       case "pageSource":
         return (
@@ -1318,6 +1306,7 @@ export class Store {
           icon: local.icon,
           cover: local.cover,
           favorite: local.favorite,
+          ...(local.width === undefined ? {} : {width: local.width}),
           recoveredFrom: { pageId: local.id, recoveredAt: Date.now() },
         });
       }),

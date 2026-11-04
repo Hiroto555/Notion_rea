@@ -1,5 +1,6 @@
+import { containsRichBlocks, validRichNode } from "./rich-document";
 import { documentSchema } from "./editor-schema";
-export const DOCUMENT_SCHEMA_VERSION = 1;
+export const DOCUMENT_SCHEMA_VERSION = 2;
 // Bounds precede recursive ProseMirror validation. The very same extensions build
 // the editor schema; attribute types add checks Tiptap's defaults do not supply.
 export function validDocument(value: unknown): boolean {
@@ -21,7 +22,8 @@ export function validDocument(value: unknown): boolean {
         return false;
       if (
         node.schemaVersion !== undefined &&
-        (depth !== 0 || node.schemaVersion !== DOCUMENT_SCHEMA_VERSION)
+        (depth !== 0 ||
+          ![1, DOCUMENT_SCHEMA_VERSION].includes(node.schemaVersion))
       )
         return false;
       if (
@@ -38,6 +40,7 @@ export function validDocument(value: unknown): boolean {
         )
       )
         return false;
+      if (!validRichNode(node)) return false;
       const spec = documentSchema.nodes[node.type];
       if (!spec || (depth > 0 && node.type === "doc")) return false;
       if (
@@ -80,6 +83,8 @@ export function validDocument(value: unknown): boolean {
       }
     }
     if (JSON.stringify(value).length > 30_000_000) return false;
+    if ((value as any).schemaVersion === 1 && containsRichBlocks(value))
+      return false;
     documentSchema.nodeFromJSON(value).check();
     return true;
   } catch {
@@ -94,6 +99,10 @@ function attributes(value: any, declared: Record<string, unknown>): boolean {
       if (!Number.isInteger(v) || Number(v) < 1 || Number(v) > 6) return false;
     } else if (key === "start") {
       if (!Number.isInteger(v) || Number(v) < 1) return false;
+    } else if (key === "colspan" || key === "rowspan") {
+      if (v !== 1) return false;
+    } else if (key === "colwidth") {
+      if (v !== null) return false;
     } else if (key === "checked" || key === "open") {
       if (typeof v !== "boolean") return false;
     } else if (key === "width" || key === "height") {

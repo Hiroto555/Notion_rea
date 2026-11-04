@@ -1,3 +1,16 @@
+import { Slice } from "@tiptap/pm/model";
+import { freshPastedSlice } from "../editor/block-identity";
+import { assertSupportedRichHTML, assertSupportedRichMarkdown } from "../document-io/rich-html-guard";
+import { validDocument } from "../shared/validation";
+import { versionDocument } from "../shared/rich-document";
+import { queryBacklinks } from "../persistence/backlinks-query";
+import { BacklinksPanel } from "./BacklinksPanel";
+import { PageLayoutControl } from "./page-layout";
+import { effectivePageWidth } from "../shared/page-layout";
+import { WorkspaceBackupDialog } from "./workspace-backup/WorkspaceBackupDialog";
+import type { BackupPreview, BackupRestored } from "../shared/workspace-backup";
+import { SearchResults } from "./SearchPanel";
+import { exportMarkdown, importMarkdown } from "../document-io/markdown";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { flushSync } from "react-dom";
 import type { Editor as TiptapEditor } from "@tiptap/react";
@@ -30,6 +43,7 @@ import {
   X,
 } from "lucide-react";
 import { Editor } from "../editor/Editor";
+import { syncEditorTextSelection } from "../editor/dom-selection";
 import { DialogFrame } from "./Modal";
 import { recoveryContent } from "../shared/recovery";
 import { capturePendingJournal, serializePendingJournal } from "../shared/pending-journal";
@@ -112,6 +126,9 @@ export function App() {
     [structural, setStructural] = useState<{family: "migration" | "property"; owner: Page} | null>(null),
     [, redrawSessions] = useState(0),
     [restoringIds, setRestoringIds] = useState<Set<string>>(new Set());
+  const [backupOpen, setBackupOpen] = useState(false);
+  const backupBusy = useRef(false);
+  const backlinkFocus = useRef<{pageId: string; blockId: string | null} | null>(null);
   const [startupRecovery, setStartupRecovery] = useState<CrashRecoveryRead | null>(null);
   const [recoveryBusy, setRecoveryBusy] = useState(false);
   const [recoveryError, setRecoveryError] = useState("");
@@ -198,7 +215,7 @@ export function App() {
     selection: TiptapEditor["state"]["selection"];
     doc: TiptapEditor["state"]["doc"];
   } | null>(null);
-  const dialogOriginPage = useRef("");
+  const dialogOriginDocument = useRef("");
   const historyOrigin = useRef<{ id: string; revision: number } | null>(null);
   dialogRef.current = dialog;
   const commit = (next: Page[]) => {
@@ -415,6 +432,7 @@ export function App() {
     void api({ type: "setting", key, value }).catch(fail);
   };
   function select(id: string, push = true) {
+    if (composition.current) return;
     if (recordIdsRef.current.has(id)) { void openRecord(id, undefined, "full"); return; }
     setRecordView(null);
     selectionVersion.current++;
@@ -427,6 +445,7 @@ export function App() {
       editorId.current = "";
     }
     setMenu(false);
+    setIconMenu(false);
     setDialog(null);
     setFindOpen(false);
     saveSetting("activePage", id);
@@ -631,6 +650,7 @@ export function App() {
       setRecordView({ id: pageId, owner, mode });
       setDialog(null);
       setMenu(false);
+      setIconMenu(false);
       editor.current = null;
       editorId.current = "";
       saveSetting("activePage", pageId);
@@ -652,7 +672,13 @@ export function App() {
       const scroll = document.querySelector(".document-scroll");
       if (scroll && origin) scroll.scrollTop = origin.scroll;
       if (origin?.element?.isConnected) origin.element.focus({ preventScroll: true });
-      else if (current) document.querySelector<HTMLElement>(`[data-record-open-id="${CSS.escape(current.id)}"]`)?.focus({ preventScroll: true });
+      else if (current) {
+        const id = CSS.escape(current.id);
+        const target = document.querySelector<HTMLElement>(`[data-record-open-id="${id}"], [data-record-origin="${id}"]`) ??
+          document.querySelector<HTMLElement>('.r5-view-tabs [aria-selected="true"]') ??
+          document.querySelector<HTMLElement>(".page-title");
+        target?.focus({ preventScroll: true });
+      }
     });
   }
   function editRecord(id: string, patch: PagePatch, values?: Record<string, string | number | boolean | null>) {
@@ -790,7 +816,10 @@ export function App() {
     saveSetting("theme", next);
   }
   function openSearch() {
-    dialogOriginPage.current = activeRef.current;
+    if (composition.current) return;
+    setMenu(false);
+    setIconMenu(false);
+    dialogOriginDocument.current = recordViewRef.current?.id ?? activeRef.current;
     setQuery("");
     setResults([]);
     setDialog("search");
@@ -799,14 +828,16 @@ export function App() {
   useEffect(() => {
     if (dialog !== "search" && dialog !== "link") return;
     const seq = ++querySeq.current;
+    let cancelled = false;
     void api<Page[]>({ type: "search", query })
       .then((r) => {
-        if (seq === querySeq.current) {
+        if (!cancelled && seq === querySeq.current) {
           setResults(r);
           setSearchIndex(0);
         }
       })
-      .catch(fail);
+      .catch((error) => { if (!cancelled && seq === querySeq.current) fail(error); });
+    return () => { cancelled = true; };
   }, [query, dialog, pages.length]);
   useEffect(() => {
     const key = (e: KeyboardEvent) => {
@@ -819,7 +850,13 @@ export function App() {
         return;
       if (e.key === "Escape") {
         if (dialogRef.current) setDialog(null);
-        else if (menu) setMenu(false);
+        else if (menu || iconMenu) {
+          const trigger = document.querySelector<HTMLElement>(menu
+            ? 'button[aria-label="ページメニュー"]' : 'button[aria-label="ページアイコン"]');
+          setMenu(false);
+          setIconMenu(false);
+          trigger?.focus({ preventScroll: true });
+        }
         else if (findOpen) setFindOpen(false);
         else if (recordViewRef.current) closeRecord();
         e.preventDefault();
@@ -835,6 +872,7 @@ export function App() {
         return;
       if (k === "k" || k === "p") {
         e.preventDefault();
+        if (k === "k" && editor.current) syncEditorTextSelection(editor.current);
         if (
           k === "k" &&
           editor.current?.isFocused &&
@@ -866,9 +904,10 @@ export function App() {
       }
     };
     const unload = (e: BeforeUnloadEvent) => {
-      if (pendingRef.current > 0 || edits.current.size > 0 || sessions.current.hasUnsaved() || hasNumberDrafts() || hasDatabasePending() || restoring.current.size > 0 || structuralOperation.current || recoveryQueue.current?.getStatus().state !== "saved" || captureError.current) {
+      if (backupBusy.current || pendingRef.current > 0 || edits.current.size > 0 || sessions.current.hasUnsaved() || hasNumberDrafts() || hasDatabasePending() || restoring.current.size > 0 || structuralOperation.current || recoveryQueue.current?.getStatus().state !== "saved" || captureError.current) {
         e.preventDefault();
         e.returnValue = "保存中です";
+        setNotice("未保存の入力を保持しています。保存中の処理・保存結果・入力途中の数値を確認してから終了してください。");
       }
     };
     const start = () => {
@@ -887,7 +926,7 @@ export function App() {
       window.removeEventListener("keydown", key);
       window.removeEventListener("beforeunload", unload);
     };
-  }, [theme, expanded, menu, findOpen]);
+  }, [theme, expanded, menu, iconMenu, findOpen]);
   useEffect(() => {
     if (!notice) return;
     const t = setTimeout(() => setNotice(""), 4000);
@@ -944,6 +983,8 @@ export function App() {
         const entries = await api<Version[]>({ type: "versions", id: page.id });
         historyOrigin.current = { id: page.id, revision };
         setVersions(entries);
+        setMenu(false);
+        setIconMenu(false);
         setDialog("history");
       }),
     );
@@ -992,13 +1033,14 @@ export function App() {
   function openLink() {
     const e = currentEditor();
     if (!e) return;
+    syncEditorTextSelection(e);
     linkTarget.current = {
       id: activeRef.current,
       editor: e,
       selection: e.state.selection,
       doc: e.state.doc,
     };
-    dialogOriginPage.current = activeRef.current;
+    dialogOriginDocument.current = recordViewRef.current?.id ?? activeRef.current;
     setQuery("");
     setResults([]);
     setDialog("link");
@@ -1006,9 +1048,10 @@ export function App() {
   function restoreDialogFocus() {
     const target = linkTarget.current;
     linkTarget.current = null;
-    if (activeRef.current !== dialogOriginPage.current) {
+    if ((recordViewRef.current?.id ?? activeRef.current) !== dialogOriginDocument.current) {
       document
-        .querySelector<HTMLElement>(".page-title")
+        .querySelector<HTMLElement>(recordViewRef.current
+          ? '.r3-record-page input[aria-label="レコードのタイトル"]' : ".page-title")
         ?.focus({ preventScroll: true });
       return true;
     }
@@ -1062,6 +1105,8 @@ export function App() {
   const exportPage = (format: "md" | "html" | "json") =>
     safe(async () => {
       if (!page) return;
+      if (page.documentError && format !== "json")
+        throw new Error("本文を確認できません。「原本JSONを保存」から書き出してください。");
       const e = currentEditor();
       if (page.kind === "page" && format !== "json" && !e)
         throw new Error("本文を取得できないため書き出しを停止しました");
@@ -1069,10 +1114,7 @@ export function App() {
         format === "json"
           ? JSON.stringify(page, null, 2)
           : format === "md"
-            ? "# " +
-              page.title +
-              "\n\n" +
-              (e?.getMarkdown() ?? JSON.stringify(page.database, null, 2))
+            ? exportMarkdown(page.title, e?.getMarkdown() ?? JSON.stringify(page.database, null, 2))
             : '<!doctype html><html lang="ja"><meta charset="utf-8"><title>' +
               page.title.replace(/[<>&"]/g, "") +
               "</title><body>" +
@@ -1102,16 +1144,22 @@ export function App() {
       if (!file) return;
       const { Editor: CoreEditor } = await import("@tiptap/core");
       const { extensions } = await import("../editor/Editor");
+      const imported = [".md", ".markdown"].includes(file.format)
+        ? importMarkdown(file.name, file.content) : { title: file.name, body: file.content };
+      if ([".md", ".markdown"].includes(file.format)) assertSupportedRichMarkdown(imported.body);
+      else assertSupportedRichHTML(imported.body);
       const parser = new CoreEditor({
         extensions: extensions(),
-        content: file.content,
+        content: imported.body,
         contentType: [".md", ".markdown"].includes(file.format)
           ? "markdown"
           : "html",
       });
-      const doc = parser.getJSON() as Doc;
+      const importedContent = freshPastedSlice(new Slice(parser.state.doc.content, 0, 0)).content;
+      const doc = versionDocument(parser.state.doc.copy(importedContent).toJSON() as Doc);
       parser.destroy();
-      await create(null, "page", file.name, doc);
+      if (!validDocument(doc)) throw new Error("未対応の本文・表を含むため取り込みを停止しました。元のファイルを保持しています。");
+      await create(null, "page", imported.title, doc);
     });
   const attach = () =>
     safe(async () => {
@@ -1231,15 +1279,37 @@ export function App() {
     ancestors.unshift(p);
     parent = p.parentId;
   }
-  const linked = (doc: Doc, target: string): boolean =>
-    !!doc.marks?.some(
-      (m) => m.type === "link" && m.attrs?.href === "folio-page://" + target,
-    ) || !!doc.content?.some((n) => linked(n, target));
-  const backlinks = page
-    ? live.filter(
-        (p) => !p.documentError && p.id !== page.id && linked(p.doc, page.id),
-      )
-    : [];
+  const backlinkPages = new Map(pages.map((page) => [page.id, page]));
+  for (const view of sessions.current.views()) backlinkPages.set(view.page.id, view.page);
+  for (const view of databases.current.views()) backlinkPages.set(view.page.id, view.page);
+  const backlinks = queryBacklinks([...backlinkPages.values()], recordView?.id ?? page?.id ?? "");
+  function focusBacklink() {
+    const target = backlinkFocus.current;
+    if (!target || editorId.current !== target.pageId || !editor.current) return;
+    backlinkFocus.current = null;
+    const instance = editor.current;
+    requestAnimationFrame(() => {
+      if (editor.current !== instance || instance.isDestroyed) return;
+      let position: number | undefined;
+      if (target.blockId) instance.state.doc.descendants((node, pos) => {
+        if (node.attrs.id === target.blockId && position === undefined) position = pos + 1;
+      });
+      instance.commands.focus(position ?? "start", {scrollIntoView: true});
+      if (target.blockId) document.querySelector(`[data-folio-block-id="${CSS.escape(target.blockId)}"]`)?.scrollIntoView({block: "center"});
+    });
+  }
+  function navigateBacklink(pageId: string, blockId: string | null) {
+    if (composition.current) return;
+    backlinkFocus.current = {pageId, blockId};
+    select(pageId);
+    focusBacklink();
+  }
+  async function prepareWorkspaceBackup() {
+    if (composition.current || creatingCount.current || structuralOperation.current) throw new Error("入力や処理を完了してからバックアップしてください。");
+    await ensureSaved();
+    await recoveryBarrierRef.current();
+    if (captureError.current || recoveryQueue.current?.getStatus().state !== "saved") throw new Error("復旧記録の保存を確認してからバックアップしてください。");
+  }
   const headings: Doc[] = page?.documentError
     ? []
     : (page?.doc?.content?.filter((n) => n.type === "heading") ?? []);
@@ -1562,7 +1632,7 @@ export function App() {
                 aria-label="ページメニュー"
                 aria-expanded={menu}
                 title="ページメニュー"
-                onClick={() => setMenu((v) => !v)}
+                onClick={() => { setIconMenu(false); setMenu((v) => !v); }}
               >
                 <MoreHorizontal size={20} />
               </button>
@@ -1625,18 +1695,8 @@ export function App() {
                     <Download size={15} />
                     JSONを書き出す
                   </button>
-                  <button
-                    onClick={() =>
-                      safe(async () => {
-                        await ensureSaved();
-                        const path = await api<string>({ type: "backup" });
-                        setNotice("バックアップを保存しました：" + path);
-                        setMenu(false);
-                      })
-                    }
-                  >
-                    <Copy size={15} />
-                    ワークスペースをバックアップ
+                  <button onClick={() => {if (!composition.current) {setMenu(false); setBackupOpen(true);}}}>
+                    <Copy size={15} />バックアップと復元
                   </button>
                   <hr />
                   <button className="danger" onClick={trash} disabled={recordIds.has(page.id) || recordDatabaseIdsRef.current.has(page.id)}>
@@ -1807,6 +1867,7 @@ export function App() {
         <div className="document-layout" style={{ position: "relative" }}>
           <div
             className="document-scroll"
+            inert={recordView?.mode === "full" || undefined}
             onClick={(e) => {
               const a = (e.target as HTMLElement).closest("a");
               if (a) {
@@ -1834,12 +1895,13 @@ export function App() {
             {page ? (
               <article
                 className={
-                  "document " + (page.kind === "database" ? "wide" : "")
+                  "document " + (effectivePageWidth(activeDatabase?.page ?? page) === "wide" ? "wide" : "")
                 }
                 key={page.id}
                 hidden={creatingPage}
                 inert={restoringIds.has(page.id) || undefined}
                 data-kind={page.kind}
+                data-page-width={effectivePageWidth(activeDatabase?.page ?? page)}
                 data-document-error={page.documentError ? "true" : undefined}
               >
                 {page.cover && (
@@ -1894,7 +1956,7 @@ export function App() {
                         aria-expanded={iconMenu}
                         title="アイコンを変更"
                         disabled={recordIds.has(page.id) || recordDatabaseIdsRef.current.has(page.id)}
-                        onClick={() => setIconMenu((v) => !v)}
+                        onClick={() => { setMenu(false); setIconMenu((v) => !v); }}
                       >
                         {page.icon}
                       </button>
@@ -2017,10 +2079,8 @@ export function App() {
                       </button>
                     </div>
                   )}
-                  {page.kind === "database" && page.database && !page.documentError && <div className="r6-database-tools">
-                    {recordDatabaseIdsRef.current.has(page.id)
-                      ? <button type="button" onClick={() => void openStructural("property", page.id)}>列の設定</button>
-                      : <button type="button" onClick={() => void openStructural("migration", page.id)}>旧DBをページ形式へ移行</button>}
+                  {page.kind === "database" && page.database && !page.documentError && !recordDatabaseIdsRef.current.has(page.id) && <div className="r6-database-tools">
+                    <button type="button" onClick={() => void openStructural("migration", page.id)}>旧DBをページ形式へ移行</button>
                   </div>}
                   {page.documentError ? (
                     <div role="alert">
@@ -2061,6 +2121,7 @@ export function App() {
                         if (pageSessions.current.get(page.id)?.sessionId !== displayedSession?.sessionId || activeRef.current !== page.id) return;
                         editor.current = e;
                         editorId.current = page.id;
+                        focusBacklink();
                         if (
                           recordIdsRef.current.has(page.id) &&
                           !recordWriteRevisions.current.has(page.id)
@@ -2080,6 +2141,7 @@ export function App() {
                       databases={databases.current}
                       creatingRecord={creatingRows.current.has(page.id)}
                       onCreateRecord={() => void addRecord(page.id)}
+                      onOpenProperties={() => void openStructural("property", page.id)}
                       filterInputTexts={filterDrafts.current[page.id] ?? {}}
                       onFilterInputTextChange={(viewId, filterId, text) => setFilterDraft(page.id, viewId, filterId, text)}
                       numberDrafts={numberDrafts.current}
@@ -2145,6 +2207,7 @@ export function App() {
               propertyInputTexts={numberDrafts.current[recordView.id]}
               onPropertyInputTextChange={(propertyId, text) => setNumberDraft(recordView.id, propertyId, text)}
               mode={recordView.mode}
+              pageWidth={effectivePageWidth(openedRecord.page)}
               onModeChange={(mode) => setRecordView((view) => view && { ...view, mode })}
               onClose={closeRecord}
               onBack={closeRecord}
@@ -2154,15 +2217,15 @@ export function App() {
               onTitleChange={(title) => editRecord(recordView.id, { title })}
               onValueChange={(propertyId, value) => editRecord(recordView.id, {}, { [propertyId]: value })}
               focusBody={() => editor.current?.commands.focus()}
-              body={<Editor
+              body={<><PageLayoutControl value={effectivePageWidth(openedRecord.page)} onChange={(width) => {if (!composition.current) editRecord(recordView.id, {width});}} /><Editor
                 key={openedRecord.handle.sessionId}
                 documentId={recordView.id}
                 doc={openedRecord.page.doc}
                 onChange={(doc) => editRecord(recordView.id, { doc })}
-                onReady={(instance) => { editor.current = instance; editorId.current = recordView.id; }}
+                onReady={(instance) => { editor.current = instance; editorId.current = recordView.id; focusBacklink(); }}
                 onError={fail}
                 onLink={openLink}
-              />}
+              /><BacklinksPanel groups={backlinks} onNavigate={navigateBacklink} /></>}
             />
           )}
           {inspector && page && (
@@ -2235,27 +2298,9 @@ export function App() {
                 )}
               </section>
               <section className="inspector-section">
-                <h3 className="inspector-label">
-                  バックリンク <small>{backlinks.length}</small>
-                </h3>
-                {backlinks.map((p) => (
-                  <button
-                    className="outline-item"
-                    key={p.id}
-                    title={p.title}
-                    onClick={() => select(p.id)}
-                  >
-                    {p.icon} {p.title}
-                  </button>
-                ))}
-                {!backlinks.length && (
-                  <p className="subtle">
-                    他のページからのリンクが
-                    <br />
-                    ここに集まります。
-                  </p>
-                )}
+                <PageLayoutControl value={effectivePageWidth(activeDatabase?.page ?? page)} disabled={!!page.documentError || restoringIds.has(page.id)} onChange={(width) => {if (!composition.current) update(page.id, {width});}} />
               </section>
+              <BacklinksPanel groups={backlinks} onNavigate={navigateBacklink} />
               <button className="history-link" onClick={openHistory} disabled={!!page && (recordIds.has(page.id) || recordDatabaseIdsRef.current.has(page.id))}>
                 <History size={14} aria-hidden="true" />
                 変更履歴を見る
@@ -2354,40 +2399,8 @@ export function App() {
               <div className="menu-caption">
                 {query ? "検索結果" : "すべてのページ"}
               </div>
-              <div
-                className="search-results"
-                role="group"
-                aria-label={query ? "検索結果" : "すべてのページ"}
-              >
-                {results.length ? (
-                  results.map((p, i) => (
-                    <button
-                      key={p.id}
-                      className={i === searchIndex ? "active" : ""}
-                      aria-current={i === searchIndex ? "true" : undefined}
-                      title={p.title || "無題"}
-                      onClick={() => {
-                        if (dialog === "link") {
-                          applyPageLink(p);
-                        } else select(p.id);
-                      }}
-                    >
-                      <span className="result-icon">{p.icon}</span>
-                      <span className="result-text">
-                        <strong>{p.title || "無題"}</strong>
-                        <small>
-                          {p.documentError
-                            ? "未対応の文書（原本を保全）"
-                            : textOf(p.doc).slice(0, 85) || "空のページ"}
-                        </small>
-                      </span>
-                      <ChevronRight size={15} aria-hidden="true" />
-                    </button>
-                  ))
-                ) : (
-                  <p className="empty">見つかりませんでした</p>
-                )}
-              </div>
+              <SearchResults results={results} query={query} searchIndex={searchIndex}
+                onSelect={(p) => { if (dialog === "link") applyPageLink(p); else select(p.id); }} />
               {dialog === "search" && (
                 <div className="palette-actions">
                   <button
@@ -2572,6 +2585,14 @@ export function App() {
           )}
         </DialogFrame>
       )}
+      {backupOpen && <WorkspaceBackupDialog
+        onClose={() => {if (!backupBusy.current) setBackupOpen(false);}}
+        onBusyChange={(busy) => {backupBusy.current = busy;}}
+        onCreate={async () => {await prepareWorkspaceBackup(); return api<BackupPreview>({type: "workspaceBackup:create"});}}
+        onChoose={() => api<BackupPreview | null>({type: "workspaceBackup:choose"})}
+        onRestore={(preview) => api<BackupRestored | null>({type: "workspaceBackup:restore", ticket: preview.ticket})}
+        onOpen={async (result) => {await api({type: "workspaceBackup:open", ticket: result.ticket});}}
+      />}
       {structural && <StructuralDatabaseDialog family={structural.family} owner={structural.owner}
         onClose={() => setStructural(null)} retain={retainStructural}
         onApplied={async () => {await ensureSaved(); await retainStructural(null); window.location.reload();}} />}

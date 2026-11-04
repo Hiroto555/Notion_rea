@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Plus } from 'lucide-react';
-import type { DatabaseCallbacks, Page, RecordProjection } from '../shared/types';
+import type { DatabaseCallbacks, Doc, Page, RecordProjection } from '../shared/types';
 import type { DatabaseReadSnapshot } from '../shared/database-operation';
 import { DatabasePresentation } from '../database/DatabasePresentation';
 import { ControlledRecordTable, type RecordTableState } from '../database/ControlledRecordTable';
@@ -13,7 +13,7 @@ import './r5-database.css';
 
 /** The App owns settings, creation operations, record sessions and raw inputs. */
 export function LiveRecordDatabase({ databasePageId, databases, sessions, numberDrafts, onNumberDraft,
-  filterInputTexts, onFilterInputTextChange, creatingRecord, onCreateRecord, onOpenRecord, onError }: {
+  filterInputTexts, onFilterInputTextChange, creatingRecord, onCreateRecord, onOpenRecord, onOpenProperties, onError }: {
   databasePageId: string;
   databases: DatabaseSessionCoordinator;
   sessions: EditSessionCoordinator;
@@ -24,6 +24,7 @@ export function LiveRecordDatabase({ databasePageId, databases, sessions, number
   creatingRecord: boolean;
   onCreateRecord: () => void;
   onOpenRecord: (id: string) => void;
+  onOpenProperties: () => void;
   onError: (error: unknown) => void;
 }) {
   const [error, setError] = useState('');
@@ -56,11 +57,19 @@ export function LiveRecordDatabase({ databasePageId, databases, sessions, number
     return () => { cancelled = true; };
   }, [databasePageId, databases, sessions, ids]);
   if (!database || !projection) return <section aria-label="レコード一覧">{error ? <p role="alert">{error}</p> : <p role="status">読み込み中…</p>}</section>;
-  const records = projection.records.map((record) => sessions.get(record.pageId)?.record ?? record);
+  const recordSessions = new Map(projection.records.map((record) => [record.pageId, sessions.get(record.pageId)]));
+  const records = projection.records.map((record) => recordSessions.get(record.pageId)?.record ?? record);
+  const recordBodies: Record<string, Doc> = {};
+  for (const record of records) {
+    const session = recordSessions.get(record.pageId);
+    if (record.deletedAt === null && record.databasePageId === databasePageId &&
+        session?.record?.databasePageId === databasePageId && !session.page.documentError)
+      recordBodies[record.pageId] = session.page.doc;
+  }
   const currentRecords = new Map(records.map((record) => [record.pageId, record]));
   const states: Record<string, RecordTableState> = {};
   for (const record of records) {
-    const session = sessions.get(record.pageId);
+    const session = recordSessions.get(record.pageId);
     states[record.pageId] = {status: session?.state ?? 'blocked', error: session?.error,
       editable: !!session && session.record?.databasePageId === databasePageId};
   }
@@ -89,19 +98,22 @@ export function LiveRecordDatabase({ databasePageId, databases, sessions, number
     <DatabaseSettingsPanel settings={projection.settings} status={database.state} error={database.error}
       filterInputTexts={filterInputTexts} onFilterInputTextChange={onFilterInputTextChange}
       onIntent={(intent) => {try {databases.editSettings(database.handle, intent); void databases.flush(databasePageId);} catch (error) {onError(error);}}}
-      onResolve={() => void databases.resolve(databasePageId)} />
-    <div className="r5-database-actions">
-      <button type="button" onClick={onCreateRecord} disabled={creatingRecord || ['unknown','conflict','blocked'].includes(database.state)}><Plus size={15} />新規行</button>
+      onResolve={() => void databases.resolve(databasePageId)}
+      toolbarActions={<>
+        <button type="button" onClick={onOpenProperties}>列の設定</button>
+        <button type="button" className="r7-new-record" onClick={onCreateRecord} disabled={creatingRecord || ['unknown','conflict','blocked'].includes(database.state)}><Plus size={15} />新規行</button>
+      </>} />
+    {(creatingRecord || latestCreated) && <div className="r5-database-actions">
       {creatingRecord && <p role="status">行を追加中…</p>}
       {latestCreated && <button type="button" onClick={() => onOpenRecord(latestCreated)}>追加したページを開く</button>}
       {latestCreated && !visibleRecords(display).some((record) => record.pageId === latestCreated) &&
         <p>追加した行は現在のフィルター条件では表示されません。</p>}
-    </div>
+    </div>}
     {error && <p role="alert">{error}</p>}
     {display.view.type === 'table' ? display.view.groupBy ?
       <div className="r5-record-groups">{groupedRecords(display).map((group) => <section key={group.key} aria-label={`グループ ${group.label || '未設定'}`}>
         <h4>{group.label || '未設定'} <small>{group.records.length}</small></h4>{table(group.records)}</section>)}</div> : table(visibleRecords(display)) :
       <DatabasePresentation databasePageId={databasePageId} value={{...projection, records}} callbacks={callbacks}
-        controlledViewId={projection.settings.activeViewId} hideNavigation readOnly />}
+        controlledViewId={projection.settings.activeViewId} recordBodies={recordBodies} hideNavigation readOnly />}
   </section>;
 }

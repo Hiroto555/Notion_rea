@@ -1,0 +1,197 @@
+.common-dialog.workspace-backup-dialog {
+  box-sizing: border-box;
+  width: min(680px, calc(100vw - 48px));
+  max-height: calc(100vh - 48px);
+  padding: 24px;
+  overflow: auto;
+}
+
+.workspace-backup-body {
+  display: grid;
+  gap: 16px;
+}
+
+.workspace-backup-dialog header,
+.workspace-backup-dialog footer {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.workspace-backup-dialog header {
+  justify-content: space-between;
+}
+
+.workspace-backup-dialog h2 {
+  margin: 0;
+  font-size: 20px;
+}
+
+.workspace-backup-dialog h3 {
+  margin: 0 0 8px;
+  font-size: 16px;
+}
+
+.workspace-backup-dialog h4 {
+  margin: 16px 0 8px;
+  font-size: 13px;
+  color: var(--text-soft);
+}
+
+.workspace-backup-dialog p {
+  margin: 0;
+  line-height: 1.7;
+  overflow-wrap: anywhere;
+}
+
+.workspace-backup-dialog header > button {
+  padding: 6px;
+}
+
+.workspace-backup-intro {
+  font-size: 15px;
+}
+
+.workspace-backup-caution {
+  border-inline-start: 3px solid var(--warning);
+  padding-inline-start: 12px;
+  color: var(--text-soft);
+}
+
+.workspace-backup-note {
+  border-inline-start: 3px solid var(--line-strong);
+  padding-inline-start: 12px;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.workspace-backup-section {
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--panel);
+  padding: 16px;
+}
+
+.workspace-backup-section > p + p {
+  margin-top: 8px;
+}
+
+.workspace-backup-source {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  padding: 0 8px;
+  border-radius: var(--radius-xs);
+  background: var(--accent-soft);
+  color: var(--accent-strong);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.workspace-backup-summary {
+  display: grid;
+  gap: 10px;
+  margin: 14px 0 0;
+}
+
+.workspace-backup-summary > div {
+  display: grid;
+  grid-template-columns: 6em minmax(0, 1fr);
+  gap: 12px;
+  align-items: baseline;
+}
+
+.workspace-backup-summary dt {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.workspace-backup-summary dd {
+  margin: 0;
+  min-width: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+.workspace-backup-path {
+  display: block;
+  box-sizing: border-box;
+  max-width: 100%;
+  padding: 6px 8px;
+  overflow-wrap: anywhere;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-xs);
+  background: var(--surface);
+  color: var(--muted);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.workspace-backup-destination {
+  margin: 8px 0 12px;
+  color: var(--text);
+}
+
+.workspace-backup-counts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 6px 18px;
+  margin: 0;
+}
+
+.workspace-backup-counts > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding-bottom: 4px;
+  border-bottom: 1px dashed var(--line);
+}
+
+.workspace-backup-counts dt {
+  color: var(--text-soft);
+  font-size: 13px;
+}
+
+.workspace-backup-counts dd {
+  margin: 0;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.workspace-backup-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.workspace-backup-actions button:not(.primary) {
+  border: 1px solid var(--line-strong);
+  padding: 7px 12px;
+}
+
+.workspace-backup-status {
+  min-height: 1.7em;
+  color: var(--text-soft);
+}
+
+.workspace-backup-error {
+  border-inline-start: 3px solid var(--danger);
+  padding-inline-start: 12px;
+  color: var(--danger);
+}
+
+.workspace-backup-dialog footer {
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  margin-top: 4px;
+}
+
+.workspace-backup-dialog footer button {
+  border: 1px solid var(--line-strong);
+  padding: 7px 12px;
+}
+
+.workspace-backup-body[aria-busy="true"] {
+  cursor: progress;
+}

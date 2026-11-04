@@ -1,3 +1,4 @@
+import { openR7Settings } from "./r5-fixture";
 import {
   expect,
   test,
@@ -241,11 +242,7 @@ async function assertResolvedOnce(
   ).toHaveLength(0);
 }
 async function options(window: Page) {
-  const details = r5Settings(window).locator("details");
-  if (
-    !(await details.evaluate((element) => (element as HTMLDetailsElement).open))
-  )
-    await details.locator("summary").click();
+  await openR7Settings(window, 'filter');
 }
 
 for (const lane of ["page", "record"] as const) {
@@ -490,10 +487,12 @@ test("SIGKILL after settings COMMIT preserves later view input without replaying
     const owner = await createR5Database(window, "R6 settings owner");
     await settled(window, data);
     await gate(app, { type: "database:commit", kind: "updateDatabase" });
+    await openR7Settings(window, 'view-options');
     await r5Settings(window)
       .getByLabel("ビュー名", { exact: true })
       .fill("R6 committed view");
     const committed = await held(app);
+    await openR7Settings(window, 'view-options');
     await r5Settings(window)
       .getByLabel("ビュー名", { exact: true })
       .fill("R6 latest view");
@@ -553,12 +552,15 @@ test("SIGKILL retains incomplete record and numeric-filter '-' as raw input with
     await row.getByLabel("見積 R6 raw record", { exact: true }).fill("7");
     await r5Saved(window);
     await options(window);
+    await openR7Settings(window, 'filter');
     await r5Settings(window)
       .getByRole("button", { name: "条件を追加 1", exact: true })
       .click();
+    await openR7Settings(window, 'filter');
     await r5Settings(window)
       .getByLabel("フィルター対象 1.1", { exact: true })
       .selectOption({ label: "見積" });
+    await openR7Settings(window, 'filter');
     await r5Settings(window)
       .getByLabel("フィルター値 1.1", { exact: true })
       .fill("7");
@@ -566,6 +568,7 @@ test("SIGKILL retains incomplete record and numeric-filter '-' as raw input with
     await settled(window, data);
     const baseline = await r5Database(window, owner.id);
     await row.getByLabel("見積 R6 raw record", { exact: true }).fill("-");
+    await openR7Settings(window, 'filter');
     await r5Settings(window)
       .getByLabel("フィルター値 1.1", { exact: true })
       .fill("-");
@@ -617,9 +620,11 @@ test("SIGKILL retains incomplete record and numeric-filter '-' as raw input with
     await expect(
       r5Settings(window).getByLabel("フィルター値 1.1", { exact: true }),
     ).toHaveValue("-");
+    await openR7Settings(window, 'filter');
     await r5Settings(window)
       .getByLabel("フィルター条件を削除 1.1", { exact: true })
       .click();
+    await window.keyboard.press("Escape");
     await openR5Record(window, "R6 raw record");
     await expect(
       window.locator(".r3-record-page").getByLabel("見積", { exact: true }),

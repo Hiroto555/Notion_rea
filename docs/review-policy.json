@@ -40,6 +40,14 @@
     "docs/parallel/ui/evidence/ui-light-960x700.png": {
       "sha256": "2288c6c98a0848e9bfbb4f0e49a67018d878d09452f740b67deedee46a634a69",
       "provenance": "Visually reviewed 2026-10-27; synthetic isolated E2E data. See docs/parallel/ui/evidence/MANIFEST.json and UI-V2-REPORT.md."
+    },
+    "docs/screenshots/folio-w3-light.png": {
+      "sha256": "4aa17b5afce142ef3b98a7622a9843bd8c754ae38c8caadb981b6d220146b75f",
+      "provenance": "Visually reviewed 2026-11-04; actual W3 Electron build and isolated synthetic demo. No real user data. See docs/W3-CHECKPOINT.md."
+    },
+    "docs/screenshots/folio-w3-dark.png": {
+      "sha256": "90a6f10127225039254c8e00e96f7a40ac736b85eb0f94273c701735f747ebb5",
+      "provenance": "Visually reviewed 2026-11-04; actual W3 Electron build and isolated synthetic demo. No real user data. See docs/W3-CHECKPOINT.md."
     }
   },
   "approvedEmailHashes": {

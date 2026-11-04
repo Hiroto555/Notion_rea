@@ -1,3 +1,4 @@
+import { openR7Settings } from "./r5-fixture";
 import { expect, test, type ElectronApplication } from "@playwright/test";
 import {
   addR5Record,
@@ -45,45 +46,58 @@ test("UI view creation, rename, switch, typed filters, sort and grouping persist
       await r5Saved(window);
     }
     let settings = r5Settings(window);
+    await openR7Settings(window, 'view-options');
     await settings.getByLabel("ビュー名", { exact: true }).fill("Qualified");
-    await settings
-      .getByText("フィルター・並べ替え・グループ", { exact: true })
-      .click();
+    await openR7Settings(window, 'filter');
+    await openR7Settings(window, 'filter');
     await settings
       .getByRole("button", { name: "条件を追加 1", exact: true })
       .click();
+    await openR7Settings(window, 'filter');
     await settings
       .getByLabel("フィルター対象 1.1", { exact: true })
       .selectOption({ label: "メモ" });
+    await openR7Settings(window, 'filter');
     await settings
       .getByLabel("フィルター演算子 1.1", { exact: true })
       .selectOption("contains");
+    await openR7Settings(window, 'filter');
     await settings.getByLabel("フィルター値 1.1", { exact: true }).fill("keep");
+    await openR7Settings(window, 'filter');
     await settings
       .getByRole("button", { name: "条件を追加 1", exact: true })
       .click();
+    await openR7Settings(window, 'filter');
     await settings
       .getByLabel("フィルター対象 1.2", { exact: true })
       .selectOption({ label: "見積" });
+    await openR7Settings(window, 'filter');
     await settings
       .getByLabel("フィルター演算子 1.2", { exact: true })
       .selectOption("greater_than_or_equal");
+    await openR7Settings(window, 'filter');
     await settings.getByLabel("フィルター値 1.2", { exact: true }).fill("3");
+    await openR7Settings(window, 'filter');
     await settings
       .getByRole("button", { name: "条件を追加 1", exact: true })
       .click();
+    await openR7Settings(window, 'filter');
     await settings
       .getByLabel("フィルター対象 1.3", { exact: true })
       .selectOption({ label: "完了" });
+    await openR7Settings(window, 'filter');
     await settings
       .getByLabel("フィルター演算子 1.3", { exact: true })
       .selectOption("is_checked");
+    await openR7Settings(window, 'sort');
     await settings
       .getByRole("button", { name: "並べ替えを追加", exact: true })
       .click();
+    await openR7Settings(window, 'sort');
     await settings
       .getByLabel("並べ替え対象 1", { exact: true })
       .selectOption({ label: "見積" });
+    await openR7Settings(window, 'sort');
     await settings
       .getByLabel("並べ替え方向 1", { exact: true })
       .selectOption("desc");
@@ -98,16 +112,20 @@ test("UI view creation, rename, switch, typed filters, sort and grouping persist
     ).toEqual([records[1].pageId, records[2].pageId]);
     // Checkbox filtering is exercised independently, not inferred from the
     // two rows which also satisfy the text and numeric predicates.
+    await openR7Settings(window, 'filter');
     await settings
       .getByLabel("フィルター演算子 1.3", { exact: true })
       .selectOption("is_not_checked");
     await expect(window.locator("tr[data-record-id]")).toHaveCount(0);
+    await openR7Settings(window, 'filter');
     await settings
       .getByLabel("フィルター演算子 1.3", { exact: true })
       .selectOption("is_checked");
+    await openR7Settings(window, 'sort');
     await settings
       .getByLabel("グループの対象", { exact: true })
       .selectOption({ label: "メモ" });
+    await openR7Settings(window, 'sort');
     await settings
       .getByLabel("グループの順序", { exact: true })
       .selectOption("desc");
@@ -124,6 +142,7 @@ test("UI view creation, rename, switch, typed filters, sort and grouping persist
     await settings
       .getByLabel("ビューを追加", { exact: true })
       .selectOption("table");
+    await openR7Settings(window, 'view-options');
     await settings.getByLabel("ビュー名", { exact: true }).fill("All rows");
     await r5SettingsSaved(window);
     await expect(window.locator("tr[data-record-id]")).toHaveCount(3);
@@ -191,9 +210,7 @@ test("UI view creation, rename, switch, typed filters, sort and grouping persist
       .getByRole("tab", { name: "ビュー: Qualified", exact: true })
       .click();
     await expect(window.locator("tr[data-record-id]")).toHaveCount(2);
-    await settings
-      .getByText("フィルター・並べ替え・グループ", { exact: true })
-      .click();
+    await openR7Settings(window, 'filter');
     await expect(
       settings.getByLabel("フィルター値 1.1", { exact: true }),
     ).toHaveValue("keep");
@@ -226,6 +243,7 @@ test("held settings ACK preserves later settings and owner title through navigat
     const owner = await createR5Database(window);
     const baseline = await r5Database(window, owner.id);
     await gateR5Database(app, "updateDatabase", "held");
+    await openR7Settings(window, 'view-options');
     await r5Settings(window)
       .getByLabel("ビュー名", { exact: true })
       .fill("Held view");
@@ -299,6 +317,7 @@ test("unknown settings retain their identity across navigation and resolve witho
     const owner = await createR5Database(window);
     const baseline = await r5Database(window, owner.id);
     await gateR5Database(app, "updateDatabase", "lost");
+    await openR7Settings(window, 'view-options');
     await r5Settings(window)
       .getByLabel("ビュー名", { exact: true })
       .fill("Unknown view");
@@ -399,6 +418,7 @@ test("external owner revision conflicts with local settings without promoting th
     );
     expect(external.status).toBe("applied");
     await gateR5Database(app, "updateDatabase", "held");
+    await openR7Settings(window, 'view-options');
     await r5Settings(window)
       .getByLabel("ビュー名", { exact: true })
       .fill("Local retained view");

@@ -1,7 +1,8 @@
 .r5-settings {
   color: var(--text);
-  margin: 18px 0;
+  margin: 12px 0;
   font-size: 13px;
+  min-width: 0;
 }
 .r5-settings-controls {
   min-width: 0;
@@ -9,7 +10,8 @@
   padding: 0;
   border: 0;
 }
-.r5-visually-hidden {
+.r5-visually-hidden,
+.r7-visually-hidden {
   position: absolute;
   width: 1px;
   height: 1px;
@@ -20,6 +22,7 @@
 .r5-settings-status {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 8px;
   min-height: 26px;
   color: var(--muted);
@@ -28,31 +31,67 @@
 .r5-settings-status [role="alert"] {
   color: var(--warning);
 }
+.r5-settings-status button {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 7px;
+  font-size: 11px;
+  color: var(--text-soft);
+}
+
+/* Main controls ---------------------------------------------------------- */
+.r7-settings-main {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+.r7-view-row {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  min-width: 0;
+}
 .r5-view-tabs {
   display: flex;
+  flex: 1 1 auto;
+  min-width: 0;
   overflow-x: auto;
   gap: 4px;
   border-bottom: 1px solid var(--line);
-  margin-bottom: 12px;
+  margin: 0;
   padding: 2px 0;
+  scrollbar-width: thin;
 }
 .r5-view-tabs button {
   flex-shrink: 0;
-  min-height: var(--row-height, 36px);
-  padding: 7px 12px;
+  min-height: var(--row-height, 32px);
+  padding: 6px 11px;
   border-radius: var(--radius-sm) var(--radius-sm) 0 0;
   color: var(--muted);
+}
+.r5-view-tabs button:hover {
+  color: var(--text-soft);
+  background: var(--hover);
 }
 .r5-view-tabs button[aria-selected="true"] {
   color: var(--text);
   background: var(--selected);
   box-shadow: inset 0 -2px var(--accent);
 }
-.r5-view-toolbar {
+.r7-view-row-actions {
   display: flex;
-  align-items: flex-end;
-  flex-wrap: wrap;
-  gap: 10px;
+  align-items: center;
+  flex: 0 0 auto;
+  gap: 6px;
+}
+.r7-add-view select {
+  width: auto;
+  max-width: 150px;
+  min-height: var(--control-height, 32px);
+  color: var(--text-soft);
+  font-size: 12px;
 }
 .r5-settings label {
   display: flex;
@@ -68,51 +107,230 @@
   color: var(--text);
   padding: 5px 8px;
 }
-.r5-view-name {
-  flex: 1 1 180px;
-}
-.r5-view-name input {
+.r7-view-name input {
   width: 100%;
 }
-.r5-view-actions {
+
+.r7-condition-row {
   display: flex;
   align-items: center;
-  gap: 2px;
+  flex-wrap: wrap;
+  gap: 8px;
+  min-width: 0;
 }
-.r5-view-actions button {
-  width: 30px;
-  height: var(--control-height, 32px);
+.r5-view-search.r7-view-search {
+  display: flex;
+  flex: 1 1 220px;
+  flex-direction: row;
+  align-items: center;
+  gap: 6px;
+  max-width: 440px;
+  margin: 0;
+  color: var(--muted);
+}
+.r7-view-search input {
+  flex: 1 1 auto;
+  width: 100%;
+  min-width: 0;
+}
+.r7-toolbar-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-inline-start: auto;
+}
+
+/* Menu triggers and popovers --------------------------------------------- */
+.r7-menu {
+  position: relative;
+  display: inline-flex;
+  flex: 0 0 auto;
+}
+.r7-menu-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: var(--control-height, 32px);
+  padding: 5px 9px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--text-soft);
+  font-size: 12px;
+  white-space: nowrap;
+}
+.r7-menu-trigger:hover {
+  background: var(--hover);
+  color: var(--text);
+}
+.r7-menu-trigger[aria-expanded="true"] {
+  color: var(--text);
+  background: var(--selected);
+  border-color: var(--selected-strong);
+}
+.r7-menu-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: var(--accent);
+  color: var(--surface);
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 1;
+}
+.r7-menu-group-mark {
+  padding: 1px 5px;
+  border-radius: 999px;
+  background: var(--panel);
+  color: var(--muted);
+  font-size: 10px;
+}
+.r7-popover {
+  position: fixed;
+  z-index: 40;
+  top: calc(100% + 6px);
+  left: 0;
+  box-sizing: border-box;
+  width: min(640px, calc(100vw - 32px));
+  max-height: min(70vh, 560px);
+  overflow: auto;
+  overscroll-behavior: contain;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  box-shadow: 0 14px 36px rgb(0 0 0 / 18%);
+}
+.r7-popover[hidden] {
+  display: none;
+}
+.r7-view-options-panel {
+  right: 0;
+  left: auto;
+  width: min(340px, calc(100vw - 32px));
+}
+.r7-panel-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+.r7-panel-heading h3 {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 600;
+}
+.r7-panel-close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
   padding: 4px;
   color: var(--muted);
 }
-.r5-view-search {
-  margin: 12px 0;
-  max-width: 480px;
-}
-.r5-display-options {
+.r7-popover section + section {
+  margin-top: 10px;
+  padding-top: 10px;
   border-top: 1px solid var(--line);
 }
-.r5-display-options summary {
-  padding: 10px 0;
-  cursor: pointer;
+.r7-popover h4 {
+  margin: 0 0 8px;
   color: var(--text-soft);
-  font-size: 12px;
-}
-.r5-display-options > section {
-  padding: 8px 0 14px;
-}
-.r5-display-options h3 {
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 600;
-  margin: 0 0 10px;
 }
-.r5-display-options button {
+.r7-popover button {
   padding: 5px 8px;
-  font-size: 12px;
   color: var(--text-soft);
+  font-size: 12px;
 }
-.r5-sort-row,
-.r5-group-row {
+.r7-option-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+.r7-option-fields input,
+.r7-option-fields select {
+  width: 100%;
+}
+.r7-option-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding-top: 10px;
+  border-top: 1px solid var(--line);
+}
+.r7-option-actions button {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+.r7-danger-action {
+  color: var(--warning) !important;
+}
+
+/* Active condition summaries --------------------------------------------- */
+.r7-active-conditions {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  min-width: 0;
+  color: var(--muted);
+  font-size: 11px;
+}
+.r7-active-label {
+  flex: 0 0 auto;
+  padding: 3px 7px;
+  border-radius: 999px;
+  background: var(--panel);
+  color: var(--text-soft);
+  font-size: 10px;
+  line-height: 1.5;
+}
+.r7-active-conditions ul {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.r7-summary-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  max-width: 100%;
+  padding: 3px 8px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--text-soft);
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+.r7-summary-chip--filter {
+  border-color: var(--selected-strong);
+}
+.r7-summary-scope,
+.r7-summary-kind {
+  flex: 0 0 auto;
+  color: var(--muted);
+  font-size: 10px;
+  white-space: nowrap;
+}
+
+/* Filter and sort controls ----------------------------------------------- */
+.r7-sort-panel .r5-sort-row,
+.r7-sort-panel .r5-group-row {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -121,8 +339,16 @@
 }
 .r5-sort-row > span {
   min-width: 16px;
-  font-size: 11px;
   color: var(--muted);
+  font-size: 11px;
+}
+.r5-sort-row select {
+  flex: 0 1 150px;
+  min-width: 0;
+  max-width: 190px;
+}
+.r7-filter-panel .db-filter-builder {
+  min-width: 0;
 }
 .r5-settings .db-filter-group > div,
 .r5-settings .db-filter-condition {
@@ -146,12 +372,65 @@
   cursor: default;
   opacity: 0.65;
 }
+
+/* Below a comfortable desktop width, large condition editors become a bottom
+ * sheet so they cannot escape the viewport from a mid-row trigger. */
+@media (max-width: 1100px) {
+  .r7-menu--filter .r7-popover,
+  .r7-menu--sort .r7-popover {
+    position: fixed;
+    top: auto;
+    right: 12px;
+    bottom: 12px;
+    left: 12px;
+    width: auto;
+    max-width: none;
+    max-height: 70vh;
+  }
+}
+
 @media (max-width: 700px) {
-  .r5-view-toolbar > label {
-    flex: 1 1 140px;
+  .r7-view-row {
+    flex-wrap: wrap;
+  }
+  .r5-view-tabs {
+    flex-basis: 100%;
+  }
+  .r7-view-row-actions {
+    margin-inline-start: auto;
+  }
+  .r7-view-search.r7-view-search {
+    flex-basis: 100%;
+    max-width: none;
+  }
+  .r7-toolbar-actions {
+    margin-inline-start: 0;
+  }
+  .r7-popover {
+    position: fixed;
+    top: auto;
+    right: 12px;
+    bottom: 12px;
+    left: 12px;
+    width: auto;
+    max-width: none;
+    max-height: 70vh;
+  }
+  .r7-active-conditions {
+    flex-direction: column;
+    align-items: stretch;
   }
   .r5-settings .db-filter-condition input,
   .r5-settings .db-filter-condition select {
     max-width: none;
+  }
+}
+
+@media (max-width: 420px) {
+  .r7-view-options .r7-trigger-text {
+    display: none;
+  }
+  .r5-sort-row select {
+    flex-basis: 120px;
   }
 }

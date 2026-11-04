@@ -1,3 +1,4 @@
+import { openR7Settings } from "./r5-fixture";
 import {
   expect,
   test,
@@ -23,9 +24,7 @@ import {
 } from "./r5-fixture";
 
 async function openOptions(window: Page) {
-  const details = r5Settings(window).locator("details");
-  if (!(await details.evaluate((node) => (node as HTMLDetailsElement).open)))
-    await details.locator("summary").click();
+  await openR7Settings(window, 'filter');
 }
 
 test("numeric filter raw input survives navigation; changing its target resets both valid and incomplete text and clears the reload guard", async () => {
@@ -38,6 +37,7 @@ test("numeric filter raw input survives navigation; changing its target resets b
     const owner = await createR5Database(window);
     await openOptions(window);
     const settings = r5Settings(window);
+    await openR7Settings(window, 'filter');
     await settings
       .getByRole("button", { name: "条件を追加 1", exact: true })
       .click();
@@ -126,6 +126,7 @@ test("continuous typing in a grouping property keeps the same focused input unti
       .fill("z");
     await r5Saved(window);
     await openOptions(window);
+    await openR7Settings(window, 'sort');
     await r5Settings(window)
       .getByLabel("グループの対象", { exact: true })
       .selectOption({ label: "メモ" });
@@ -156,6 +157,7 @@ test("continuous typing in a grouping property keeps the same focused input unti
         (element) => element === (globalThis as any).r5GroupingInput,
       ),
     ).toBe(true);
+    await openR7Settings(window, 'view-options');
     await r5Settings(window).getByLabel("ビュー名", { exact: true }).focus();
     await r5Saved(window);
     await expect(
@@ -210,8 +212,10 @@ test("board groups and gallery filtering use saved views and open the same recor
     await settings
       .getByLabel("ビューを追加", { exact: true })
       .selectOption("board");
+    await openR7Settings(window, 'view-options');
     await settings.getByLabel("ビュー名", { exact: true }).fill("R5 Board");
     await openOptions(window);
+    await openR7Settings(window, 'sort');
     await settings
       .getByLabel("グループの対象", { exact: true })
       .selectOption({ label: "完了" });
@@ -227,6 +231,7 @@ test("board groups and gallery filtering use saved views and open the same recor
         .getByRole("region", { name: "グループ 未チェック", exact: true })
         .getByRole("button", { name: "開く R5 card B", exact: true }),
     ).toBeVisible();
+    await window.keyboard.press("Escape");
     await openR5Record(window, "R5 card A");
     await window
       .getByRole("button", { name: "レコードを閉じる", exact: true })
@@ -234,6 +239,7 @@ test("board groups and gallery filtering use saved views and open the same recor
     await settings
       .getByLabel("ビューを追加", { exact: true })
       .selectOption("gallery");
+    await openR7Settings(window, 'view-options');
     await settings.getByLabel("ビュー名", { exact: true }).fill("R5 Gallery");
     await settings
       .getByLabel("ビュー内検索", { exact: true })
