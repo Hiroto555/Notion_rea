@@ -1,0 +1,14 @@
+[
+  {
+    "path": "folio-w3-light.png",
+    "sha256": "4aa17b5afce142ef3b98a7622a9843bd8c754ae38c8caadb981b6d220146b75f",
+    "source": "scripts/r9-screenshots.mjs; synthetic W3 demo",
+    "captured": "2026-11-04"
+  },
+  {
+    "path": "folio-w3-dark.png",
+    "sha256": "90a6f10127225039254c8e00e96f7a40ac736b85eb0f94273c701735f747ebb5",
+    "source": "scripts/r9-screenshots.mjs; synthetic W3 demo",
+    "captured": "2026-11-04"
+  }
+]

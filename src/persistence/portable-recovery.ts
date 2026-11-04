@@ -79,6 +79,7 @@ const pageSchemaV4 = pageSchema
     recoveredFrom: recoveredFromSchema.optional(),
   })
   .strict();
+const pageSchemaV5 = pageSchemaV4.extend({ width: z.enum(["standard", "wide"]).optional() }).strict();
 const recordSchema = z
   .object({
     pageId: idSchema,
@@ -122,6 +123,24 @@ const bundleSchema = z.discriminatedUnion("schemaVersion", [
       ...bundleBase,
       schemaVersion: z.literal(4),
       pages: z.array(pageSchemaV4).min(1).max(10000),
+      records: z.array(recordSchema).max(10000),
+      databaseMembers: z
+        .array(
+          z
+            .object({
+              databasePageId: idSchema,
+              pageIds: z.array(idSchema).max(10000),
+            })
+            .strict(),
+        )
+        .max(10000),
+    })
+    .strict(),
+  z
+    .object({
+      ...bundleBase,
+      schemaVersion: z.literal(5),
+      pages: z.array(pageSchemaV5).min(1).max(10000),
       records: z.array(recordSchema).max(10000),
       databaseMembers: z
         .array(
@@ -227,7 +246,7 @@ function references(
     stack.push(...(node.content ?? []));
   }
 }
-function portablePage(page: Page, formatVersion: 3 | 4): PortablePage {
+function portablePage(page: Page, formatVersion: 3 | 4 | 5): PortablePage {
   if (
     page.documentError ||
     page.deletedAt !== null ||
@@ -247,8 +266,11 @@ function portablePage(page: Page, formatVersion: 3 | 4): PortablePage {
     doc,
     database,
   };
+  if (page.width !== undefined && formatVersion !== 5)
+    throw new Error("ページの幅を含む退避には新しい混合退避形式か全体バックアップを使用してください。原本を保持しています。");
   if (formatVersion === 3) return pageSchema.parse(portable);
-  return pageSchemaV4.parse({
+  return (formatVersion === 5 ? pageSchemaV5 : pageSchemaV4).parse({
+    ...(page.width === undefined ? {} : {width: page.width}),
     ...portable,
     position: page.position,
     createdAt: page.createdAt,
@@ -267,6 +289,7 @@ const pageFields = new Set([
   "icon",
   "cover",
   "favorite",
+  "width",
   "doc",
   "database",
   "position",
@@ -367,8 +390,12 @@ export function exportMixedPortableRecovery(
     )
   )
     throw invalid();
-  const capture = () =>
-    exportPortableGeneration(store, assetsPath, generation, 4);
+  const capture = () => {
+    const usesWidth = store.pages().some(page => page.width !== undefined) ||
+      [...generation.normalPages, ...generation.records].some(entry => entry.page.width !== undefined) ||
+      Object.values(generation.ownerPatches ?? {}).some(entry => entry.patch.width !== undefined);
+    return exportPortableGeneration(store, assetsPath, generation, usesWidth ? 5 : 4);
+  };
   // Keep membership, pages and metadata on one SQLite snapshot. The caller
   // must still exclude workspace/asset writes and freeze pending edits; this
   // read transaction is not a workspace-wide lock.
@@ -389,7 +416,7 @@ function exportPortableGeneration(
   store: Store,
   assetsPath: string,
   generation: PortableGeneration,
-  formatVersion: 3 | 4,
+  formatVersion: 3 | 4 | 5,
 ): string {
   const {
     normalPages,
@@ -434,18 +461,18 @@ function exportPortableGeneration(
     }
     if (!raw || typeof raw !== "object" || Array.isArray(raw)) throw invalid();
     if (
-      formatVersion === 4 &&
+      formatVersion !== 3 &&
       Object.keys(raw).some((key) => !pageFields.has(key))
     )
       throw invalid();
     if (
-      formatVersion === 4 &&
+      formatVersion !== 3 &&
       !recoveredFromSchema
         .optional()
         .safeParse((raw as Record<string, unknown>).recoveredFrom).success
     )
       throw invalid();
-    if (formatVersion === 4) {
+    if (formatVersion !== 3) {
       const source = raw as Record<string, unknown>;
       const timestamp = z.number().finite().nonnegative();
       if (
@@ -554,7 +581,7 @@ function exportPortableGeneration(
       db.deletedAt !== null ||
       db.database.rows.length ||
       !hasTable ||
-      (formatVersion === 4 &&
+      (formatVersion !== 3 &&
         !store.db
           .prepare("SELECT 1 FROM record_databases WHERE database_page_id=?")
           .get(id))
@@ -565,10 +592,10 @@ function exportPortableGeneration(
       throw invalid();
     const hasOwnerPatch = Object.hasOwn(ownerPatches, id);
     const suppliedOwner = hasOwnerPatch ? ownerPatches[id] : undefined;
-    if (formatVersion === 4 && hasOwnerPatch && suppliedOwner === undefined)
+    if (formatVersion !== 3 && hasOwnerPatch && suppliedOwner === undefined)
       throw invalid();
     let patch: PagePatch = {};
-    if (formatVersion === 4 && suppliedOwner !== undefined) {
+    if (formatVersion !== 3 && suppliedOwner !== undefined) {
       const draft = suppliedOwner as LocalOwnerPatch;
       if (
         !draft ||
@@ -609,16 +636,16 @@ function exportPortableGeneration(
     dbIds.add(id);
   };
   for (const id of settingsById.keys()) addOwner(id);
-  if (formatVersion === 4)
+  if (formatVersion !== 3)
     for (const id of Object.keys(ownerPatches)) addOwner(id);
   for (const draft of drafts) {
-    if (formatVersion === 4 && draft && !Object.hasOwn(draft, "baseRevision"))
+    if (formatVersion !== 3 && draft && !Object.hasOwn(draft, "baseRevision"))
       throw new Error(
         "レコードの観測 revision がありません。未保存変更を保持しています。",
       );
     if (
       !draft ||
-      (formatVersion === 4 &&
+      (formatVersion !== 3 &&
         (![Object.prototype, null].includes(Object.getPrototypeOf(draft)) ||
           !["page", "baseValues", "baseRevision"].every((key) =>
             Object.hasOwn(draft, key),
@@ -631,7 +658,7 @@ function exportPortableGeneration(
           ))) ||
       !draft.page ||
       supplied.has(draft.page.id) ||
-      (formatVersion === 4 &&
+      (formatVersion !== 3 &&
         Object.keys(draft.page).some((key) => !pageFields.has(key)))
     )
       throw invalid();
@@ -641,7 +668,7 @@ function exportPortableGeneration(
       canonical = store.get(page.id),
       projection = repo.projection(page.id);
     if (
-      formatVersion === 4 &&
+      formatVersion !== 3 &&
       (!Number.isSafeInteger(draft.baseRevision) ||
         draft.baseRevision !== projection.revision ||
         draft.page.revision !== draft.baseRevision ||
@@ -657,12 +684,12 @@ function exportPortableGeneration(
       page.database !== null ||
       canonical.documentError ||
       canonical.deletedAt !== null ||
-      (formatVersion === 4 && draft.page.position !== canonical.position) ||
-      (formatVersion === 4 && draft.page.parentId !== canonical.parentId) ||
-      (formatVersion === 4 &&
+      (formatVersion !== 3 && draft.page.position !== canonical.position) ||
+      (formatVersion !== 3 && draft.page.parentId !== canonical.parentId) ||
+      (formatVersion !== 3 &&
         (draft.page.createdAt !== canonical.createdAt ||
           draft.page.updatedAt !== canonical.updatedAt)) ||
-      (formatVersion === 4 &&
+      (formatVersion !== 3 &&
         !sameProvenance(draft.page.recoveredFrom, canonical.recoveredFrom)) ||
       projection.deletedAt !== null
     )
@@ -694,7 +721,7 @@ function exportPortableGeneration(
   for (const ownerId of Object.keys(ownerPatches))
     if (!dbIds.has(ownerId)) throw invalid();
   const databaseMembers: { databasePageId: string; pageIds: string[] }[] = [];
-  if (formatVersion === 4) {
+  if (formatVersion !== 3) {
     // A restored owner must never look complete when one of its records was
     // omitted. This includes trashed members: the current format cannot encode
     // their trash state, so the caller must retain the draft and fail closed.
@@ -767,7 +794,7 @@ function exportPortableGeneration(
       !meta ||
       meta.id !== id ||
       meta.storageName !== id ||
-      (formatVersion === 4 && !assetMetadataSchema.safeParse(meta).success)
+      (formatVersion !== 3 && !assetMetadataSchema.safeParse(meta).success)
     )
       throw invalid();
     const path = join(assetsPath, id),
@@ -795,7 +822,7 @@ function exportPortableGeneration(
     pages: [...pages.values()],
     records,
     assets,
-    ...(formatVersion === 4 ? { databaseMembers } : {}),
+    ...(formatVersion !== 3 ? { databaseMembers } : {}),
   });
   parsePortableRecordRecovery(content);
   return content;
@@ -850,7 +877,7 @@ export function parsePortableRecordRecovery(content: string): Bundle {
       throw invalid();
     records.add(row.pageId);
   }
-  if (bundle.schemaVersion === 4) {
+  if (bundle.schemaVersion !== 3) {
     const manifests = new Map<string, Set<string>>();
     for (const entry of bundle.databaseMembers) {
       const owner = pages.get(entry.databasePageId),
@@ -1082,6 +1109,7 @@ function rewritePortablePage(
   | "icon"
   | "cover"
   | "favorite"
+  | "width"
   | "doc"
   | "database"
 > {

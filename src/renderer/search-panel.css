@@ -1,0 +1,47 @@
+/* Search result match context and safe React-text highlights. */
+.search-results mark {
+  color: inherit;
+  background: color-mix(in srgb, var(--accent-soft) 72%, var(--accent) 28%);
+  border-radius: 2px;
+  padding: 0 1px;
+}
+
+.result-match {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.result-match-kind {
+  flex: none;
+  color: var(--accent-strong);
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.result-match-text {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.result-detail {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.result-warning {
+  flex: none;
+  color: var(--warning);
+}
+
+.result-detail .result-match {
+  min-width: 0;
+  overflow: hidden;
+}

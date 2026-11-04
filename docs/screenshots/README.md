@@ -1,5 +1,15 @@
 # 主要画面
 
+## W3：2026-11-04
+
+専用の合成データを実Electronで開き、目視確認した無加工の画面です。[W3 manifest](w3-manifest.json) にSHA-256を保存しています。
+
+![W3 Calloutと簡易表](folio-w3-light.png)
+
+![W3 ダークテーマ・狭いウィンドウ](folio-w3-dark.png)
+
+## 過去の画面：2026-10-26
+
 2026-10-26の実Electron Playwrightテストで取得した画像を無加工でコピーしました。Notionの画面・実ユーザーデータは含めず、Folioの独自サンプルとテスト入力のみです。3画像を目視確認し、[manifest](manifest.json) に元ファイル名とSHA-256を保存しています。
 
 ## ページ編集・3カラム・Light

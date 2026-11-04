@@ -1,3 +1,8 @@
+import { RichBlockControls } from "./RichBlockControls";
+import "./rich-blocks.css";
+import { RichStructureGuard } from "./rich-structure-guard";
+import { assertSupportedRichHTML } from "../document-io/rich-html-guard";
+import { versionDocument } from "../shared/rich-document";
 import {
   useEffect,
   useRef,
@@ -48,6 +53,8 @@ type Command = {
   run: (chain: ChainedCommands) => ChainedCommands;
 };
 const commands: Command[] = [
+  {name: "簡易表", hint: "本文に3行・3列の表を追加", key: "table 表", run: chain => chain.insertSimpleTable()},
+  {name: "コールアウト", hint: "メモ・ヒント・注意を目立たせる", key: "callout メモ 注意", run: chain => chain.setCallout()},
   {
     name: "テキスト",
     hint: "シンプルな文章",
@@ -205,7 +212,7 @@ export function Editor({
     setSlash(null);
   }
   const editor = useEditor({
-    extensions: extensions(),
+    extensions: [...extensions(), RichStructureGuard.configure({onRejected: () => onError("この操作では表の形を保てません。内容を保持しています。")})],
     content: doc,
     editable,
     enableContentCheck: true,
@@ -220,6 +227,9 @@ export function Editor({
       });
     },
     editorProps: {
+      // Let native IME confirmation continue without running any editor keymap.
+      // handleDOMEvents does not preventDefault when it returns true.
+      handleDOMEvents: {keydown: (_view, event) => composing(event)},
       attributes: {
         class: "folio-editor",
         "aria-label": "ページ本文",
@@ -255,7 +265,7 @@ export function Editor({
     },
     onUpdate: ({ editor: e }) => {
       if (!invalid.current)
-        changeRef.current({ ...e.getJSON(), schemaVersion: 1 } as Doc);
+        changeRef.current(versionDocument(e.getJSON() as Doc));
     },
     onSelectionUpdate: () => {
       setSelected([]);
@@ -306,6 +316,9 @@ export function Editor({
       }[] = [];
       editor.state.doc.descendants((node, pos, parent, index) => {
         if (parent?.type.name === "doc" || !node.attrs.id) return;
+        // Cell editing has dedicated controls. Paragraph handles would cover
+        // adjacent cells and expose generic operations on table internals.
+        if (["tableCell", "tableHeader"].includes(parent?.type.name ?? "")) return;
         if (!(
           node.isTextblock ||
           node.isAtom ||
@@ -442,6 +455,7 @@ export function Editor({
         action === "before"
           ? editNestedBlock(editor.getJSON() as Doc, id, action, beforeId)
           : editNestedSiblings(editor.getJSON() as Doc, selectedIds, action);
+      if (!validDocument(changed)) throw new Error("この操作では表の形を保てません。内容を保持しています。");
       const next = editor.schema.nodeFromJSON(changed);
       next.check();
       if (next.eq(editor.state.doc)) return;
@@ -591,6 +605,14 @@ export function Editor({
     if (!editor) return;
     if (!event.clipboardData.types.includes(BLOCK_CLIPBOARD_TYPE)) {
       clipboard.forget();
+      try {
+        const html = event.clipboardData.getData("text/html");
+        assertSupportedRichHTML(html);
+        const {$from} = editor.state.selection;
+        if (/<table\b/i.test(html) && Array.from({length:$from.depth}, (_,i)=>$from.node(i+1).type.name).some(name=>name === "tableCell" || name === "tableHeader"))
+          throw new Error("表全体はセルの中に貼り付けられません。表の外に貼り付けてください。内容を保持しています。");
+      }
+      catch (error) { event.preventDefault(); event.stopPropagation(); onError(error); }
       return;
     }
     event.preventDefault();
@@ -614,8 +636,14 @@ export function Editor({
   function selectNestedAtCursor() {
     if (!editor) return;
     const $from = editor.state.selection.$from;
-    for (let depth = $from.depth; depth >= 2; depth--) {
+    for (let depth = $from.depth; depth >= 1; depth--) {
       const node = $from.node(depth);
+      if (["tableRow", "tableCell", "tableHeader"].includes(node.type.name) ||
+          ["tableCell", "tableHeader"].includes($from.node(depth - 1).type.name)) continue;
+      if (depth === 1) {
+        if (node.type.name === "table" && typeof node.attrs.id === "string") {setSelected([node.attrs.id]); setNestedSelected(null);}
+        return;
+      }
       if (node.isBlock && typeof node.attrs.id === "string") {
         const path = Array.from({ length: depth }, (_, index) =>
           $from.index(index),
@@ -708,6 +736,7 @@ export function Editor({
         </button>
         <small>Markdown · / コマンド</small>
       </div>
+      <RichBlockControls editor={editor} disabled={invalid.current || !editable} onError={onError} />
       {selected.length > 0 && (
         <div className="block-actions">
           <span>{selected.length} ブロック</span>
@@ -803,6 +832,15 @@ export function Editor({
         onCopy={(event) => copySelected(event, "copy")}
         onCut={(event) => copySelected(event, "cut")}
         onPasteCapture={pasteBlocks}
+        onDropCapture={(event) => {
+          try {
+            const html = event.dataTransfer.getData("text/html");
+            assertSupportedRichHTML(html);
+            if (/<table\b/i.test(html) && event.target instanceof Element && event.target.closest("td, th"))
+              throw new Error("表全体はセルの中に移動できません。内容を保持しています。");
+          }
+          catch (error) { event.preventDefault(); event.stopPropagation(); onError(error); }
+        }}
         onKeyDown={(event) => {
           if (event.defaultPrevented || composing(event.nativeEvent)) return;
           if ((selected.length || nestedSelected) && event.key === "Escape") {

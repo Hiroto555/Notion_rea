@@ -1043,6 +1043,7 @@ function validateReadPage(page: Page, record: RecordProjection): Page {
     "kind",
     "database",
     "favorite",
+    "width",
     "createdAt",
     "updatedAt",
     "revision",
@@ -1074,6 +1075,7 @@ function validateReadPage(page: Page, record: RecordProjection): Page {
     page.kind !== "page" ||
     page.database !== null ||
     typeof page.favorite !== "boolean" ||
+    (page.width !== undefined && page.width !== "standard" && page.width !== "wide") ||
     !validTime(page.createdAt) ||
     !validTime(page.updatedAt) ||
     page.revision !== record.revision ||

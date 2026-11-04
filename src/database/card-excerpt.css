@@ -1,0 +1,19 @@
+/* Plain-text body preview on read-only board/gallery cards. */
+.r3-card-excerpt {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  overflow: hidden;
+  margin: 4px 12px 12px;
+  padding: 0;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+  /* Preserve the paragraph separators produced by the plain-text extractor. */
+  white-space: pre-line;
+}
+
+.r3-gallery .r3-card-excerpt {
+  margin-bottom: 10px;
+}

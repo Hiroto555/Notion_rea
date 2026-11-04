@@ -1,12 +1,13 @@
 import { it, expect } from "vitest";
 import { execFileSync } from "node:child_process";
-import { mkdtempSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
 import { resolve, join } from "node:path";
 import { createRequire } from "node:module";
 import { build } from "esbuild";
 import { validDocument } from "../src/shared/validation";
 
 it("the baseline validator accepts legacy content and rejects new ID attributes instead of silently reading them", async () => {
+  mkdirSync(resolve("output/agent-workspace/evidence"), { recursive: true });
   const dir = mkdtempSync(
     resolve("output/agent-workspace/evidence/legacy-validator-"),
   );

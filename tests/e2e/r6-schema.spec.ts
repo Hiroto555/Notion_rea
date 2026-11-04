@@ -1,3 +1,4 @@
+import { openR7Settings } from "./r5-fixture";
 import { expect, test, type ElectronApplication, type Page } from "@playwright/test";
 import type { Property } from "../../src/shared/types";
 import type { SaveResult } from "../../src/shared/save-contract";
@@ -154,9 +155,12 @@ test("nonconvertible values and dependent view filters reject visibly without ch
     await window.locator(`tr[data-record-id="${record.pageId}"]`).getByLabel("メモ Invalid value row", {exact: true}).fill("12");
     await r5Saved(window);
     const settings = r5Settings(window);
-    await settings.getByText("フィルター・並べ替え・グループ", {exact: true}).click();
+    await openR7Settings(window, 'filter');
+    await openR7Settings(window, 'filter');
     await settings.getByRole("button", {name: "条件を追加 1", exact: true}).click();
+    await openR7Settings(window, 'filter');
     await settings.getByLabel("フィルター対象 1.1", {exact: true}).selectOption("note");
+    await openR7Settings(window, 'filter');
     await settings.getByLabel("フィルター値 1.1", {exact: true}).fill("12");
     await r5SettingsSaved(window);
     const filtered = await r5Database(window, owner.id);

@@ -24,6 +24,11 @@ export const BLOCK_TYPES = [
   "details",
   "detailsSummary",
   "detailsContent",
+  "callout",
+  "table",
+  "tableRow",
+  "tableCell",
+  "tableHeader",
 ];
 const key = new PluginKey("folioBlockIdentity");
 const newId = () => globalThis.crypto.randomUUID();

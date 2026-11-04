@@ -1,3 +1,4 @@
+import { containsRichBlocks } from "../shared/rich-document";
 import {
   app,
   BrowserWindow,
@@ -21,6 +22,8 @@ import {
 } from "node:fs";
 import { pathToFileURL } from "node:url";
 import { randomUUID } from "node:crypto";
+import { spawn } from "node:child_process";
+import { WorkspaceBackupService } from "./workspace-backup-service";
 import { Store } from "../persistence/store";
 import { seed } from "../persistence/seed";
 import { attachFile, resolveAsset } from "../persistence/assets";
@@ -122,6 +125,15 @@ if (startupError) {
       const crashRecovery = new CrashRecoveryFile(join(dataDir, "crash-recovery.json"), crashRecoveryWorkspaceId(store));
       const assets = join(dataDir, "assets");
       mkdirSync(assets, { recursive: true });
+      const workspaceBackups = new WorkspaceBackupService(store.db, dataDir);
+      let layoutBackupDone = false;
+      let richDocumentBackupDone = false;
+      const protectRichDocument = (value: unknown) => {
+        if (!richDocumentBackupDone && containsRichBlocks(value)) {
+          workspaceBackups.create("before-rich-blocks");
+          richDocumentBackupDone = true;
+        }
+      };
       protocol.handle("folio-asset", async (req) => {
         try {
           const asset = resolveAsset(store.db, assets, req.url);
@@ -155,9 +167,45 @@ if (startupError) {
         )
           throw new Error("Unauthorized IPC sender");
         const req = requestSchema.parse(input);
+        // Snapshot before the first W3 database mutation. The durable draft
+        // journal must still work when a backup or database save fails.
+        if (["save:commit", "update", "record:pageUpdate", "database:commit", "recovery:copy"].includes(req.type))
+          protectRichDocument(req);
+        // Before the first persisted layout change in this process, preserve
+        // a verified pre-change workspace. Failure prevents the mutation.
+        const width = req.type === "save:commit" ? req.operation.patch.width
+          : req.type === "update" || req.type === "record:pageUpdate" ? req.patch.width
+          : req.type === "database:commit" && req.operation.command.kind === "updateDatabase"
+            ? req.operation.command.patch.width : undefined;
+        if (width !== undefined && !layoutBackupDone) {
+          workspaceBackups.create("before-page-layout");
+          layoutBackupDone = true;
+        }
+        if (req.type === "workspaceBackup:create") return workspaceBackups.create();
+        if (req.type === "workspaceBackup:choose") {
+          const selected = await dialog.showOpenDialog(win, {title: "Folioの完全バックアップを選択", properties: ["openDirectory"]});
+          return selected.canceled ? null : workspaceBackups.choose(selected.filePaths[0]);
+        }
+        if (req.type === "workspaceBackup:restore") {
+          const selected = await dialog.showOpenDialog(win, {title: "復元先の親フォルダーを選択（新しいフォルダーを作成します）", properties: ["openDirectory", "createDirectory"]});
+          return selected.canceled ? null : workspaceBackups.restore(req.ticket, selected.filePaths[0]);
+        }
+        if (req.type === "workspaceBackup:open") {
+          await workspaceBackups.open(req.ticket, (directory) => new Promise<void>((resolveLaunch, reject) => {
+            const env: NodeJS.ProcessEnv = {...process.env, FOLIO_DATA_DIR: directory};
+            delete env.FOLIO_DEV_URL;
+            // When Electron starts dist/main.cjs directly, getAppPath() is
+            // dist/, which has no package.json entry point. Relaunch this file.
+            const child = spawn(process.execPath, process.defaultApp ? [__filename] : [], {env, detached: true, stdio: "ignore"});
+            child.once("error", reject);
+            child.once("spawn", () => {child.unref(); resolveLaunch();});
+          }));
+          return true;
+        }
         // R4 only opens fixed-owner record editing. Historical record/DB
         // restore lacks the provenance needed to overwrite present contents.
         if (req.type === "restoreVersion") {
+          protectRichDocument(store.versions(req.id).find(v => v.id === req.versionId));
           const snapshot = store.load();
           if (snapshot.records?.some((record) => record.pageId === req.id) ||
             snapshot.recordDatabaseIds?.includes(req.id))
@@ -233,7 +281,8 @@ if (startupError) {
           if (statSync(path).size > FILE_MAX_BYTES)
             throw new Error("復旧ファイルが大きすぎます");
           const content = readFileSync(path, "utf8");
-          parseRecovery(content);
+          const recoveredPages = parseRecovery(content);
+          protectRichDocument(recoveredPages);
           return store.recover(JSON.parse(content));
         }
         if (req.type === "exportPendingJournal") {

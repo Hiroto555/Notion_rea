@@ -30,6 +30,7 @@ import type {
   DatabaseSettings,
   DatabaseView,
   DatabaseViewType,
+  Doc,
   FilterValue,
   Property,
   RecordPatch,
@@ -50,7 +51,9 @@ import {
 import * as ui from "./database-ui";
 import { FilterBuilder } from "./FilterBuilder";
 import { PropertyField } from "./PropertyField";
+import { cardExcerpt } from "./card-excerpt";
 import "./database.css";
+import "./card-excerpt.css";
 
 const VIEW_ICONS = {
   table: Table2,
@@ -80,6 +83,9 @@ export type DatabasePresentationComponentProps = DatabasePresentationProps & {
   controlledViewId?: string;
   hideNavigation?: boolean;
   onSelectView?: (viewId: string) => void;
+  /** Parent-owned body documents keyed by record page id. Missing or errored
+   * entries are omitted; the read-only renderer never loads bodies itself. */
+  recordBodies?: Readonly<Record<string, Doc | undefined>>;
 };
 
 type SettingsWriter = {
@@ -444,6 +450,7 @@ function ReadOnlyDatabasePresentation({
   controlledViewId,
   hideNavigation = false,
   onSelectView,
+  recordBodies,
 }: DatabasePresentationComponentProps) {
   const [selection, setSelection] = useState<{ owner: string | undefined; viewId: string }>(() => ({
     owner: databasePageId,
@@ -505,12 +512,19 @@ function ReadOnlyDatabasePresentation({
       })}
     </span>
   );
-  const card = (record: RecordProjection, compact = false) => (
-    <article key={record.pageId} data-record-id={record.pageId}
-      className={"r3-card" + (compact ? " r3-card-compact" : "")}>
-      {recordButton(record)}{!compact && chips(record)}
-    </article>
-  );
+  const card = (record: RecordProjection, compact = false) => {
+    const excerpt =
+      !compact && recordBodies
+        ? cardExcerpt(recordBodies[record.pageId])
+        : "";
+    return (
+      <article key={record.pageId} data-record-id={record.pageId}
+        className={"r3-card" + (compact ? " r3-card-compact" : "")}>
+        {recordButton(record)}{!compact && chips(record)}
+        {excerpt ? <p className="r3-card-excerpt">{excerpt}</p> : null}
+      </article>
+    );
+  };
   const table = (rows: readonly RecordProjection[]) => (
     <div className="r3-table-wrap">
       <table className="r3-table">

@@ -1,3 +1,4 @@
+import type { PageWidth } from "./page-layout";
 import { z } from "zod";
 import { crashRecoverySnapshotSchema } from "./crash-recovery";
 import { migrationPreviewRequestSchema, migrationCommitRequestSchema, migrationResolveRequestSchema } from "./legacy-migration-operation";
@@ -209,6 +210,7 @@ export type Page = {
   kind: "page" | "database";
   database: DatabaseData | null;
   favorite: boolean;
+  width?: PageWidth;
   createdAt: number;
   updatedAt: number;
   revision: number;
@@ -217,7 +219,7 @@ export type Page = {
   recoveredFrom?: { pageId: string; recoveredAt: number };
 };
 export type PagePatch = Partial<
-  Pick<Page, "title" | "icon" | "cover" | "doc" | "database" | "favorite">
+  Pick<Page, "title" | "icon" | "cover" | "doc" | "database" | "favorite" | "width">
 >;
 /** A record Page update never replaces its owner's database or its values. */
 export type RecordPagePatch = Omit<PagePatch, "database">;
@@ -310,6 +312,7 @@ export const saveOperationSchema = z.object({
     doc: z.custom<Doc>(isDocument, "Invalid or excessively nested document").optional(),
     database: databaseDataSchema.nullable().optional(),
     favorite: z.boolean().optional(),
+    width: z.enum(["standard", "wide"]).optional(),
   }).strict(),
   values: recordValuePatchSchema.optional(),
 }).strict().refine((operation) =>
@@ -322,6 +325,7 @@ export const saveOperationSchema = z.object({
 const ownerPagePatchSchema = z.object({
   title: z.string().max(500).optional(), icon: z.string().max(16).optional(),
   cover: z.string().max(500).optional(), favorite: z.boolean().optional(),
+    width: z.enum(["standard", "wide"]).optional(),
   doc: z.custom<Doc>(isDocument, "Invalid document").optional(),
 }).strict().refine((patch) => Object.values(patch).every((value) => value !== undefined), "Undefined owner patch");
 export const databaseOperationSchema = z.object({
@@ -383,6 +387,7 @@ export const requestSchema = z.discriminatedUnion("type", [
             .custom<Doc>(isDocument, "Invalid or excessively nested document")
             .optional(),
           favorite: z.boolean().optional(),
+    width: z.enum(["standard", "wide"]).optional(),
         })
         .strict()
         .refine(
@@ -459,6 +464,7 @@ export const requestSchema = z.discriminatedUnion("type", [
           .optional(),
         database: databaseDataSchema.nullable().optional(),
         favorite: z.boolean().optional(),
+    width: z.enum(["standard", "wide"]).optional(),
       })
       .strict(),
   }),
@@ -501,6 +507,10 @@ export const requestSchema = z.discriminatedUnion("type", [
     revision: z.number().int().nonnegative().safe().optional(),
   }),
   z.object({ type: z.literal("backup") }),
+  z.object({ type: z.literal("workspaceBackup:create") }).strict(),
+  z.object({ type: z.literal("workspaceBackup:choose") }).strict(),
+  z.object({ type: z.literal("workspaceBackup:restore"), ticket: z.string().uuid() }).strict(),
+  z.object({ type: z.literal("workspaceBackup:open"), ticket: z.string().uuid() }).strict(),
   z.object({ type: z.literal("attach") }),
   z.object({
     type: z.literal("downloadAttachment"),

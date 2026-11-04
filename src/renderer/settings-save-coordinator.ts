@@ -479,6 +479,7 @@ export function validateOwnerPage(
     "kind",
     "database",
     "favorite",
+    "width",
     "createdAt",
     "updatedAt",
     "revision",
@@ -510,6 +511,7 @@ export function validateOwnerPage(
     !Number.isFinite(page.position) ||
     !isDocument(page.doc) ||
     typeof page.favorite !== "boolean" ||
+    (page.width !== undefined && page.width !== "standard" && page.width !== "wide") ||
     !time(page.createdAt) ||
     !time(page.updatedAt) ||
     page.deletedAt !== null ||

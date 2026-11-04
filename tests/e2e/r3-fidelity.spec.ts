@@ -312,6 +312,12 @@ test("R3 fidelity DB display: board/calendar/gallery record dialog is modal, bou
     .filter({ hasText: "プロジェクト" })
     .click();
   await expect(w.locator(".database")).toBeVisible();
+  // The built-in example dates are fixed in October 2026. Give this synthetic
+  // fixture one row in the current month so calendar coverage does not expire.
+  await w.locator('.database input[type="date"]').first().fill(
+    await w.evaluate(() => new Date().toLocaleDateString("sv-SE")),
+  );
+  await saved(s);
   const readings: unknown[] = [];
 
   for (const size of sizes) {

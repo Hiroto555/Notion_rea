@@ -1,0 +1,37 @@
+{
+  "date": "2026-11-04",
+  "sourceCommit": "89729115a60e6bee9804e2a7cb6ca28fe1caf11c",
+  "baselineW2": "925960f8aeeb9b6e2d0b33b4135f7cf2e221d42a",
+  "validation": {
+    "build": "PASS",
+    "typecheck": "PASS",
+    "unit": {
+      "files": 78,
+      "passed": 757,
+      "failed": 0,
+      "command": "npm test -- --maxWorkers=4 --testTimeout=15000"
+    },
+    "electron": {
+      "passed": 197,
+      "failed": 0,
+      "command": "npx playwright test"
+    },
+    "oldW2Compatibility": "PASS",
+    "physicalJapaneseIME": "NOT_RUN"
+  },
+  "buildSha256": {
+    "dist/main.cjs": "e511d6999eeae8c6ebf22f306b1f4749ce7660aa24af81072cb347d153efc1b7",
+    "dist/preload.cjs": "3e39ba8560acf6abee58233896192a26f313dc2402abf82ad260650b42f1fc26",
+    "dist/renderer/index.html": "b9b42fb907a18e6fd486fe4f1fd053d80f62653fd9b37a75c60431e6ae140665",
+    "dist/renderer/assets/index-DRPXkbHa.css": "a020b540df381183d25d1f82e38a502d432c5984ca470f12455e0dd7dcae4f58",
+    "dist/renderer/assets/index-c15EEBlo.js": "83eafb9b2d06f16658443deb595c6ee60bdfceb87f397f152b86ed03df82b36a"
+  },
+  "logs": {
+    "build.txt": "25de08f03d11ba598dc122ad6e3e88d97398603638de862a0e229f2621b01332",
+    "e2e-tests.txt": "55082a6f75540f673de9e92d9354b10feb34f86cd853c5b4e0b0b70a498bdcf5",
+    "unit-tests.txt": "9e24dabe50a08850f35ea55636026a907ffde51a5fe670d5a26958f6b1913dc6"
+  },
+  "scope": "Local synthetic-data validation. Publication changes only documentation, sanitized validation evidence and reviewed synthetic screenshots; product code and tests match sourceCommit.",
+  "independentReview": "Codex static review only; no blocking finding in scoped rich-block boundaries. Extra DeepSeek review attempts were not accepted as evidence.",
+  "logNormalization": "Local home/worktree paths replaced, ANSI codes and trailing whitespace removed."
+}

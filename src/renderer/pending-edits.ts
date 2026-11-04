@@ -77,6 +77,7 @@ export class PendingEdits {
       "doc",
       "database",
       "favorite",
+      "width",
     ]);
     if (Object.keys(patch).some((key) => !allowed.has(key)))
       throw new Error("Unsupported Page patch field");

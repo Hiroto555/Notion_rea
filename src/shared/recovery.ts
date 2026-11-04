@@ -11,6 +11,7 @@ export type RecoveryPage = Pick<
   | "icon"
   | "cover"
   | "favorite"
+  | "width"
   | "schemaVersion"
 >;
 const invalid = () =>
@@ -19,10 +20,11 @@ const invalid = () =>
   );
 export function recoveryPages(input: unknown): RecoveryPage[] {
   const value = input as any;
+  const layoutFormat = value?.format === "folio-page-recovery" && value?.schemaVersion === 3;
   if (
     !value ||
-    value.format !== "folio-recovery" ||
-    ![1, RECOVERY_VERSION].includes(value.schemaVersion) ||
+    (!layoutFormat && (value.format !== "folio-recovery" ||
+    ![1, RECOVERY_VERSION].includes(value.schemaVersion))) ||
     !Array.isArray(value.pages) ||
     value.pages.length > 10000
   )
@@ -59,6 +61,7 @@ export function recoveryPages(input: unknown): RecoveryPage[] {
       ids.has(local.id) ||
       !["page", "database"].includes(local.kind) ||
       (local.schemaVersion !== undefined && local.schemaVersion !== 1) ||
+      (!layoutFormat && local.width !== undefined) ||
       !local.doc ||
       local.database === undefined ||
       (local.kind === "database" && local.database === null)
@@ -72,6 +75,7 @@ export function recoveryPages(input: unknown): RecoveryPage[] {
       icon: local.icon,
       cover: local.cover,
       favorite: local.favorite,
+      ...(local.width === undefined ? {} : { width: local.width }),
     };
     if (
       typeof local.title !== "string" ||
@@ -110,11 +114,12 @@ export function recoveryContent(
       icon: p.icon,
       cover: p.cover,
       favorite: p.favorite,
+      ...(p.width === undefined ? {} : { width: p.width }),
     };
   });
   const content = JSON.stringify({
-    format: "folio-recovery",
-    schemaVersion: RECOVERY_VERSION,
+    format: locals.some(p => p.width !== undefined) ? "folio-page-recovery" : "folio-recovery",
+    schemaVersion: locals.some(p => p.width !== undefined) ? 3 : RECOVERY_VERSION,
     pages: locals,
   });
   parseRecovery(content);

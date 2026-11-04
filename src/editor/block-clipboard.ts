@@ -1,3 +1,4 @@
+import { containsRichBlocks } from "../shared/rich-document";
 import { Fragment, Slice, type Node as PMNode } from "@tiptap/pm/model";
 import { closeHistory } from "@tiptap/pm/history";
 import type { EditorState, Transaction } from "@tiptap/pm/state";
@@ -9,7 +10,7 @@ export const BLOCK_CLIPBOARD_TYPE = "application/x-folio-blocks+json";
 const EXPIRY_MS = 5 * 60_000;
 type Payload = {
   format: "folio-blocks";
-  version: 1;
+  version: 1 | 2;
   documentId: string;
   operation: "copy" | "cut";
   token: string;
@@ -31,7 +32,7 @@ export class BlockClipboard {
     if (!nodes.length) throw new Error("ブロックが選択されていません。");
     const raw = JSON.stringify({
       format: "folio-blocks",
-      version: 1,
+      version: nodes.some(n => containsRichBlocks(n.toJSON())) ? 2 : 1,
       documentId: this.documentId,
       operation,
       token: globalThis.crypto.randomUUID(),
@@ -72,7 +73,7 @@ export class BlockClipboard {
       typeof p !== "object" ||
       Array.isArray(p) ||
       p.format !== "folio-blocks" ||
-      p.version !== 1 ||
+      ![1, 2].includes(p.version) ||
       typeof p.documentId !== "string" ||
       typeof p.token !== "string" ||
       !p.token ||
@@ -103,7 +104,7 @@ export class BlockClipboard {
       type: "doc",
       content: p.context ? [{ type: p.context, content: p.nodes }] : p.nodes,
     };
-    if (!validDocument(source))
+    if ((p.version === 1 && containsRichBlocks(source)) || !validDocument(source))
       throw new Error("クリップボードの文書を読み込めません。");
     const sourceDoc = state.schema.nodeFromJSON(source);
     sourceDoc.check();

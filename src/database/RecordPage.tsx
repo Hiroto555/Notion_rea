@@ -1,3 +1,4 @@
+import type { PageWidth } from "../shared/page-layout";
 import { useEffect, useRef, type KeyboardEvent, type ReactNode } from "react";
 import {
   AlertTriangle,
@@ -42,6 +43,7 @@ export type RecordPageProps = {
   onBack: () => void;
   /** Omit for the legacy inline surface. Both modes preserve the same body slot. */
   mode?: RecordPageMode;
+  pageWidth?: PageWidth;
   onModeChange?: (mode: RecordPageMode) => void;
   /** Parent owns origin row, scroll and focus restoration. */
   onClose?: () => void;
@@ -80,6 +82,7 @@ export function RecordPage({
   readOnly = null,
   onBack,
   mode,
+  pageWidth = "standard",
   onModeChange,
   onClose,
   editingBlocked = false,
@@ -168,6 +171,7 @@ export function RecordPage({
     <article
       className={"r3-record-page" + (mode ? " r4-record-surface" : "")}
       data-record-mode={mode}
+      data-page-width={pageWidth}
       data-editing-blocked={locked || undefined}
       aria-label="レコードページ"
       aria-busy={saveState === "saving"}
@@ -245,6 +249,13 @@ export function RecordPage({
             className="r3-record-action r4-record-mode"
             aria-label={mode === "side" ? "全画面で開く" : "サイドピークで開く"}
             title={mode === "side" ? "全画面で開く" : "サイドピークで開く"}
+            onMouseDown={(event) => {
+              // A pointer-only layout change should not blur the active editor
+              // or raw property input. Keyboard users retain button focus.
+              if (event.button === 0 && root.current?.contains(document.activeElement) &&
+                  (document.activeElement as HTMLElement | null)?.matches("input, textarea, [contenteditable='true']"))
+                event.preventDefault();
+            }}
             onClick={() => onModeChange(mode === "side" ? "full" : "side")}
           >
             {mode === "side" ? (

@@ -13,3 +13,8 @@
 .r5-database-operation button { border: 1px solid var(--line); border-radius: 5px; padding: 4px 8px; }
 .r5-record-groups > section { margin-top: 16px; }
 .r5-record-groups h4 { margin: 8px 0; font-weight: 600; }
+
+.r7-toolbar-actions button { display: inline-flex; align-items: center; gap: 5px; padding: 6px 10px; min-height: 32px; border: 1px solid var(--line); border-radius: 6px; font-size: 12px; }
+.r7-toolbar-actions .r7-new-record { background: var(--accent); color: var(--surface); border-color: var(--accent); }
+.r7-menu--filter .r7-popover, .r7-menu--sort .r7-popover { left: auto; right: 0; }
+@media (max-width: 1100px) { .r7-menu--filter .r7-popover, .r7-menu--sort .r7-popover { left: 12px; right: 12px; } }

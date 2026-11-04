@@ -39,7 +39,7 @@ const recordSchema = z.object({pageId: id, databasePageId: id, revision: count, 
   values: z.record(z.union([z.string(), z.boolean(), z.number().finite()])), deletedAt: z.number().nullable()}).strict();
 const pageSchema = z.object({id, schemaVersion: count.optional(), parentId: id.nullable(), title: z.string(),
   icon: z.string(), cover: z.string(), position: z.number().finite(), doc: z.custom((value) => isDocument(value)),
-  kind: z.enum(["page", "database"]), database: z.unknown(), favorite: z.boolean(), createdAt: z.number().finite(),
+  kind: z.enum(["page", "database"]), database: z.unknown(), favorite: z.boolean(), width: z.enum(["standard", "wide"]).optional(), createdAt: z.number().finite(),
   updatedAt: z.number().finite(), revision: count, deletedAt: z.number().finite().nullable(),
   documentError: z.string().optional(), recoveredFrom: z.object({pageId: id, recoveredAt: z.number().finite()}).strict().optional()}).strict();
 const editSchema = z.lazy(() => z.object({sessionId, base: pageSchema, record: recordSchema.optional(), seq: count,
