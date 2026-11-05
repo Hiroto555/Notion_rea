@@ -281,7 +281,7 @@ describe("device-scoped checkpoint authorization", () => {
     await boot({
       capabilities: [
         { workspaceId: "workspace", ownerId: "owner", token: capability },
-        { workspaceId: "other", ownerId: "owner", token: otherCapability },
+        { workspaceId: "legacy", ownerId: "owner", token: otherCapability },
       ],
       workspaces: [{ workspaceId: "workspace", ownerId: "owner" }],
     });
@@ -294,7 +294,7 @@ describe("device-scoped checkpoint authorization", () => {
       (
         await raw("head", {
           credential: otherCapability,
-          workspaceId: "other",
+          workspaceId: "legacy",
         })
       ).status,
     ).toBe(200);
@@ -307,6 +307,11 @@ describe("device-scoped checkpoint authorization", () => {
         })
       ).status,
     ).toBe(401);
+    await closeServer();
+    await expect(boot({
+      capabilities: [{ workspaceId: "workspace", ownerId: "owner", token: capability }],
+      workspaces: [],
+    })).rejects.toThrow("workspace-device-mode-required");
   });
 
   it("validates registration ownership, token collision and revocation targets", async () => {

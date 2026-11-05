@@ -466,7 +466,7 @@ export async function startCheckpointServer(
         const result = JSON.parse(String(previous.result_json)) as CommitResult;
         return result;
       }
-      const assets = checkpointAssets(operation.checkpoint).map((asset) => ({
+      const assets = operation.checkpoint.assets.map((asset) => ({
         ...asset,
       }));
       requireCondition(
