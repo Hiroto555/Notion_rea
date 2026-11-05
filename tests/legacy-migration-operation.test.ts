@@ -99,6 +99,20 @@ function fixture(mixed = false) {
 }
 
 describe("explicit selected legacy migration", () => {
+  it("leaves an admission refusal retryable and resolves a completed migration before another estimate", () => {
+    const f = fixture();
+    try {
+      const operation = prepareLegacyMigration(previewLegacyMigration(f.store, f.legacy.id));
+      const denied = {...f.environment, beforeSnapshot() { throw new Error("capacity-exceeded"); }};
+      expect(() => commitLegacyMigration(f.store, operation, denied)).toThrow(/capacity-exceeded/);
+      expect(resolveLegacyMigration(f.store, operation).status).toBe("unknown");
+      expect(existsSync(f.environment.snapshotRoot)).toBe(false);
+      expect(f.store.db.prepare("SELECT data FROM pages WHERE id=?").get(f.legacy.id)?.data).toBe(f.raw);
+      expect(commitLegacyMigration(f.store, operation, f.environment).status).toBe("applied");
+      expect(commitLegacyMigration(f.store, operation, denied).status).toBe("applied");
+    } finally { f.dispose(); }
+  });
+
   it.each([false, true])(
     "previews without writes and converts only its selected DB in mixed=%s",
     (mixed) => {

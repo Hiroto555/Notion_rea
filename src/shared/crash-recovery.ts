@@ -1,7 +1,8 @@
 import { z } from "zod";
 import { canonicalOperation, type SaveOperation } from "./save-contract";
 import type { DatabaseOperation } from "./database-operation";
-import { databaseOperationSchema, databaseSettingsSchema, isDocument, saveOperationSchema,
+import type { PageOperation } from "./page-operation";
+import { databaseOperationSchema, databaseSettingsSchema, isDocument, pageOperationSchema, saveOperationSchema,
   type DatabaseProjection, type FilterValue, type Page, type PagePatch, type RecordPagePatch, type RecordProjection } from "./types";
 import { applySettingsIntent, type SettingsIntent } from "../renderer/settings-intent";
 
@@ -21,7 +22,10 @@ export type CrashRecoverySnapshot = {schemaVersion: 1; pages: EditSessionRecover
    * recovery; startup must not turn it into an acknowledged editor session. */
   unverifiedInputs?: {reason: string; input: unknown}[];
   /** Retained as bounded JSON only. A caller MUST apply the family's request schema before resolving it. */
-  externalOperations: {family: "property" | "migration"; operation: Record<string, unknown>}[]};
+  externalOperations: {family: "property" | "migration"; operation: Record<string, unknown>}[];
+  /** Ordinary Page create/duplicate operations whose durable result was not
+   * confirmed yet. Only an explicit resolve may clear them. */
+  pageOperations?: PageOperation[]};
 export type CrashRecoveryRead = {status: "empty" | "ready" | "blocked"; generation: number;
   snapshot?: CrashRecoverySnapshot; message?: string};
 
@@ -30,7 +34,8 @@ export function emptyCrashRecoverySnapshot(): CrashRecoverySnapshot {
 }
 export function hasCrashRecoveryInput(snapshot: CrashRecoverySnapshot): boolean {
   return snapshot.pages.length + snapshot.records.length + snapshot.databases.length + snapshot.creations.length +
-    snapshot.rawDrafts.length + snapshot.externalOperations.length + (snapshot.unverifiedInputs?.length ?? 0) > 0;
+    snapshot.rawDrafts.length + snapshot.externalOperations.length + (snapshot.unverifiedInputs?.length ?? 0) +
+    (snapshot.pageOperations?.length ?? 0) > 0;
 }
 
 const id = z.string().min(1).max(500), sessionId = z.string().min(1).max(100);
@@ -54,7 +59,8 @@ const snapshotSchema = z.lazy(() => z.object({schemaVersion: z.literal(1), pages
     value: z.string().max(100000)}).strict()).max(10000),
   unverifiedInputs: z.array(z.object({reason: z.string().min(1).max(2000),
     input: z.unknown().refine((value) => value !== undefined, "Missing unverified input")}).strict()).max(1000).optional(),
-  externalOperations: z.array(z.object({family: z.enum(["property", "migration"]), operation: z.record(z.unknown())}).strict()).max(1000)}).strict());
+  externalOperations: z.array(z.object({family: z.enum(["property", "migration"]), operation: z.record(z.unknown())}).strict()).max(1000),
+  pageOperations: z.array(pageOperationSchema).max(1000).optional()}).strict());
 
 /** Reject unsupported JSON rather than letting stringify erase pending input. */
 export function assertRecoveryJson(root: unknown): void {
@@ -148,6 +154,7 @@ export function validateCrashRecoverySnapshot(input: unknown): CrashRecoverySnap
   const allOperations: {operationId?: unknown; sessionId?: unknown; seq?: unknown}[] = [
     ...[...snapshot.pages, ...snapshot.records, ...snapshot.databases].flatMap((entry) => entry.operation ? [entry.operation] : []),
     ...snapshot.creations, ...snapshot.externalOperations.map((entry) => entry.operation),
+    ...(snapshot.pageOperations ?? []),
   ];
   for (const operation of allOperations) {
     const op = operation as {operationId: string; sessionId: string; seq: number};

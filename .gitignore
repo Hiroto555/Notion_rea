@@ -1,4 +1,4 @@
-node_modules/
+node_modules
 tools/rea/node_modules/
 .cache/
 dist/

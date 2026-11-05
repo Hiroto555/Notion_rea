@@ -1,0 +1,22 @@
+{
+  "testedCodeCommit": "a4bb88c5af57f88542faceb7227740eab25eb872",
+  "base": "646b658f7acc8c69bb9d3e0c1bef194f5422b9cc",
+  "achievedLevel": 2,
+  "level3": "PARTIAL",
+  "G1": "PARTIAL: offline desktop reopen NOT_RUN",
+  "G7": "PARTIAL: bounded non-GUI storage, growth admission, safe retention and maintenance verified; legacy addressable or ambiguous files retained; actual UI NOT_RUN",
+  "G8": "PARTIAL: production service, unit and built worker PASS; desktop flow NOT_RUN",
+  "GUI": "NOT_RUN",
+  "unitFiles": 108,
+  "unitTests": 1101,
+  "build": "PASS",
+  "typecheck": "PASS",
+  "workerSmoke": "PASS",
+  "notes": [
+    "DB high-water mark measured before a write",
+    "Archive within the same volume",
+    "Startup migrations precede normal admission",
+    "No operation/receipt GC by age",
+    "Remote CI, packaged desktop and multi-device sync not exercised"
+  ]
+}

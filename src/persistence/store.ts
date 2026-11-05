@@ -10,6 +10,7 @@ import {
   saveOperationSchema,
   emptyDatabase,
   textOf,
+  type Doc,
   type Page,
   type PagePatch,
   type RecordPagePatch,
@@ -24,10 +25,23 @@ import { normalizeDatabaseData } from "../database/model";
 import { isLosslessDatabaseData } from "../database/strict-database";
 import { RecordRepository } from "./record-repository";
 import { commitDatabaseOperation, resolveDatabaseOperation, readDatabaseSnapshot } from "./database-operations";
+import { commitPageOperation, resolvePageOperation } from "./page-operations";
+import type { PageOperation, PageOperationResult } from "../shared/page-operation";
 import { RecordLifecycle } from "./record-lifecycle";
 import { restoreDatabaseVersion } from "./legacy-database-restore";
 import { validateRecordStoreVersion } from "./record-version";
+import {
+  assertConnectionState,
+  inspectWritableStartup,
+  openReadOnlyStore,
+  publishSchemaSnapshot,
+  readUserVersion,
+  type StoreStartupOptions,
+} from "./schema-startup";
 const STORE_VERSION = 4;
+// Only malformed page data is quarantined. SQL, I/O and programmer errors must
+// still abort the snapshot instead of being mistaken for a damaged document.
+class PageDataError extends Error {}
 export class Store {
   private readonly connection: DatabaseSync;
   private unusable = false;
@@ -41,7 +55,7 @@ export class Store {
   }
   constructor(
     readonly path: string,
-    options: { allowIncompleteRecovery?: boolean } = {},
+    options: StoreStartupOptions = {},
   ) {
     if (
       !options.allowIncompleteRecovery &&
@@ -50,40 +64,45 @@ export class Store {
       throw new Error(
         "復旧が完了していないワークスペースです。原本を保護するため起動を停止しました。",
       );
+    if (options.readOnly) {
+      const connection = openReadOnlyStore(path, STORE_VERSION);
+      try {
+        assertConnectionState(connection);
+      } catch (error) {
+        try {
+          connection.close();
+        } catch (closeError) {
+          throw new AggregateError(
+            [error, closeError],
+            "SQLite state check and close failed",
+          );
+        }
+        throw error;
+      }
+      this.connection = connection;
+      return;
+    }
+    // Preflight is read-only. It rejects unsupported versions and unsafe
+    // source files before the space callback, mkdir or journal-mode change.
+    const startup = inspectWritableStartup(path, STORE_VERSION);
+    options.beforeOpen?.(startup.additionalBytes);
     mkdirSync(dirname(path), { recursive: true });
     this.connection = new DatabaseSync(path);
     try {
-      if (
-        typeof this.connection.isOpen !== "boolean" ||
-        typeof this.connection.isTransaction !== "boolean"
-      )
+      assertConnectionState(this.connection);
+      const originalVersion = readUserVersion(this.connection);
+      if (originalVersion > STORE_VERSION)
+        throw new Error("This workspace requires a newer Folio version.");
+      if (originalVersion !== startup.version)
         throw new Error(
-          "SQLite connection and transaction state APIs are required",
+          "The workspace schema changed during startup; reopen the workspace.",
         );
-    } catch (error) {
-      try {
-        this.connection.close();
-      } catch (closeError) {
-        throw new AggregateError(
-          [error, closeError],
-          "SQLite state check and close failed",
-        );
-      }
-      throw error;
-    }
-    this.db.exec(
-      "PRAGMA journal_mode=WAL; PRAGMA synchronous=FULL; PRAGMA foreign_keys=ON; PRAGMA busy_timeout=5000;",
-    );
-    const v = this.db.prepare("PRAGMA user_version").get() as {
-      user_version: number;
-    };
-    const originalVersion = v.user_version;
-    if (originalVersion > STORE_VERSION) {
-      this.db.close();
-      throw new Error("This workspace requires a newer Folio version.");
-    }
-    try {
-      if (originalVersion === 4) validateRecordStoreVersion(this.db);
+      // Validate a v4 record store before touching journal mode. The read-only
+      // preflight already rejected malformed stores for the ordinary case.
+      if (originalVersion === 4) validateRecordStoreVersion(this.connection);
+      this.db.exec(
+        "PRAGMA journal_mode=WAL; PRAGMA synchronous=FULL; PRAGMA foreign_keys=ON; PRAGMA busy_timeout=5000;",
+      );
       this.db.exec(
         `CREATE TABLE IF NOT EXISTS pages(id TEXT PRIMARY KEY, data TEXT NOT NULL, body TEXT NOT NULL); CREATE TABLE IF NOT EXISTS settings(key TEXT PRIMARY KEY,value TEXT NOT NULL); CREATE TABLE IF NOT EXISTS versions(id INTEGER PRIMARY KEY AUTOINCREMENT,pageId TEXT NOT NULL,createdAt INTEGER NOT NULL,title TEXT NOT NULL,doc TEXT NOT NULL); CREATE INDEX IF NOT EXISTS versions_page ON versions(pageId,createdAt); `,
       );
@@ -95,9 +114,10 @@ export class Store {
       if (originalVersion < 2) {
         // A standalone SQLite snapshot makes schema rollback possible. Assets stay
         // beside the original database and are never moved by this migration.
-        const backup = path + ".pre-v2.sqlite";
-        if (originalVersion === 1 && !existsSync(backup))
-          this.db.prepare("VACUUM INTO ?").run(backup);
+        // The snapshot is created fresh and verified; an existing name is never
+        // trusted or overwritten.
+        if (originalVersion === 1)
+          publishSchemaSnapshot(this.db, path, 1);
         this.transaction(() => {
           this.db.exec(
             "ALTER TABLE versions ADD COLUMN database TEXT; PRAGMA user_version=2;",
@@ -111,10 +131,8 @@ export class Store {
         // v3 changes the shape of page.database only. A VACUUM snapshot of a
         // real v2 workspace is kept before the page/version JSON is rewritten;
         // the rewrite itself and the version bump commit atomically.
-        if (originalVersion === 2) {
-          const backup = path + ".pre-v3.sqlite";
-          if (!existsSync(backup)) this.db.prepare("VACUUM INTO ?").run(backup);
-        }
+        if (originalVersion === 2)
+          publishSchemaSnapshot(this.db, path, 2);
         this.transaction(() => {
           this.migrateStoredDatabases();
           this.db.exec("PRAGMA user_version=3");
@@ -122,7 +140,7 @@ export class Store {
       }
     } catch (error) {
       try {
-        this.db.close();
+        this.connection.close();
       } catch {}
       throw error;
     }
@@ -196,12 +214,12 @@ export class Store {
     try {
       p = JSON.parse(data);
     } catch {
-      throw new Error(
+      throw new PageDataError(
         "ワークスペースに壊れたJSONがあります。原本は変更していません。バックアップを保存してください。",
       );
     }
     if (!p || typeof p !== "object" || !p.id)
-      throw new Error("ページを読めません。原本は変更していません。");
+      throw new PageDataError("ページを読めません。原本は変更していません。");
     const documentValid =
       (p.schemaVersion === undefined || p.schemaVersion === 1) &&
       (p.width === undefined || p.width === "standard" || p.width === "wide") &&
@@ -248,18 +266,44 @@ export class Store {
       throw e;
     }
   }
-  pages(): Page[] {
+  private decodeRow(id: string, data: string): Page {
+    const p = this.decode(data);
+    const time = (value: unknown) => typeof value === "number" && Number.isFinite(value) && value >= 0;
+    if (p.id !== id || typeof p.id !== "string" || !p.id ||
+        !(p.parentId === null || (typeof p.parentId === "string" && p.parentId.length > 0)) ||
+        typeof p.title !== "string" || typeof p.icon !== "string" || typeof p.cover !== "string" ||
+        !(p.kind === "page" || p.kind === "database") || typeof p.favorite !== "boolean" ||
+        !Number.isFinite(p.position) || !Number.isSafeInteger(p.revision) || p.revision < 0 ||
+        !time(p.createdAt) || !time(p.updatedAt) || !(p.deletedAt === null || time(p.deletedAt)))
+      throw new PageDataError("未対応または不正なページ情報です。IDや並び順を確認できないため原本を保全しています。");
+    return p;
+  }
+  pages(options: { quarantineCorrupt?: boolean } = {}): Page[] {
     return (
-      this.db.prepare("SELECT data FROM pages").all() as { data: string }[]
+      this.db.prepare("SELECT id,data FROM pages").all() as { id: string; data: string }[]
     )
-      .map((r) => this.decode(r.data))
+      .map((r): Page => {
+        try { return this.decodeRow(r.id, r.data); }
+        catch (error) {
+          if (!options.quarantineCorrupt || !(error instanceof PageDataError)) throw error;
+          // Display-only placeholder; it is never persisted. SQLite's primary
+          // key stays authoritative, including when JSON contains another ID.
+          return {
+            id: r.id, parentId: null, title: `読めないページ (${r.id})`,
+            icon: "", cover: "", position: Number.MAX_SAFE_INTEGER,
+            doc: blankDoc(), kind: "page", database: null, favorite: false,
+            createdAt: 0, updatedAt: 0, revision: 0, deletedAt: null,
+            documentError: `${error.message} 原本JSONを保存して確認できます。`,
+          };
+        }
+      })
       .sort((a, b) => a.position - b.position);
   }
   get(id: string): Page {
     const r = this.db.prepare("SELECT data FROM pages WHERE id=?").get(id) as
       { data: string } | undefined;
     if (!r) throw new Error("ページが見つかりません");
-    return this.decode(r.data);
+    return this.decodeRow(id, r.data);
   }
   write(p: Page, createOnly = false) {
     // Do not permit callers holding a normalized or forged Page to overwrite
@@ -268,7 +312,7 @@ export class Store {
       const original = this.db
         .prepare("SELECT data FROM pages WHERE id=?")
         .get(p.id) as { data: string } | undefined;
-      if (original && this.decode(original.data).documentError)
+      if (original && this.decodeRow(p.id, original.data).documentError)
         throw new Error(
           "未対応または不正な原本は保存できません。原本を保全しています。",
         );
@@ -333,15 +377,29 @@ export class Store {
           "SELECT 1 FROM sqlite_master WHERE type='table' AND name='record_memberships'",
         )
         .get();
-      const records = hasRecords
-        ? (
-            this.db
-              .prepare(
-                "SELECT page_id FROM record_memberships ORDER BY database_page_id,position,page_id",
-              )
-              .all() as { page_id: string }[]
-          ).map((row) => new RecordRepository(this).projection(row.page_id))
-        : undefined;
+      const pages = this.pages({ quarantineCorrupt: true });
+      const byId = new Map(pages.map((page) => [page.id, page]));
+      const memberships = hasRecords ? this.db.prepare(
+        "SELECT page_id,database_page_id FROM record_memberships ORDER BY database_page_id,position,page_id",
+      ).all() as { page_id: string; database_page_id: string }[] : [];
+      const blockedOwners = new Set<string>();
+      for (const row of memberships) {
+        const page = byId.get(row.page_id), owner = byId.get(row.database_page_id);
+        if (!page || !owner || page.documentError || owner.documentError) blockedOwners.add(row.database_page_id);
+      }
+      // Never present an incomplete record collection as editable. Healthy
+      // unrelated pages remain accessible; affected owners and rows keep their
+      // IDs and raw-export route but become read-only in this snapshot.
+      for (const row of memberships) {
+        if (!blockedOwners.has(row.database_page_id)) continue;
+        for (const id of [row.page_id, row.database_page_id]) {
+          const page = byId.get(id);
+          if (page && !page.documentError) page.documentError = "関連するレコードまたはデータベースを読めません。原本を保全し、編集を停止しています。";
+        }
+      }
+      const records = hasRecords ? memberships
+        .filter((row) => !blockedOwners.has(row.database_page_id))
+        .map((row) => new RecordRepository(this).projection(row.page_id)) : undefined;
       const recordDatabaseIds = hasRecords
         ? (
             this.db
@@ -352,7 +410,7 @@ export class Store {
           ).map((row) => row.database_page_id)
         : undefined;
       return {
-        pages: this.pages(),
+        pages,
         ...(records ? { records, recordDatabaseIds } : {}),
         settings: Object.fromEntries(
           (
@@ -364,6 +422,16 @@ export class Store {
         ),
       };
     };
+    return this.readSnapshot(read);
+  }
+  /** One consistent read transaction shared by full and scoped reads. Failed
+   * transaction cleanup permanently poisons this Store, even if close fails. */
+  readSnapshot<T>(read: () => T): T {
+    const open = this.db.isOpen;
+    if (typeof open !== "boolean")
+      throw new Error("SQLite connection state is unavailable; snapshot refused");
+    if (!open)
+      throw new Error("SQLite connection is unusable; reopen the workspace.");
     // Reuse a caller-owned transaction without committing or rolling it back.
     // Otherwise keep all membership, Page and settings reads on one SQLite
     // snapshot; a later caller action still needs its own concurrency checks.
@@ -378,7 +446,7 @@ export class Store {
     } catch (error) {
       this.poisonSnapshotConnection([error], "Snapshot BEGIN failed");
     }
-    let snapshot: Snapshot;
+    let snapshot: T;
     try {
       snapshot = read();
     } catch (error) {
@@ -483,9 +551,14 @@ export class Store {
     parentId: string | null,
     kind: Page["kind"] = "page",
     title = "無題",
+    doc?: Doc,
   ): Page {
     const createPage = () => {
       this.assertRecordWriteSchema();
+      // The initial body belongs to the ordinary Page create command. A
+      // database/record lifecycle has its own owner-bound path.
+      if (doc !== undefined && kind !== "page")
+        throw new Error("初期本文は通常ページの作成にだけ指定できます。");
       if (parentId) {
         const parent = this.get(parentId);
         if (parent.deletedAt) throw new Error("削除済みの親ページです");
@@ -531,7 +604,7 @@ export class Store {
           icon: kind === "database" ? "▦" : "📄",
           cover: "",
           position,
-          doc: blankDoc(),
+          doc: doc === undefined ? blankDoc() : structuredClone(doc),
           kind,
           database: kind === "database" ? emptyDatabase() : null,
           favorite: false,
@@ -795,6 +868,14 @@ export class Store {
       return this.saveResult(operation, fingerprint, "rejected", "同じ操作IDに異なる要求があります。入力を保持しています。");
     return JSON.parse(receipt.result_json) as SaveResult;
   }
+  /** Ordinary Page create/duplicate receipts share the save_receipts store but
+   * use their own command identity and result shape. */
+  commitPageOperation(input: PageOperation): PageOperationResult {
+    return commitPageOperation(this, input);
+  }
+  resolvePageOperation(input: PageOperation): PageOperationResult {
+    return resolvePageOperation(this, input);
+  }
   assertRecordWriteSchema(): void {
     const { user_version: version } = this.db
       .prepare("PRAGMA user_version")
@@ -1052,31 +1133,66 @@ export class Store {
     });
   }
   duplicate(id: string) {
-    return this.transaction(() => {
-      this.assertLegacyLifecycleSafe(this.descendants(id));
-      const originals = this.pages(),
-        ids = this.descendants(id),
-        reserved = new Set<string>(),
-        mapping = new Map(
-          [...ids].map((x) => [x, this.allocatePageId(randomUUID, reserved)]),
-        );
-      for (const p of originals.filter((p) => ids.has(p.id))) {
-        this.write(
-          {
-            ...p,
-            id: mapping.get(p.id)!,
-            parentId: p.id === id ? p.parentId : mapping.get(p.parentId!)!,
-            title: p.id === id ? p.title + " のコピー" : p.title,
-            position: p.position + 0.5,
-            revision: 0,
-            createdAt: Date.now(),
-            updatedAt: Date.now(),
-          },
-          true,
-        );
-      }
-      return this.get(mapping.get(id)!);
-    });
+    // Reuse a caller-owned transaction (the page operation coordinator owns the
+    // receipt transaction) but keep the direct API's own transaction otherwise.
+    return this.db.isTransaction
+      ? this.duplicateInTransaction(id)
+      : this.transaction(() => this.duplicateInTransaction(id));
+  }
+  /** Callers that already hold the write transaction must use this method so
+   * the copied subtree and a durable receipt commit atomically. */
+  duplicateInTransaction(id: string) {
+    this.assertRecordWriteSchema();
+    this.assertLegacyLifecycleSafe(this.descendants(id));
+    const originals = this.pages(),
+      ids = this.descendants(id),
+      reserved = new Set<string>(),
+      mapping = new Map(
+        [...ids].map((x) => [x, this.allocatePageId(randomUUID, reserved)]),
+      );
+    const root = this.get(id);
+    // A copied subtree gets new parent IDs, so only its root needs a new
+    // sibling position. Reserve trash positions and fixed database anchors;
+    // never rewrite unrelated pages just to make room for a copy.
+    const recordIds = new Set(
+      this.db.prepare("SELECT 1 FROM sqlite_master WHERE type='table' AND name='record_memberships'").get()
+        ? (this.db.prepare("SELECT page_id FROM record_memberships").all() as { page_id: string }[]).map((row) => row.page_id)
+        : [],
+    );
+    const siblings = originals.filter((p) => p.parentId === root.parentId && !recordIds.has(p.id));
+    if (root.deletedAt !== null || siblings.some((p) => !Number.isFinite(p.position) || p.documentError))
+      throw new Error("ページの安全な並び順を確認できません。原本を保持しています。");
+    for (let i = 1; i < siblings.length; i++)
+      if (siblings[i - 1].position >= siblings[i].position)
+        throw new Error("ページの並び順が重複しています。原本を保持しています。");
+    const index = siblings.findIndex((p) => p.id === id);
+    if (index < 0) throw new Error("複製元の並び順を確認できません。");
+    const upper = siblings[index + 1]?.position;
+    const position = upper === undefined ? root.position + 1 : root.position / 2 + upper / 2;
+    if (!Number.isFinite(position) || !Object.is(JSON.parse(JSON.stringify(position)), position) ||
+        position <= root.position || (upper !== undefined && position >= upper))
+      throw new Error("ページの並び順に空きがありません。原本を保持しています。");
+    const suffix = " のコピー";
+    let title = root.title.slice(0, 500 - suffix.length);
+    // String limits in IPC use UTF-16 code units. Preserve whole code points
+    // when the cutoff lands between an emoji's surrogate pair.
+    if (/[\uD800-\uDBFF]$/.test(title)) title = title.slice(0, -1);
+    for (const p of originals.filter((p) => ids.has(p.id))) {
+      this.write(
+        {
+          ...p,
+          id: mapping.get(p.id)!,
+          parentId: p.id === id ? p.parentId : mapping.get(p.parentId!)!,
+          title: p.id === id ? title + suffix : p.title,
+          position: p.id === id ? position : p.position,
+          revision: 0,
+          createdAt: Date.now(),
+          updatedAt: Date.now(),
+        },
+        true,
+      );
+    }
+    return this.get(mapping.get(id)!);
   }
   trash(id: string) {
     this.transaction(() => {
@@ -1140,6 +1256,10 @@ export class Store {
         return resolveDatabaseOperation(this, r.operation);
       case "database:read":
         return readDatabaseSnapshot(this, r.databasePageId);
+      case "page:commit":
+        return this.commitPageOperation(r.operation);
+      case "page:resolve":
+        return this.resolvePageOperation(r.operation);
       case "save:commit":
         return this.commitSave(r.operation);
       case "save:resolve":
@@ -1230,22 +1350,11 @@ export class Store {
           .run(r.key, r.value);
         return true;
       case "search": {
-        const hasRecords = !!this.db
-          .prepare(
-            "SELECT 1 FROM sqlite_master WHERE type='table' AND name='record_memberships'",
-          )
-          .get();
+        const snapshot = this.load();
         const values = new Map<string, string>();
-        if (hasRecords) {
-          const repo = new RecordRepository(this);
-          for (const row of this.db
-            .prepare("SELECT page_id FROM record_memberships")
-            .all() as { page_id: string }[]) {
-            const record = repo.projection(row.page_id);
-            values.set(row.page_id, Object.values(record.values).join(" "));
-          }
-        }
-        return searchPages(this.pages(), r.query, values);
+        for (const record of snapshot.records ?? [])
+          values.set(record.pageId, Object.values(record.values).join(" "));
+        return searchPages(snapshot.pages, r.query, values);
       }
       case "pageSource":
         return (

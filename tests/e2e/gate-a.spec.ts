@@ -667,7 +667,7 @@ test("F03 default userData path and pre-ready directory failure are observable w
     await other.close();
   }
 });
-test("F07 malformed JSON opens an error screen with backup, and null doc never mounts editor", async () => {
+test("F07 malformed JSON stays read-only with raw export while healthy pages remain accessible", async () => {
   const { DatabaseSync } = await import("node:sqlite");
   const original = await window.evaluate(async () => {
     const s = await globalThis.window.folio.request<any>({ type: "load" });
@@ -692,11 +692,24 @@ test("F07 malformed JSON opens an error screen with backup, and null doc never m
     env: { ...process.env, FOLIO_DATA_DIR: folder },
   });
   window = await app.firstWindow();
-  await expect(window.locator(".loading")).toContainText("壊れたJSON");
+  await expect(window.getByRole("alert")).toContainText("壊れたJSON");
+  await expect(window.locator(".folio-editor")).toHaveCount(0);
+  const exportFile = join(exportsDir, "damaged-original.json");
+  await saveDialog(exportFile);
   await window
-    .getByRole("button", { name: "原本のバックアップを保存", exact: true })
+    .getByRole("button", { name: "原本JSONを保存", exact: true })
     .click();
-  await expect(window.locator(".loading")).toContainText("バックアップ保存先:");
+  await expect.poll(() => existsSync(exportFile)).toBe(true);
+  expect(readFileSync(exportFile, "utf8")).toBe("{broken-json");
+  const healthy = await window.evaluate(async (brokenId) => {
+    const snapshot = await globalThis.window.folio.request<any>({ type: "load" });
+    const page = snapshot.pages.find((item: any) => item.id !== brokenId && item.kind === "page" && !item.deletedAt && !item.documentError);
+    await globalThis.window.folio.request({ type: "setting", key: "activePage", value: page.id });
+    return page.title as string;
+  }, original.id);
+  await window.reload();
+  await expect(window.locator(".page-title")).toHaveValue(healthy);
+  await expect(window.locator(".folio-editor")).toBeVisible();
   db = new DatabaseSync(join(folder, "workspace.sqlite"), { readOnly: true });
   expect(
     db.prepare("SELECT data FROM pages WHERE id=?").get(original.id)?.data,

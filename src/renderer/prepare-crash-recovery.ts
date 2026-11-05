@@ -4,6 +4,7 @@ import type { DatabaseReadSnapshot } from "../shared/database-operation";
 import { legacyMigrationOperationSchema } from "../shared/legacy-migration-operation";
 import { propertyOperationSchema } from "../shared/property-operation";
 import { resolveReliableSave } from "./reliable-save";
+import { resolvePageOperation } from "./page-operation-coordinator";
 import { resolveDatabaseOperation } from "./reliable-database-operation";
 import { reconcileEditRecovery, reconcileDatabaseRecovery } from "./crash-recovery-resume";
 import { exchangeStructural, type StructuralOperation } from "./structural-operation";
@@ -17,6 +18,10 @@ export async function prepareCrashRecovery(input: CrashRecoverySnapshot,
   for (const operation of snapshot.creations) {
     const result = await resolveDatabaseOperation(operation, api);
     if (result.status !== "applied") throw new Error(result.message || "DB作成結果を確認できません。");
+  }
+  for (const operation of snapshot.pageOperations ?? []) {
+    const result = await resolvePageOperation(operation, api);
+    if (result.status !== "applied") throw new Error(result.message || "ページ作成結果を確認できません。");
   }
   for (const entry of snapshot.externalOperations) {
     const operation: StructuralOperation = entry.family === "migration" ?
@@ -65,5 +70,6 @@ export async function prepareCrashRecovery(input: CrashRecoverySnapshot,
     if (!source.some((entry) => entry.base.id === draft.pageId)) throw new Error("入力中の値の保存元を確認できません。");
   }
   snapshot.creations = []; snapshot.externalOperations = [];
+  if (snapshot.pageOperations) snapshot.pageOperations = [];
   return validateCrashRecoverySnapshot(snapshot);
 }

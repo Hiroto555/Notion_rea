@@ -44,3 +44,11 @@ export function resolveReliableSave(operation: SaveOperation,
   send: SaveTransport = (request) => window.folio.request(request), timeoutMs = 15_000): Promise<SaveResult> {
   return exchange("save:resolve", operation, send, timeoutMs);
 }
+
+/** Explicit retry of an immutable, already checkpointed request. Resolve
+ * first so an applied/rejected result is never resubmitted as a new action. */
+export async function retryReliableSave(operation: SaveOperation,
+  send: SaveTransport = (request) => window.folio.request(request), timeoutMs = 15_000): Promise<SaveResult> {
+  const resolved = await resolveReliableSave(operation, send, timeoutMs);
+  return resolved.status === "unknown" ? sendReliableSave(operation, send, timeoutMs) : resolved;
+}

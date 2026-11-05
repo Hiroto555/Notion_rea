@@ -342,7 +342,51 @@ export const databaseOperationSchema = z.object({
       patch: ownerPagePatchSchema, settings: databaseSettingsSchema}).strict(),
   ]),
 }).strict();
+/**
+ * Ordinary Page commands are immutable identities. The exact command is part
+ * of the fingerprint, so the same operation ID with different input is refused
+ * instead of silently applying a different Page.
+ */
+export const pageOperationSchema = z.object({
+  operationId: z.string().min(1).max(100),
+  sessionId: z.string().min(1).max(100),
+  seq: z.number().int().positive().safe(),
+  command: z.discriminatedUnion("kind", [
+    z.object({
+      kind: z.literal("createPage"),
+      parentId: z.string().min(1).max(500).nullable(),
+      title: z.string().max(500),
+      /**
+       * Optional initial body committed with the Page itself. Commands written
+       * before this field existed remain valid and create the same blank Page.
+       */
+      doc: z
+        .custom<Doc>(isDocument, "初期本文の形式またはサイズが上限を外れています。")
+        .optional(),
+    }).strict(),
+    z.object({
+      kind: z.literal("duplicatePage"),
+      pageId: z.string().min(1).max(500),
+      revision: z.number().int().nonnegative().safe().max(Number.MAX_SAFE_INTEGER - 1),
+    }).strict(),
+  ]),
+}).strict();
+const byteLimit = z.number().int().nonnegative().safe().optional();
+const managedGrowthLimitsSchema = z.object({
+  maxDatabaseBytes: byteLimit, maxAssetBytes: byteLimit, maxBackupBytes: byteLimit, maxReceiptRows: byteLimit,
+}).strict();
 export const requestSchema = z.discriminatedUnion("type", [
+  z.object({type:z.literal("startup:status")}).strict(),
+  z.object({type: z.literal("storage:readLimits")}).strict(),
+  z.object({type: z.literal("storage:applyLimits"), expectedRevision: z.string().uuid().nullable(), configured: managedGrowthLimitsSchema}).strict(),
+  z.object({type: z.literal("storage:pressure")}).strict(),
+  z.object({type: z.literal("storage:overview")}).strict(),
+  z.object({type: z.literal("storage:archivePlan")}).strict(),
+  z.object({type: z.literal("storage:orphanPlan")}).strict(),
+  z.object({type: z.literal("storage:orphanMove"), ticket: z.string().uuid()}).strict(),
+  z.object({type: z.literal("storage:archiveMove"), ticket: z.string().uuid()}).strict(),
+  z.object({type: z.literal("storage:rawSalvage")}).strict(),
+  z.object({type: z.literal("workspaceBackup:release")}).strict(),
   z.object({type: z.literal("recovery:read")}).strict(),
   z.object({type: z.literal("recovery:write"), expectedGeneration: z.number().int().nonnegative().safe(), snapshot: crashRecoverySnapshotSchema}).strict(),
   z.object({type: z.literal("recovery:copy"), recoveryId: z.string().regex(/^[a-zA-Z0-9:_-]{1,200}$/),
@@ -351,6 +395,8 @@ export const requestSchema = z.discriminatedUnion("type", [
   propertyPreviewRequestSchema, propertyCommitRequestSchema, propertyResolveRequestSchema,
   z.object({type: z.literal("database:commit"), operation: databaseOperationSchema}).strict(),
   z.object({type: z.literal("database:resolve"), operation: databaseOperationSchema}).strict(),
+  z.object({type: z.literal("page:commit"), operation: pageOperationSchema}).strict(),
+  z.object({type: z.literal("page:resolve"), operation: pageOperationSchema}).strict(),
   z.object({type: z.literal("database:read"), databasePageId: z.string().min(1).max(500)}).strict(),
   z.object({type: z.literal("save:commit"), operation: saveOperationSchema}).strict(),
   z.object({type: z.literal("save:resolve"), operation: saveOperationSchema}).strict(),

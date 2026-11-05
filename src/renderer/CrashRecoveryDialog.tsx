@@ -1,4 +1,5 @@
 import type { CrashRecoveryRead } from "../shared/crash-recovery";
+import { describePageOperation } from "../shared/page-operation";
 import { DialogFrame } from "./Modal";
 import "./crash-recovery-dialog.css";
 
@@ -8,6 +9,8 @@ export type CrashRecoveryDialogProps = {
   error?: string;
   onResume: () => void;
   onCopy: () => void;
+  /** Explicit retry of retained page create/duplicate operations only. */
+  onRetryPageOperations?: () => void;
 };
 
 /** The parent owns recovery data, receipt checks, actions and dismissal. */
@@ -17,9 +20,11 @@ export function CrashRecoveryDialog({
   error,
   onResume,
   onCopy,
+  onRetryPageOperations,
 }: CrashRecoveryDialogProps) {
   const snapshot = read.status === "ready" ? read.snapshot : undefined;
   const available = read.status === "ready" && !!snapshot;
+  const pageOperations = snapshot?.pageOperations ?? [];
   const blocked =
     read.status === "blocked" || (read.status === "ready" && !snapshot);
   const counts = snapshot
@@ -28,6 +33,7 @@ export function CrashRecoveryDialog({
         ["レコードの入力", snapshot.records.length],
         ["データベースの変更", snapshot.databases.length],
         ["データベースの作成", snapshot.creations.length],
+        ["ページの作成・複製", snapshot.pageOperations?.length ?? 0],
         ["入力途中の値", snapshot.rawDrafts.length],
         ["プロパティ変更・移行", snapshot.externalOperations.length],
         ["入力元が未確認の入力", snapshot.unverifiedInputs?.length ?? 0],
@@ -61,6 +67,27 @@ export function CrashRecoveryDialog({
                 </div>
               ))}
             </dl>
+            {!!pageOperations.length && (
+              <div className="crash-recovery-options">
+                <p>
+                  <strong>ページの作成・複製</strong>
+                  保存済みの結果を確認できていない、または拒否された操作です。操作内容:
+                </p>
+                <ul>
+                  {pageOperations.slice(0, 5).map((operation) => (
+                    <li key={operation.operationId}>
+                      {describePageOperation(operation)}
+                    </li>
+                  ))}
+                  {pageOperations.length > 5 && (
+                    <li>ほか {pageOperations.length - 5} 件</li>
+                  )}
+                </ul>
+                <p>
+                  結果が保存済みなら照合だけを行います。結果が不明な操作だけを、同じID・同じ内容のまま再送します。拒否された操作は再送せず理由を表示します。新しい操作IDで作り直すことはありません。
+                </p>
+              </div>
+            )}
           </>
         )}
         {blocked && (
@@ -95,6 +122,15 @@ export function CrashRecoveryDialog({
         )}
         {busy && <p role="status">復旧処理を進めています…</p>}
         <footer>
+          {onRetryPageOperations && !!pageOperations.length && (
+            <button
+              type="button"
+              disabled={busy || !available}
+              onClick={onRetryPageOperations}
+            >
+              同じ操作で再試行
+            </button>
+          )}
           <button type="button" disabled={busy || !available} onClick={onCopy}>
             別ページに復旧
           </button>

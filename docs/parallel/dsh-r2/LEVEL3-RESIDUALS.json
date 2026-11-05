@@ -1,0 +1,1049 @@
+{
+  "schemaVersion": 1,
+  "document": "Folio Level 3 G1-G8 independent gate evidence and residuals",
+  "auditor": "D",
+  "generatedAt": "2026-11-05T00:50:00+09:00",
+  "baseline": {
+    "worktree": "<workspace-root>/Folio-l3-r2-audit",
+    "branch": "codex/folio-l3-r2-audit-20261105",
+    "head": "e00dc172f413f547ee6f0a0beab6d7bfa6d757d3",
+    "sourceEquivalentHeadForTests": "a8bfd3240a0abf37ae47bafbbe0c0ffb0a3478a5",
+    "sourceEquivalenceNote": "git diff a8bfd32..e00dc17 contains only 4 docs files; src/tests/package/lock are unchanged.",
+    "originalAuditSource": "1b9858713106848e0859c63414cd31c6d4daf024",
+    "originalAuditReport": "<workspace-root>/Notion_rea/outputs/folio-technical-audit-20261104/REPORT.ja.md"
+  },
+  "scope": {
+    "gates": [
+      "G1",
+      "G2",
+      "G3",
+      "G4",
+      "G5",
+      "G6",
+      "G7",
+      "G8"
+    ],
+    "productCodeChanged": false,
+    "existingTestsChanged": false,
+    "configChanged": false,
+    "guiRun": false,
+    "fullSuiteRun": false,
+    "distributedFeaturesAdded": false,
+    "all47ItemsInScope": false,
+    "level3CertificationByD": false,
+    "note": "D reports evidence and gaps only. Codex owns final judgment and integration."
+  },
+  "statusLegend": {
+    "PASS": "Dが確認した範囲で必要条件の証拠が揃う。Level 3到達認定ではない。",
+    "PARTIAL": "実装または既存試験はあるが、必要条件の一部が未実装・未検証。",
+    "UNMET": "必要条件を満たす実装・証拠がない。",
+    "NOT_RUN": "実行していない。成功として扱わない。"
+  },
+  "summary": {
+    "G1": "PARTIAL",
+    "G2": "PASS",
+    "G3": "PARTIAL",
+    "G4": "PARTIAL",
+    "G5": "PARTIAL",
+    "G6": "PASS",
+    "G7": "UNMET",
+    "G8": "PARTIAL",
+    "passScope": "G2/G6のPASSは非GUI（コード+既存Vitest）範囲。GUI/全体suite/CIはNOT_RUN。",
+    "level3Reached": false
+  },
+  "gates": [
+    {
+      "id": "G1",
+      "name": "ローカル完結",
+      "status": "PARTIAL",
+      "scope": "コード点検は完了。オフライン隔離GUIはNOT_RUN。",
+      "requirement": "ネットなしで起動・通常編集・ローカル検索・保存・再open・ローカル書出しが成立。任意の外部AI等は除外。ネット依存の実コード点検＋後日の隔離GUI確認。",
+      "provided": [
+        "起動はローカル workspace.sqlite と assets/ のみ（src/main/index.ts:122-128）",
+        "SQLite は WAL / synchronous=FULL（src/persistence/store.ts:79-81）",
+        "検索はローカル snapshot（src/persistence/store.ts:1334-1340, src/persistence/search-query.ts:57）",
+        "保存は commitSave / commitPageOperation（src/persistence/store.ts:780-840, src/persistence/page-operations.ts:118-183）",
+        "書き出しはローカル保存先への writeFileSync（src/main/index.ts:310-323）",
+        "folio-asset は pathToFileURL のローカルファイルだけを net.fetch（src/main/index.ts:137-152）",
+        "本番CSPは default-src 'self'、connect-src は self と開発用 localhost ws（index.html:1）",
+        "src/sync は製品entry未接続。build entryは main/preload のみ（scripts/build.mjs:3,12）。syncを使うのは tests/sync-checkpoint.test.ts:19-22 だけ"
+      ],
+      "existingTests": [
+        {
+          "path": "tests/store.test.ts",
+          "line": 26,
+          "name": "persists Japanese/English, hierarchy, preferences across reopen"
+        },
+        {
+          "path": "tests/r7-search.test.ts",
+          "line": 41,
+          "name": "ranks exact title, title prefix, other title, then newer body matches"
+        },
+        {
+          "path": "tests/r7-markdown.test.ts",
+          "line": 7,
+          "name": "Markdown title round trip"
+        },
+        {
+          "path": "tests/workspace.test.ts",
+          "line": 60,
+          "name": "migration and backup restoration preserve pages, DB rows and attachment bytes"
+        },
+        {
+          "path": "tests/output-path.test.ts",
+          "line": 5,
+          "name": "rejects workspace outputs and aliases but permits an external namesake"
+        }
+      ],
+      "executedInThisAudit": [
+        "tests/store.test.ts",
+        "tests/r7-search.test.ts",
+        "tests/workspace.test.ts"
+      ],
+      "priorEvidence": [
+        "元監査はNode試験757件とE2E 197件の過去記録を持つが、通信遮断での全アプリ操作は未実施（REPORT.ja.md:45-53）。",
+        "R1はquiet入口のみで、オフラインGUI確認とE2EはNOT_RUN（docs/parallel/dsh-r1/INTEGRATION-REVIEW.ja.md:45-53）。"
+      ],
+      "residuals": [
+        {
+          "id": "D-G1-R1",
+          "severity": "high",
+          "blocksGate": true,
+          "summary": "ネットワーク無効下の起動〜編集〜検索〜保存〜再open〜書出しがNOT_RUN。",
+          "owner": "Codex/GUI"
+        },
+        {
+          "id": "D-G1-R2",
+          "severity": "low",
+          "blocksGate": false,
+          "summary": "本番CSPにも開発用 ws://127.0.0.1:5173 が残る。localhost限定で外部依存ではないが不要な許可。",
+          "owner": "Codex"
+        },
+        {
+          "id": "D-G1-R3",
+          "severity": "low",
+          "blocksGate": false,
+          "summary": "外部リンクは shell.openExternal でユーザー操作によりネットワークへ出る。データ依存ではない。",
+          "owner": "Codex"
+        },
+        {
+          "id": "D-G1-R4",
+          "severity": "medium",
+          "blocksGate": false,
+          "summary": "src/sync はテスト専用の実験module。Level 3条件に分散同期を追加しない。",
+          "owner": "Codex"
+        }
+      ],
+      "nextAcceptanceTest": "専用一時 FOLIO_DATA_DIR とネットワーク無効の環境で、GUI許可後に起動→Page作成→本文編集→検索→保存→終了→再起動→再open→Markdown/HTML/JSON書出しを確認する。",
+      "owner": "Codex（GUI）/ 利用者（許可）"
+    },
+    {
+      "id": "G2",
+      "name": "正常操作の不変条件",
+      "status": "PASS",
+      "scope": "非GUI。通常Pageのcreate/duplicate/move/trash/restoreとlegacy/v4混在の既存Vitest。GUIはNOT_RUN。",
+      "requirement": "Page/Doc/recordのID・所属・順序・参照とtitle上限を維持。create/duplicate/move/trash/restore、legacy/v4混在、失敗時原本不変、再openを試験。",
+      "provided": [
+        "title上限500と複製suffixのclamp（src/shared/types.ts:475,483; src/persistence/store.ts:1157-1161）",
+        "createの親/record/position検査とSAVEPOINT（src/persistence/store.ts:537-627）",
+        "duplicateの新ID・root位置・trash予約・部分rollback（src/persistence/store.ts:1117-1177）",
+        "moveのcycle/tie/record保護（src/persistence/store.ts:1034-1116）",
+        "trash/restoreのdeletedAt stamp subtree（src/persistence/store.ts:1179-1208）",
+        "失敗時ROLLBACKと接続poison（src/persistence/store.ts:236-254,416-509）",
+        "record/登録DBを巻き込む汎用lifecycleは書き込み前に明示拒否（専用backend経路は別）",
+        "duplicateはdoc値をそのまま複製（JSON再直列化）。block ID/リンクの再マップ仕様はない。"
+      ],
+      "existingTests": [
+        {
+          "path": "tests/local-integrity-regressions.test.ts",
+          "line": 59,
+          "name": "反復複製・移動・新規作成"
+        },
+        {
+          "path": "tests/local-integrity-regressions.test.ts",
+          "line": 90,
+          "name": "歴史的tieを書き換えない"
+        },
+        {
+          "path": "tests/local-integrity-regressions.test.ts",
+          "line": 132,
+          "name": "subtree複製と子順序"
+        },
+        {
+          "path": "tests/local-integrity-regressions.test.ts",
+          "line": 187,
+          "name": "500文字/絵文字title"
+        },
+        {
+          "path": "tests/local-integrity-regressions.test.ts",
+          "line": 223,
+          "name": "部分複製rollback"
+        },
+        {
+          "path": "tests/store.test.ts",
+          "line": 107,
+          "name": "moves, trashes, and restores subtrees transactionally"
+        },
+        {
+          "path": "tests/move-record-isolation.test.ts",
+          "line": 43,
+          "name": "rejects moving a record, targeting a record, or moving a subtree containing a record"
+        },
+        {
+          "path": "tests/move-record-isolation.test.ts",
+          "line": 78,
+          "name": "leaves all Pages untouched when the moved Page write fails"
+        },
+        {
+          "path": "tests/move-record-isolation.test.ts",
+          "line": 118,
+          "name": "preserves mixed DB ordering without rewriting the DB or unrelated Page across restart"
+        },
+        {
+          "path": "tests/record-lifecycle.test.ts",
+          "line": 86,
+          "name": "duplicates records and database into independent identities with local link rewrite and row order"
+        },
+        {
+          "path": "tests/page-order-repair.test.ts",
+          "line": 156,
+          "name": "preview is read-only, deterministic"
+        }
+      ],
+      "executedInThisAudit": [
+        "tests/local-integrity-regressions.test.ts",
+        "tests/store.test.ts",
+        "tests/move-record-isolation.test.ts",
+        "tests/record-lifecycle.test.ts",
+        "tests/page-order-repair.test.ts"
+      ],
+      "priorEvidence": [
+        "元監査I02/I09を独立probeで再現。基準HEADの祖先 1eebb71 で同順位と500文字titleを修正し、tests/local-integrity-regressions.test.ts に回帰試験を追加。",
+        "基準HEAD e00dc17はa8bfd32の子孫で、src/testsは同一。"
+      ],
+      "residuals": [
+        {
+          "id": "D-G2-R1",
+          "severity": "medium",
+          "blocksGate": false,
+          "summary": "Bの順序修復APIは存在するがGUI/IPC未接続。既存tieは安全に拒否され、ユーザーは修復できない。",
+          "owner": "B/Codex"
+        },
+        {
+          "id": "D-G2-R2",
+          "severity": "low",
+          "blocksGate": false,
+          "summary": "record/登録DBのtrash/restore/duplicate/historyはbackendに一部経路があるが、製品UIはunavailableで未提供（I07）。履歴復元はmainでも拒否。",
+          "owner": "Codex"
+        },
+        {
+          "id": "D-G2-R3",
+          "severity": "low",
+          "blocksGate": false,
+          "summary": "ページ複製内のblock ID/ページ間リンクの再マップ仕様・専用試験はない（doc値は保持）。",
+          "owner": "Codex"
+        },
+        {
+          "id": "D-G2-R4",
+          "severity": "high",
+          "blocksGate": false,
+          "summary": "GUIのcreate/duplicate/move/trash/restoreはNOT_RUN。",
+          "owner": "Codex/GUI"
+        }
+      ],
+      "nextAcceptanceTest": "GUI許可後に一時workspaceで作成→複製（500文字title含む）→移動→ゴミ箱→復元→再起動→再openを確認する。Nodeは統合HEADで既存試験を再実行する。",
+      "owner": "Codex（GUI）/ B（修復導線は任意）"
+    },
+    {
+      "id": "G3",
+      "name": "保存の確定と入力保護",
+      "status": "PARTIAL",
+      "scope": "save/receiptの原子性は成立。template/importの初期本文が別操作で、条件未達。",
+      "requirement": "Pageとreceiptが一緒に確定/rollback。ACK喪失・重複・timeoutで二重生成/虚偽成功なし。template/importの初期本文を作成と同一操作で永続化し、送信前checkpointにも含める。",
+      "provided": [
+        "commitSaveはBEGIN IMMEDIATE内でreceiptを読み、SAVEPOINTでPage変更し、receiptを同一transactionへINSERT（src/persistence/store.ts:780-840）",
+        "duplicateのterminal rejectionもreceiptとして残す（src/persistence/page-operations.ts:118-183）",
+        "送信前checkpointのflush、失敗時は送信しない（src/renderer/page-operation-coordinator.ts:187-198; src/renderer/App.tsx:596-602）",
+        "ACKのoperation/session/seq/fingerprint/revision/patch照合、timeoutはunknown（src/renderer/reliable-save.ts:14-36）",
+        "通常Pageのcreate/duplicateはoperation receiptで1回に固定（src/persistence/page-operations.ts:118-171）"
+      ],
+      "unmet": [
+        "template/importは create() で空Pageを作成した後、if (doc) update(p.id,{doc}) で本文を別保存する（src/renderer/App.tsx:767-812,1195）。作成と初期本文は同一operationでない。",
+        "templateはさらにiconを別updateする（src/renderer/App.tsx:2516-2517）。",
+        "create receiptには本文が含まれず、作成成功後・本文保存前に落ちると空Pageが残る。"
+      ],
+      "existingTests": [
+        {
+          "path": "tests/page-operation-receipts.test.ts",
+          "line": 63,
+          "name": "commits one createPage per operation and replays the same Page after reopen"
+        },
+        {
+          "path": "tests/page-operation-receipts.test.ts",
+          "line": 100,
+          "name": "keeps a lost-ACK create resumable: one Page after resolve and resend"
+        },
+        {
+          "path": "tests/page-operation-receipts.test.ts",
+          "line": 120,
+          "name": "duplicates once, refuses a stale source revision, and never copies twice"
+        },
+        {
+          "path": "tests/page-operation-receipts.test.ts",
+          "line": 175,
+          "name": "rolls the new Page back when its receipt cannot be stored"
+        },
+        {
+          "path": "tests/save-receipts.test.ts",
+          "line": 10,
+          "name": "commits data and receipt atomically"
+        },
+        {
+          "path": "tests/save-receipts.test.ts",
+          "line": 50,
+          "name": "rolls back data and history if receipt insertion fails"
+        },
+        {
+          "path": "tests/save-receipts.test.ts",
+          "line": 82,
+          "name": "resolves a COMMIT-completed exception from durable receipt, including after Store reopen"
+        },
+        {
+          "path": "tests/dsh-integration-regressions.test.ts",
+          "line": 103,
+          "name": "never commits a new Page alongside a rejected receipt after a partial SQL failure"
+        },
+        {
+          "path": "tests/dsh-integration-regressions.test.ts",
+          "line": 116,
+          "name": "retains an applied ACK with a missing Page ID as unknown until it is resolved"
+        }
+      ],
+      "executedInThisAudit": [
+        "tests/page-operation-receipts.test.ts",
+        "tests/save-receipts.test.ts",
+        "tests/dsh-integration-regressions.test.ts"
+      ],
+      "priorEvidence": [
+        "R1で通常作成/複製のatomicityを改善。",
+        "template/importの2段階はR1残件4として記録済み（INTEGRATION-REVIEW.ja.md:68）。",
+        "第2ラウンドAの修正はこのworktreeに未統合。"
+      ],
+      "residuals": [
+        {
+          "id": "D-G3-R1",
+          "severity": "high",
+          "blocksGate": true,
+          "summary": "template/importの初期本文が作成と別操作。失敗時に空Pageが残る。",
+          "owner": "A"
+        },
+        {
+          "id": "D-G3-R2",
+          "severity": "low",
+          "blocksGate": true,
+          "summary": "templateのiconが別updateで部分状態が残り得る。",
+          "owner": "A"
+        },
+        {
+          "id": "D-G3-R3",
+          "severity": "high",
+          "blocksGate": false,
+          "summary": "GUIのtemplate/import作成と再openはNOT_RUN。",
+          "owner": "Codex/GUI"
+        }
+      ],
+      "nextAcceptanceTest": "template/importのPage+docを1 operationでcommitし、createと本文保存の間の失敗で空Pageが残らないこと。ACK喪失・再送でPageが1つだけであること。送信前checkpointに初期本文が含まれること。",
+      "owner": "A（実装）/ Codex（統合・GUI）"
+    },
+    {
+      "id": "G4",
+      "name": "復旧と競合",
+      "status": "PARTIAL",
+      "scope": "保持・照会・競合拒否・復旧コピーは成立。未送信操作の同一ID明示再試行がない。",
+      "requirement": "未保存入力と未確定操作を再open後も保持。未送信操作はユーザーの明示再試行で同じIDを使用。rejected/unknownを消して成功にしない。revision不一致は上書きせず、復旧コピーなど説明可能な出口を持つ。",
+      "provided": [
+        "checkpointはfsync・checksum・generation CAS・readback（src/persistence/crash-recovery-file.ts:73-112）",
+        "送信前checkpoint、失敗時は送信しない（src/renderer/page-operation-coordinator.ts:187-198; src/renderer/App.tsx:596-602）",
+        "ACK喪失・timeout・不一致はunknown保持（src/renderer/reliable-save.ts:7-37; src/renderer/page-operation-coordinator.ts:28-68）",
+        "起動時はreceipt照会しappliedだけ復元、rejected/unknownを成功にしない（src/renderer/prepare-crash-recovery.ts:18-47）",
+        "revision不一致は書かず入力を保持（src/persistence/store.ts:640-647,756-759; src/renderer/App.tsx:606-612）",
+        "説明可能な出口: 別ページ復旧（src/persistence/crash-recovery-copy.ts:12-41）、未保存変更の別ファイル記録、退避JSON→再読込→復旧（src/renderer/App.tsx:1792-1888,1705-1717）"
+      ],
+      "unmet": [
+        "未送信のsave/Page作成を同じoperationIdで再送する経路がない。resolveはreceiptがない限りunknownを返し続ける（src/persistence/store.ts:775-779; src/persistence/page-operations.ts:102-110）。",
+        "session中の「保存を再試行」は「保存の競合を安全に再試行できません」と拒否する（src/renderer/App.tsx:1750-1756）。",
+        "起動時もunknownが1件あると復旧全体が止まる（src/renderer/prepare-crash-recovery.ts:22-25）。"
+      ],
+      "existingTests": [
+        {
+          "path": "tests/crash-recovery.test.ts",
+          "line": 93,
+          "name": "waits for the operation-bearing durable checkpoint before sending"
+        },
+        {
+          "path": "tests/crash-recovery.test.ts",
+          "line": 112,
+          "name": "resolves a committed record after restart"
+        },
+        {
+          "path": "tests/crash-recovery.test.ts",
+          "line": 134,
+          "name": "never promotes an old receipt onto a newer source"
+        },
+        {
+          "path": "tests/crash-recovery.test.ts",
+          "line": 154,
+          "name": "keeps missing receipts query-only across restart"
+        },
+        {
+          "path": "tests/prepare-crash-recovery.test.ts",
+          "line": 21,
+          "name": "prepares an ordinary Page after lost COMMIT ACK"
+        },
+        {
+          "path": "tests/prepare-crash-recovery.test.ts",
+          "line": 85,
+          "name": "rejects a newer source after resolving an older committed receipt"
+        },
+        {
+          "path": "tests/recovery-checkpoint.test.ts",
+          "line": 39,
+          "name": "retries a lost ACK with the same CAS and same snapshot"
+        },
+        {
+          "path": "tests/pending-journal-file.test.ts",
+          "line": 30,
+          "name": "validates twice, checks the boundary twice, fsyncs and publishes UTF-8"
+        }
+      ],
+      "executedInThisAudit": [
+        "tests/crash-recovery.test.ts",
+        "tests/prepare-crash-recovery.test.ts",
+        "tests/recovery-checkpoint.test.ts",
+        "tests/pending-journal-file.test.ts"
+      ],
+      "priorEvidence": [
+        "R1残件3: checkpoint保存後、一度も送信されなかった操作はresolveがunknownのまま（INTEGRATION-REVIEW.ja.md:67）。",
+        "元監査はCOMMIT前後のSIGKILLのみで、全入力タイミングではない（REPORT.ja.md:70）。"
+      ],
+      "residuals": [
+        {
+          "id": "D-G4-R1",
+          "severity": "high",
+          "blocksGate": true,
+          "summary": "未送信操作を同じoperationIdで明示再送する経路がない。Aの担当。",
+          "owner": "A"
+        },
+        {
+          "id": "D-G4-R2",
+          "severity": "high",
+          "blocksGate": true,
+          "summary": "起動時recoveryはunknownが1件でもあると入力を復元できない。copy/exportに限定される。",
+          "owner": "A"
+        },
+        {
+          "id": "D-G4-R3",
+          "severity": "medium",
+          "blocksGate": false,
+          "summary": "session中の再試行は拒否。復旧は手動のJSON退避→再読込→取込で1操作ではない。",
+          "owner": "A/Codex"
+        },
+        {
+          "id": "D-G4-R4",
+          "severity": "high",
+          "blocksGate": false,
+          "summary": "GUIの起動時復旧・競合・再開はNOT_RUN。",
+          "owner": "Codex/GUI"
+        }
+      ],
+      "nextAcceptanceTest": "送信前checkpointだけを作り実送信しない状態で再起動し、ユーザーの明示retryが同じoperationIdで送信されPageが1つだけ作られること。ACK喪失→resolve→retryで重複しないこと。stale revisionで上書きせず復旧コピーを作れること。",
+      "owner": "A（実装）/ Codex（統合・GUI）"
+    },
+    {
+      "id": "G5",
+      "name": "backup/restore耐障害性",
+      "status": "PARTIAL",
+      "scope": "fsync・検証・別場所復元・不完全markerは実装済み。独立したSIGKILL中断試験（C）が未実施。",
+      "requirement": "完了前にDB・全添付・directoryのdurability barrierと検証。別の一時場所に復元し、原本不変。途中失敗・不完全marker・再openを検証。",
+      "provided": [
+        "backup先を排他作成し、不完全markerをfsync、親directoryもfsync（src/persistence/full-backup-create.ts:243-256）",
+        "添付は1ファイルずつ writeNewFileDurably→readback→directory fsync（src/persistence/full-backup-create.ts:68-113; src/persistence/durable-file.ts:48-80）",
+        "db snapshot/assets/targetのfsyncと、verify後のみmarker削除（src/persistence/full-backup-create.ts:260-307）",
+        "restoreは元を再検証し、存在しない新規folderへhash照合しながらコピー、fsync、再検証（src/persistence/full-backup-restore.ts:293-393）",
+        "不完全workspaceはStoreが起動拒否（src/persistence/store.ts:51-57）"
+      ],
+      "existingTests": [
+        {
+          "path": "tests/r8-backup-create.test.ts",
+          "line": 198,
+          "name": "creates a verified snapshot with all tables, history, receipts, settings and regular assets"
+        },
+        {
+          "path": "tests/r8-backup-create.test.ts",
+          "line": 390,
+          "name": "leaves a marked partial destination on copy or verification failure"
+        },
+        {
+          "path": "tests/r8-backup-independent.test.ts",
+          "line": 330,
+          "name": "round-trips the real v4 fixture table-for-table and byte-for-byte"
+        },
+        {
+          "path": "tests/r8-backup-independent.test.ts",
+          "line": 508,
+          "name": "rejects corrupt, future-version, missing-asset, symlinked and traversing snapshots"
+        },
+        {
+          "path": "tests/r8-backup-independent.test.ts",
+          "line": 647,
+          "name": "blocks a normal Store from opening a FOLIO-RECOVERY-INCOMPLETE workspace"
+        },
+        {
+          "path": "tests/r8-backup-restore.test.ts",
+          "line": 273,
+          "name": "restores IDs, page/row values, settings, history, receipts and assets byte-for-byte"
+        },
+        {
+          "path": "tests/r8-backup-restore.test.ts",
+          "line": 514,
+          "name": "leaves a marked partial copy and Store refuses it after a copy failure"
+        },
+        {
+          "path": "tests/durability-attachment-backup.test.ts",
+          "line": 314,
+          "name": "flushes a copied attachment body before its directory and the completed destination"
+        },
+        {
+          "path": "tests/durability-attachment-backup.test.ts",
+          "line": 372,
+          "name": "restores the incomplete guard if the final directory fsync fails after verification"
+        },
+        {
+          "path": "tests/r8-backup-verify.test.ts",
+          "line": 463,
+          "name": "rejects the incomplete marker by default, accepts it when allowed, and rejects future schemas"
+        }
+      ],
+      "executedInThisAudit": [
+        "tests/r8-backup-create.test.ts",
+        "tests/r8-backup-independent.test.ts",
+        "tests/r8-backup-restore.test.ts",
+        "tests/r8-backup-verify.test.ts",
+        "tests/durability-attachment-backup.test.ts"
+      ],
+      "priorEvidence": [
+        "元監査I01で添付fsync欠如を指摘。基準HEADの祖先 136bbfc で本文→directory→参照の順に修正済み。",
+        "物理停電耐性は主張しない。"
+      ],
+      "residuals": [
+        {
+          "id": "D-G5-R1",
+          "severity": "high",
+          "blocksGate": true,
+          "summary": "backup作成/復元の途中SIGKILL独立試験が未実施。既存はfsync/copy失敗注入のみ。",
+          "owner": "C"
+        },
+        {
+          "id": "D-G5-R2",
+          "severity": "low",
+          "blocksGate": false,
+          "summary": "物理電源断・OSクラッシュの保証は対象外。",
+          "owner": "Codex"
+        },
+        {
+          "id": "D-G5-R3",
+          "severity": "high",
+          "blocksGate": false,
+          "summary": "GUIのバックアップ/復元/復元先を開く導線はNOT_RUN。",
+          "owner": "Codex/GUI"
+        }
+      ],
+      "nextAcceptanceTest": "使い捨てfixtureの子Nodeで、DB snapshot後・添付コピー中・manifest公開前・marker削除直前をSIGKILLし、marker/partialが起動を拒否し原本がbyte不変であること。復元側も中断し不完全markerと原本不変を確認する。",
+      "owner": "C（中断試験）/ Codex（GUI）"
+    },
+    {
+      "id": "G6",
+      "name": "破損・未知schemaの隔離",
+      "status": "PASS",
+      "scope": "非GUI。破損Pageの隔離・健康Pageのload/search・原本raw救出・未知schema停止をコードと既存Vitestで確認。GUI救出はNOT_RUN。",
+      "requirement": "壊れた対象へ書かず原本rawを救出可能。健康なページ/DBへ到達できる。未対応schema/transaction cleanup失敗は安全に停止。",
+      "provided": [
+        "未知のuser_versionは開かず停止（src/persistence/store.ts:82-89）",
+        "不完全markerは起動停止（src/persistence/store.ts:51-57）",
+        "壊れたJSON/ID/metadata/未知schemaVersionはPageDataError→read-only placeholder（src/persistence/store.ts:199-288）",
+        "loadは健康Pageを返し、破損record owner配下だけread-only（src/persistence/store.ts:360-412）",
+        "破損Pageへのwrite/update/move/duplicate/trash/restoreを拒否（src/persistence/store.ts:295-312,1081,1145）",
+        "raw救出はpageSourceとUIの原本JSON保存（src/shared/types.ts:509; src/renderer/App.tsx:2129-2141）",
+        "transaction cleanup失敗は接続poison（src/persistence/store.ts:416-509）",
+        "未知/不完整record schemaはwrite前に拒否（src/persistence/store.ts:861-906）"
+      ],
+      "existingTests": [
+        {
+          "path": "tests/corrupt-page-isolation.test.ts",
+          "line": 54,
+          "name": "loads and searches healthy pages while preserving exact invalid JSON/metadata/ID bytes"
+        },
+        {
+          "path": "tests/corrupt-page-isolation.test.ts",
+          "line": 107,
+          "name": "omits a corrupt record projection, marks its owner read-only and keeps another database available"
+        },
+        {
+          "path": "tests/corrupt-page-isolation.test.ts",
+          "line": 135,
+          "name": "omits projections owned by a corrupt database and refuses record writes"
+        },
+        {
+          "path": "tests/corrupt-page-isolation.test.ts",
+          "line": 158,
+          "name": "keeps supported metadata and existing future-document read-only protection"
+        },
+        {
+          "path": "tests/store-raw-database-guard.test.ts",
+          "line": 60,
+          "name": "keeps an unknown history byte-for-byte"
+        },
+        {
+          "path": "tests/record-page-schema-guard.test.ts",
+          "line": 28,
+          "name": "refuses record Page writes for missing v3 or v4 membership/history tables"
+        },
+        {
+          "path": "tests/record-page-schema-guard.test.ts",
+          "line": 47,
+          "name": "rejects absent, unknown or ambiguous v3 and v4 marker contents"
+        },
+        {
+          "path": "tests/store-atomic-load.test.ts",
+          "line": 352,
+          "name": "keeps Store disabled even if underlying close fails"
+        },
+        {
+          "path": "tests/store-atomic-load.test.ts",
+          "line": 424,
+          "name": "preserves close and state-probe errors while disabling a connection"
+        }
+      ],
+      "executedInThisAudit": [
+        "tests/corrupt-page-isolation.test.ts",
+        "tests/store-raw-database-guard.test.ts",
+        "tests/store-atomic-load.test.ts"
+      ],
+      "priorEvidence": [
+        "元監査I03は1件の不正JSONでworkspace全体が止まることを独立probeで再現（REPORT.ja.md:219）。",
+        "基準HEADの祖先 1eebb71 でpage単位quarantineとowner隔離へ拡張。"
+      ],
+      "residuals": [
+        {
+          "id": "D-G6-R1",
+          "severity": "high",
+          "blocksGate": false,
+          "summary": "GUIのread-only表示→健康Page編集→原本JSON保存はNOT_RUN（後日）。",
+          "owner": "Codex/GUI"
+        },
+        {
+          "id": "D-G6-R2",
+          "severity": "low",
+          "blocksGate": false,
+          "summary": "SQLite本体の破損修復は提供しない。Page JSON破損とは別。",
+          "owner": "Codex"
+        },
+        {
+          "id": "D-G6-R3",
+          "severity": "low",
+          "blocksGate": false,
+          "summary": "未知schemaは移行せず停止する意図した安全側動作。",
+          "owner": "Codex"
+        },
+        {
+          "id": "D-G6-R4",
+          "severity": "low",
+          "blocksGate": false,
+          "summary": "transaction cleanup失敗はアプリ再起動が必要で、プロセス内自動回復はしない。",
+          "owner": "Codex"
+        }
+      ],
+      "nextAcceptanceTest": "GUI許可後に一時workspaceの1 PageだけJSONを壊し、再起動→健康Pageの表示/検索/編集/保存→壊れたPageのread-only→原本JSON保存→再起動で原本bytes不変を確認する。",
+      "owner": "Codex（GUI）"
+    },
+    {
+      "id": "G7",
+      "name": "容量と処理量の管理",
+      "status": "UNMET",
+      "scope": "receipt/backup/添付の保持・上限・GC・容量表示がない。main同期処理の制限も残る。",
+      "requirement": "receipt・backup・添付等の容量/増加を把握し、入力を消さない上限/保守手段を持つ。unknown操作をGCしない。1千/1万規模の処理量と許容範囲を記録し、main同期処理の制限を隠さない。",
+      "provided": [
+        "versionsは100件/Pageで切る（src/persistence/store.ts:945-949）",
+        "添付は20MB/件の上限（src/persistence/assets.ts:25-56）",
+        "backup previewにbytes/inventoryを表示（src/shared/workspace-backup.ts:22-25; src/renderer/workspace-backup/WorkspaceBackupDialog.tsx:229）"
+      ],
+      "absent": [
+        "save_receiptsの削除・上限・GC。save/Page/DB/property/migrationの各INSERTのみ（src/persistence/store.ts:837; src/persistence/database-operations.ts:87; src/persistence/page-operations.ts:181; src/persistence/property-operations.ts:208; src/persistence/legacy-migration-operation.ts:274）",
+        "backupの保持世代・合計容量・削除/移動（src/main/workspace-backup-service.ts:24-28）",
+        "添付orphan回収・workspace全体の容量集計",
+        "main同期処理のWorker/分割（src/main/index.ts:161,344）",
+        "unknown/rejected receiptを保持したまま容量を保守する契約"
+      ],
+      "measurements": {
+        "source": "tests/record-scale.test.ts:10",
+        "scope": "synthetic SQLite + model only; no GUI/startup/input timing",
+        "size1000": {
+          "loadMs": [
+            35.6,
+            102.7
+          ],
+          "searchMs": [
+            71.7,
+            145.2
+          ],
+          "viewModelMs": [
+            52.7,
+            83.7
+          ],
+          "migrationMs": 265.3
+        },
+        "size10000": {
+          "loadMs": [
+            196.4,
+            526.6
+          ],
+          "searchMs": [
+            210.6,
+            463.1
+          ],
+          "viewModelMs": [
+            176.2,
+            192.6
+          ],
+          "migrationMs": 2767.6
+        }
+      },
+      "existingTests": [
+        {
+          "path": "tests/record-scale.test.ts",
+          "line": 10,
+          "name": "measures synthetic record conversion, load, view-model query, search and saves"
+        }
+      ],
+      "executedInThisAudit": [
+        "tests/record-scale.test.ts"
+      ],
+      "priorEvidence": [
+        "元監査I04: 8,000字本文105回保存でversions 100に対しreceipt 105、result JSON 905,722 bytes（REPORT.ja.md:220）。",
+        "I05/I06: main同期SQL・全件検索・逐次IPC（REPORT.ja.md:221-222）。",
+        "R1のCは対象DBのscoped readだけで、workspace全体/検索/backupは対象外（INTEGRATION-REVIEW.ja.md:69）。"
+      ],
+      "residuals": [
+        {
+          "id": "D-G7-R1",
+          "severity": "high",
+          "blocksGate": true,
+          "summary": "receiptの保持/上限/容量表示/安全な保守契約がない。B担当。",
+          "owner": "B"
+        },
+        {
+          "id": "D-G7-R2",
+          "severity": "high",
+          "blocksGate": true,
+          "summary": "backupの保持世代・合計容量・保守手段がない。",
+          "owner": "B"
+        },
+        {
+          "id": "D-G7-R3",
+          "severity": "medium",
+          "blocksGate": true,
+          "summary": "添付orphan回収・容量集計がない。",
+          "owner": "B"
+        },
+        {
+          "id": "D-G7-R4",
+          "severity": "medium",
+          "blocksGate": true,
+          "summary": "main同期処理の制限を隠さない。Worker/分割は未実装。",
+          "owner": "B/Codex"
+        },
+        {
+          "id": "D-G7-R5",
+          "severity": "medium",
+          "blocksGate": true,
+          "summary": "容量UIはbackup previewだけ。receipt/assets/backupsの合計・増加率を表示しない。",
+          "owner": "B"
+        },
+        {
+          "id": "D-G7-R6",
+          "severity": "low",
+          "blocksGate": false,
+          "summary": "GC自体がないためunknownを消してはいないが、容量制御の代替にはならない。",
+          "owner": "B"
+        },
+        {
+          "id": "D-G7-R7",
+          "severity": "high",
+          "blocksGate": false,
+          "summary": "GUIの容量表示・backup管理はNOT_RUN。",
+          "owner": "Codex/GUI"
+        }
+      ],
+      "nextAcceptanceTest": "Bの非破壊計測contractでreceipt/backup/assetの件数・bytes・増加率を表示し、unknown/rejected receiptを削除しないことを試験する。上限/保守手段と入力削除なし・復旧可能を確認する。計測だけではPASSにしない。",
+      "owner": "B（実装）/ Codex（統合）"
+    },
+    {
+      "id": "G8",
+      "name": "独立検証と製品経路",
+      "status": "PARTIAL",
+      "scope": "同一ソースでcheck/buildと限定235件はPASS。全体suite/GUI/CIはNOT_RUN。",
+      "requirement": "同じ統合コミットで型/unit/build、障害・復旧試験、重要な画面操作→再openまでの証拠を揃える。既知P1を残して到達としない。",
+      "provided": [
+        "npm run check PASS / exit 0",
+        "npm run build PASS / exit 0（既知のdynamic import/chunk警告あり）",
+        "限定Vitest 24ファイル/235件 PASS（今回実行）",
+        "a8bfd32..e00dc17 はdocs 4ファイルのみでsrc/testsは同一",
+        "CI定義は .github/workflows/quiet-checks.yml:49 で npm run verify:quiet を呼ぶ"
+      ],
+      "priorEvidence": [
+        "R1統合 a8bfd32 は89ファイル/929件 PASS、型/build PASS（INTEGRATION-REVIEW.ja.md:45-53）。今回は再実行していない。",
+        "元監査は78ファイル/757件とE2E 197件の過去記録（REPORT.ja.md:45-53）。"
+      ],
+      "residuals": [
+        {
+          "id": "D-G8-R1",
+          "severity": "high",
+          "blocksGate": true,
+          "summary": "統合HEADでの全体suite（89/929相当）をCodexが実行していない。",
+          "owner": "Codex"
+        },
+        {
+          "id": "D-G8-R2",
+          "severity": "high",
+          "blocksGate": true,
+          "summary": "GUI/E2Eの重要操作→再openがNOT_RUN。",
+          "owner": "Codex/GUI"
+        },
+        {
+          "id": "D-G8-R3",
+          "severity": "high",
+          "blocksGate": true,
+          "summary": "GitHub Actionsの実実行はNOT_RUN。workflow定義の存在は成功ではない。",
+          "owner": "Codex"
+        },
+        {
+          "id": "D-G8-R4",
+          "severity": "low",
+          "blocksGate": false,
+          "summary": "buildのdynamic/static import警告と500kB超chunk警告は未解消。",
+          "owner": "Codex"
+        },
+        {
+          "id": "D-G8-R5",
+          "severity": "medium",
+          "blocksGate": false,
+          "summary": "429/929等の件数や0 failuresだけではGate PASSにしない。今回の235件も同様。",
+          "owner": "Codex"
+        }
+      ],
+      "nextAcceptanceTest": "Codexが統合コミットでnpm run verify:quietを実行し同一ログを保存する。利用者許可後に一時データでnpm run test:e2e:batchを実行し、主要操作→再openを記録する。CIは初回push/PRで確認する。",
+      "owner": "Codex（全体suite/GUI/CI）/ 利用者（GUI許可）"
+    }
+  ],
+  "crossCutting": {
+    "singleInstanceWindow": {
+      "evidence": [
+        "src/main/index.ts:68",
+        "src/main/index.ts:73-76",
+        "src/main/index.ts:346-369",
+        "src/main/index.ts:398-400"
+      ],
+      "scope": "同一userDataプロファイルでは二重起動を拒否し、windowは1つ。別FOLIO_DATA_DIRのプロファイルは同時起動できる。複数window同時編集はない。",
+      "residual": "別プロセス・別プロファイルが同じ実データを開くことは防がない。"
+    },
+    "offlinePath": {
+      "evidence": [
+        "src/main/index.ts:137-152",
+        "index.html:1",
+        "scripts/build.mjs:3",
+        "scripts/build.mjs:12"
+      ],
+      "productNetworkDependency": false,
+      "testOnlyNetworkModule": "src/sync",
+      "residual": "通信遮断下のアプリ全体はNOT_RUN。"
+    },
+    "startupRecoveryUnknown": {
+      "evidence": [
+        "src/renderer/prepare-crash-recovery.ts:22-25",
+        "src/renderer/App.tsx:1750-1756"
+      ],
+      "status": "未送信操作の同一ID再試行がなく、unknownはcopy/exportに限定。"
+    },
+    "unknownSchema": {
+      "evidence": [
+        "src/persistence/store.ts:82-89",
+        "src/persistence/store.ts:199-288"
+      ],
+      "status": "自動移行せず停止。Page単位の破損は隔離し、健康Pageは利用可能。"
+    },
+    "capacityAndMainSync": {
+      "evidence": [
+        "src/persistence/store.ts:837",
+        "src/main/workspace-backup-service.ts:24-28",
+        "src/main/index.ts:161",
+        "src/main/index.ts:344"
+      ],
+      "status": "receipt/backup/attachmentsの保持制御なし。main同期SQL/fsync。"
+    }
+  },
+  "integrationUpdates": [
+    {
+      "gate": "G3",
+      "after": "A",
+      "check": "template/importの初期本文が作成と同一operationで永続化され、失敗時に空Pageが残らないこと。"
+    },
+    {
+      "gate": "G4",
+      "after": "A",
+      "check": "未送信操作の同じoperationIdでの明示再試行が1 Page/1 saveに収束すること。"
+    },
+    {
+      "gate": "G5",
+      "after": "C",
+      "check": "子Node SIGKILLの中断試験でmarker/partial/原本不変/再openが成立すること。"
+    },
+    {
+      "gate": "G7",
+      "after": "B",
+      "check": "非破壊計測・保持契約・上限制御。計測だけならUNMETのまま。"
+    },
+    {
+      "gate": "G2",
+      "after": "B/Codex",
+      "check": "修復APIをGUI/IPCへ接続する場合、通常操作の不変条件を壊さないこと。"
+    },
+    {
+      "gate": "G6",
+      "after": "GUI",
+      "check": "破損Pageのread-only表示・raw保存・健康Page編集を画面で確認すること。"
+    },
+    {
+      "gate": "G1",
+      "after": "GUI",
+      "check": "ネットワーク無効の隔離GUIで起動〜書出しを確認すること。"
+    },
+    {
+      "gate": "G8",
+      "after": "Codex",
+      "check": "全体suite・GUI batch・CIの同一コミット証拠を揃えること。"
+    }
+  ],
+  "execution": {
+    "environment": {
+      "node": "v24.20.0",
+      "npm": "11.19.0",
+      "viteCacheDir": "output/vite-cache"
+    },
+    "typecheck": {
+      "command": "npm run check",
+      "result": "PASS",
+      "exitCode": 0
+    },
+    "build": {
+      "command": "npm run build",
+      "result": "PASS",
+      "exitCode": 0,
+      "knownWarnings": true
+    },
+    "targetedVitest": {
+      "files": 24,
+      "tests": 235,
+      "result": "PASS",
+      "batches": [
+        {
+          "files": 7,
+          "tests": 72,
+          "log": "output/dispatch/d-logs/targeted-1.log"
+        },
+        {
+          "files": 7,
+          "tests": 55,
+          "log": "output/dispatch/d-logs/targeted-2.log"
+        },
+        {
+          "files": 7,
+          "tests": 86,
+          "log": "output/dispatch/d-logs/targeted-3.log"
+        },
+        {
+          "files": 1,
+          "tests": 1,
+          "log": "output/dispatch/d-logs/record-scale.log"
+        },
+        {
+          "files": 1,
+          "tests": 15,
+          "log": "output/dispatch/d-logs/targeted-4.log"
+        },
+        {
+          "files": 1,
+          "tests": 6,
+          "log": "output/dispatch/d-logs/targeted-5.log"
+        }
+      ]
+    },
+    "fullSuite": "NOT_RUN",
+    "gui": "NOT_RUN",
+    "e2e": "NOT_RUN",
+    "hostedCI": "NOT_RUN"
+  },
+  "notRun": [
+    "GUI / Electron / browser / OS clipboard / native dialogs / screenshots / osascript",
+    "full npm test / npm run verify:quiet suite",
+    "Playwright E2E and npm run test:e2e:batch",
+    "GitHub Actions",
+    "network-disabled app-wide offline run",
+    "SIGKILL during backup/restore",
+    "physical power loss / OS crash"
+  ],
+  "notes": [
+    "DはLevel 3到達を自己判断しない。PASSはDが確認した範囲の判定で、最終判定はCodex。",
+    "429/929等の過去件数、0 failures、テストファイルの存在だけをGate PASSの根拠にしない。",
+    "全47項目をLevel 3必須機能に広げない。対象は固定したG1-G8。",
+    "クラウド同期・共同編集・権限管理（Level 4以降）をLevel 3条件に追加しない。",
+    "A/B/Cの第2ラウンド成果はこのworktreeに未統合。将来の成果を織り込んでいない。",
+    "元監査のsource/archiveは最新実装ではない。基準HEAD e00dc17の実コードと既存テストを直接確認した。"
+  ],
+  "integrationReview": {
+    "reviewedAt": "2026-11-05T01:19:53+09:00",
+    "codeCommit": "bca29d1310d92f53a329d912f4527963f1989a5f",
+    "report": "INTEGRATION-REVIEW.ja.md",
+    "baselineFieldsPreserved": true,
+    "workerHeads": {
+      "A": "2576c399dd7a196913502851ea5d1d891f120049",
+      "B": "872d866d34242abe2917e447f17999ff046e0be4",
+      "C": "3acae130ca9cb177baad571c7c7d48e71f1c68d2",
+      "D": "4d994f5e80ecb009630c8bda47940267d9a94564"
+    },
+    "checks": {
+      "typecheck": "PASS",
+      "unitFiles": 97,
+      "unitTests": 996,
+      "build": "PASS",
+      "gui": "NOT_RUN",
+      "hostedCI": "NOT_RUN"
+    },
+    "gateSummary": {
+      "G1": "PARTIAL",
+      "G2": "PASS_NON_GUI",
+      "G3": "PASS_NON_GUI",
+      "G4": "PASS_NON_GUI",
+      "G5": "PASS_NON_GUI",
+      "G6": "PASS_NON_GUI",
+      "G7": "PARTIAL_REQUIREMENT_UNMET",
+      "G8": "PARTIAL"
+    },
+    "level3Reached": false,
+    "remaining": [
+      "G7 capacity enforcement and maintenance implementation",
+      "G1 app-wide offline GUI and G8 product-path GUI evidence",
+      "F1 raw workspace rescue distinct from verified full backup"
+    ],
+    "note": "All earlier summary/gate/execution fields describe the independent e00dc17 baseline. Use integrationReview and linked report for current judgment."
+  }
+}

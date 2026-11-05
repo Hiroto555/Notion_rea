@@ -2,12 +2,9 @@ import type { DatabaseSync } from "node:sqlite";
 import { DatabaseSync as SQLite } from "node:sqlite";
 import { createHash, randomUUID } from "node:crypto";
 import {
-  closeSync,
-  fsyncSync,
   linkSync,
   lstatSync,
   mkdirSync,
-  openSync,
   readFileSync,
   readdirSync,
   realpathSync,
@@ -21,9 +18,11 @@ import type {
   VerifiedWorkspaceBackup,
   WorkspaceBackupManifest,
 } from "../shared/workspace-backup";
+import { syncPath, writeNewFileDurably } from "./durable-file";
 import { inspectWorkspaceSnapshot, verifyFullBackup } from "./full-backup-verify";
 
 const MARKER = "FOLIO-RECOVERY-INCOMPLETE";
+const INCOMPLETE_MESSAGE = "Backup incomplete; do not use or open this snapshot.\n";
 const MANIFEST = "manifest.json";
 const DATABASE = "workspace.sqlite";
 const ASSETS = "assets";
@@ -60,15 +59,6 @@ function digest(bytes: Buffer): string {
   return createHash("sha256").update(bytes).digest("hex");
 }
 
-function syncPath(path: string): void {
-  const descriptor = openSync(path, "r");
-  try {
-    fsyncSync(descriptor);
-  } finally {
-    closeSync(descriptor);
-  }
-}
-
 type CopiedAsset = { bytes: number; sha256: string };
 
 /**
@@ -96,6 +86,8 @@ function copyAssetTree(
     if (info.isDirectory()) {
       mkdirSync(to, { mode: 0o700 });
       copyAssetTree(sourceRoot, outputRoot, from, to, copied);
+      // Flush child names before their parent directory is flushed.
+      syncPath(to);
       continue;
     }
     if (!info.isFile())
@@ -105,7 +97,10 @@ function copyAssetTree(
     // Read once and write those exact bytes. A concurrent source mutation can
     // therefore never produce a destination assembled from two versions.
     const bytes = readFileSync(from);
-    writeFileSync(to, bytes, { flag: "wx", mode: 0o600 });
+    // Flush the copied body before the containing directory's entry is
+    // flushed. The readback below still validates the exact bytes that reached
+    // the destination file.
+    writeNewFileDurably(to, bytes, { mode: 0o600 });
     const written = readFileSync(to);
     if (!written.equals(bytes))
       throw new Error("添付ファイルのコピーを検証できません: " + entry.name);
@@ -182,11 +177,9 @@ function writeManifest(
 ): void {
   const pending = join(target, `.manifest-${randomUUID()}.tmp`),
     published = join(target, MANIFEST);
-  writeFileSync(pending, JSON.stringify(manifest, null, 2), {
-    flag: "wx",
+  writeNewFileDurably(pending, JSON.stringify(manifest, null, 2), {
     mode: 0o600,
   });
-  syncPath(pending);
   // A hard link publishes the complete file atomically and fails if the name
   // already exists. It never replaces an earlier manifest.
   linkSync(pending, published);
@@ -253,11 +246,14 @@ export function createFullBackup(
   const marker = join(target, MARKER);
   writeFileSync(
     marker,
-    "Backup incomplete; do not use or open this snapshot.\n",
+    INCOMPLETE_MESSAGE,
     { flag: "wx", mode: 0o600 },
   );
   syncPath(marker);
   syncPath(target);
+  // Persist the newly created backup directory's name as well as its contents.
+  // A failure here must leave the incomplete marker and stop publication.
+  syncPath(dirname(target));
 
   const snapshotPath = join(target, DATABASE),
     outputAssets = join(target, ASSETS);
@@ -292,9 +288,21 @@ export function createFullBackup(
   writeManifest(target, manifest);
 
   const verified = verifyFullBackup(target, { allowIncomplete: true });
-  // Deliberately the final mutation: a crash or failed verification always
-  // leaves the incomplete marker behind.
+  // Publish completion only after verification. If the directory flush fails,
+  // restore the guard before surfacing the original failure. Guard restoration
+  // is best effort when the filesystem itself is failing; never return success.
   unlinkSync(marker);
-  syncPath(target);
+  try {
+    syncPath(target);
+  } catch (error) {
+    try {
+      writeFileSync(marker, INCOMPLETE_MESSAGE, { flag: "wx", mode: 0o600 });
+      syncPath(marker);
+      syncPath(target);
+    } catch {
+      // Preserve the original failure, including when re-flushing is impossible.
+    }
+    throw error;
+  }
   return verified;
 }

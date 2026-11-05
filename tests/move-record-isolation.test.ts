@@ -247,9 +247,11 @@ it("refuses to create a Page when a sibling position is nonfinite, duplicated or
         f.store.write({ ...page, position: variant === "max" ? Number.MAX_VALUE : f.store.get(f.database.id).position });
       }
       const before = [bytes(f.store, f.first.id), bytes(f.store, f.second.id), bytes(f.store, f.database.id)];
-      const count = f.store.pages().length;
+      // The strict Page reader now rejects nonfinite metadata. Inspect raw
+      // rows here to prove that the failed write preserved even corrupt bytes.
+      const rows = f.store.db.prepare("SELECT id,data,body FROM pages ORDER BY id").all();
       expect(() => f.store.create(null, "page", "New")).toThrow(/並び順/);
-      expect(f.store.pages()).toHaveLength(count);
+      expect(f.store.db.prepare("SELECT id,data,body FROM pages ORDER BY id").all()).toEqual(rows);
       expect([bytes(f.store, f.first.id), bytes(f.store, f.second.id), bytes(f.store, f.database.id)]).toEqual(before);
     } finally { f.dispose(); }
   }
