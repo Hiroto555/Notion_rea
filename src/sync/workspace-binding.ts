@@ -37,7 +37,10 @@ export function verifyWorkspaceBinding(
   const file = join(dirname(database), ".folio-sync-binding");
   let fd: number;
   try {
-    fd = openSync(file, constants.O_RDONLY | constants.O_NONBLOCK | (constants.O_NOFOLLOW ?? 0));
+    fd = openSync(
+      file,
+      constants.O_RDONLY | constants.O_NONBLOCK | (constants.O_NOFOLLOW ?? 0),
+    );
   } catch (error) {
     if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
     requireCondition(create, "workspace-binding-missing", 409);
@@ -47,15 +50,22 @@ export function verifyWorkspaceBinding(
   try {
     const bytes = Buffer.alloc(Buffer.byteLength(binding));
     const info = fstatSync(fd);
-    requireCondition(info.isFile() && info.nlink === 1 && info.size === bytes.length,
-      "workspace-binding-mismatch", 409);
+    requireCondition(
+      info.isFile() && info.nlink === 1 && info.size === bytes.length,
+      "workspace-binding-mismatch",
+      409,
+    );
     let read = 0;
     while (read < bytes.length) {
       const count = readSync(fd, bytes, read, bytes.length - read, null);
       requireCondition(count > 0, "workspace-binding-mismatch", 409);
       read += count;
     }
-    requireCondition(bytes.equals(Buffer.from(binding)), "workspace-binding-mismatch", 409);
+    requireCondition(
+      bytes.equals(Buffer.from(binding)),
+      "workspace-binding-mismatch",
+      409,
+    );
   } finally {
     closeSync(fd);
   }
