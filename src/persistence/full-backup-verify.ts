@@ -409,7 +409,7 @@ function validateRecordRelationships(
   if (present.length && present.length !== names.length)
     throw new Error("Incomplete or unsupported record store");
   const marked = tableExists(db, "folio_record_schema");
-  if (marked || storeVersion === 4) validateRecordStoreVersion(db);
+  if (marked || storeVersion >= 4) validateRecordStoreVersion(db);
   if (present.length === names.length) validateRecordTableShapes(db);
   if (!present.length) {
     if (marked) throw new Error("Incomplete or unsupported record store");
@@ -658,7 +658,7 @@ export function inspectWorkspaceSnapshot(directory: string): SnapshotInspection 
     const version = (
       db.prepare("PRAGMA user_version").get() as { user_version: number }
     ).user_version;
-    if (version !== 3 && version !== 4)
+    if (version !== 3 && version !== 4 && version !== 5)
       throw new Error("Unsupported workspace database version");
     for (const required of [
       "pages",
@@ -743,7 +743,7 @@ function parseManifest(value: unknown): WorkspaceBackupManifest {
     throw new Error("Invalid backup creation time");
   if (
     !Number.isSafeInteger(value.storeVersion) ||
-    (value.storeVersion !== 3 && value.storeVersion !== 4)
+    (value.storeVersion !== 3 && value.storeVersion !== 4 && value.storeVersion !== 5)
   )
     throw new Error("Unsupported workspace database version");
   if (!isPlainObject(value.inventory))

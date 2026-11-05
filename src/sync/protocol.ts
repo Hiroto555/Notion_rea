@@ -1,17 +1,20 @@
 import { createHash } from 'node:crypto';
+import { parseAssetURL } from '../shared/assets';
 
 /** Transport limits, not a promise that arbitrary Folio workspaces fit. */
 export const MAX_CHECKPOINT_BYTES = 1024 * 1024;
 export const MAX_WIRE_BYTES = 2 * MAX_CHECKPOINT_BYTES + 16_384;
+export const MAX_SYNC_ASSET_BYTES = 20_000_000;
 export const MAX_CHANGES = 1; // Each checkpoint can consume the full payload budget.
 export type Json = null | boolean | number | string | Json[] | { [key: string]: Json };
 export type JsonObject = { [key: string]: Json };
+export type AssetManifest = { id: string; sha256: string; bytes: number };
 export type Checkpoint = {
   format: 'folio-checkpoint/v1';
   name: string;
   version: number;
   payload: JsonObject;
-  assets: []; // Blob transport is intentionally not implemented.
+  assets: AssetManifest[];
 };
 export type Commit = {
   protocol: 1;
@@ -134,7 +137,7 @@ function object(value: unknown): Record<string, unknown> {
 }
 function shape(value: unknown, keys: string[]): Record<string, unknown> {
   const result = object(value);
-  requireCondition(Object.keys(result).sort().join(',') === keys.sort().join(','), 'unexpected-fields');
+  requireCondition(Object.keys(result).length === keys.length && keys.every(key => Object.hasOwn(result, key)), 'unexpected-fields');
   return result;
 }
 export function identifier(value: unknown): string {
@@ -160,9 +163,22 @@ export function parseCheckpoint(value: unknown): Checkpoint {
   identifier(v.name);
   counter(v.version, 1);
   object(v.payload);
-  requireCondition(Array.isArray(v.assets) && v.assets.length === 0, 'attachments-not-supported', 422);
-  // Return a plain detached value: callers cannot mutate already prepared envelopes.
-  return JSON.parse(canonicalJson(v, MAX_CHECKPOINT_BYTES)) as Checkpoint;
+  // Detach before inspecting arrays so the same bounded bytes are validated and hashed.
+  const checkpoint = JSON.parse(canonicalJson(v, MAX_CHECKPOINT_BYTES)) as Checkpoint;
+  requireCondition(Array.isArray(checkpoint.assets), 'invalid-asset-manifest', 422);
+  const ids = new Set<string>();
+  for (const asset of checkpoint.assets) {
+    requireCondition(asset !== null && typeof asset === 'object' &&
+      Object.keys(asset).length === 3 &&
+      typeof asset.id === 'string' && parseAssetURL('folio-asset://' + asset.id) === asset.id &&
+      typeof asset.sha256 === 'string' && /^[a-f0-9]{64}$/.test(asset.sha256) &&
+      Number.isSafeInteger(asset.bytes) && asset.bytes >= 0 && asset.bytes <= MAX_SYNC_ASSET_BYTES,
+    'invalid-asset-manifest', 422);
+    const fileId = asset.id.toLowerCase();
+    requireCondition(!ids.has(fileId), 'duplicate-asset-id', 422);
+    ids.add(fileId);
+  }
+  return checkpoint;
 }
 export function parseCommit(value: unknown): Commit {
   const v = shape(value, ['protocol', 'workspaceId', 'clientId', 'operationId', 'serverEpoch', 'baseRevision', 'checkpointHash', 'checkpoint']);
