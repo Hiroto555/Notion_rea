@@ -1,0 +1,21 @@
+{
+  "date": "2026-11-05",
+  "testedCodeCommit": "db7bf1aecc303c600ae4beab6c02b544aeb31de8",
+  "runtimeAndTestsDigest": "5298d74cca6a4877255389190159510cbd53267ac1e281411739be2124c42bf3",
+  "confirmedLevel": 3,
+  "level3": "PASS",
+  "scope": "Local SQLite, single owner, currently supported single-window product paths",
+  "gates": { "G1": "PASS", "G2": "PASS", "G3": "PASS", "G4": "PASS", "G5": "PASS", "G6": "PASS", "G7": "PASS", "G8": "PASS" },
+  "typecheck": "PASS",
+  "unitFiles": 116,
+  "unitTests": 1148,
+  "build": "PASS",
+  "builtAssets": "PASS",
+  "GUI": { "status": "PASS", "files": 57, "tests": 212, "electron": 184, "browserPresentationHarness": 28, "newLocalFirstCases": 15, "skipped": 0, "unexpected": 0, "flaky": 0, "retries": 0, "suiteErrors": 0 },
+  "offlineIsolation": "Test-owned Electron session offline before renderer load plus child-local HTTP/fetch denial; host networking unchanged",
+  "notVerified": ["Physical OS IME composition and confirmation", "Interaction with OS-native file/directory picker panels", "Legacy discovery chooser lifecycle"],
+  "limits": ["Not kernel network isolation", "No physical power-loss guarantee", "Storage admission does not reserve physical space", "Database limit is a high-water guard", "Some large backup/rescue operations remain synchronous in main"],
+  "level4": "NOT_REACHED",
+  "installedDesktopApp": "NOT_REPLACED",
+  "evidence": "LOCAL-FIRST-GUI-VALIDATION-20261105.ja.md"
+}

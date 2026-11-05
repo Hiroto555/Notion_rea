@@ -26,6 +26,10 @@ npm run folio:rescue -- --workspace /path/to/workspace --destination /path/to/ex
 
 ## 検証とLevel
 
-型検査・116ファイル / 1,148件のunit試験・production buildがPASS（`npm run verify:quiet`、46.0秒）。ビルド済みHTML/CSSのローカル参照検査、救出CLIのhelp、単独救出wrapperのhelp、取込みCLIの一時DBによる動作確認もPASS。GUIはNOT_RUN。検証コードは `d878dbf992be2a06bd850e53efdba65aa229a38a`。
+2026-11-05のGUI検証まで完了。固定G1〜G8の基準で、ローカル単一所有者のアプリとして **Level 3到達** と評価する。端末間同期・共同編集は次の段階。
 
-最高到達段階はLevel 2、Level 3は部分達成。製品画面でのオフライン起動・編集・検索・保存・再open、容量停止からの復旧操作、IMEとフォルダー選択は確認待ち。`docs/GUI-VALIDATION-QUEUE.ja.md` に対象を記録している。旧チェックポイントのテスト件数や画面確認結果は各記載時点の証拠として扱う。
+検証コードは `db7bf1aecc303c600ae4beab6c02b544aeb31de8`。型検査、116ファイル / 1,148件のunit試験、production buildがPASS。専用の一時データでGUI 57ファイル / 212件（Electron 184件・独立presentation harness 28件）がすべてPASS。スキップ・flaky・再試行・suite外エラーは0。ビルド済みassetと救出CLIの入口も確認した。
+
+[GUI検証結果と到達根拠](LOCAL-FIRST-GUI-VALIDATION-20261105.ja.md) と [機械可読status](LEVEL3-STATUS.json) を現在の評価とする。OSネイティブのファイル選択パネルの操作と物理IMEの変換・確定は未検証で、synthetic compositionとchooser戻り値のスタブを使った検証と区別する。GitHubへの統合は今回もCI合格後に行う。通常のDesktopアプリは差し替えない。
+
+通常の実装中はGUIを起動しない。次回のGUIバッチも利用者が実行時間を指定した場合に限る。過去のRound 1〜5の記録は各時点の証拠として残す。
