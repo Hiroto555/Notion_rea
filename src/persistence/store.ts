@@ -9,7 +9,6 @@ import {
   requestSchema,
   saveOperationSchema,
   emptyDatabase,
-  textOf,
   type Doc,
   type Page,
   type PagePatch,
@@ -30,15 +29,20 @@ import type { PageOperation, PageOperationResult } from "../shared/page-operatio
 import { RecordLifecycle } from "./record-lifecycle";
 import { restoreDatabaseVersion } from "./legacy-database-restore";
 import { validateRecordStoreVersion } from "./record-version";
+import { pageSearchBody } from "../sync/workspace-checkpoint";
 import {
   assertConnectionState,
   inspectWritableStartup,
   openReadOnlyStore,
   publishSchemaSnapshot,
   readUserVersion,
+  validateV5WorkspaceSchema,
   type StoreStartupOptions,
 } from "./schema-startup";
-const STORE_VERSION = 4;
+// A new workspace still starts at v3. v4 is the experimental record schema
+// and v5 is an explicitly promoted local-first workspace. Opening v5 is
+// supported, but this Store never promotes a workspace by itself.
+const STORE_VERSION = 5;
 // Only malformed page data is quarantined. SQL, I/O and programmer errors must
 // still abort the snapshot instead of being mistaken for a damaged document.
 class PageDataError extends Error {}
@@ -97,9 +101,12 @@ export class Store {
         throw new Error(
           "The workspace schema changed during startup; reopen the workspace.",
         );
-      // Validate a v4 record store before touching journal mode. The read-only
-      // preflight already rejected malformed stores for the ordinary case.
+      // Validate a v4 record store or a promoted v5 workspace before touching
+      // journal mode. The read-only preflight already rejected malformed
+      // stores for the ordinary case.
       if (originalVersion === 4) validateRecordStoreVersion(this.connection);
+      if (originalVersion === 5)
+        validateV5WorkspaceSchema(this.connection);
       this.db.exec(
         "PRAGMA journal_mode=WAL; PRAGMA synchronous=FULL; PRAGMA foreign_keys=ON; PRAGMA busy_timeout=5000;",
       );
@@ -360,13 +367,7 @@ export class Store {
       .run(
         page.id,
         JSON.stringify(page),
-        [
-          page.title,
-          textOf(page.doc),
-          ...(page.database?.rows.map(
-            (r) => r.title + " " + Object.values(r.values).join(" "),
-          ) ?? []),
-        ].join("\n"),
+        pageSearchBody(page),
       );
     return page;
   }
@@ -626,7 +627,8 @@ export class Store {
         this.db.prepare("PRAGMA user_version").get() as { user_version: number }
       ).user_version;
       const page = createPage();
-      if (version === 4) new RecordRepository(this).registerDatabase(page.id);
+      if (version === 4 || version === 5)
+        new RecordRepository(this).registerDatabase(page.id);
       return page;
     };
     if (!this.db.isTransaction) return this.transaction(createDatabase);
@@ -880,9 +882,9 @@ export class Store {
     const { user_version: version } = this.db
       .prepare("PRAGMA user_version")
       .get() as { user_version: number };
-    if (version !== 3 && version !== 4)
+    if (version !== 3 && version !== 4 && version !== 5)
       throw new Error("Incomplete or unsupported record store version");
-    if (version === 4) validateRecordStoreVersion(this.db);
+    if (version === 4 || version === 5) validateRecordStoreVersion(this.db);
     // Experimental record stores can exist under v3. A partial schema must
     // never make a former record look like an ordinary Page to generic update.
     const names = new Set(

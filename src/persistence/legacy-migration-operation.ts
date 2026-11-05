@@ -160,7 +160,7 @@ export function previewLegacyMigration(
         pageId: databasePageId,
         reason: "このデータベースは既に行ページ形式です。",
       });
-    if (source.version !== 3 && source.version !== 4)
+    if (source.version !== 3 && source.version !== 4 && source.version !== 5)
       issues.push({
         pageId: databasePageId,
         reason: "未対応の workspace 形式です。",
