@@ -24,7 +24,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 // Loopback chunk tests can be slowed by parallel suite load; the assertions
 // themselves have no dependence on wall-clock speed.
 vi.setConfig({ testTimeout: 20_000 });
-import { SyncError } from "../src/sync/protocol";
+import { sha256 as hashText, SyncError } from "../src/sync/protocol";
 import {
   WORKSPACE_BLOB_MAX_BYTES,
   WorkspaceBlobStore,
@@ -310,7 +310,7 @@ describe("WorkspaceBlobStore", () => {
     expect(badRange.status).toBe(416);
 
     // The stored file is verified on every "present" answer.
-    const finalPath = join(root, "blobs", "workspace", asset.sha256);
+    const finalPath = join(root, "blobs", hashText("workspace"), asset.sha256);
     writeFileSync(finalPath, Buffer.from("damaged"));
     expect(store.has("workspace", asset)).toBe(false);
     expect(
@@ -319,6 +319,44 @@ describe("WorkspaceBlobStore", () => {
     expect(
       (await callBlob(server, "HEAD", "workspace", asset.sha256, a)).status,
     ).toBe(404);
+  });
+
+  it("isolates case-variant workspaces and excludes a second writer while a partial is open", async () => {
+    const root = tempRoot("folio-workspace-blobs-parallel-");
+    const store = new WorkspaceBlobStore(join(root, "blobs"));
+    const a = token(), b = token();
+    const server = await startBlobServer(store, { workspace: a, Workspace: b });
+    const bytes = randomBytes(32 * 1024), asset = assetFor(bytes);
+    const first = httpRequest(
+      `${server.url}/v1/workspaces/workspace/blobs/${asset.sha256}`,
+      { method: "PUT", agent: false, headers: {
+        Authorization: `Bearer ${a}`,
+        "Content-Length": String(bytes.length),
+        "Content-Type": "application/octet-stream",
+      } },
+    );
+    const result = new Promise<number | undefined>((resolve, reject) => {
+      first.once("error", reject);
+      first.once("response", (response) => {
+        response.resume();
+        resolve(response.statusCode);
+      });
+    });
+    try {
+      first.write(bytes.subarray(0, 1024));
+      await vi.waitFor(() => expect(existsSync(join(root, "blobs",
+        hashText("workspace"), `.partial-${asset.sha256}`))).toBe(true));
+      const concurrent = await putFull(server, "workspace", asset, Buffer.alloc(bytes.length), a);
+      expect(concurrent.status).toBe(409);
+      expect(JSON.parse(concurrent.body.toString())).toEqual({ error: "blob-upload-in-progress" });
+      first.end(bytes.subarray(1024));
+      expect(await result).toBe(201);
+      expect((await callBlob(server, "GET", "workspace", asset.sha256, a)).body).toEqual(bytes);
+      expect((await callBlob(server, "GET", "Workspace", asset.sha256, b)).status).toBe(404);
+    } finally {
+      first.destroy();
+      await result.catch(() => {});
+    }
   });
 
   it("requires another authorization check after body handling and leaves no published file", async () => {
@@ -377,7 +415,7 @@ describe("WorkspaceBlobStore", () => {
     ).toBe(404);
     const partialName = `.partial-${asset.sha256}`;
     expect(
-      readdirSync(join(root, "blobs", "workspace")).includes(partialName),
+      readdirSync(join(root, "blobs", hashText("workspace"))).includes(partialName),
     ).toBe(true);
 
     // A client that lost the first acknowledgement resends an overlapping
@@ -414,7 +452,7 @@ describe("WorkspaceBlobStore", () => {
     expect(last.headers["x-folio-blob-complete"]).toBe("true");
     expect(store.has("workspace", asset)).toBe(true);
     expect(
-      readdirSync(join(root, "blobs", "workspace")).filter((name) =>
+      readdirSync(join(root, "blobs", hashText("workspace"))).filter((name) =>
         name.startsWith(".partial-"),
       ),
     ).toEqual([]);
@@ -446,7 +484,7 @@ describe("WorkspaceBlobStore", () => {
     const partialPath = join(
       root,
       "blobs",
-      "workspace",
+      hashText("workspace"),
       `.partial-${asset.sha256}`,
     );
 
@@ -620,7 +658,7 @@ describe("WorkspaceBlobStore", () => {
 
   it("keeps an existing mismatched final file and rejects a wrong hash", async () => {
     const root = tempRoot("folio-workspace-blobs-immutable-");
-    const directory = join(root, "blobs", "workspace");
+    const directory = join(root, "blobs", hashText("workspace"));
     mkdirSync(directory, { recursive: true });
     const store = new WorkspaceBlobStore(join(root, "blobs"));
     const a = token();
@@ -682,7 +720,7 @@ describe("WorkspaceBlobStore", () => {
     ).toBe(401);
 
     // A symlink at the final name is never followed, and `has` is false.
-    const finalPath = join(root, "blobs", "workspace", asset.sha256);
+    const finalPath = join(root, "blobs", hashText("workspace"), asset.sha256);
     const elsewhere = join(root, "outside-copy");
     writeFileSync(elsewhere, bytes);
     rmSync(finalPath);
