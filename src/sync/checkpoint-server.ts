@@ -9,13 +9,13 @@ import { SyncSqliteGuard, SyncStorageUnavailable } from "./sqlite-guard";
 import {
   canonicalJson,
   fingerprintCommit,
-  hashCheckpoint,
   identifier,
   MAX_WIRE_BYTES,
   parseCheckpoint,
   parseCommit,
   requireCondition,
   SyncError,
+  type AssetManifest,
   type Checkpoint,
   type CheckpointHead,
   type Commit,
@@ -41,19 +41,8 @@ export type DeviceRegistration = {
   token: string;
 };
 
-/**
- * Structural copy of the future protocol AssetManifest. The base protocol keeps
- * `Checkpoint.assets` as `[]`, so this transport must not depend on that type
- * changing before integration.
- */
-export type CheckpointAsset = {
-  id: string;
-  sha256: string;
-  bytes: number;
-};
-
 export type CheckpointBlobAdapter = {
-  has(workspaceId: string, asset: CheckpointAsset): boolean;
+  has(workspaceId: string, asset: AssetManifest): boolean;
   handle(
     request: IncomingMessage,
     response: ServerResponse,
@@ -104,13 +93,6 @@ export type CheckpointServerHandle = {
   registerDevice(registration: DeviceRegistration): void;
   revokeDevice(workspaceId: string, clientId: string): void;
   close(): Promise<void>;
-};
-
-type WireCheckpoint = Omit<Checkpoint, "assets"> & {
-  assets: CheckpointAsset[];
-};
-type WireCommit = Omit<Commit, "checkpoint"> & {
-  checkpoint: WireCheckpoint;
 };
 
 type Authorization = {
@@ -178,123 +160,6 @@ function requireToken(token: unknown): string {
     "invalid-capability",
   );
   return token;
-}
-
-function parseAsset(value: unknown): CheckpointAsset {
-  requireCondition(
-    value !== null && typeof value === "object" && !Array.isArray(value),
-    "invalid-asset",
-  );
-  const asset = value as Record<string, unknown>;
-  requireCondition(
-    Object.keys(asset).sort().join(",") === "bytes,id,sha256",
-    "invalid-asset",
-  );
-  const id = identifier(asset.id);
-  requireCondition(
-    typeof asset.sha256 === "string" && /^[a-f0-9]{64}$/.test(asset.sha256),
-    "invalid-asset",
-  );
-  requireCondition(
-    Number.isSafeInteger(asset.bytes) && Number(asset.bytes) >= 0,
-    "invalid-asset",
-  );
-  return { id, sha256: asset.sha256, bytes: Number(asset.bytes) };
-}
-
-/**
- * Structural checkpoint parser for the interval before protocol.ts accepts
- * AssetManifest[]. When assets are empty the shared parser is used unchanged.
- * Every non-asset field is still validated by parseCheckpoint, and callers
- * must verify the checkpoint hash against the enclosing commit.
- */
-function parseWireCheckpoint(
-  value: unknown,
-  allowAssets: boolean,
-): WireCheckpoint {
-  try {
-    return parseCheckpoint(value) as unknown as WireCheckpoint;
-  } catch (error) {
-    if (
-      !allowAssets ||
-      !(error instanceof SyncError) ||
-      error.code !== "attachments-not-supported"
-    )
-      throw error;
-  }
-  requireCondition(
-    value !== null && typeof value === "object" && !Array.isArray(value),
-    "expected-object",
-  );
-  const raw = value as Record<string, unknown>;
-  const rawAssets = raw.assets;
-  requireCondition(
-    Array.isArray(rawAssets) && rawAssets.length > 0,
-    "attachments-not-supported",
-    422,
-  );
-  const assets = rawAssets.map(parseAsset);
-  const ids = new Set<string>();
-  for (const asset of assets) {
-    requireCondition(!ids.has(asset.id), "duplicate-asset");
-    ids.add(asset.id);
-  }
-  // Validate all non-asset fields (and the base size limit) through the shared
-  // protocol parser by substituting the empty manifest it understands.
-  const base = parseCheckpoint({ ...raw, assets: [] }) as unknown as WireCheckpoint;
-  return { ...base, assets } as WireCheckpoint;
-}
-
-/**
- * Parses a commit through the shared protocol. The fallback exists only until
- * protocol.ts accepts AssetManifest[]; it is enabled only when a blob adapter is
- * configured, and it still validates every non-asset field through parseCommit.
- */
-function parseWireCommit(value: unknown, allowAssets: boolean): WireCommit {
-  if (!allowAssets) return parseCommit(value) as unknown as WireCommit;
-  try {
-    return parseCommit(value) as unknown as WireCommit;
-  } catch (error) {
-    if (!(error instanceof SyncError) || error.code !== "attachments-not-supported")
-      throw error;
-  }
-  requireCondition(
-    value !== null && typeof value === "object" && !Array.isArray(value),
-    "expected-object",
-  );
-  const raw = value as Record<string, unknown>;
-  const rawCheckpoint = raw.checkpoint;
-  requireCondition(
-    rawCheckpoint !== null &&
-      typeof rawCheckpoint === "object" &&
-      !Array.isArray(rawCheckpoint),
-    "expected-object",
-  );
-  const checkpoint = parseWireCheckpoint(rawCheckpoint, true);
-  // Validate commit metadata and the empty-manifest checkpoint via the shared
-  // parser, then verify the full asset-inclusive hash.
-  const baseCheckpoint = { ...(rawCheckpoint as Record<string, unknown>), assets: [] };
-  const baseHash = hashCheckpoint(baseCheckpoint as unknown as Checkpoint);
-  const parsed = parseCommit({
-    ...raw,
-    checkpoint: baseCheckpoint,
-    checkpointHash: baseHash,
-  }) as unknown as WireCommit;
-  requireCondition(
-    hashCheckpoint(checkpoint as unknown as Checkpoint) === raw.checkpointHash,
-    "checkpoint-hash-mismatch",
-  );
-  return {
-    ...parsed,
-    checkpointHash: String(raw.checkpointHash),
-    checkpoint,
-  } as WireCommit;
-}
-
-function checkpointAssets(checkpoint: unknown): CheckpointAsset[] {
-  const assets = (checkpoint as { assets?: unknown }).assets;
-  requireCondition(Array.isArray(assets), "invalid-checkpoint");
-  return assets as CheckpointAsset[];
 }
 
 /** Local fixture/reference server, never a public deployment entrypoint. */
@@ -367,6 +232,7 @@ export async function startCheckpointServer(
       CREATE TABLE IF NOT EXISTS checkpoint_heads(workspace_id TEXT PRIMARY KEY, owner_id TEXT NOT NULL, revision INTEGER NOT NULL, checkpoint_hash TEXT, checkpoint_json TEXT);
       CREATE TABLE IF NOT EXISTS checkpoint_operations(workspace_id TEXT NOT NULL, client_id TEXT NOT NULL, operation_id TEXT NOT NULL, fingerprint TEXT NOT NULL, commit_json TEXT NOT NULL, result_json TEXT NOT NULL, PRIMARY KEY(workspace_id,client_id,operation_id));
       CREATE TABLE IF NOT EXISTS checkpoint_changes(workspace_id TEXT NOT NULL, revision INTEGER NOT NULL, change_json TEXT NOT NULL, PRIMARY KEY(workspace_id,revision));
+      CREATE TABLE IF NOT EXISTS checkpoint_device_workspaces(workspace_id TEXT PRIMARY KEY);
       CREATE TABLE IF NOT EXISTS checkpoint_devices(workspace_id TEXT NOT NULL, client_id TEXT NOT NULL, owner_id TEXT NOT NULL, token_hash TEXT NOT NULL UNIQUE, revoked INTEGER NOT NULL DEFAULT 0 CHECK(revoked IN (0,1)), PRIMARY KEY(workspace_id,client_id));
     `);
       const existing = storage.db
@@ -383,6 +249,12 @@ export async function startCheckpointServer(
           .run(serverEpoch);
       }
       for (const [workspaceId, ownerId] of owners) {
+        const scope = storage.db
+          .prepare("SELECT 1 FROM checkpoint_device_workspaces WHERE workspace_id=?")
+          .get(workspaceId);
+        requireCondition(!scope || deviceWorkspaces.has(workspaceId), "workspace-device-mode-required");
+        if (deviceWorkspaces.has(workspaceId))
+          storage.db.prepare("INSERT OR IGNORE INTO checkpoint_device_workspaces VALUES(?)").run(workspaceId);
         const owner = storage.db
           .prepare("SELECT owner_id FROM checkpoint_heads WHERE workspace_id=?")
           .get(workspaceId);
@@ -428,10 +300,7 @@ export async function startCheckpointServer(
       checkpoint:
         row.checkpoint_json === null
           ? null
-          : (parseWireCheckpoint(
-              JSON.parse(String(row.checkpoint_json)),
-              options.blobs !== undefined,
-            ) as unknown as Checkpoint),
+          : parseCheckpoint(JSON.parse(String(row.checkpoint_json))),
     };
   };
 
@@ -580,8 +449,7 @@ export async function startCheckpointServer(
     });
   };
 
-  const commit = (operationInput: WireCommit): CommitResult => {
-    const operation = operationInput as unknown as Commit;
+  const commit = (operation: Commit): CommitResult => {
     const fingerprint = fingerprintCommit(operation);
     return storage.transaction(() => {
       const previous = storage.db
@@ -714,6 +582,7 @@ export async function startCheckpointServer(
       const authorization = authorize(request, workspaceId);
       storage.assertUsable();
       if (route.startsWith("blobs/")) {
+        requireCondition(url.search === "", "unexpected-query");
         requireCondition(options.blobs !== undefined, "not-found", 404);
         requireCondition(
           request.method === "GET" ||
@@ -796,10 +665,7 @@ export async function startCheckpointServer(
           "json-required",
           415,
         );
-        const operation = parseWireCommit(
-          await body(request),
-          options.blobs !== undefined,
-        );
+        const operation = parseCommit(await body(request));
         // A device can be rotated/revoked while its body is in flight.
         const current = authorize(request, workspaceId);
         storage.assertUsable();

@@ -18,8 +18,7 @@ import {
 } from "../src/sync/checkpoint-server";
 import { CheckpointRemote } from "../src/sync/client";
 
-type Manifest = { id: string; sha256: string; bytes: number };
-type AssetCheckpoint = Omit<Checkpoint, "assets"> & { assets: Manifest[] };
+type Manifest = Checkpoint["assets"][number];
 const workspaces = [
   { workspaceId: "workspace", ownerId: "owner" },
   { workspaceId: "other", ownerId: "owner" },
@@ -29,7 +28,7 @@ const sha = (value: string): string =>
 const assetCheckpoint = (
   text: string,
   assets: Manifest[],
-): AssetCheckpoint => ({
+): Checkpoint => ({
   format: "folio-checkpoint/v1",
   name: "test-fixture",
   version: 1,
@@ -52,9 +51,9 @@ const assetCommit = (
     operationId,
     serverEpoch,
     baseRevision,
-    checkpointHash: hashCheckpoint(value as unknown as Checkpoint),
+    checkpointHash: hashCheckpoint(value),
     checkpoint: value,
-  } as unknown as Commit;
+  };
 };
 const validateFixture = (value: Checkpoint): boolean => {
   if (
@@ -302,9 +301,9 @@ describe("checkpoint blob adapter boundary", () => {
     register("client-a", aToken);
     register("client-b", bToken);
     const presentSha = sha("present");
-    const present = { id: "asset-present", sha256: presentSha, bytes: 7 };
+    const present = { id: "00000000-0000-4000-8000-000000000001", sha256: presentSha, bytes: 7 };
     const missing = {
-      id: "asset-missing",
+      id: "00000000-0000-4000-8000-000000000002",
       sha256: sha("missing"),
       bytes: 7,
     };
@@ -362,7 +361,7 @@ describe("checkpoint blob adapter boundary", () => {
       0,
       "client-b",
       "op-stale-missing",
-      [{ id: "asset-other", sha256: sha("other"), bytes: 5 }],
+      [{ id: "00000000-0000-4000-8000-000000000003", sha256: sha("other"), bytes: 5 }],
     );
     const staleMissingResponse = await raw("commits", {
       method: "POST",
@@ -382,7 +381,7 @@ describe("checkpoint blob adapter boundary", () => {
       0,
       "client-b",
       "op-stale-present",
-      [{ id: "asset-present-2", sha256: presentSha, bytes: 7 }],
+      [{ id: "00000000-0000-4000-8000-000000000004", sha256: presentSha, bytes: 7 }],
     );
     const conflictResponse = await raw("commits", {
       method: "POST",
@@ -417,7 +416,7 @@ describe("checkpoint blob adapter boundary", () => {
     const aToken = token();
     register("client-a", aToken);
     const value = {
-      id: "asset-present",
+      id: "00000000-0000-4000-8000-000000000001",
       sha256: sha("present"),
       bytes: 7,
     };

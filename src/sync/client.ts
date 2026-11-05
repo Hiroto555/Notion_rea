@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import {
   canonicalJson, fingerprintCommit, hashCheckpoint, identifier, MAX_WIRE_BYTES,
-  parseChangePage, parseCheckpoint, parseHeadResponse, parseResult,
+  parseChangePage, parseCheckpoint, parseCommit, parseHeadResponse, parseResult,
   requireCondition, SyncError, type ChangePage, type Checkpoint, type Commit,
   type CommitResult, type HeadResponse,
 } from './protocol';
@@ -94,15 +94,9 @@ export class CheckpointRemote {
     return response;
   }
 
-  async commit(operation: Commit): Promise<CommitResult> {
-    requireCondition(operation.protocol === 1, 'unsupported-protocol');
+  async commit(input: Commit): Promise<CommitResult> {
+    const operation = parseCommit(input);
     requireCondition(operation.workspaceId === this.workspaceId, 'workspace-mismatch');
-    identifier(operation.clientId);
-    identifier(operation.operationId);
-    identifier(operation.serverEpoch);
-    requireCondition(Number.isSafeInteger(operation.baseRevision) && operation.baseRevision >= 0, 'invalid-revision');
-    requireCondition(typeof operation.checkpointHash === 'string' && /^[a-f0-9]{64}$/.test(operation.checkpointHash), 'invalid-hash');
-    requireCondition(hashCheckpoint(operation.checkpoint) === operation.checkpointHash, 'checkpoint-hash-mismatch');
     const fingerprint = fingerprintCommit(operation);
     const result = parseResult(await this.request('commits', operation));
     requireCondition(result.workspaceId === this.workspaceId, 'workspace-mismatch');
