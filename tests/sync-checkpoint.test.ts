@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { randomBytes } from "node:crypto";
+import { randomBytes, randomUUID } from "node:crypto";
 import { copyFileSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
