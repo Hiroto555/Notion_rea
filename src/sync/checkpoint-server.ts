@@ -9,6 +9,7 @@ import { SyncSqliteGuard, SyncStorageUnavailable } from "./sqlite-guard";
 import {
   canonicalJson,
   fingerprintCommit,
+  hashCheckpoint,
   identifier,
   MAX_WIRE_BYTES,
   parseCheckpoint,
@@ -26,13 +27,97 @@ export type Capability = {
   ownerId: string;
   workspaceId: string;
 };
+
+/** Enables device-scoped authentication for a workspace. */
+export type WorkspaceScope = {
+  workspaceId: string;
+  ownerId: string;
+};
+
+export type DeviceRegistration = {
+  workspaceId: string;
+  ownerId: string;
+  clientId: string;
+  token: string;
+};
+
+/**
+ * Structural copy of the future protocol AssetManifest. The base protocol keeps
+ * `Checkpoint.assets` as `[]`, so this transport must not depend on that type
+ * changing before integration.
+ */
+export type CheckpointAsset = {
+  id: string;
+  sha256: string;
+  bytes: number;
+};
+
+export type CheckpointBlobAdapter = {
+  has(workspaceId: string, asset: CheckpointAsset): boolean;
+  handle(
+    request: IncomingMessage,
+    response: ServerResponse,
+    context: {
+      workspaceId: string;
+      sha256: string;
+      assertAuthorized: () => void;
+    },
+  ): Promise<void>;
+};
+
+/**
+ * Returns literal `true` to admit a checkpoint. The optional `previous` is the
+ * checkpoint at the operation's actual base revision and is supplied only when
+ * that base equals the current head; it is `null` for revision zero and for a
+ * stale CAS candidate so successor/omission checks are never made against the
+ * wrong base. A rejected stale candidate never becomes a persisted conflict.
+ */
+export type CheckpointValidator = (
+  checkpoint: Checkpoint,
+  previous: Checkpoint | null,
+) => boolean;
+
 export type CheckpointServerOptions = {
   databasePath: string;
   capabilities: Capability[];
-  /** Synchronous predicate: only literal true admits a checkpoint. Not a Folio validator. */
-  validateCheckpoint: (checkpoint: Checkpoint) => boolean;
+  /**
+   * Device-mode workspaces. `capabilities` may be empty when this is present,
+   * but every request to one of these workspaces requires a device registered
+   * through the returned handle. A capability token never bypasses this scope.
+   */
+  workspaces?: WorkspaceScope[];
+  validateCheckpoint: CheckpointValidator;
+  /** Optional attachment transport owned by the host/asset lane. */
+  blobs?: CheckpointBlobAdapter;
   host?: "127.0.0.1";
   port?: number;
+};
+
+export type CheckpointServerHandle = {
+  url: string;
+  serverEpoch: string;
+  /**
+   * Explicit host-side administrative call. Re-registering an active client
+   * rotates its token (the old token stops matching immediately); a revoked
+   * client can never be enrolled again.
+   */
+  registerDevice(registration: DeviceRegistration): void;
+  revokeDevice(workspaceId: string, clientId: string): void;
+  close(): Promise<void>;
+};
+
+type WireCheckpoint = Omit<Checkpoint, "assets"> & {
+  assets: CheckpointAsset[];
+};
+type WireCommit = Omit<Commit, "checkpoint"> & {
+  checkpoint: WireCheckpoint;
+};
+
+type Authorization = {
+  mode: "capability" | "device";
+  workspaceId: string;
+  ownerId: string;
+  clientId: string | null;
 };
 
 function body(request: IncomingMessage): Promise<unknown> {
@@ -68,7 +153,11 @@ function body(request: IncomingMessage): Promise<unknown> {
 }
 
 function send(response: ServerResponse, status: number, value: unknown): void {
-  if (response.destroyed) return;
+  if (response.destroyed || response.writableEnded) return;
+  if (response.headersSent) {
+    response.destroy();
+    return;
+  }
   const content = canonicalJson(value);
   response.writeHead(status, {
     "Content-Type": "application/json; charset=utf-8",
@@ -79,14 +168,139 @@ function send(response: ServerResponse, status: number, value: unknown): void {
   response.end(content);
 }
 
+function tokenDigest(token: string): string {
+  return createHash("sha256").update(token).digest("hex");
+}
+
+function requireToken(token: unknown): string {
+  requireCondition(
+    typeof token === "string" && /^[A-Za-z0-9_-]{32,512}$/.test(token),
+    "invalid-capability",
+  );
+  return token;
+}
+
+function parseAsset(value: unknown): CheckpointAsset {
+  requireCondition(
+    value !== null && typeof value === "object" && !Array.isArray(value),
+    "invalid-asset",
+  );
+  const asset = value as Record<string, unknown>;
+  requireCondition(
+    Object.keys(asset).sort().join(",") === "bytes,id,sha256",
+    "invalid-asset",
+  );
+  const id = identifier(asset.id);
+  requireCondition(
+    typeof asset.sha256 === "string" && /^[a-f0-9]{64}$/.test(asset.sha256),
+    "invalid-asset",
+  );
+  requireCondition(
+    Number.isSafeInteger(asset.bytes) && Number(asset.bytes) >= 0,
+    "invalid-asset",
+  );
+  return { id, sha256: asset.sha256, bytes: Number(asset.bytes) };
+}
+
+/**
+ * Structural checkpoint parser for the interval before protocol.ts accepts
+ * AssetManifest[]. When assets are empty the shared parser is used unchanged.
+ * Every non-asset field is still validated by parseCheckpoint, and callers
+ * must verify the checkpoint hash against the enclosing commit.
+ */
+function parseWireCheckpoint(
+  value: unknown,
+  allowAssets: boolean,
+): WireCheckpoint {
+  try {
+    return parseCheckpoint(value) as unknown as WireCheckpoint;
+  } catch (error) {
+    if (
+      !allowAssets ||
+      !(error instanceof SyncError) ||
+      error.code !== "attachments-not-supported"
+    )
+      throw error;
+  }
+  requireCondition(
+    value !== null && typeof value === "object" && !Array.isArray(value),
+    "expected-object",
+  );
+  const raw = value as Record<string, unknown>;
+  const rawAssets = raw.assets;
+  requireCondition(
+    Array.isArray(rawAssets) && rawAssets.length > 0,
+    "attachments-not-supported",
+    422,
+  );
+  const assets = rawAssets.map(parseAsset);
+  const ids = new Set<string>();
+  for (const asset of assets) {
+    requireCondition(!ids.has(asset.id), "duplicate-asset");
+    ids.add(asset.id);
+  }
+  // Validate all non-asset fields (and the base size limit) through the shared
+  // protocol parser by substituting the empty manifest it understands.
+  const base = parseCheckpoint({ ...raw, assets: [] }) as unknown as WireCheckpoint;
+  return { ...base, assets } as WireCheckpoint;
+}
+
+/**
+ * Parses a commit through the shared protocol. The fallback exists only until
+ * protocol.ts accepts AssetManifest[]; it is enabled only when a blob adapter is
+ * configured, and it still validates every non-asset field through parseCommit.
+ */
+function parseWireCommit(value: unknown, allowAssets: boolean): WireCommit {
+  if (!allowAssets) return parseCommit(value) as unknown as WireCommit;
+  try {
+    return parseCommit(value) as unknown as WireCommit;
+  } catch (error) {
+    if (!(error instanceof SyncError) || error.code !== "attachments-not-supported")
+      throw error;
+  }
+  requireCondition(
+    value !== null && typeof value === "object" && !Array.isArray(value),
+    "expected-object",
+  );
+  const raw = value as Record<string, unknown>;
+  const rawCheckpoint = raw.checkpoint;
+  requireCondition(
+    rawCheckpoint !== null &&
+      typeof rawCheckpoint === "object" &&
+      !Array.isArray(rawCheckpoint),
+    "expected-object",
+  );
+  const checkpoint = parseWireCheckpoint(rawCheckpoint, true);
+  // Validate commit metadata and the empty-manifest checkpoint via the shared
+  // parser, then verify the full asset-inclusive hash.
+  const baseCheckpoint = { ...(rawCheckpoint as Record<string, unknown>), assets: [] };
+  const baseHash = hashCheckpoint(baseCheckpoint as unknown as Checkpoint);
+  const parsed = parseCommit({
+    ...raw,
+    checkpoint: baseCheckpoint,
+    checkpointHash: baseHash,
+  }) as unknown as WireCommit;
+  requireCondition(
+    hashCheckpoint(checkpoint as unknown as Checkpoint) === raw.checkpointHash,
+    "checkpoint-hash-mismatch",
+  );
+  return {
+    ...parsed,
+    checkpointHash: String(raw.checkpointHash),
+    checkpoint,
+  } as WireCommit;
+}
+
+function checkpointAssets(checkpoint: unknown): CheckpointAsset[] {
+  const assets = (checkpoint as { assets?: unknown }).assets;
+  requireCondition(Array.isArray(assets), "invalid-checkpoint");
+  return assets as CheckpointAsset[];
+}
+
 /** Local fixture/reference server, never a public deployment entrypoint. */
 export async function startCheckpointServer(
   options: CheckpointServerOptions,
-): Promise<{
-  url: string;
-  serverEpoch: string;
-  close(): Promise<void>;
-}> {
+): Promise<CheckpointServerHandle> {
   requireCondition(
     options.host === undefined || options.host === "127.0.0.1",
     "loopback-only",
@@ -95,28 +309,42 @@ export async function startCheckpointServer(
     typeof options.validateCheckpoint === "function",
     "checkpoint-validator-required",
   );
-  requireCondition(options.capabilities.length > 0, "capabilities-required");
+  const capabilityOptions = options.capabilities ?? [];
+  const workspaceOptions = options.workspaces ?? [];
+  requireCondition(Array.isArray(capabilityOptions), "invalid-capabilities");
+  requireCondition(Array.isArray(workspaceOptions), "invalid-workspaces");
+  requireCondition(
+    capabilityOptions.length > 0 || workspaceOptions.length > 0,
+    "capabilities-required",
+  );
   const owners = new Map<string, string>();
-  const capabilities = options.capabilities.map((capability) => {
-    identifier(capability.workspaceId);
-    identifier(capability.ownerId);
+  const registerOwner = (workspaceId: string, ownerId: string): void => {
+    identifier(workspaceId);
+    identifier(ownerId);
+    const previous = owners.get(workspaceId);
     requireCondition(
-      typeof capability.token === "string" &&
-        /^[A-Za-z0-9_-]{32,512}$/.test(capability.token),
-      "invalid-capability",
-    );
-    requireCondition(
-      !owners.has(capability.workspaceId) ||
-        owners.get(capability.workspaceId) === capability.ownerId,
+      previous === undefined || previous === ownerId,
       "workspace-owner-mismatch",
     );
-    owners.set(capability.workspaceId, capability.ownerId);
+    owners.set(workspaceId, ownerId);
+  };
+  const capabilities = capabilityOptions.map((capability) => {
+    identifier(capability.workspaceId);
+    identifier(capability.ownerId);
+    registerOwner(capability.workspaceId, capability.ownerId);
+    const token = requireToken(capability.token);
     return {
-      ...capability,
-      token: undefined,
-      digest: createHash("sha256").update(capability.token).digest(),
+      workspaceId: capability.workspaceId,
+      ownerId: capability.ownerId,
+      digest: createHash("sha256").update(token).digest(),
     };
   });
+  const deviceWorkspaces = new Set<string>();
+  for (const workspace of workspaceOptions) {
+    registerOwner(workspace.workspaceId, workspace.ownerId);
+    deviceWorkspaces.add(workspace.workspaceId);
+  }
+
   const storage = new SyncSqliteGuard(new DatabaseSync(options.databasePath));
   let serverEpoch!: string;
   try {
@@ -139,6 +367,7 @@ export async function startCheckpointServer(
       CREATE TABLE IF NOT EXISTS checkpoint_heads(workspace_id TEXT PRIMARY KEY, owner_id TEXT NOT NULL, revision INTEGER NOT NULL, checkpoint_hash TEXT, checkpoint_json TEXT);
       CREATE TABLE IF NOT EXISTS checkpoint_operations(workspace_id TEXT NOT NULL, client_id TEXT NOT NULL, operation_id TEXT NOT NULL, fingerprint TEXT NOT NULL, commit_json TEXT NOT NULL, result_json TEXT NOT NULL, PRIMARY KEY(workspace_id,client_id,operation_id));
       CREATE TABLE IF NOT EXISTS checkpoint_changes(workspace_id TEXT NOT NULL, revision INTEGER NOT NULL, change_json TEXT NOT NULL, PRIMARY KEY(workspace_id,revision));
+      CREATE TABLE IF NOT EXISTS checkpoint_devices(workspace_id TEXT NOT NULL, client_id TEXT NOT NULL, owner_id TEXT NOT NULL, token_hash TEXT NOT NULL UNIQUE, revoked INTEGER NOT NULL DEFAULT 0 CHECK(revoked IN (0,1)), PRIMARY KEY(workspace_id,client_id));
     `);
       const existing = storage.db
         .prepare("SELECT * FROM checkpoint_server_identity WHERE singleton=1")
@@ -166,6 +395,15 @@ export async function startCheckpointServer(
             "INSERT OR IGNORE INTO checkpoint_heads(workspace_id,owner_id,revision) VALUES(?,?,0)",
           )
           .run(workspaceId, ownerId);
+        for (const device of storage.db
+          .prepare(
+            "SELECT owner_id FROM checkpoint_devices WHERE workspace_id=?",
+          )
+          .all(workspaceId))
+          requireCondition(
+            device.owner_id === ownerId,
+            "workspace-owner-mismatch",
+          );
       }
     });
   } catch (error) {
@@ -190,10 +428,160 @@ export async function startCheckpointServer(
       checkpoint:
         row.checkpoint_json === null
           ? null
-          : parseCheckpoint(JSON.parse(String(row.checkpoint_json))),
+          : (parseWireCheckpoint(
+              JSON.parse(String(row.checkpoint_json)),
+              options.blobs !== undefined,
+            ) as unknown as Checkpoint),
     };
   };
-  const commit = (operation: Commit): CommitResult => {
+
+  const authorize = (
+    request: IncomingMessage,
+    workspaceId: string,
+  ): Authorization => {
+    const supplied = request.headers.authorization;
+    const digest = createHash("sha256")
+      .update(
+        typeof supplied === "string" && supplied.startsWith("Bearer ")
+          ? supplied.slice(7)
+          : "",
+      )
+      .digest();
+    if (deviceWorkspaces.has(workspaceId)) {
+      const ownerId = owners.get(workspaceId);
+      requireCondition(ownerId !== undefined, "workspace-owner-mismatch");
+      let matched: Authorization | undefined;
+      for (const device of storage.db
+        .prepare(
+          "SELECT client_id, owner_id, token_hash, revoked FROM checkpoint_devices WHERE workspace_id=?",
+        )
+        .all(workspaceId)) {
+        const stored = Buffer.from(String(device.token_hash), "hex");
+        if (
+          stored.length !== digest.length ||
+          !timingSafeEqual(stored, digest)
+        )
+          continue;
+        if (Number(device.revoked) !== 0) continue;
+        if (device.owner_id !== ownerId) continue;
+        matched = {
+          mode: "device",
+          workspaceId,
+          ownerId,
+          clientId: identifier(String(device.client_id)),
+        };
+      }
+      requireCondition(matched !== undefined, "unauthorized", 401);
+      return matched;
+    }
+    for (const capability of capabilities) {
+      if (
+        capability.workspaceId === workspaceId &&
+        timingSafeEqual(capability.digest, digest)
+      )
+        return {
+          mode: "capability",
+          workspaceId,
+          ownerId: capability.ownerId,
+          clientId: null,
+        };
+    }
+    throw new SyncError("unauthorized", 401);
+  };
+
+  const authorizeDeviceWorkspace = (
+    workspaceId: string,
+    ownerId: string,
+  ): void => {
+    requireCondition(
+      deviceWorkspaces.has(workspaceId),
+      "workspace-not-found",
+      404,
+    );
+    requireCondition(
+      owners.get(workspaceId) === ownerId,
+      "workspace-owner-mismatch",
+      403,
+    );
+    const head = storage.db
+      .prepare("SELECT owner_id FROM checkpoint_heads WHERE workspace_id=?")
+      .get(workspaceId);
+    requireCondition(
+      head !== undefined && head.owner_id === ownerId,
+      "workspace-owner-mismatch",
+      403,
+    );
+  };
+
+  const registerDevice = (registration: DeviceRegistration): void => {
+    const workspaceId = identifier(registration.workspaceId);
+    const ownerId = identifier(registration.ownerId);
+    const clientId = identifier(registration.clientId);
+    const digest = tokenDigest(requireToken(registration.token));
+    storage.transaction(() => {
+      authorizeDeviceWorkspace(workspaceId, ownerId);
+      const existing = storage.db
+        .prepare(
+          "SELECT owner_id, token_hash, revoked FROM checkpoint_devices WHERE workspace_id=? AND client_id=?",
+        )
+        .get(workspaceId, clientId);
+      if (existing) {
+        requireCondition(
+          existing.owner_id === ownerId,
+          "workspace-owner-mismatch",
+          403,
+        );
+        requireCondition(
+          Number(existing.revoked) === 0,
+          "device-revoked",
+          409,
+        );
+        if (String(existing.token_hash) === digest) return;
+        const collision = storage.db
+          .prepare(
+            "SELECT 1 FROM checkpoint_devices WHERE token_hash=? AND NOT (workspace_id=? AND client_id=?)",
+          )
+          .get(digest, workspaceId, clientId);
+        requireCondition(collision === undefined, "token-in-use", 409);
+        storage.db
+          .prepare(
+            "UPDATE checkpoint_devices SET token_hash=? WHERE workspace_id=? AND client_id=?",
+          )
+          .run(digest, workspaceId, clientId);
+        return;
+      }
+      const collision = storage.db
+        .prepare("SELECT 1 FROM checkpoint_devices WHERE token_hash=?")
+        .get(digest);
+      requireCondition(collision === undefined, "token-in-use", 409);
+      storage.db
+        .prepare(
+          "INSERT INTO checkpoint_devices(workspace_id,client_id,owner_id,token_hash,revoked) VALUES(?,?,?,?,0)",
+        )
+        .run(workspaceId, clientId, ownerId, digest);
+    });
+  };
+
+  const revokeDevice = (workspaceIdInput: string, clientIdInput: string): void => {
+    const workspaceId = identifier(workspaceIdInput);
+    const clientId = identifier(clientIdInput);
+    storage.transaction(() => {
+      const existing = storage.db
+        .prepare(
+          "SELECT 1 FROM checkpoint_devices WHERE workspace_id=? AND client_id=?",
+        )
+        .get(workspaceId, clientId);
+      requireCondition(existing !== undefined, "device-not-found", 404);
+      storage.db
+        .prepare(
+          "UPDATE checkpoint_devices SET revoked=1 WHERE workspace_id=? AND client_id=?",
+        )
+        .run(workspaceId, clientId);
+    });
+  };
+
+  const commit = (operationInput: WireCommit): CommitResult => {
+    const operation = operationInput as unknown as Commit;
     const fingerprint = fingerprintCommit(operation);
     return storage.transaction(() => {
       const previous = storage.db
@@ -210,10 +598,27 @@ export async function startCheckpointServer(
         const result = JSON.parse(String(previous.result_json)) as CommitResult;
         return result;
       }
+      const assets = checkpointAssets(operation.checkpoint).map((asset) => ({
+        ...asset,
+      }));
+      requireCondition(
+        assets.length === 0 || options.blobs !== undefined,
+        "attachments-not-supported",
+        422,
+      );
+      const head = readHead(operation.workspaceId);
+      const baseIsHead = operation.baseRevision === head.revision;
+      const previousCheckpoint = baseIsHead ? head.checkpoint : null;
       try {
-        const validated: unknown = options.validateCheckpoint(
-          parseCheckpoint(operation.checkpoint),
-        );
+        // A detached value prevents a validator from mutating the receipt.
+        const candidate = JSON.parse(
+          canonicalJson(operation.checkpoint),
+        ) as Checkpoint;
+        const previous =
+          previousCheckpoint === null
+            ? null
+            : (JSON.parse(canonicalJson(previousCheckpoint)) as Checkpoint);
+        const validated: unknown = options.validateCheckpoint(candidate, previous);
         // TypeScript rejects async predicates; defend JS callers too and consume rejection.
         if (
           validated &&
@@ -226,7 +631,15 @@ export async function startCheckpointServer(
       } catch {
         throw new SyncError("checkpoint-schema-rejected", 422);
       }
-      const head = readHead(operation.workspaceId);
+      if (assets.length > 0) {
+        requireCondition(options.blobs !== undefined, "attachments-not-supported", 422);
+        for (const asset of assets)
+          requireCondition(
+            options.blobs.has(operation.workspaceId, asset),
+            "blob-missing",
+            409,
+          );
+      }
       const identity = {
         protocol: 1 as const,
         workspaceId: operation.workspaceId,
@@ -236,7 +649,7 @@ export async function startCheckpointServer(
         fingerprint,
       };
       let result: CommitResult;
-      if (operation.baseRevision !== head.revision) {
+      if (!baseIsHead) {
         result = { ...identity, status: "conflict", head };
       } else {
         requireCondition(
@@ -292,27 +705,33 @@ export async function startCheckpointServer(
     void (async () => {
       const url = new URL(request.url || "/", "http://127.0.0.1");
       const match =
-        /^\/v1\/workspaces\/([A-Za-z0-9_-]+)\/(head|commits|changes|operations\/([A-Za-z0-9_-]+)\/([A-Za-z0-9_-]+))$/.exec(
+        /^\/v1\/workspaces\/([A-Za-z0-9_-]+)\/(head|commits|changes|operations\/([A-Za-z0-9_-]+)\/([A-Za-z0-9_-]+)|blobs\/([a-f0-9]{64}))$/.exec(
           url.pathname,
         );
       requireCondition(match, "not-found", 404);
       const workspaceId = identifier(match[1]);
-      const supplied = request.headers.authorization;
-      const digest = createHash("sha256")
-        .update(
-          typeof supplied === "string" && supplied.startsWith("Bearer ")
-            ? supplied.slice(7)
-            : "",
-        )
-        .digest();
-      const authorized = capabilities.some(
-        (capability) =>
-          capability.workspaceId === workspaceId &&
-          timingSafeEqual(capability.digest, digest),
-      );
-      requireCondition(authorized, "unauthorized", 401);
-      storage.assertUsable();
       const route = match[2];
+      const authorization = authorize(request, workspaceId);
+      storage.assertUsable();
+      if (route.startsWith("blobs/")) {
+        requireCondition(options.blobs !== undefined, "not-found", 404);
+        requireCondition(
+          request.method === "GET" ||
+            request.method === "PUT" ||
+            request.method === "HEAD",
+          "method-not-allowed",
+          405,
+        );
+        await options.blobs.handle(request, response, {
+          workspaceId,
+          sha256: match[5],
+          assertAuthorized: () => {
+            authorize(request, workspaceId);
+            storage.assertUsable();
+          },
+        });
+        return;
+      }
       if (request.method === "GET" && route === "head") {
         requireCondition(url.search === "", "unexpected-query");
         return send(response, 200, {
@@ -354,11 +773,19 @@ export async function startCheckpointServer(
       }
       if (request.method === "GET" && route.startsWith("operations/")) {
         requireCondition(url.search === "", "unexpected-query");
+        const clientId = identifier(match[3]);
+        const operationId = identifier(match[4]);
+        requireCondition(
+          authorization.mode !== "device" ||
+            authorization.clientId === clientId,
+          "client-mismatch",
+          403,
+        );
         const row = storage.db
           .prepare(
             "SELECT result_json FROM checkpoint_operations WHERE workspace_id=? AND client_id=? AND operation_id=?",
           )
-          .get(workspaceId, identifier(match[3]), identifier(match[4]));
+          .get(workspaceId, clientId, operationId);
         requireCondition(row, "operation-not-found", 404);
         return send(response, 200, JSON.parse(String(row.result_json)));
       }
@@ -369,10 +796,22 @@ export async function startCheckpointServer(
           "json-required",
           415,
         );
-        const operation = parseCommit(await body(request));
+        const operation = parseWireCommit(
+          await body(request),
+          options.blobs !== undefined,
+        );
+        // A device can be rotated/revoked while its body is in flight.
+        const current = authorize(request, workspaceId);
+        storage.assertUsable();
         requireCondition(
           operation.workspaceId === workspaceId,
           "workspace-mismatch",
+          403,
+        );
+        requireCondition(
+          current.mode !== "device" ||
+            operation.clientId === current.clientId,
+          "client-mismatch",
           403,
         );
         requireCondition(
@@ -421,6 +860,8 @@ export async function startCheckpointServer(
   return {
     url: `http://127.0.0.1:${address.port}`,
     serverEpoch,
+    registerDevice,
+    revokeDevice,
     async close() {
       if (!httpClosed) {
         await new Promise<void>((resolve, reject) => {
