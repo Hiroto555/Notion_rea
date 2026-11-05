@@ -1,1 +1,5 @@
-export type StartupStatus = { mode: "writable" | "readOnly"; message?: string };
+export type StartupStatus = {
+  mode: "writable" | "readOnly";
+  message?: string;
+  syncMessage?: string;
+};

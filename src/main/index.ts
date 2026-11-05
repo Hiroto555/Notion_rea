@@ -1,6 +1,8 @@
 import { createRichDocumentProtection } from "./rich-document-protection";
 import { openWorkspaceAtStartup, admitStartupStorage } from "./workspace-startup";
 import { assertReadOnlyRequest } from "./read-only-workspace";
+import { runStartupWorkspaceSync, startupSyncRequested } from "./workspace-sync-startup";
+import { readUserVersion } from "../persistence/schema-startup";
 import { WorkspaceStorageService } from "./workspace-storage-service";
 import {
   app,
@@ -125,8 +127,12 @@ if (startupError) {
       const opened = openWorkspaceAtStartup(dataDir);
       store = opened.store;
       const readOnly = opened.status.mode === "readOnly";
-      if (!readOnly) seed(store);
+      if (!readOnly && !startupSyncRequested(process.env) && readUserVersion(store.db) < 5) seed(store);
       const crashRecovery = readOnly ? undefined : new CrashRecoveryFile(join(dataDir, "crash-recovery.json"), crashRecoveryWorkspaceId(store));
+      const syncMessage = crashRecovery
+        ? await runStartupWorkspaceSync(store, () => crashRecovery.read(), process.env)
+        : undefined;
+      const startupStatus = syncMessage ? { ...opened.status, syncMessage } : opened.status;
       const assets = join(dataDir, "assets");
       if (!readOnly) mkdirSync(assets, { recursive: true });
       const storage = new WorkspaceStorageService(dataDir, store.db, process.env, async (title, create = false, file = false) => {
@@ -180,7 +186,7 @@ if (startupError) {
           Buffer.byteLength(JSON.stringify(req)) > 32_000_000
         )
           throw new Error("リクエストが大きすぎます");
-        if (req.type === "startup:status") return opened.status;
+        if (req.type === "startup:status") return startupStatus;
         if (readOnly) assertReadOnlyRequest(req);
         const utility = storage.handleUtility(req);
         if (utility) return utility;
@@ -211,6 +217,8 @@ if (startupError) {
           await workspaceBackups.open(req.ticket, (directory) => new Promise<void>((resolveLaunch, reject) => {
             const env: NodeJS.ProcessEnv = {...process.env, FOLIO_DATA_DIR: directory};
             delete env.FOLIO_DEV_URL;
+            for (const key of Object.keys(env))
+              if (key.startsWith("FOLIO_SYNC_")) delete env[key];
             // When Electron starts dist/main.cjs directly, getAppPath() is
             // dist/, which has no package.json entry point. Relaunch this file.
             const child = spawn(process.execPath, process.defaultApp ? [__filename] : [], {env, detached: true, stdio: "ignore"});
