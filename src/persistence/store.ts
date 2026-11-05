@@ -29,7 +29,7 @@ import type { PageOperation, PageOperationResult } from "../shared/page-operatio
 import { RecordLifecycle } from "./record-lifecycle";
 import { restoreDatabaseVersion } from "./legacy-database-restore";
 import { validateRecordStoreVersion } from "./record-version";
-import { pageSearchBody } from "../sync/workspace-checkpoint";
+import { pageSearchBody, registerWorkspaceWriteGuard } from "../sync/workspace-checkpoint";
 import {
   assertConnectionState,
   inspectWritableStartup,
@@ -105,8 +105,10 @@ export class Store {
       // journal mode. The read-only preflight already rejected malformed
       // stores for the ordinary case.
       if (originalVersion === 4) validateRecordStoreVersion(this.connection);
-      if (originalVersion === 5)
+      if (originalVersion === 5) {
         validateV5WorkspaceSchema(this.connection);
+        registerWorkspaceWriteGuard(this.connection);
+      }
       this.db.exec(
         "PRAGMA journal_mode=WAL; PRAGMA synchronous=FULL; PRAGMA foreign_keys=ON; PRAGMA busy_timeout=5000;",
       );

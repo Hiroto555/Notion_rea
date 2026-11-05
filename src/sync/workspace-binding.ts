@@ -26,6 +26,11 @@ export function verifyWorkspaceBinding(
 ): void {
   const database = realpathSync(databasePath);
   const stat = lstatSync(database, { bigint: true });
+  requireCondition(
+    stat.isFile() && stat.nlink === 1n,
+    "unsafe-workspace-database",
+    409,
+  );
   const binding = JSON.stringify({
     workspaceId: identifier(device.workspaceId),
     clientId: identifier(device.clientId),

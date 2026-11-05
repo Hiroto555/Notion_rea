@@ -6,6 +6,7 @@ import { isDocument, textOf, type Page } from "../shared/types";
 import {
   canonicalJson,
   MAX_CHECKPOINT_BYTES,
+  type AssetManifest,
   type Checkpoint,
 } from "./protocol";
 
@@ -34,14 +35,6 @@ export const WORKSPACE_CONTENT_TABLES = [
 ] as const;
 
 export type WorkspaceContentTable = (typeof WORKSPACE_CONTENT_TABLES)[number];
-
-/** Local structural shape used until the shared Checkpoint protocol carries a
- * real asset manifest. `Checkpoint.assets` is still `[]` in the base commit. */
-export type WorkspaceAssetManifest = {
-  id: string;
-  sha256: string;
-  bytes: number;
-};
 
 type ColumnKind = "string" | "integer" | "nullable-string";
 type TableSpec = {
@@ -188,7 +181,7 @@ type ParsedAssetMetadata = {
 type InspectedCheckpoint = {
   checkpoint: Checkpoint;
   tables: ParsedTables;
-  assets: WorkspaceAssetManifest[];
+  assets: AssetManifest[];
 };
 
 class CheckpointError extends Error {}
@@ -297,6 +290,23 @@ function readTable(db: DatabaseSync, spec: TableSpec): CheckpointRow[] {
   );
 }
 
+function assetMime(value: unknown): string {
+  const mime = assertString(value, "asset mime", 200);
+  requireCheckpoint(
+    [
+      "image/png",
+      "image/jpeg",
+      "image/gif",
+      "image/webp",
+      "text/plain",
+      "application/pdf",
+      "application/octet-stream",
+    ].includes(mime),
+    "Unsupported asset mime",
+  );
+  return mime;
+}
+
 function parseAssetMetadata(value: unknown): ParsedAssetMetadata {
   requireCheckpoint(isPlainObject(value), "Invalid asset metadata");
   exactKeys(
@@ -320,7 +330,7 @@ function parseAssetMetadata(value: unknown): ParsedAssetMetadata {
     id,
     name: assertString(value.name, "asset name", 1000),
     extension: assertString(value.extension, "asset extension", 100),
-    mime: assertString(value.mime, "asset mime", 200),
+    mime: assetMime(value.mime),
     storageName: id,
     size,
     sha256,
@@ -331,7 +341,7 @@ function parseAssetMetadata(value: unknown): ParsedAssetMetadata {
  * checkpoint instead of publishing an incomplete attachment list. */
 export function assetManifestFromRows(
   rows: readonly CheckpointRow[],
-): WorkspaceAssetManifest[] {
+): AssetManifest[] {
   const seen = new Set<string>();
   return rows
     .map((row) => {
@@ -352,6 +362,7 @@ export function assetManifestFromRows(
  * created by an older workspace are represented by an empty array so the
  * payload has one exact schema. */
 export function buildWorkspaceCheckpoint(db: DatabaseSync): Checkpoint {
+  assertKnownWorkspaceTables(db);
   const tables = {} as ParsedTables;
   for (const spec of TABLE_SPECS) tables[spec.name] = readTable(db, spec);
   const assets = assetManifestFromRows(tables.assets);
@@ -361,7 +372,7 @@ export function buildWorkspaceCheckpoint(db: DatabaseSync): Checkpoint {
     version: WORKSPACE_CHECKPOINT_VERSION,
     payload: { tables },
     assets,
-  } as unknown as Checkpoint;
+  };
 }
 
 function parseEnvelope(value: unknown): InspectedCheckpoint {
@@ -434,7 +445,7 @@ function parseEnvelope(value: unknown): InspectedCheckpoint {
     tables[spec.name] = rows;
   }
   requireCheckpoint(Array.isArray(value.assets), "Invalid checkpoint assets");
-  const manifest: WorkspaceAssetManifest[] = [];
+  const manifest: AssetManifest[] = [];
   for (const entry of value.assets) {
     requireCheckpoint(isPlainObject(entry), "Invalid asset manifest entry");
     exactKeys(entry, ["id", "sha256", "bytes"], "asset manifest entry");
@@ -697,7 +708,7 @@ function inspectCheckpoint(value: unknown): InspectedCheckpoint {
     versions.set(id, { pageId, doc, database });
   }
 
-  const assetsById = new Map<string, WorkspaceAssetManifest>();
+  const assetsById = new Map<string, AssetManifest>();
   for (const row of tables.assets) {
     const id = row[0] as string,
       metadataText = row[1] as string;
@@ -852,6 +863,7 @@ function inspectCheckpoint(value: unknown): InspectedCheckpoint {
     );
   }
 
+  const archivedOwners = new Set<string>();
   for (const row of tables.legacy_database_archive) {
     const databasePageId = row[0] as string,
       data = row[1] as string,
@@ -869,6 +881,7 @@ function inspectCheckpoint(value: unknown): InspectedCheckpoint {
       archived.kind === "database",
       "Legacy archive is not a database",
     );
+    archivedOwners.add(databasePageId);
     collectAssetReferences(archived, references);
   }
   for (const row of tables.legacy_database_versions) {
@@ -921,13 +934,13 @@ function inspectCheckpoint(value: unknown): InspectedCheckpoint {
     );
     mappedPageIds.add(pageId);
     const page = pages.get(pageId);
-    // Historical-only mappings intentionally reserve an id for a Page that is
-    // not materialised yet. If a Page exists it must be that record.
-    if (page)
-      requireCheckpoint(
-        members.get(pageId) === databasePageId,
-        "Legacy mapped Page has a different owner",
-      );
+    // A historical reservation may be absent until its archived row is restored.
+    requireCheckpoint(
+      page
+        ? members.get(pageId) === databasePageId
+        : archivedOwners.has(databasePageId),
+      "Legacy mapped Page has no matching owner or archive",
+    );
   }
 
   for (const page of pages.values()) collectAssetReferences(page, references);
@@ -1170,33 +1183,72 @@ function assertTableShape(
   }
 }
 
+const guardedTables = [
+  ...WORKSPACE_CONTENT_TABLES,
+  "settings",
+  "save_receipts",
+  "folio_record_schema",
+] as const;
+
+export function registerWorkspaceWriteGuard(db: DatabaseSync): void {
+  // SQLite resolves this function on each writer's connection. An already
+  // running older Store has no function and its DML fails before it can write.
+  db.function("folio_sync_v5_write", () => 1);
+}
+
+function triggerDefinitions() {
+  return guardedTables.flatMap((table, index) =>
+    TRIGGER_OPERATIONS.map((operation) => {
+      const name = `workspace_sync_${table}_${operation}`;
+      const recordGeneration =
+        index < WORKSPACE_CONTENT_TABLES.length
+          ? " UPDATE workspace_sync_state SET generation=generation+1 WHERE singleton=1 AND suppress_triggers=0;"
+          : "";
+      return [
+        name,
+        `CREATE TRIGGER "${name}" AFTER ${operation.toUpperCase()} ON "${table}" BEGIN SELECT folio_sync_v5_write();${recordGeneration} END`,
+      ] as const;
+    }),
+  );
+}
+
+export function installWorkspaceSyncTriggers(db: DatabaseSync): void {
+  registerWorkspaceWriteGuard(db);
+  for (const [, sql] of triggerDefinitions()) db.exec(sql);
+}
+
+function assertKnownWorkspaceTables(db: DatabaseSync): void {
+  const allowed = new Set([
+    ...Object.keys(CONTENT_SCHEMA),
+    ...Object.keys(SYNC_SCHEMA),
+    "settings",
+    "save_receipts",
+    "folio_record_schema",
+    "sqlite_sequence",
+    "crash_recovery_copies",
+  ]);
+  for (const row of db
+    .prepare("SELECT name FROM sqlite_master WHERE type='table'")
+    .iterate())
+    requireCheckpoint(
+      typeof row.name === "string" && allowed.has(row.name),
+      "Unknown workspace table",
+    );
+}
+
 function assertTriggerCoverage(db: DatabaseSync): void {
-  const triggers = new Map<string, string>();
+  const expected = new Map(triggerDefinitions());
   for (const row of db
     .prepare("SELECT name,sql FROM sqlite_master WHERE type='trigger'")
-    .all() as { name: string; sql: string | null }[]) {
-    if (row.sql) triggers.set(String(row.name), String(row.sql));
+    .iterate()) {
+    const name = String(row.name);
+    requireCheckpoint(
+      expected.get(name) === row.sql,
+      `Unknown or invalid ${name} trigger`,
+    );
+    expected.delete(name);
   }
-  for (const table of WORKSPACE_CONTENT_TABLES) {
-    for (const operation of TRIGGER_OPERATIONS) {
-      const name = `workspace_sync_${table}_${operation}`,
-        sql = triggers.get(name);
-      requireCheckpoint(!!sql, `Missing ${name} trigger`);
-      const normalized = sql!.replace(/\s+/g, " ").trim();
-      requireCheckpoint(
-        new RegExp(
-          `^CREATE TRIGGER "?${name}"? AFTER ${operation.toUpperCase()} ON "?${table}"? `,
-        ).test(normalized),
-        `Invalid ${name} trigger`,
-      );
-      requireCheckpoint(
-        /UPDATE workspace_sync_state SET generation=generation\+1/i.test(
-          normalized,
-        ),
-        `Invalid ${name} trigger`,
-      );
-    }
-  }
+  requireCheckpoint(expected.size === 0, "Workspace sync trigger is missing");
 }
 
 function isIdentifier(value: unknown): value is string {
@@ -1221,6 +1273,7 @@ function readInteger(row: Record<string, unknown>, key: string): number {
  */
 export function validateWorkspaceSyncSchema(db: DatabaseSync): void {
   try {
+    assertKnownWorkspaceTables(db);
     for (const [name, columns] of Object.entries(CONTENT_SCHEMA))
       assertTableShape(db, name, columns);
     for (const [name, columns] of Object.entries(SYNC_SCHEMA))

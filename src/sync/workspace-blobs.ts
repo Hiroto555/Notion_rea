@@ -70,7 +70,8 @@ const HASH = /^[a-f0-9]{64}$/;
 const WORKSPACE_ID = /^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$/;
 const CONTENT_RANGE = /^bytes ([0-9]+)-([0-9]+)\/([0-9]+)$/;
 const RESPONSE_RANGE = /^bytes ([0-9]+)-([0-9]+)\/([0-9]+)$/;
-const READ_FLAGS = fsConstants.O_RDONLY | fsConstants.O_NOFOLLOW | fsConstants.O_NONBLOCK;
+const READ_FLAGS =
+  fsConstants.O_RDONLY | fsConstants.O_NOFOLLOW | fsConstants.O_NONBLOCK;
 const WRITE_FLAGS =
   fsConstants.O_RDWR | fsConstants.O_CREAT | fsConstants.O_NOFOLLOW;
 const MAX_ATTEMPTS = 4;
@@ -143,7 +144,11 @@ function hashDescriptor(descriptor: number): string {
     const read = readSync(descriptor, buffer, 0, buffer.length, position);
     if (read === 0) break;
     position += read;
-    requireCondition(position <= WORKSPACE_BLOB_MAX_BYTES, "blob-too-large", 413);
+    requireCondition(
+      position <= WORKSPACE_BLOB_MAX_BYTES,
+      "blob-too-large",
+      413,
+    );
     hash.update(buffer.subarray(0, read));
   }
   return hash.digest("hex");
@@ -193,7 +198,10 @@ function openVerified(
       closeQuietly(descriptor);
       return null;
     }
-    if (stat.size > WORKSPACE_BLOB_MAX_BYTES || (bytes !== undefined && stat.size !== bytes)) {
+    if (
+      stat.size > WORKSPACE_BLOB_MAX_BYTES ||
+      (bytes !== undefined && stat.size !== bytes)
+    ) {
       closeQuietly(descriptor);
       return null;
     }
@@ -236,7 +244,10 @@ function localFileState(path: string): FileState {
     return {
       kind: "file",
       size: opened.size,
-      sha256: opened.size <= WORKSPACE_BLOB_MAX_BYTES ? hashDescriptor(descriptor) : "",
+      sha256:
+        opened.size <= WORKSPACE_BLOB_MAX_BYTES
+          ? hashDescriptor(descriptor)
+          : "",
     };
   } catch {
     throw new SyncError("asset-unreadable", 422);
@@ -496,7 +507,10 @@ export class WorkspaceBlobStore {
   private workspacePath(workspaceId: string, create: boolean): string {
     // Use a digest so distinct authenticated IDs stay distinct even on a
     // case-insensitive filesystem.
-    return ensureDirectory(join(this.root, hashText(validateWorkspaceId(workspaceId))), create);
+    return ensureDirectory(
+      join(this.root, hashText(validateWorkspaceId(workspaceId))),
+      create,
+    );
   }
 
   /** True only when the workspace-scoped stored bytes actually match id sha/length. */
@@ -540,7 +554,11 @@ export class WorkspaceBlobStore {
     }
     if (request.method === "PUT") {
       const key = workspaceId + ":" + sha256;
-      requireCondition(!this.activeUploads.has(key), "blob-upload-in-progress", 409);
+      requireCondition(
+        !this.activeUploads.has(key),
+        "blob-upload-in-progress",
+        409,
+      );
       this.activeUploads.add(key);
       try {
         await this.put(request, response, workspaceId, sha256, context);
@@ -1507,7 +1525,9 @@ export async function uploadCheckpointAssets(
   // Admission is a preflight over all writes. A refusal happens before any
   // request body is sent, so retrying after freeing space starts cleanly.
   if (missing.length)
-    normalized.admitBytes?.(missing.reduce((total, asset) => total + asset.bytes, 0));
+    normalized.admitBytes?.(
+      missing.reduce((total, asset) => total + asset.bytes, 0),
+    );
   for (const asset of missing)
     await uploadOne(normalized, asset, sources.get(asset.id)!);
 }
@@ -1529,7 +1549,9 @@ export async function stageCheckpointAssets(
       missing.push(asset);
   }
   if (missing.length)
-    normalized.admitBytes?.(missing.reduce((total, asset) => total + asset.bytes, 0));
+    normalized.admitBytes?.(
+      missing.reduce((total, asset) => total + asset.bytes, 0),
+    );
   for (const asset of missing)
     await downloadOne(normalized, asset, normalized.assetsDirectory);
 }

@@ -3,10 +3,11 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { buildSync } from "esbuild";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { Store } from "../src/persistence/store";
 import { RecordRepository } from "../src/persistence/record-repository";
 import { attachFile } from "../src/persistence/assets";
+import { createFullBackup } from "../src/persistence/full-backup-create";
 import { markRecordStoreVersion } from "../src/persistence/record-version";
 import { RecordLifecycle } from "../src/persistence/record-lifecycle";
 import { convertLegacyRecordsInTransaction } from "../src/persistence/record-migration";
@@ -160,7 +161,7 @@ describe("explicit version-5 promotion", () => {
     const triggers = store.db
       .prepare("SELECT name FROM sqlite_master WHERE type='trigger'")
       .all() as { name: string }[];
-    expect(triggers).toHaveLength(WORKSPACE_CONTENT_TABLES.length * 3);
+    expect(triggers).toHaveLength((WORKSPACE_CONTENT_TABLES.length + 3) * 3);
     expect(sync.status()).toEqual({
       receivedCursor: 0,
       appliedRevision: 0,
@@ -260,6 +261,37 @@ describe("explicit version-5 promotion", () => {
         )
         .get(),
     ).toBeUndefined();
+  });
+
+  it("rolls back a promotion interrupted after the v5 marker was written", () => {
+    const { store } = makeStore();
+    const page = store.create(null, "page", "Preserve before promotion");
+    const sync = new WorkspaceSyncStore(store, identity());
+    const exec = store.db.exec.bind(store.db);
+    const fault = vi.spyOn(store.db, "exec").mockImplementation((sql) => {
+      exec(sql);
+      if (sql === "PRAGMA user_version=5")
+        throw new Error("migration interrupted");
+    });
+    try {
+      expect(() => sync.enable("publish", () => {})).toThrow(
+        "migration interrupted",
+      );
+      expect(userVersion(store)).toBe(3);
+      expect(store.get(page.id)).toEqual(page);
+      expect(
+        store.db
+          .prepare(
+            "SELECT name FROM sqlite_master WHERE name LIKE 'workspace_sync_%'",
+          )
+          .all(),
+      ).toEqual([]);
+    } finally {
+      fault.mockRestore();
+    }
+    sync.enable("publish", () => {});
+    expect(userVersion(store)).toBe(5);
+    expect(sync.prepare()).not.toBeNull();
   });
 
   it("preserves the user version when the legacy record marker runs on v5", () => {
@@ -385,6 +417,46 @@ describe("durable trigger capture and checkpoint payload", () => {
       [database.id, record.pageId, expect.any(Number)],
     ]);
     expect(validateWorkspaceCheckpoint(trashed)).toBe(true);
+  });
+
+  it("promotes a backed-up v4 database with a history-only legacy ID reservation", () => {
+    const { store, root } = makeStore();
+    const legacy = store.create(null, "database", "Legacy history");
+    const populated = store.update(legacy.id, legacy.revision, {
+      database: {
+        ...legacy.database!,
+        rows: [{ id: "history-only", title: "Historical row", values: {} }],
+      },
+    });
+    store.update(legacy.id, populated.revision, {
+      database: { ...legacy.database!, rows: [] },
+    });
+    store.transaction(() => {
+      convertLegacyRecordsInTransaction(store);
+    });
+    expect(userVersion(store)).toBe(4);
+    const mapping = store.db
+      .prepare(
+        "SELECT page_id FROM legacy_record_map WHERE legacy_row_id='history-only'",
+      )
+      .get()!;
+    expect(() => store.get(String(mapping.page_id))).toThrow();
+
+    const sync = new WorkspaceSyncStore(store, identity());
+    sync.enable("publish", () => {
+      expect(
+        createFullBackup(store.db, root, join(root, "pre-sync")).manifest
+          .storeVersion,
+      ).toBe(4);
+    });
+    const checkpoint = sync.prepare()!.checkpoint;
+    expect(checkpoint.payload.tables).toMatchObject({
+      legacy_record_map: [[legacy.id, "history-only", mapping.page_id]],
+    });
+    expect(
+      createFullBackup(store.db, root, join(root, "post-sync")).manifest
+        .storeVersion,
+    ).toBe(5);
   });
 
   it("rejects unknown or partial table schemas and omitted prior pages", () => {
@@ -604,6 +676,51 @@ describe("staging, applying and replay", () => {
     syncB.applyNext(change, () => {});
     expect(b.store.get(page.id).title).toBe("Needs asset check");
   });
+
+  it("rolls back replaced content when the final applied position write fails, then resumes on reopen", () => {
+    const { a, b, syncA, syncB } = bootPair();
+    const page = a.store.create(null, "page", "original");
+    const initial = syncA.prepare()!;
+    syncA.recordResult(initial, applied(initial, 2));
+    const firstChange = asChange(initial, 2);
+    syncB.stageChanges(changePage("workspace", "epoch-1", 1, 2, [firstChange]));
+    syncB.applyNext(firstChange, () => {});
+
+    a.store.update(page.id, page.revision, { title: "next" });
+    const next = syncA.prepare()!;
+    syncA.recordResult(next, applied(next, 3));
+    const secondChange = asChange(next, 3);
+    syncB.stageChanges(
+      changePage("workspace", "epoch-1", 2, 3, [secondChange]),
+    );
+    b.store.db.exec(`
+      CREATE TEMP TRIGGER fail_apply_position BEFORE UPDATE OF applied_revision
+      ON workspace_sync_state BEGIN SELECT RAISE(ABORT,'apply position write failed'); END;
+    `);
+    expect(() => syncB.applyNext(secondChange, () => {})).toThrow(
+      "apply position write failed",
+    );
+    expect(b.store.get(page.id).title).toBe("original");
+    expect(syncB.status()).toMatchObject({
+      receivedCursor: 3,
+      appliedRevision: 2,
+      pending: false,
+    });
+
+    b.store.close();
+    stores.splice(stores.indexOf(b.store), 1);
+    const reopened = new Store(b.path);
+    stores.push(reopened);
+    const resumed = new WorkspaceSyncStore(reopened, identity("client-b"));
+    expect(resumed.nextIncoming()).toEqual(secondChange);
+    resumed.applyNext(secondChange, () => {});
+    expect(reopened.get(page.id).title).toBe("next");
+    expect(resumed.status()).toMatchObject({
+      receivedCursor: 3,
+      appliedRevision: 3,
+      pending: false,
+    });
+  });
 });
 
 describe("conflicts and explicit choices", () => {
@@ -661,6 +778,7 @@ describe("conflicts and explicit choices", () => {
 
     const chosen = syncB.chooseLocal(3);
     expect(chosen.baseRevision).toBe(3);
+    expect(syncB.status()).toMatchObject({ appliedRevision: 2, pending: true });
     expect(chosen.operationId).not.toBe(bCommit.operationId);
     expect(b.store.get(fixture.page.id).title).toBe("local");
     expect(syncB.conflict()).toBeNull();

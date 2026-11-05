@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { mkdirSync } from "node:fs";
+import { mkdirSync, realpathSync } from "node:fs";
 import { basename, dirname, join } from "node:path";
 import { estimateBackupBytes } from "../main/bulk-storage-budget";
 import { WorkspaceStoragePressure } from "../main/storage-pressure";
@@ -8,6 +8,7 @@ import { readUserVersion } from "../persistence/schema-startup";
 import type { Store } from "../persistence/store";
 import { CheckpointRemote } from "./client";
 import {
+  canonicalJson,
   hashCheckpoint,
   requireCondition,
   type Change,
@@ -22,17 +23,21 @@ import {
   verifyWorkspaceBinding,
   type WorkspaceDevice,
 } from "./workspace-binding";
-import { validateWorkspaceCheckpoint } from "./workspace-checkpoint";
 import { WorkspaceSyncStore } from "./workspace-store";
+
+export type WorkspaceSyncAdmission = (
+  bytes: number,
+  purpose: "content" | "assets" | "backup",
+) => void;
 
 type WorkspaceSyncOptions = WorkspaceDevice & {
   store: Store;
   baseUrl: string;
   token: string;
-  mode?: "publish" | "join";
+  mode?: "publish" | "join" | "recover";
   canApply: () => boolean;
   timeoutMs?: number;
-  admitBytes?: (bytes: number) => void;
+  admitBytes?: WorkspaceSyncAdmission;
 };
 
 type SyncStatus = ReturnType<WorkspaceSyncStore["status"]>;
@@ -45,7 +50,7 @@ export class WorkspaceSync {
   private epoch = 0;
   private readonly directory: string;
   private readonly assetsDirectory: string;
-  private readonly admitBytes: (bytes: number) => void;
+  private readonly admitBytes: WorkspaceSyncAdmission;
   private readonly remote: CheckpointRemote;
 
   private constructor(
@@ -53,7 +58,7 @@ export class WorkspaceSync {
     private readonly local: WorkspaceSyncStore,
     remote: CheckpointRemote,
   ) {
-    this.directory = dirname(options.store.path);
+    this.directory = dirname(realpathSync(options.store.path));
     this.assetsDirectory = join(this.directory, "assets");
     const pressure = new WorkspaceStoragePressure(this.directory);
     this.admitBytes =
@@ -71,37 +76,54 @@ export class WorkspaceSync {
       "edit-barrier-required",
     );
     const version = readUserVersion(options.store.db);
+    const mode = options.mode;
+    const recovering = mode === "recover";
     requireCondition(
-      version === 5 || options.mode === "publish" || options.mode === "join",
-      "explicit-sync-opt-in-required",
-    );
-    requireCondition(
-      options.mode === undefined ||
-        options.mode === "publish" ||
-        options.mode === "join",
+      mode === undefined || mode === "publish" || mode === "join" || recovering,
       "invalid-sync-mode",
     );
-    // Check before any authenticated request. A restored v5 backup has no
-    // live binding, including when a caller passes the old credentials.
-    if (version === 5)
+    requireCondition(
+      !recovering || version === 5,
+      "rebind-requires-v5-workspace",
+    );
+    requireCondition(
+      version === 5 || mode === "publish" || mode === "join",
+      "explicit-sync-opt-in-required",
+    );
+    // A restored v5 backup has no live binding, including when a caller
+    // passes the old credentials. Recovery is a separate explicit enrollment.
+    if (version === 5 && !recovering)
       verifyWorkspaceBinding(options.store.path, options, false);
     const remote = new CheckpointRemote(options);
-    const { serverEpoch } = await remote.head();
+    const { serverEpoch, head } = await remote.head();
+    // The receipt route is device scoped. A workspace reader's token cannot
+    // enroll or run another device even when it can read this head.
+    await remote.lookup(options.clientId, randomUUID());
     const local = new WorkspaceSyncStore(options.store, {
       workspaceId: options.workspaceId,
       clientId: options.clientId,
       bindingId: options.bindingId,
       serverEpoch,
     });
-    const sync = new WorkspaceSync(options, local, remote);
-    if (version === 5) {
-      local.status();
-    } else {
-      local.enable(options.mode!, () => {
+    const sync = new WorkspaceSync({ ...options }, local, remote);
+    if (recovering) {
+      local.rebindRestored(() => {
+        sync.backup("before-rebind");
+        verifyWorkspaceBinding(options.store.path, options, true);
+      });
+      verifyWorkspaceBinding(options.store.path, options, false);
+    } else if (version !== 5 && (mode === "publish" || mode === "join")) {
+      local.enable(mode, () => {
         sync.backup("before-enable");
         verifyWorkspaceBinding(options.store.path, options, true);
       });
     }
+    const { appliedRevision, receivedCursor } = local.status();
+    requireCondition(
+      head.revision >= Math.max(appliedRevision, receivedCursor),
+      "server-head-regressed",
+      409,
+    );
     return sync;
   }
 
@@ -204,19 +226,18 @@ export class WorkspaceSync {
 
   private async receive(): Promise<void> {
     const page = await this.remote.changes(this.local.status().receivedCursor);
-    for (const change of page.changes)
-      requireCondition(
-        validateWorkspaceCheckpoint(change.checkpoint),
-        "checkpoint-schema-rejected",
-        422,
-      );
+    if (page.changes.length)
+      this.admitBytes(Buffer.byteLength(canonicalJson(page)), "content");
     this.local.stageChanges(page);
   }
 
   private async apply(change: Change, resolving: boolean): Promise<boolean> {
     if (this.options.canApply() !== true) return false;
     await stageCheckpointAssets(
-      this.transferOptions(),
+      {
+        ...this.transferOptions(),
+        admitBytes: (bytes) => this.admitBytes(bytes, "assets"),
+      },
       change.checkpoint.assets,
     );
     // No asynchronous gap between this clean check, the backup, and SQLite apply.
@@ -235,7 +256,10 @@ export class WorkspaceSync {
       422,
     );
     this.backup("before-apply");
-    this.admitBytes(Buffer.byteLength(JSON.stringify(change.checkpoint)));
+    this.admitBytes(
+      Buffer.byteLength(JSON.stringify(change.checkpoint)),
+      "content",
+    );
     // Invalidate before applying. A lost SQLite COMMIT acknowledgement must
     // also leave pre-apply editor requests stale.
     this.epoch++;
@@ -246,9 +270,11 @@ export class WorkspaceSync {
     return true;
   }
 
-  private backup(reason: "before-enable" | "before-apply"): void {
+  private backup(
+    reason: "before-enable" | "before-apply" | "before-rebind",
+  ): void {
     const { store } = this.options;
-    this.admitBytes(estimateBackupBytes(store.db, this.directory));
+    this.admitBytes(estimateBackupBytes(store.db, this.directory), "backup");
     const root = join(this.directory, "backups");
     mkdirSync(root, { recursive: true, mode: 0o700 });
     createFullBackup(
@@ -266,7 +292,6 @@ export class WorkspaceSync {
       workspaceId,
       timeoutMs,
       assetsDirectory: this.assetsDirectory,
-      admitBytes: this.admitBytes,
     };
   }
 }

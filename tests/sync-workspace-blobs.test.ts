@@ -324,16 +324,22 @@ describe("WorkspaceBlobStore", () => {
   it("isolates case-variant workspaces and excludes a second writer while a partial is open", async () => {
     const root = tempRoot("folio-workspace-blobs-parallel-");
     const store = new WorkspaceBlobStore(join(root, "blobs"));
-    const a = token(), b = token();
+    const a = token(),
+      b = token();
     const server = await startBlobServer(store, { workspace: a, Workspace: b });
-    const bytes = randomBytes(32 * 1024), asset = assetFor(bytes);
+    const bytes = randomBytes(32 * 1024),
+      asset = assetFor(bytes);
     const first = httpRequest(
       `${server.url}/v1/workspaces/workspace/blobs/${asset.sha256}`,
-      { method: "PUT", agent: false, headers: {
-        Authorization: `Bearer ${a}`,
-        "Content-Length": String(bytes.length),
-        "Content-Type": "application/octet-stream",
-      } },
+      {
+        method: "PUT",
+        agent: false,
+        headers: {
+          Authorization: `Bearer ${a}`,
+          "Content-Length": String(bytes.length),
+          "Content-Type": "application/octet-stream",
+        },
+      },
     );
     const result = new Promise<number | undefined>((resolve, reject) => {
       first.once("error", reject);
@@ -344,15 +350,37 @@ describe("WorkspaceBlobStore", () => {
     });
     try {
       first.write(bytes.subarray(0, 1024));
-      await vi.waitFor(() => expect(existsSync(join(root, "blobs",
-        hashText("workspace"), `.partial-${asset.sha256}`))).toBe(true));
-      const concurrent = await putFull(server, "workspace", asset, Buffer.alloc(bytes.length), a);
+      await vi.waitFor(() =>
+        expect(
+          existsSync(
+            join(
+              root,
+              "blobs",
+              hashText("workspace"),
+              `.partial-${asset.sha256}`,
+            ),
+          ),
+        ).toBe(true),
+      );
+      const concurrent = await putFull(
+        server,
+        "workspace",
+        asset,
+        Buffer.alloc(bytes.length),
+        a,
+      );
       expect(concurrent.status).toBe(409);
-      expect(JSON.parse(concurrent.body.toString())).toEqual({ error: "blob-upload-in-progress" });
+      expect(JSON.parse(concurrent.body.toString())).toEqual({
+        error: "blob-upload-in-progress",
+      });
       first.end(bytes.subarray(1024));
       expect(await result).toBe(201);
-      expect((await callBlob(server, "GET", "workspace", asset.sha256, a)).body).toEqual(bytes);
-      expect((await callBlob(server, "GET", "Workspace", asset.sha256, b)).status).toBe(404);
+      expect(
+        (await callBlob(server, "GET", "workspace", asset.sha256, a)).body,
+      ).toEqual(bytes);
+      expect(
+        (await callBlob(server, "GET", "Workspace", asset.sha256, b)).status,
+      ).toBe(404);
     } finally {
       first.destroy();
       await result.catch(() => {});
@@ -415,7 +443,9 @@ describe("WorkspaceBlobStore", () => {
     ).toBe(404);
     const partialName = `.partial-${asset.sha256}`;
     expect(
-      readdirSync(join(root, "blobs", hashText("workspace"))).includes(partialName),
+      readdirSync(join(root, "blobs", hashText("workspace"))).includes(
+        partialName,
+      ),
     ).toBe(true);
 
     // A client that lost the first acknowledgement resends an overlapping

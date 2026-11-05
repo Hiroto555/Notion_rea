@@ -1,7 +1,14 @@
 import { randomBytes, randomUUID } from "node:crypto";
-import { existsSync, mkdtempSync, realpathSync, rmSync } from "node:fs";
+import {
+  existsSync,
+  mkdtempSync,
+  readdirSync,
+  realpathSync,
+  rmSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { DatabaseSync } from "node:sqlite";
 import { expect, it } from "vitest";
 import { runStartupWorkspaceSync } from "../src/main/workspace-sync-startup";
 import { createFullBackup } from "../src/persistence/full-backup-create";
@@ -15,6 +22,8 @@ import {
 import { startCheckpointServer } from "../src/sync/checkpoint-server";
 import { validateWorkspaceCheckpoint } from "../src/sync/workspace-checkpoint";
 import { openWorkspaceSync } from "../src/sync/workspace-sync";
+import { WorkspaceSyncStore } from "../src/sync/workspace-store";
+import { CheckpointRemote } from "../src/sync/client";
 
 const clean: CrashRecoveryRead = { status: "empty", generation: 0 };
 
@@ -71,13 +80,40 @@ it("applies startup changes only after saved recovery input is cleared, and neve
       }),
     ).toBeUndefined();
     expect(readUserVersion(a.store.db)).toBe(3);
-    expect(
-      await runStartupWorkspaceSync(a.store, () => clean, {
-        ...a.env,
-        FOLIO_SYNC_MODE: "publish",
+    await expect(
+      openWorkspaceSync({
+        ...a.options,
+        mode: "publish",
+        admitBytes() {
+          throw new Error("capacity refused");
+        },
       }),
-    ).toContain("適用済み 1");
-    expect(readUserVersion(a.store.db)).toBe(5);
+    ).rejects.toThrow("capacity refused");
+    expect(readUserVersion(a.store.db)).toBe(3);
+    expect(existsSync(join(a.env.FOLIO_DATA_DIR, ".folio-sync-binding"))).toBe(
+      false,
+    );
+
+    // Open a connection before migration, as an already-running older
+    // process could. Its content and settings statements must stop at v5.
+    const stale = new DatabaseSync(a.store.path);
+    try {
+      expect(
+        await runStartupWorkspaceSync(a.store, () => clean, {
+          ...a.env,
+          FOLIO_SYNC_MODE: "publish",
+        }),
+      ).toContain("適用済み 1");
+      expect(readUserVersion(a.store.db)).toBe(5);
+      expect(() => stale.exec("UPDATE pages SET body='old writer'")).toThrow(
+        "no such function: folio_sync_v5_write",
+      );
+      expect(() =>
+        stale.exec("INSERT INTO settings VALUES('theme','dark')"),
+      ).toThrow("no such function: folio_sync_v5_write");
+    } finally {
+      stale.close();
+    }
 
     b.store.handle({ type: "setting", key: "theme", value: "dark" });
     const snapshot = emptyCrashRecoverySnapshot();
@@ -105,6 +141,12 @@ it("applies startup changes only after saved recovery input is cleared, and neve
     expect(b.store.get(page.id).title).toBe(page.title);
     expect(b.store.load().settings.theme).toBe("dark");
 
+    b.store.update(page.id, page.revision, { title: "Bの未送信変更" });
+    const queue = new WorkspaceSyncStore(b.store, {
+      ...b.options,
+      serverEpoch: server.serverEpoch,
+    });
+    const originalOperation = queue.prepare()!;
     const backup = createFullBackup(
       b.store.db,
       b.env.FOLIO_DATA_DIR,
@@ -119,10 +161,75 @@ it("applies startup changes only after saved recovery input is cleared, and neve
     await expect(
       openWorkspaceSync({ ...b.options, store: restoredStore }),
     ).rejects.toThrow("workspace-binding-missing");
-    const edited = restoredStore.update(page.id, page.revision, {
-      title: "復元した端末の編集",
-    });
+    await expect(
+      openWorkspaceSync({
+        ...b.options,
+        store: restoredStore,
+        mode: "recover",
+      }),
+    ).rejects.toThrow("workspace-binding-missing");
+    await expect(
+      openWorkspaceSync({
+        ...b.options,
+        store: restoredStore,
+        bindingId: randomUUID(),
+        mode: "recover",
+      }),
+    ).rejects.toThrow("new-sync-device-required");
+    const edited = restoredStore.update(
+      page.id,
+      restoredStore.get(page.id).revision,
+      {
+        title: "復元した端末の編集",
+      },
+    );
     expect(edited.title).toBe("復元した端末の編集");
+
+    const clientId = randomUUID(),
+      bindingId = randomUUID();
+    const token = randomBytes(32).toString("base64url");
+    server.registerDevice({ workspaceId, ownerId, clientId, token });
+    const recovered = await openWorkspaceSync({
+      ...b.options,
+      clientId,
+      bindingId,
+      token,
+      store: restoredStore,
+      mode: "recover",
+    });
+    const reopened = await openWorkspaceSync({
+      ...b.options,
+      clientId,
+      bindingId,
+      token,
+      store: restoredStore,
+      mode: "recover",
+    });
+    expect(reopened.status()).toEqual(recovered.status());
+    expect(recovered.status()).toMatchObject({
+      appliedRevision: 0,
+      pending: true,
+    });
+    expect(
+      readdirSync(join(restored, "backups")).some((name) =>
+        name.startsWith("sync-before-rebind-"),
+      ),
+    ).toBe(true);
+    expect(await recovered.syncOnce()).toMatchObject({
+      appliedRevision: 0,
+      conflict: true,
+    });
+    const conflict = recovered.conflict()!;
+    expect(conflict.operation.clientId).toBe(clientId);
+    expect(conflict.operation.operationId).not.toBe(
+      originalOperation.operationId,
+    );
+    expect(
+      await new CheckpointRemote(b.options).lookup(
+        b.options.clientId,
+        originalOperation.operationId,
+      ),
+    ).toBeNull();
     expect(a.store.get(page.id).title).toBe(page.title);
   } finally {
     for (const store of stores) store.close();

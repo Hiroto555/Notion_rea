@@ -391,7 +391,7 @@ describe("checkpoint blob adapter boundary", () => {
     expect(conflictResponse.status).toBe(200);
     const conflict = (await conflictResponse.json()) as {
       status: string;
-      head: { revision: number; checkpoint: AssetCheckpoint };
+      head: { revision: number; checkpoint: Checkpoint };
     };
     expect(conflict.status).toBe("conflict");
     expect(conflict.head.revision).toBe(1);

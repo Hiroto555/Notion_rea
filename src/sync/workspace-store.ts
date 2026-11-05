@@ -22,12 +22,12 @@ import {
 } from "./protocol";
 import {
   buildWorkspaceCheckpoint,
+  installWorkspaceSyncTriggers,
   pageSearchBody,
   validateWorkspaceCheckpoint,
   validateWorkspaceSyncSchema,
   WORKSPACE_CONTENT_TABLES,
   WORKSPACE_SYNC_SCHEMA_VERSION,
-  type WorkspaceAssetManifest,
   type WorkspaceContentTable,
 } from "./workspace-checkpoint";
 
@@ -282,6 +282,12 @@ export class WorkspaceSyncStore {
         return;
       }
       if (mode === "join") this.assertEmptyContent();
+      const checkpoint = buildWorkspaceCheckpoint(this.store.db);
+      hashCheckpoint(checkpoint);
+      requireCondition(
+        validateWorkspaceCheckpoint(checkpoint),
+        "invalid-local-workspace-checkpoint",
+      );
       new RecordRepository(this.store).createSchema();
       markRecordStoreVersion(this.store.db);
       this.store.db.exec(LIFECYCLE_SCHEMA);
@@ -301,11 +307,59 @@ export class WorkspaceSyncStore {
           generation,
           0,
         );
-      this.installTriggers();
+      installWorkspaceSyncTriggers(this.store.db);
       // This is the durable old-writer barrier. It must be the final schema
       // write so a partially promoted workspace can never be mistaken for v5.
       this.store.db.exec("PRAGMA user_version=5");
       validateWorkspaceSyncSchema(this.store.db);
+    });
+  }
+
+  /** The host verifies a backup of the previous queue and binds a fresh
+   * device before resetting anything. The restored content becomes a new
+   * candidate at revision zero, so it cannot overwrite a remote head. */
+  rebindRestored(beforeRebind: () => void): void {
+    const prior = this.readStateOrNull();
+    requireCondition(
+      prior && userVersion(this.store.db) === 5,
+      "rebind-requires-v5-workspace",
+    );
+    const { workspaceId, clientId, bindingId, serverEpoch } = this.identity;
+    requireCondition(
+      prior.workspace_id === workspaceId,
+      "workspace-sync-identity-mismatch",
+    );
+    if (
+      prior.client_id === clientId &&
+      prior.binding_id === bindingId &&
+      prior.server_epoch === serverEpoch
+    )
+      return;
+    requireCondition(
+      prior.client_id !== clientId && prior.binding_id !== bindingId,
+      "new-sync-device-required",
+      409,
+    );
+    beforeRebind();
+    this.store.transaction(() => {
+      requireCondition(
+        canonicalJson(this.readStateOrNull()) === canonicalJson(prior),
+        "workspace-changed-during-rebind",
+        409,
+      );
+      const db = this.store.db;
+      db.exec(`
+        DELETE FROM workspace_sync_conflicts;
+        DELETE FROM workspace_sync_archives;
+        DELETE FROM workspace_sync_outbox;
+        DELETE FROM workspace_sync_inbox;
+        DELETE FROM workspace_sync_applied;
+      `);
+      db.prepare(
+        `UPDATE workspace_sync_state SET
+        client_id=?, binding_id=?, server_epoch=?, generation=1, clean_generation=0,
+        applied_revision=0, received_cursor=0 WHERE singleton=1`,
+      ).run(clientId, bindingId, serverEpoch);
     });
   }
 
@@ -364,11 +418,6 @@ export class WorkspaceSyncStore {
           state.generation,
           canonicalJson(commit),
         );
-      this.store.db
-        .prepare(
-          "UPDATE workspace_sync_state SET clean_generation=? WHERE singleton=1",
-        )
-        .run(state.generation);
       return commit;
     });
   }
@@ -402,7 +451,7 @@ export class WorkspaceSyncStore {
       if (result.status === "applied") {
         requireCondition(
           result.revision === operation.baseRevision + 1 &&
-            operation.baseRevision === state.applied_revision &&
+            operation.baseRevision >= state.applied_revision &&
             result.checkpointHash === operation.checkpointHash,
           "invalid-applied-result",
         );
@@ -420,14 +469,15 @@ export class WorkspaceSyncStore {
           .run(encoded, operation.operationId);
         this.store.db
           .prepare(
-            "UPDATE workspace_sync_state SET applied_revision=? WHERE singleton=1",
+            "UPDATE workspace_sync_state SET applied_revision=?,clean_generation=? WHERE singleton=1",
           )
-          .run(result.revision);
+          .run(result.revision, row!.generation);
         this.writeApplied(result.revision, operation.checkpoint);
         return;
       }
       requireCondition(
-        result.head.revision !== operation.baseRevision,
+        result.head.revision !== operation.baseRevision &&
+          result.head.revision >= state.applied_revision,
         "invalid-conflict-result",
       );
       requireCondition(
@@ -484,18 +534,23 @@ export class WorkspaceSyncStore {
           continue;
         }
         requireCondition(change.revision === cursor + 1, "cursor-gap");
-        const outbox =
-          change.clientId === this.identity.clientId
-            ? (this.store.db
-                .prepare(
-                  "SELECT fingerprint FROM workspace_sync_outbox WHERE operation_id=?",
-                )
-                .get(change.operationId) as { fingerprint: string } | undefined)
-            : undefined;
-        const skipApply =
-          change.clientId === this.identity.clientId &&
-          (change.revision <= state.applied_revision ||
-            (!!outbox && outbox.fingerprint === change.fingerprint));
+        let skipApply = false;
+        if (change.clientId === this.identity.clientId) {
+          const outbox = this.store.db
+            .prepare("SELECT * FROM workspace_sync_outbox WHERE operation_id=?")
+            .get(change.operationId) as OutboxRow | undefined;
+          requireCondition(
+            outbox && outbox.fingerprint === change.fingerprint,
+            "unknown-own-sync-change",
+          );
+          const operation = this.parseStoredCommit(outbox.commit_json);
+          requireCondition(
+            operation.baseRevision + 1 === change.revision &&
+              operation.checkpointHash === change.checkpointHash,
+            "sync-result-mismatch",
+          );
+          skipApply = true;
+        }
         this.store.db
           .prepare(
             "INSERT INTO workspace_sync_inbox(revision,change_json,skip_apply) VALUES(?,?,?)",
@@ -528,39 +583,41 @@ export class WorkspaceSyncStore {
         if (!row) return null;
         const change = JSON.parse(row.change_json) as Change;
         if (row.skip_apply === 0) return change;
-        // The server only returns changes it accepted. Our own revision can
-        // therefore advance the applied cursor without rewriting local content
-        // (which may already contain newer edits).
+        // An exact echo can reconcile a missing ACK without replacing newer local edits.
+        const outbox = this.pendingOutbox();
+        requireCondition(
+          outbox &&
+            outbox.operation_id === change.operationId &&
+            outbox.fingerprint === change.fingerprint,
+          "unknown-own-sync-change",
+        );
+        const operation = this.parseStoredCommit(outbox.commit_json);
+        requireCondition(
+          operation.baseRevision + 1 === revision &&
+            operation.checkpointHash === change.checkpointHash,
+          "sync-result-mismatch",
+        );
+        const result: CommitResult = {
+          protocol: 1,
+          workspaceId: this.identity.workspaceId,
+          clientId: this.identity.clientId,
+          operationId: change.operationId,
+          serverEpoch: this.identity.serverEpoch,
+          fingerprint: change.fingerprint,
+          status: "applied",
+          revision,
+          checkpointHash: change.checkpointHash,
+        };
         this.store.db
           .prepare(
-            "UPDATE workspace_sync_state SET applied_revision=? WHERE singleton=1",
+            "UPDATE workspace_sync_outbox SET result_json=? WHERE operation_id=?",
           )
-          .run(revision);
-        const outbox = this.store.db
-          .prepare("SELECT * FROM workspace_sync_outbox WHERE operation_id=?")
-          .get(change.operationId) as OutboxRow | undefined;
-        if (
-          outbox &&
-          outbox.result_json === null &&
-          outbox.fingerprint === change.fingerprint
-        ) {
-          const result: CommitResult = {
-            protocol: 1,
-            workspaceId: this.identity.workspaceId,
-            clientId: this.identity.clientId,
-            operationId: change.operationId,
-            serverEpoch: this.identity.serverEpoch,
-            fingerprint: change.fingerprint,
-            status: "applied",
-            revision,
-            checkpointHash: change.checkpointHash,
-          };
-          this.store.db
-            .prepare(
-              "UPDATE workspace_sync_outbox SET result_json=? WHERE operation_id=?",
-            )
-            .run(canonicalJson(result), change.operationId);
-        }
+          .run(canonicalJson(result), change.operationId);
+        this.store.db
+          .prepare(
+            "UPDATE workspace_sync_state SET applied_revision=?,clean_generation=? WHERE singleton=1",
+          )
+          .run(revision, outbox.generation);
         this.writeApplied(revision, change.checkpoint);
         state = this.readState();
       }
@@ -607,9 +664,7 @@ export class WorkspaceSyncStore {
         validateWorkspaceCheckpoint(expected.checkpoint, previous),
         "invalid-remote-workspace-checkpoint",
       );
-      assertAssets(
-        expected.checkpoint.assets as unknown as Checkpoint["assets"],
-      );
+      assertAssets(expected.checkpoint.assets);
       this.replaceContent(expected.checkpoint);
       this.store.db
         .prepare(
@@ -646,7 +701,8 @@ export class WorkspaceSyncStore {
         { status: "conflict" }
       >;
       requireCondition(
-        expectedRevision === result.head.revision,
+        expectedRevision === result.head.revision &&
+          expectedRevision >= state.applied_revision,
         "sync-head-changed",
       );
       requireCondition(!this.pendingOutbox(), "sync-outbox-pending");
@@ -681,12 +737,6 @@ export class WorkspaceSyncStore {
         );
       this.store.db
         .prepare(
-          "UPDATE workspace_sync_state SET applied_revision=?,clean_generation=? WHERE singleton=1",
-        )
-        .run(expectedRevision, state.generation);
-      this.writeApplied(expectedRevision, result.head.checkpoint);
-      this.store.db
-        .prepare(
           "INSERT INTO workspace_sync_archives(operation_id,kind,checkpoint_json,created_at) VALUES(?,?,?,?)",
         )
         .run(
@@ -718,6 +768,7 @@ export class WorkspaceSyncStore {
       >;
       requireCondition(
         expected.revision === result.head.revision &&
+          expected.revision >= state.applied_revision &&
           expected.checkpointHash === result.head.checkpointHash,
         "sync-head-changed",
       );
@@ -733,9 +784,7 @@ export class WorkspaceSyncStore {
         validateWorkspaceCheckpoint(expected.checkpoint, previous),
         "invalid-remote-workspace-checkpoint",
       );
-      assertAssets(
-        expected.checkpoint.assets as unknown as Checkpoint["assets"],
-      );
+      assertAssets(expected.checkpoint.assets);
       const now = Date.now(),
         localCheckpoint = JSON.parse(row!.local_checkpoint_json) as Checkpoint;
       this.store.db
@@ -794,14 +843,6 @@ export class WorkspaceSyncStore {
   }
 
   /* ------------------------------ internals ------------------------------ */
-
-  private installTriggers(): void {
-    for (const table of WORKSPACE_CONTENT_TABLES)
-      for (const operation of ["insert", "update", "delete"] as const)
-        this.store.db.exec(
-          `CREATE TRIGGER IF NOT EXISTS "workspace_sync_${table}_${operation}" AFTER ${operation.toUpperCase()} ON "${table}" WHEN (SELECT suppress_triggers FROM workspace_sync_state WHERE singleton=1)=0 BEGIN UPDATE workspace_sync_state SET generation=generation+1 WHERE singleton=1; END`,
-        );
-  }
 
   private assertEmptyContent(): void {
     for (const table of WORKSPACE_CONTENT_TABLES) {
@@ -990,7 +1031,10 @@ export class WorkspaceSyncStore {
         "invalid-remote-workspace-checkpoint",
       );
     });
-    requireCondition(headRevision >= state.received_cursor, "cursor-ahead");
+    requireCondition(
+      headRevision >= Math.max(state.received_cursor, state.applied_revision),
+      "cursor-ahead",
+    );
   }
 
   private validateStagedCheckpoint(

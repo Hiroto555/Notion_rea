@@ -1,5 +1,7 @@
 # Checkpoint同期の通信基盤（非GUI・未接続）
 
+この文書は通信基盤単体の段階の記録です。製品の試験経路は [Folioの端末同期実験](SYNC-WORKSPACE-EXPERIMENT.ja.md) を参照してください。
+
 この実装は `src/sync/` に閉じた、同一所有者の複数clientを想定する通信基盤です。**Folio本体の双方向同期やLevel 4到達を意味しません。** Store/main/IPC/renderer/backupとは接続しておらず、GUIも起動していません。
 
 ## 確認対象

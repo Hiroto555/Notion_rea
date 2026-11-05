@@ -130,7 +130,6 @@ function waitForFile(path: string, timeoutMs: number): Promise<void> {
         rejectPromise(new Error(`timed out waiting for ${path}`));
       }
     }, 20);
-    timer.unref?.();
   });
 }
 

@@ -4,9 +4,7 @@
  * Every mutating client is a separate Node OS process with its own temporary
  * Store, assets directory, client id and binding id.  The checkpoint server is
  * a persistent loopback fixture owned by this test process.  The Codex
- * integration modules are loaded through an esbuild bridge only when all of
- * them exist, so this file is skipped on the base commit and runs in the
- * integrated branch without a production stub.
+ * production modules are bundled for the child process through esbuild.
  *
  * Faults are injected only through a child-local loopback proxy or by
  * SIGKILLing the exact child this file spawned.  No host network setting, real
@@ -41,9 +39,6 @@ import {
   findPage,
   findPageByTitle,
   imageDoc,
-  INTEGRATION_FILES,
-  integrationFilesPresent,
-  integrationFilesStarted,
   loadLevel4Api,
   paragraphDoc,
   rawHead,
@@ -60,8 +55,6 @@ import {
   writeProductConfig,
 } from "./fixtures/sync-level4-support";
 
-const PRESENT = integrationFilesPresent();
-const describeLevel4 = PRESENT ? describe : describe.skip;
 const TIMEOUT = 60_000;
 
 const roots: string[] = [];
@@ -70,7 +63,7 @@ const proxies = new Set<FaultProxy>();
 let api!: Level4Api;
 
 beforeAll(async () => {
-  if (PRESENT) api = await loadLevel4Api();
+  api = await loadLevel4Api();
 }, 120_000);
 
 afterEach(async () => {
@@ -201,18 +194,7 @@ async function registerFor(
   };
 }
 
-// This probe is never skipped.  It prevents a partially integrated branch from
-// silently hiding all 14 product checks: no files at all is the base commit,
-// but one or two files is an incomplete integration and fails loudly.
-it("does not partially integrate the frozen workspace-sync files", () => {
-  if (!integrationFilesStarted()) return;
-  const missing = INTEGRATION_FILES.filter(
-    (file) => !existsSync(join(process.cwd(), file)),
-  );
-  expect(missing).toEqual([]);
-});
-
-describeLevel4("Level 4 workspace sync product verification", () => {
+describe("Level 4 workspace sync product verification", () => {
   it(
     "saves one page, publishes, pulls into a fresh join, and reopens both stores",
     async () => {
@@ -533,6 +515,7 @@ describeLevel4("Level 4 workspace sync product verification", () => {
       );
       expect(page(aAfterB, "snapshot").database.records[0].values).toEqual({
         status: "進行中",
+        date: "2026-11-05",
       });
       expect(page(aAfterB, "trashed").deletedAt).not.toBeNull();
 
@@ -616,7 +599,15 @@ describeLevel4("Level 4 workspace sync product verification", () => {
       const asset = page(created, "asset");
       const assetPage = page(created, "page");
       expect(asset.sha256).toBe(sourceHash);
-      expect(asset.bytes).toBe(source.length);
+      expect(asset.size).toBe(source.length);
+      const committed = await rawHead(
+        server.server.url,
+        server.workspaceId,
+        whoA.token,
+      );
+      expect(committed.head.checkpoint.assets).toEqual([
+        { id: asset.id, sha256: sourceHash, bytes: source.length },
+      ]);
       expect(status(created, "sync").pending).toBe(false);
 
       const received = expectOk(
@@ -684,6 +675,43 @@ describeLevel4("Level 4 workspace sync product verification", () => {
       expect(page(restored, "page").id).toBe(assetPage.id);
       expect(page(restored, "resolved").sha256).toBe(sourceHash);
       expect(status(restored, "status").pending).toBe(false);
+
+      const reverseBytes = Buffer.concat([
+        source,
+        Buffer.from("reverse transfer"),
+      ]);
+      const reverseSource = join(root, "reverse.png");
+      writeFileSync(reverseSource, reverseBytes, { mode: 0o600 });
+      const fromB = expectOk(
+        await run(server, whoB, bStore, "b-asset-reverse", [
+          { kind: "open" },
+          { kind: "attach", file: reverseSource, saveAs: "asset" },
+          {
+            kind: "createPage",
+            title: "B asset page",
+            doc: imageDoc("${asset.url}"),
+            saveAs: "page",
+          },
+          { kind: "sync" },
+          { kind: "close" },
+        ]),
+      );
+      const reverseAsset = page(fromB, "asset");
+      const reversePage = page(fromB, "page");
+      const onA = expectOk(
+        await run(server, whoA, aStore, "a-asset-reverse", [
+          { kind: "open" },
+          { kind: "sync" },
+          { kind: "page", pageId: reversePage.id, saveAs: "page" },
+          { kind: "resolveAsset", url: reverseAsset.url, saveAs: "asset" },
+          { kind: "close" },
+        ]),
+      );
+      expect(page(onA, "page").doc).toEqual(reversePage.doc);
+      expect(page(onA, "asset").sha256).toBe(sha256(reverseBytes));
+      expect(sha256File(join(aStore.assets, reverseAsset.id))).toBe(
+        sha256(reverseBytes),
+      );
     },
     TIMEOUT,
   );
@@ -756,18 +784,21 @@ describeLevel4("Level 4 workspace sync product verification", () => {
       const deferredPage = page(deferred, "page");
       expect(deferredPage.title).toBe("Barrier base");
       expect(docText(deferredPage.doc)).toBe("base");
-      expect(deferredStatus.pending).toBe(true);
+      expect(deferredStatus.pending).toBe(false); // The outbound queue is clean.
+      expect(deferredStatus.appliedRevision).toBe(
+        value(deferred, "opened").status.appliedRevision,
+      );
       expect(deferredStatus.receivedCursor).toBeGreaterThan(
         deferredStatus.appliedRevision,
       );
 
       const applied = expectOk(
         await run(server, whoB, bStore, "b-barrier-apply", [
-          { kind: "open" },
+          { kind: "open", saveAs: "opened" },
           { kind: "sync", saveAs: "sync" },
           {
             kind: "assertWritable",
-            epoch: page(deferred, "epoch"),
+            epoch: "${opened.epoch}",
             saveAs: "staleWrite",
           },
           { kind: "writeEpoch", saveAs: "epoch" },
@@ -951,11 +982,7 @@ describeLevel4("Level 4 workspace sync product verification", () => {
       writeFileSync(goPath, "go", { mode: 0o600 });
       const offline = expectOk(await offlineChild.result);
       const offlineAttempt = value(offline, "offlineSync");
-      expect(
-        offlineAttempt.error ??
-          offlineAttempt.status?.pending ??
-          status(offline, "status").pending,
-      ).toBeTruthy();
+      expect(offlineAttempt.error).toBeTruthy();
       expect(status(offline, "status").pending).toBe(true);
 
       await restartLevel4Server(server, api);
@@ -1326,7 +1353,6 @@ describeLevel4("Level 4 workspace sync product verification", () => {
       const conflicted = expectOk(
         await run(server, whoB, bStore, "b-conflict-local", [
           { kind: "open" },
-          { kind: "sync" },
           {
             kind: "save",
             pageId,
@@ -1353,6 +1379,7 @@ describeLevel4("Level 4 workspace sync product verification", () => {
       expect(localCheckpointPage.title).toBe("B local");
       expect(remoteCheckpointPage.title).toBe("A remote");
       const observedRevision = conflict.result.head.revision;
+      expect(conflict.operation.baseRevision).toBeLessThan(observedRevision);
 
       // The conflict must survive a fresh process and an unrelated open.
       const reopened = expectOk(
@@ -1447,7 +1474,6 @@ describeLevel4("Level 4 workspace sync product verification", () => {
       const conflicted = expectOk(
         await run(server, whoB, bStore, "b-local-conflict", [
           { kind: "open" },
-          { kind: "sync" },
           {
             kind: "save",
             pageId,
@@ -1461,6 +1487,7 @@ describeLevel4("Level 4 workspace sync product verification", () => {
       );
       const conflict = page(conflicted, "conflict") as Level4Conflict;
       const observedRevision = conflict.result.head.revision;
+      expect(conflict.operation.baseRevision).toBeLessThan(observedRevision);
       const resolved = expectOk(
         await run(server, whoB, bStore, "b-local-resolve", [
           { kind: "open" },
@@ -1636,11 +1663,7 @@ describeLevel4("Level 4 workspace sync product verification", () => {
       writeFileSync(goPath, "go", { mode: 0o600 });
       const revoked = expectOk(await holder.result);
       const revokedAttempt = value(revoked, "sync");
-      expect(
-        revokedAttempt.error ??
-          revokedAttempt.status?.pending ??
-          status(revoked, "status").pending,
-      ).toBeTruthy();
+      expect(revokedAttempt.error).toContain("unauthorized");
       expect(status(revoked, "status").pending).toBe(true);
 
       await expect(

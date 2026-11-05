@@ -100,6 +100,13 @@ export class WorkspaceStorageService {
     policy.assertAssetGrowth(bytes);
   }
 
+  admitSyncWrite(bytes: number, purpose: "content" | "assets" | "backup") {
+    if (purpose === "assets") return this.admitAttachment(bytes);
+    if (purpose === "backup") return this.admitBackup(bytes);
+    this.pressure.assertWritable(bytes);
+    this.policy().assertDatabaseWritable();
+  }
+
   private admitBackup(bytes: number) {
     this.pressure.assertWritable(bytes);
     this.policy().assertBackupGrowth(bytes);

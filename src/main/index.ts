@@ -129,10 +129,6 @@ if (startupError) {
       const readOnly = opened.status.mode === "readOnly";
       if (!readOnly && !startupSyncRequested(process.env) && readUserVersion(store.db) < 5) seed(store);
       const crashRecovery = readOnly ? undefined : new CrashRecoveryFile(join(dataDir, "crash-recovery.json"), crashRecoveryWorkspaceId(store));
-      const syncMessage = crashRecovery
-        ? await runStartupWorkspaceSync(store, () => crashRecovery.read(), process.env)
-        : undefined;
-      const startupStatus = syncMessage ? { ...opened.status, syncMessage } : opened.status;
       const assets = join(dataDir, "assets");
       if (!readOnly) mkdirSync(assets, { recursive: true });
       const storage = new WorkspaceStorageService(dataDir, store.db, process.env, async (title, create = false, file = false) => {
@@ -141,6 +137,11 @@ if (startupError) {
         });
         return selected.canceled ? null : selected.filePaths[0];
       });
+      const syncMessage = crashRecovery
+        ? await runStartupWorkspaceSync(store, () => crashRecovery.read(), process.env,
+            (bytes, purpose) => storage.admitSyncWrite(bytes, purpose))
+        : undefined;
+      const startupStatus = syncMessage ? { ...opened.status, syncMessage } : opened.status;
       const workspaceBackups = storage.backups;
       let layoutBackupDone = false;
       const { protectValue: protectRichDocument, protectRequest: protectRichRequest } =

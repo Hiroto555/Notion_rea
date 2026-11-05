@@ -4,7 +4,10 @@ import {
 } from "../shared/crash-recovery";
 import type { Store } from "../persistence/store";
 import { requireCondition, SyncError } from "../sync/protocol";
-import { openWorkspaceSync } from "../sync/workspace-sync";
+import {
+  openWorkspaceSync,
+  type WorkspaceSyncAdmission,
+} from "../sync/workspace-sync";
 
 export function startupSyncRequested(env: NodeJS.ProcessEnv): boolean {
   return env.FOLIO_SYNC_ENABLED === "1" && !!env.FOLIO_DATA_DIR;
@@ -16,6 +19,7 @@ export async function runStartupWorkspaceSync(
   store: Store,
   readRecovery: () => CrashRecoveryRead,
   env: NodeJS.ProcessEnv,
+  admitBytes?: WorkspaceSyncAdmission,
 ): Promise<string | undefined> {
   if (!startupSyncRequested(env)) return;
   const canApply = () => {
@@ -32,7 +36,10 @@ export async function runStartupWorkspaceSync(
     const choice = env.FOLIO_SYNC_CONFLICT_CHOICE;
     const revision = Number(env.FOLIO_SYNC_CONFLICT_REVISION);
     requireCondition(
-      mode === undefined || mode === "publish" || mode === "join",
+      mode === undefined ||
+        mode === "publish" ||
+        mode === "join" ||
+        mode === "recover",
       "invalid-sync-mode",
     );
     requireCondition(
@@ -51,6 +58,7 @@ export async function runStartupWorkspaceSync(
       token: env.FOLIO_SYNC_TOKEN ?? "",
       mode,
       canApply,
+      admitBytes,
     });
     if (choice) await sync.resolveConflict(choice, revision);
     let status = sync.status();

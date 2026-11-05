@@ -1,5 +1,7 @@
 # Folio Level 4：隔離・非GUI実装の契約案
 
+この文書は通信基盤単体の段階の記録です。製品の試験経路は [Folioの端末同期実験](SYNC-WORKSPACE-EXPERIMENT.ja.md) を参照してください。
+
 2026-11-04。設計対象 `<workspace-root>/Folio-l4-quiet`、base `8bfb3d2430a738e034371df28bc311bb2863fb3f`。製品ファイルは変更していない。Electron/ブラウザ/OS clipboard、既存データ、公開、Opusは使用していない。
 
 ## 結論
