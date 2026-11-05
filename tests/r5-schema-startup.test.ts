@@ -338,7 +338,7 @@ describe("writable startup preflight", () => {
     setup.create(null, "page", "Future");
     setup.close();
     const db = new DatabaseSync(path);
-    db.exec("PRAGMA journal_mode=DELETE; PRAGMA user_version=5");
+    db.exec("PRAGMA journal_mode=DELETE; PRAGMA user_version=6");
     db.close();
     const before = hash(path),
       journal = readJournalMode(path);
@@ -353,7 +353,7 @@ describe("writable startup preflight", () => {
     ).toThrow(/requires a newer Folio version/);
     expect(called).toBe(false);
     expect(hash(path)).toBe(before);
-    expect(readVersion(path)).toBe(5);
+    expect(readVersion(path)).toBe(6);
     expect(readJournalMode(path)).toBe(journal);
     expect(preSnapshots(root, 2)).toEqual([]);
     expect(preSnapshots(root, 3)).toEqual([]);
@@ -632,14 +632,14 @@ describe("read-only startup", () => {
     expect(preSnapshots(root, 3)).toEqual([]);
 
     const future = new DatabaseSync(v2Path);
-    future.exec("PRAGMA user_version=5");
+    future.exec("PRAGMA user_version=6");
     future.close();
     const futureBefore = hash(v2Path);
     expect(() => new Store(v2Path, { readOnly: true })).toThrow(
       /requires a newer Folio version/,
     );
     expect(hash(v2Path)).toBe(futureBefore);
-    expect(readVersion(v2Path)).toBe(5);
+    expect(readVersion(v2Path)).toBe(6);
 
     const absent = join(root, "absent", "workspace.sqlite");
     expect(() => new Store(absent, { readOnly: true })).toThrow();

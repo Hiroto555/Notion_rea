@@ -527,7 +527,7 @@ it("rejects corrupt, future-version, missing-asset, symlinked and traversing sna
   const future = cloneBackup(backup, join(fixture.root, "future-version"));
   const futureDb = new DatabaseSync(join(future, "workspace.sqlite"));
   try {
-    futureDb.exec("PRAGMA user_version=5");
+    futureDb.exec("PRAGMA user_version=6");
   } finally {
     futureDb.close();
   }

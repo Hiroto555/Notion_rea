@@ -480,14 +480,14 @@ describe("full backup verification", () => {
       unlinkSync(join(backup, "workspace.sqlite-wal"));
 
       const futureManifest = structuredClone(manifest);
-      futureManifest.storeVersion = 5;
+      futureManifest.storeVersion = 6;
       writeManifest(backup, futureManifest);
       expect(() => verifyFullBackup(backup, { allowIncomplete: true })).toThrow(
         /unsupported workspace/i,
       );
 
       writeManifest(backup, manifest);
-      editDatabase(backup, (db) => db.exec("PRAGMA user_version=5"));
+      editDatabase(backup, (db) => db.exec("PRAGMA user_version=6"));
       expect(() => inspectWorkspaceSnapshot(backup)).toThrow(
         /unsupported workspace database version/i,
       );
