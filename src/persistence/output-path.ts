@@ -37,3 +37,21 @@ export function assertExternalOutput(workspace: string, destination: string) {
     if (error.code !== "ENOENT") throw error;
   }
 }
+
+// Adding an otherwise unrelated child invalidates a verified backup's manifest.
+// Walk only ancestors of the selected, canonical parent (never a subtree scan).
+export function assertOutsideFolioData(parent: string): void {
+  for (let dir = realpathSync(parent);;) {
+    for (const marker of ["workspace.sqlite", "workspace.raw.sqlite", "FOLIO-RECOVERY-INCOMPLETE", "FOLIO-RAW-SALVAGE-INCOMPLETE"]) {
+      try { lstatSync(join(dir, marker)); }
+      catch (error) {
+        if ((error as NodeJS.ErrnoException).code === "ENOENT") continue;
+        throw error;
+      }
+      throw new Error("ワークスペースやバックアップ内には退避先を作成できません。");
+    }
+    const next = dirname(dir);
+    if (next === dir) return;
+    dir = next;
+  }
+}

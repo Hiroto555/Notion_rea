@@ -95,6 +95,46 @@ export class RecordRepository {
     };
   }
 
+  /** Read-only projections for one owner, decoded from its membership rows
+   * only. A caller that also reads the owner must hold the same SQLite
+   * snapshot. Any unreadable member rejects the whole collection so a partial
+   * record list is never presented as editable. */
+  projectionsForDatabase(databasePageId: string): RecordProjection[] {
+    const rows = this.store.db
+      .prepare(
+        "SELECT page_id,database_page_id,values_json FROM record_memberships WHERE database_page_id=? ORDER BY position,page_id",
+      )
+      .all(databasePageId) as {
+      page_id: string;
+      database_page_id: string;
+      values_json: string;
+    }[];
+    return rows.map((row) =>
+      this.readProjection(row.page_id, row.database_page_id, row.values_json),
+    );
+  }
+
+  private readProjection(
+    pageId: string,
+    databasePageId: string,
+    valuesJson: string,
+  ): RecordProjection {
+    const page = this.store.get(pageId);
+    if (page.documentError)
+      throw new Error(
+        "関連するレコードを安全に読み込めません。原本を保全し、編集を停止しています。",
+      );
+    return {
+      pageId,
+      databasePageId,
+      revision: page.revision,
+      title: page.title,
+      icon: page.icon,
+      values: this.parseValues(valuesJson),
+      deletedAt: page.deletedAt,
+    };
+  }
+
   /** Read a live record, its document, membership and owner from one SQLite
    * snapshot. This does not install the document into an Editor. */
   readSnapshot(pageId: string): { page: Page; record: RecordProjection } {

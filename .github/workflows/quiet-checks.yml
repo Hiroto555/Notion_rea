@@ -1,0 +1,54 @@
+name: quiet-checks
+
+# Non-GUI verification only: type check -> Vitest -> production build.
+# This workflow never runs Electron, Playwright, dev/start/package scripts,
+# screenshots, clipboard tools, or the GUI E2E gate.
+on:
+  pull_request:
+  push:
+    branches: [master]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: quiet-checks-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  quiet-checks:
+    name: Type check, Vitest, build (no GUI)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Check out repository
+        # Official actions/checkout v7.0.1, pinned by commit SHA.
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+
+      - name: Set up Node.js 24
+        # Official actions/setup-node v7.1.0, pinned by commit SHA.
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
+        with:
+          node-version: "24"
+          cache: npm
+
+      - name: Confirm Node.js 24 and the node:sqlite state API
+        # The unit suite uses DatabaseSync from node:sqlite without flags.
+        run: |
+          node --version
+          node --input-type=module -e "import { DatabaseSync } from 'node:sqlite'; const db = new DatabaseSync(':memory:'); db.exec('CREATE TABLE t (v INTEGER)'); db.prepare('INSERT INTO t VALUES (1)').run(); const row = db.prepare('SELECT v FROM t').get(); if (row.v !== 1) process.exit(1); db.close(); console.log('node:sqlite state API OK');"
+
+      - name: Install locked dependencies
+        run: npm ci --no-audit --no-fund
+
+      - name: Run quiet checks
+        # Runs npm run check, npm test -- --maxWorkers=2, and npm run build
+        # in that order and preserves the failing stage's exit code.
+        run: npm run verify:quiet
+
+      - name: Verify required renderer assets are local
+        run: node scripts/check-local-assets.mjs
+      - name: Verify headless rescue entry
+        run: node dist/raw-rescue.cjs --help

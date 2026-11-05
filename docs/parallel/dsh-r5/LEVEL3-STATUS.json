@@ -1,0 +1,26 @@
+{
+  "date": "2026-11-05",
+  "testedCodeCommit": "d878dbf992be2a06bd850e53efdba65aa229a38a",
+  "confirmedLevel": 2,
+  "level3": "PARTIAL",
+  "typecheck": "PASS",
+  "unitFiles": 116,
+  "unitTests": 1148,
+  "build": "PASS",
+  "offlineCore": "PASS: child-local network API denial and separate-process reopen",
+  "builtAssets": "PASS: local HTML/CSS dependencies",
+  "G1": "PARTIAL: native offline desktop lifecycle NOT_RUN",
+  "G7": "PARTIAL: bounded storage and safe maintenance verified in Node; actual desktop UI NOT_RUN",
+  "G8": "PARTIAL: unit/build/CLI evidence present; native GUI lifecycle NOT_RUN",
+  "GUI": "NOT_RUN",
+  "remaining": [
+    "Native offline startup/edit/search/save/reopen",
+    "Readonly startup display, IME and native directory choosers",
+    "Actual restore navigation and capacity-error recovery"
+  ],
+  "limits": [
+    "Node API denial is not kernel network isolation",
+    "Rescue relies on caller closing external writers and checks source changes",
+    "SQLite may create read-index and empty-WAL artifacts"
+  ]
+}

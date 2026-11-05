@@ -5,6 +5,8 @@ import { validDocument } from "../shared/validation";
 import { versionDocument } from "../shared/rich-document";
 import { queryBacklinks } from "../persistence/backlinks-query";
 import { BacklinksPanel } from "./BacklinksPanel";
+import { WorkspaceMaintenancePanel } from "./WorkspaceMaintenancePanel";
+import { StoragePressurePanel } from "./StoragePressurePanel";
 import { PageLayoutControl } from "./page-layout";
 import { effectivePageWidth } from "../shared/page-layout";
 import { WorkspaceBackupDialog } from "./workspace-backup/WorkspaceBackupDialog";
@@ -52,6 +54,9 @@ import { LiveRecordDatabase } from "./LiveRecordDatabase";
 import { DatabaseSessionCoordinator } from "./database-session-coordinator";
 import { prepareDatabaseCreation, type DatabaseOperation, type DatabaseOperationResult } from "../shared/database-operation";
 import { sendDatabaseOperation, resolveDatabaseOperation } from "./reliable-database-operation";
+import { PageOperationCoordinator, type PageOperationEntry } from "./page-operation-coordinator";
+import { retryUnconfirmedPageOperations } from "./page-operation-recovery";
+import { duplicateEditorPage } from "./duplicate-editor-page";
 import { NewDatabaseDialog } from "./NewDatabaseDialog";
 import { StructuralDatabaseDialog } from "./StructuralDatabaseDialog";
 import type { StructuralOperation } from "./structural-operation";
@@ -63,7 +68,7 @@ import { filterConditions, operatorNeedsValue } from "../database/model";
 import { RecordPage } from "../database/RecordPage";
 import { parsePropertyNumberInput } from "../database/property-number-input";
 import { EditSessionCoordinator } from "./edit-session-coordinator";
-import { sendReliableSave, resolveReliableSave } from "./reliable-save";
+import { sendReliableSave, resolveReliableSave, retryReliableSave } from "./reliable-save";
 import type { SaveOperation, SaveResult } from "../shared/save-contract";
 import { validateRecordReadSnapshot } from "./record-save-coordinator";
 import { composing } from "../shared/keyboard";
@@ -144,6 +149,14 @@ export function App() {
   const databases = useRef(new DatabaseSessionCoordinator(api, {beforeSend: () => recoveryBarrierRef.current()}));
   const databaseCreation = useRef<{operation: DatabaseOperation; state: "saving" | "unknown" | "rejected"; selection: number; error?: string} | undefined>(undefined);
   const databaseCreating = useRef(false);
+  // Ordinary Page create/duplicate keeps one operation until its durable
+  // result is confirmed. Unresolved operations are added to crash recovery.
+  const pageCreation = useRef<PageOperationCoordinator | null>(null);
+  if (!pageCreation.current)
+    pageCreation.current = new PageOperationCoordinator(api, {
+      persist: () => recoveryBarrierRef.current(),
+      onChange: () => redrawSessions((n) => n + 1),
+    });
   const creatingRows = useRef(new Set<string>());
   const filterDrafts = useRef<Record<string, Record<string, Record<string, string>>>>({});
   function hasFilterDrafts() {
@@ -276,6 +289,8 @@ export function App() {
         seq: edits.current.sequenceFor(id), intents, ...(operation ? {operation} : {})});
     }
     if (databaseCreation.current && databaseCreation.current.state !== "rejected") snapshot.creations.push(databaseCreation.current.operation);
+    const creationOperations = pageCreation.current?.unresolvedOperations() ?? [];
+    if (creationOperations.length) snapshot.pageOperations = creationOperations;
     if (structuralOperation.current) snapshot.externalOperations.push(structuralOperation.current as CrashRecoverySnapshot["externalOperations"][number]);
     return snapshot;
   }
@@ -295,22 +310,33 @@ export function App() {
     setRecoveryStatus(recoveryQueue.current.getStatus());
     recoveryEnabled.current = true;
   }
-  async function resumeCrashRecovery(copy = false) {
+  async function resumeCrashRecovery(copy = false, retryPages = false) {
     if (recoveryBusy || !startupRecovery?.snapshot || startupRecovery.status !== "ready") return;
     setRecoveryBusy(true); setRecoveryError("");
     try {
       if (copy) {
         const snapshot = startupRecovery.snapshot;
         const first = snapshot.pages[0] ?? snapshot.records[0] ?? snapshot.databases[0];
-        const body = first ? Object.assign({}, first.base, ...first.intents.map((intent) => "patch" in intent ? intent.patch : {})).doc : undefined;
+        // A rejected/unknown create keeps its full initial body in the page
+        // operation. Prefer that body for the copy instead of only the JSON
+        // payload, while the complete snapshot still travels as payload.
+        const pageOperation = snapshot.pageOperations?.find((operation) => operation.command.kind === "createPage");
+        const pageDoc = pageOperation?.command.kind === "createPage" ? pageOperation.command.doc : undefined;
+        const body = first ? Object.assign({}, first.base, ...first.intents.map((intent) => "patch" in intent ? intent.patch : {})).doc : pageDoc;
+        const title = !first && pageOperation?.command.kind === "createPage" && pageOperation.command.title
+          ? pageOperation.command.title.slice(0, 480) + "（復旧入力）" : "復旧した入力";
         await api<Page>({type: "recovery:copy", recoveryId: `checkpoint:${startupRecovery.generation}`,
-          input: {title: "復旧した入力", payload: snapshot, ...(body ? {doc: body} : {}), ...(first ? {sourcePageId: first.base.id} : {})}});
+          input: {title, payload: snapshot, ...(body ? {doc: body} : {}), ...(first ? {sourcePageId: first.base.id} : {})}});
         if (!recoveryQueue.current) enableRecovery(startupRecovery.generation);
         await recoveryQueue.current!.retry();
         recoveryQueue.current!.offer(emptyCrashRecoverySnapshot());
         await recoveryQueue.current!.flush();
         window.location.reload(); return;
       }
+      // Only an explicit user action reaches this branch. It resolves every
+      // retained page operation first and re-sends only unknown ones with the
+      // exact same operation identity and payload.
+      if (retryPages) await retryUnconfirmedPageOperations(startupRecovery.snapshot, api);
       const restored = installedRecovery.current ?? await prepareCrashRecovery(startupRecovery.snapshot, api);
       if (!installedRecovery.current) {
       // Validation of all lanes finishes before any editor session is installed.
@@ -618,10 +644,15 @@ export function App() {
       queueMicrotask(() => update(operation.pageId, patch));
     }
   }
-  async function resolvePageSaves() {
+  async function resolvePageSaves(retry = false) {
+    if (retry && composition.current) throw new Error("文字の変換を確定してから再試行してください。");
     await enqueue(async () => {
+      if (retry) {
+        await recoveryQueue.current?.retry();
+        await recoveryBarrierRef.current();
+      }
       for (const operation of [...pageOperations.current.values()]) {
-        const result = await resolveReliableSave(operation, api);
+        const result = await (retry ? retryReliableSave : resolveReliableSave)(operation, api);
         acknowledgePage(operation, result, true);
       }
     });
@@ -777,7 +808,12 @@ export function App() {
     // Keep the Editor mounted so its pending state and composition survive.
     flushSync(() => setCreatingPage(true));
     return mutate(async () => {
-      const p = await api<Page>({ type: "create", parentId, kind, title });
+      // The optional initial body is part of the immutable Page operation, so
+      // the Page, its search body and the receipt commit together. Icon and
+      // other metadata updates remain separate, explicitly non-atomic steps.
+      const p = kind === "page"
+        ? await pageCreation.current!.create(parentId, title ?? "無題", doc)
+        : await api<Page>({ type: "create", parentId, kind, title });
       if (kind === "database") {
         // Determine v4 membership before selecting the page: the legacy
         // whole-row editor must never appear for a registered database.
@@ -791,7 +827,7 @@ export function App() {
         saveSetting("expanded", JSON.stringify([...next]));
       }
       if (selectionVersion.current === selectionAtStart) select(p.id);
-      if (doc) update(p.id, { doc });
+      if (doc && kind !== "page") update(p.id, { doc });
       return p;
     }, true).finally(() => {
       creatingCount.current--;
@@ -904,7 +940,7 @@ export function App() {
       }
     };
     const unload = (e: BeforeUnloadEvent) => {
-      if (backupBusy.current || pendingRef.current > 0 || edits.current.size > 0 || sessions.current.hasUnsaved() || hasNumberDrafts() || hasDatabasePending() || restoring.current.size > 0 || structuralOperation.current || recoveryQueue.current?.getStatus().state !== "saved" || captureError.current) {
+      if (backupBusy.current || pendingRef.current > 0 || edits.current.size > 0 || sessions.current.hasUnsaved() || hasNumberDrafts() || hasDatabasePending() || pageCreation.current?.hasRetained() || restoring.current.size > 0 || structuralOperation.current || recoveryQueue.current?.getStatus().state !== "saved" || captureError.current) {
         e.preventDefault();
         e.returnValue = "保存中です";
         setNotice("未保存の入力を保持しています。保存中の処理・保存結果・入力途中の数値を確認してから終了してください。");
@@ -936,11 +972,71 @@ export function App() {
     safe(() =>
       mutate(async () => {
         if (!page) return;
-        const copy = await api<Page>({ type: "duplicate", id: page.id });
+        const copy = await duplicateEditorPage(page, pageCreation.current!, api);
         await refresh();
         select(copy.id);
       }),
     );
+  function pageCreationUnknown(): PageOperationEntry | undefined {
+    return pageCreation.current?.firstUnknown();
+  }
+  function pageCreationRejected(): PageOperationEntry | undefined {
+    return pageCreation.current?.firstRejected();
+  }
+  function retryUncheckpointedPageCreation() {
+    if (composition.current) return;
+    const selectionAtStart = selectionVersion.current;
+    safe(() => mutate(async () => {
+      await recoveryQueue.current?.retry();
+      const created = await pageCreation.current!.retryUncheckpointed();
+      if (!created) return;
+      await refresh();
+      if (selectionVersion.current === selectionAtStart) select(created.id);
+      setNotice("保持していた入力からページを作成しました。");
+    }));
+  }
+  /** Explicit exit for a rejected create/duplicate: preserve the exact input
+   * as a new Page without replaying the rejected operation. */
+  async function preserveRejectedPageCreation() {
+    const entry = pageCreationRejected();
+    if (!entry) return;
+    const command = entry.operation.command;
+    const doc = command.kind === "createPage" ? command.doc : undefined;
+    const title = command.kind === "createPage" && command.title.trim()
+      ? command.title.trim().slice(0, 480) + "（復旧入力）" : "復旧したページ作成";
+    const snapshot: CrashRecoverySnapshot = {
+      ...emptyCrashRecoverySnapshot(),
+      pageOperations: [entry.operation],
+    };
+    await api<Page>({
+      type: "recovery:copy",
+      recoveryId: `page-operation:${entry.operation.operationId}`,
+      input: { title, ...(doc ? { doc } : {}), payload: snapshot },
+    });
+    pageCreation.current?.discard(entry.operation.operationId);
+    checkpointRef.current();
+    await refresh();
+    setNotice("作成できなかった入力を別ページに保存しました。");
+  }
+  function resolvePageCreation(retry = false) {
+    if (retry && composition.current) return;
+    const selectionAtStart = selectionVersion.current;
+    safe(() =>
+      mutate(async () => {
+        if (retry) await recoveryQueue.current?.retry();
+        const result = await (retry ? pageCreation.current!.retryUnknown() : pageCreation.current!.resolveNext());
+        if (!result) return;
+        if (result.status === "applied" && result.page) {
+          await refresh();
+          if (selectionVersion.current === selectionAtStart && pageRef.current.some((page) => page.id === result.page!.id)) select(result.page.id);
+          setNotice("保留していたページ作成の結果を確認しました。");
+          return;
+        }
+        if (result.status === "rejected") throw new Error(result.message || "ページ操作は拒否されました。");
+        throw new Error(result.message || "作成結果を確認できません。入力を保持しています。");
+      }),
+    );
+  }
   const trash = () =>
     safe(() =>
       mutate(async () => {
@@ -1385,7 +1481,7 @@ export function App() {
       } as Doc,
     },
   ];
-  if (startupRecovery) return <CrashRecoveryDialog read={startupRecovery} busy={recoveryBusy} error={recoveryError} onResume={() => void resumeCrashRecovery()} onCopy={() => void resumeCrashRecovery(true)} />;
+  if (startupRecovery) return <CrashRecoveryDialog read={startupRecovery} busy={recoveryBusy} error={recoveryError} onResume={() => void resumeCrashRecovery()} onCopy={() => void resumeCrashRecovery(true)} onRetryPageOperations={() => void resumeCrashRecovery(false, true)} />;
   if (!ready)
     return (
       <main className="loading">
@@ -1716,6 +1812,10 @@ export function App() {
                 {pageOperations.current.size > 0 && <button onClick={() => safe(resolvePageSaves)}>保存結果を確認</button>}
                 <button
                   onClick={() => {
+                    if (pageOperations.current.size > 0) {
+                      safe(() => resolvePageSaves(true));
+                      return;
+                    }
                     // Existing Page drafts do not reliably retain their input
                     // revision. Replaying them against a refreshed Page could
                     // silently overwrite a newer external edit.
@@ -1863,6 +1963,19 @@ export function App() {
         {databaseCreation.current?.state === "unknown" && !newDatabaseOpen && <div className="r5-database-operation" role="status">
           <span>データベースの作成結果を確認できません。名前と操作を保持しています。</span>
           <button disabled={databaseCreating.current} onClick={() => void resolveDatabaseCreation()}>作成結果を確認</button>
+        </div>}
+        {pageCreationUnknown() && <div className="r5-database-operation" role="status">
+          <span>{pageCreationUnknown()!.message} ページの内容と操作を保持しています。</span>
+          <button onClick={() => resolvePageCreation()}>作成結果を確認</button>
+          <button onClick={() => resolvePageCreation(true)}>同じ操作で再試行</button>
+        </div>}
+        {pageCreationRejected() && <div className="r5-database-operation" role="status">
+          <span>{pageCreationRejected()!.message} 入力は保持しています。</span>
+          <button onClick={() => safe(preserveRejectedPageCreation)}>入力を別ページに保存</button>
+        </div>}
+        {pageCreation.current?.firstUncheckpointed() && <div className="r5-database-operation" role="status">
+          <span>{pageCreation.current.firstUncheckpointed()!.message}</span>
+          <button onClick={retryUncheckpointedPageCreation}>ページ作成を再試行</button>
         </div>}
         <div className="document-layout" style={{ position: "relative" }}>
           <div
@@ -2193,6 +2306,8 @@ export function App() {
                 >
                   ページを作成
                 </button>
+                <StoragePressurePanel />
+                <WorkspaceMaintenancePanel />
               </div>
             )}
           </div>
@@ -2268,6 +2383,8 @@ export function App() {
                   <dd>このMac</dd>
                 </dl>
               </section>
+              <StoragePressurePanel />
+              <WorkspaceMaintenancePanel />
               <section className="inspector-section">
                 <h3 className="inspector-label">アウトライン</h3>
                 {headings.length ? (
@@ -2586,7 +2703,7 @@ export function App() {
         </DialogFrame>
       )}
       {backupOpen && <WorkspaceBackupDialog
-        onClose={() => {if (!backupBusy.current) setBackupOpen(false);}}
+        onClose={() => {if (!backupBusy.current) safe(async () => {await api({type: "workspaceBackup:release"}); setBackupOpen(false);});}}
         onBusyChange={(busy) => {backupBusy.current = busy;}}
         onCreate={async () => {await prepareWorkspaceBackup(); return api<BackupPreview>({type: "workspaceBackup:create"});}}
         onChoose={() => api<BackupPreview | null>({type: "workspaceBackup:choose"})}

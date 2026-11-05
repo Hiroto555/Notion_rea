@@ -295,6 +295,7 @@ export type LegacyMigrationEnvironment = {
   /** Both paths come from main's workspace context, never the renderer. */
   assetsPath: string;
   snapshotRoot: string;
+  beforeSnapshot?: () => void;
 };
 
 /** Explicit-only entrypoint. Main must quiesce all workspace/attachment writes
@@ -309,6 +310,8 @@ export function commitLegacyMigration(
   const operation = legacyMigrationOperationSchema.parse(input);
   const existing = receipt(store, operation);
   if (existing) return existing;
+  // Admission is retryable and must not be recorded as a terminal rejection.
+  environment.beforeSnapshot?.();
   let snapshotPath: string | undefined;
   try {
     const preview = previewLegacyMigration(store, operation.databasePageId);

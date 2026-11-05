@@ -1,0 +1,16 @@
+{
+  "date": "2026-11-05",
+  "testedCodeCommit": "3fd951d869e1d0b04f2abf0cc21b07ff01f68561",
+  "report": "docs/parallel/dsh-r3/INTEGRATION-REVIEW.ja.md",
+  "previousGateAudit": "docs/parallel/dsh-r2/INTEGRATION-REVIEW.ja.md",
+  "achievedLevel": 2,
+  "level3": "PARTIAL",
+  "G7": {
+    "status": "PARTIAL",
+    "implemented": ["disk free-space admission", "read and checkpoint rescue classification", "exact-operation explicit retry", "backup and destination restore admission", "manual capacity UI code"],
+    "remaining": ["workspace growth limits", "safe maintenance and retention", "operation size budgeting", "GUI validation"]
+  },
+  "G8": {"status": "PARTIAL", "unitFiles": 101, "unitTests": 1033, "typecheck": "PASS", "build": "PASS", "GUI": "NOT_RUN"},
+  "level4ProductSync": "NOT_IMPLEMENTED",
+  "limits": ["No reserved physical disk space", "No receipt or history deletion", "Startup schema writes precede IPC admission", "No real disk filling or physical power-loss experiment"]
+}

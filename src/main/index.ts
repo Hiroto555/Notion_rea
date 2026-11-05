@@ -1,4 +1,7 @@
-import { containsRichBlocks } from "../shared/rich-document";
+import { createRichDocumentProtection } from "./rich-document-protection";
+import { openWorkspaceAtStartup, admitStartupStorage } from "./workspace-startup";
+import { assertReadOnlyRequest } from "./read-only-workspace";
+import { WorkspaceStorageService } from "./workspace-storage-service";
 import {
   app,
   BrowserWindow,
@@ -23,7 +26,6 @@ import {
 import { pathToFileURL } from "node:url";
 import { randomUUID } from "node:crypto";
 import { spawn } from "node:child_process";
-import { WorkspaceBackupService } from "./workspace-backup-service";
 import { Store } from "../persistence/store";
 import { seed } from "../persistence/seed";
 import { attachFile, resolveAsset } from "../persistence/assets";
@@ -45,6 +47,7 @@ const dataDir = workspacePath(userData, process.env.FOLIO_DATA_DIR);
 let startupError: unknown;
 try {
   const profile = process.env.FOLIO_DATA_DIR ? dataDir : userData;
+  if (!existsSync(profile)) admitStartupStorage(profile, 1024 * 1024);
   mkdirSync(profile, { recursive: true });
   app.setPath("userData", profile);
   app.setPath("sessionData", join(profile, "session"));
@@ -106,7 +109,7 @@ if (startupError) {
             app.quit();
             return;
           }
-          if (choice.response === 0) migrateWorkspace(legacy, dataDir);
+          if (choice.response === 0) migrateWorkspace(legacy, dataDir, {beforeCopy: admitStartupStorage});
           if (choice.response === 1) {
             const selected = await dialog.showOpenDialog({
               properties: ["openDirectory"],
@@ -115,25 +118,27 @@ if (startupError) {
               app.quit();
               return;
             }
-            migrateWorkspace(selected.filePaths[0], dataDir);
+            migrateWorkspace(selected.filePaths[0], dataDir, {beforeCopy: admitStartupStorage});
           }
         }
       }
-      mkdirSync(dataDir, { recursive: true });
-      store = new Store(join(dataDir, "workspace.sqlite"));
-      seed(store);
-      const crashRecovery = new CrashRecoveryFile(join(dataDir, "crash-recovery.json"), crashRecoveryWorkspaceId(store));
+      const opened = openWorkspaceAtStartup(dataDir);
+      store = opened.store;
+      const readOnly = opened.status.mode === "readOnly";
+      if (!readOnly) seed(store);
+      const crashRecovery = readOnly ? undefined : new CrashRecoveryFile(join(dataDir, "crash-recovery.json"), crashRecoveryWorkspaceId(store));
       const assets = join(dataDir, "assets");
-      mkdirSync(assets, { recursive: true });
-      const workspaceBackups = new WorkspaceBackupService(store.db, dataDir);
+      if (!readOnly) mkdirSync(assets, { recursive: true });
+      const storage = new WorkspaceStorageService(dataDir, store.db, process.env, async (title, create = false, file = false) => {
+        const selected = await dialog.showOpenDialog(win!, {
+          title, properties: file ? ["openFile"] : create ? ["openDirectory", "createDirectory"] : ["openDirectory"],
+        });
+        return selected.canceled ? null : selected.filePaths[0];
+      });
+      const workspaceBackups = storage.backups;
       let layoutBackupDone = false;
-      let richDocumentBackupDone = false;
-      const protectRichDocument = (value: unknown) => {
-        if (!richDocumentBackupDone && containsRichBlocks(value)) {
-          workspaceBackups.create("before-rich-blocks");
-          richDocumentBackupDone = true;
-        }
-      };
+      const { protectValue: protectRichDocument, protectRequest: protectRichRequest } =
+        createRichDocumentProtection(() => workspaceBackups.createAutomatic("before-rich-blocks"));
       protocol.handle("folio-asset", async (req) => {
         try {
           const asset = resolveAsset(store.db, assets, req.url);
@@ -167,10 +172,22 @@ if (startupError) {
         )
           throw new Error("Unauthorized IPC sender");
         const req = requestSchema.parse(input);
+        // Validate size and admission before any backup or workspace mutation.
+        if (
+          req.type !== "export" &&
+          req.type !== "exportRecovery" &&
+          req.type !== "exportPendingJournal" &&
+          Buffer.byteLength(JSON.stringify(req)) > 32_000_000
+        )
+          throw new Error("リクエストが大きすぎます");
+        if (req.type === "startup:status") return opened.status;
+        if (readOnly) assertReadOnlyRequest(req);
+        const utility = storage.handleUtility(req);
+        if (utility) return utility;
+        storage.admitRequest(req);
         // Snapshot before the first W3 database mutation. The durable draft
         // journal must still work when a backup or database save fails.
-        if (["save:commit", "update", "record:pageUpdate", "database:commit", "recovery:copy"].includes(req.type))
-          protectRichDocument(req);
+        protectRichRequest(req);
         // Before the first persisted layout change in this process, preserve
         // a verified pre-change workspace. Failure prevents the mutation.
         const width = req.type === "save:commit" ? req.operation.patch.width
@@ -178,7 +195,7 @@ if (startupError) {
           : req.type === "database:commit" && req.operation.command.kind === "updateDatabase"
             ? req.operation.command.patch.width : undefined;
         if (width !== undefined && !layoutBackupDone) {
-          workspaceBackups.create("before-page-layout");
+          workspaceBackups.createAutomatic("before-page-layout");
           layoutBackupDone = true;
         }
         if (req.type === "workspaceBackup:create") return workspaceBackups.create();
@@ -211,22 +228,12 @@ if (startupError) {
             snapshot.recordDatabaseIds?.includes(req.id))
             throw new Error("レコードと登録済みDBの履歴復元は未対応です。現在の内容を保持しています。");
         }
-        // File payloads are bounded by their actual UTF-8 bytes in the schema.
-        // JSON-escaping the entire IPC envelope would double-count quotes and
-        // backslashes and reject otherwise readable recovery files.
-        if (
-          req.type !== "export" &&
-          req.type !== "exportRecovery" &&
-          req.type !== "exportPendingJournal" &&
-          Buffer.byteLength(JSON.stringify(req)) > 32_000_000
-        )
-          throw new Error("リクエストが大きすぎます");
         if (req.type === "openExternal") {
           await shell.openExternal(req.url);
           return true;
         }
-        if (req.type === "recovery:read") return crashRecovery.read();
-        if (req.type === "recovery:write") return crashRecovery.write(req.expectedGeneration, req.snapshot);
+        if (req.type === "recovery:read") return crashRecovery!.read();
+        if (req.type === "recovery:write") return crashRecovery!.write(req.expectedGeneration, req.snapshot);
         if (req.type === "recovery:copy") return createRecoveryCopy(store, req.recoveryId, {...req.input, payload: req.input.payload});
         if (req.type === "property:preview") return previewPropertyOperation(store, req);
         if (req.type === "property:commit") return commitPropertyOperation(store, req.operation);
@@ -234,6 +241,7 @@ if (startupError) {
         if (req.type === "migration:preview") return previewLegacyMigration(store, req.databasePageId);
         if (req.type === "migration:commit") return commitLegacyMigration(store, req.operation, {
           assetsPath: assets, snapshotRoot: join(dataDir, "backups", "legacy-migration"),
+          beforeSnapshot: () => storage.admitSnapshot(),
         });
         if (req.type === "migration:resolve") return resolveLegacyMigration(store, req.operation);
         if (req.type === "downloadAttachment") {
@@ -247,6 +255,7 @@ if (startupError) {
           return result.filePath;
         }
         if (req.type === "backup") {
+          storage.admitSnapshot();
           const folder = join(dataDir, "backups");
           mkdirSync(folder, { recursive: true });
           const dest = join(folder, `workspace-${Date.now()}`);
@@ -269,7 +278,8 @@ if (startupError) {
           });
           if (result.canceled) return null;
           const file = result.filePaths[0];
-          return attachFile(store.db, assets, file);
+          // Capacity may have changed while the native picker was open.
+          return attachFile(store.db, assets, file, bytes => storage.admitAttachment(bytes));
         }
         if (req.type === "recover") {
           const selected = await dialog.showOpenDialog(win, {
@@ -282,6 +292,7 @@ if (startupError) {
             throw new Error("復旧ファイルが大きすぎます");
           const content = readFileSync(path, "utf8");
           const recoveredPages = parseRecovery(content);
+          storage.admitRequest(req);
           protectRichDocument(recoveredPages);
           return store.recover(JSON.parse(content));
         }
@@ -361,6 +372,9 @@ if (startupError) {
             webSecurity: true,
           },
         });
+        win.webContents.on("did-start-navigation", details => {
+          if (details.isMainFrame && !details.isSameDocument) storage.resetTickets();
+        });
         win.webContents.setWindowOpenHandler(() => ({ action: "deny" }));
         // Structural changes reload this exact trusted renderer after clearing its
         // durable journal. All other renderer-initiated navigation stays blocked.
@@ -400,7 +414,7 @@ if (startupError) {
       });
     })
     .catch((e) => {
-      dialog.showErrorBox("Folioを起動できません", String(e));
+      dialog.showErrorBox("Folioを起動できません", String(e) + "\n\n起動できないワークスペースは、ターミナルから npm run folio:rescue -- --help で診断用の救出方法を確認できます。");
       app.quit();
     });
   app.on("window-all-closed", () => app.quit());

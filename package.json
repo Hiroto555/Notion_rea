@@ -10,14 +10,17 @@
     "build": "tsc --noEmit && vite build && node scripts/build.mjs",
     "start": "electron .",
     "test": "vitest run",
-    "test:e2e": "playwright test",
+    "test:e2e": "node scripts/run-gui-tests.mjs --mode=refuse",
+    "test:e2e:batch": "node scripts/run-gui-tests.mjs --mode=batch",
     "check": "tsc --noEmit",
+    "verify:quiet": "node scripts/verify-quiet.mjs",
     "package": "npm run build && node scripts/package.mjs",
     "format": "prettier --write src tests scripts docs README.md",
     "setup": "node scripts/setup.mjs",
     "review:scan": "node scripts/review-hygiene.mjs",
     "review:test": "node --test tests/review-hygiene.test.mjs",
-    "review:export": "node scripts/export-review.mjs"
+    "review:export": "node scripts/export-review.mjs",
+    "folio:rescue": "node scripts/raw-rescue.mjs"
   },
   "dependencies": {
     "@tiptap/extension-details": "^3.0.0",

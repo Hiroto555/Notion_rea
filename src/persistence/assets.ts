@@ -1,14 +1,9 @@
-import {
-  writeFileSync,
-  readFileSync,
-  statSync,
-  lstatSync,
-  unlinkSync,
-} from "node:fs";
+import { readFileSync, statSync, lstatSync } from "node:fs";
 import { join, basename, extname } from "node:path";
 import { randomUUID, createHash } from "node:crypto";
 import type { DatabaseSync } from "node:sqlite";
 import { parseAssetURL } from "../shared/assets";
+import { writeNewFileDurably } from "./durable-file";
 const mimes: Record<string, string> = {
   ".png": "image/png",
   ".jpg": "image/jpeg",
@@ -27,11 +22,14 @@ export type Asset = {
   size: number;
   sha256: string;
 };
-export function attachFile(db: DatabaseSync, assets: string, file: string) {
+export function attachFile(db: DatabaseSync, assets: string, file: string, beforeWrite?: (actualBytes: number) => void) {
   const size = statSync(file).size;
   if (size > 20_000_000) throw new Error("添付の上限は20MBです");
   const bytes = readFileSync(file);
   if (bytes.length > 20_000_000) throw new Error("添付の上限は20MBです");
+  // Admission runs after the exact bytes are known but before the asset file
+  // or its metadata row is changed. A refusal therefore leaves no trace.
+  beforeWrite?.(bytes.length);
   const id = randomUUID(),
     extension = extname(file),
     mime = mimes[extension.toLowerCase()] || "application/octet-stream";
@@ -45,16 +43,20 @@ export function attachFile(db: DatabaseSync, assets: string, file: string) {
     sha256: createHash("sha256").update(bytes).digest("hex"),
   };
   const dest = join(assets, id);
-  writeFileSync(dest, bytes, { flag: "wx" });
-  try {
-    db.prepare("INSERT INTO assets(id,metadata) VALUES(?,?)").run(
-      id,
-      JSON.stringify(metadata),
-    );
-  } catch (e) {
-    unlinkSync(dest);
-    throw e;
-  }
+  // The attachment body and its directory entry must be durable before the
+  // metadata row can reference them. An existing file is never replaced
+  // (exclusive create), and a failed write/fsync removes only this new file.
+  writeNewFileDurably(dest, bytes, {
+    mode: 0o600,
+    syncParentDirectory: true,
+  });
+  // An INSERT exception does not prove that no row became durable. Keep dest
+  // conservatively rather than turn an uncertain outcome into a dangling
+  // reference. A rolled-back insert may therefore leave an orphan file.
+  db.prepare("INSERT INTO assets(id,metadata) VALUES(?,?)").run(
+    id,
+    JSON.stringify(metadata),
+  );
   return {
     url: "folio-asset://" + id,
     image: mime.startsWith("image/"),

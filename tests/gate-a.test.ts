@@ -124,7 +124,13 @@ it("F07 malformed stored JSON and future document versions stay byte-for-byte in
   expect(() => s.update(p.id, 0, { title: "overwrite" })).toThrow();
   expect(s.handle({ type: "pageSource", id: p.id })).toBe(future);
   s.db.prepare("UPDATE pages SET data=? WHERE id=?").run("{broken", p.id);
-  expect(() => s.load()).toThrow(/JSON/);
+  // A damaged page no longer prevents the rest of the workspace from loading.
+  // The display placeholder is read-only; strict mutation paths still reject it.
+  const placeholder = s.load().pages.find((page) => page.id === p.id)!;
+  expect(placeholder.id).toBe(p.id);
+  expect(placeholder.documentError).toMatch(/JSON/);
+  expect(() => s.get(p.id)).toThrow(/JSON/);
+  expect(() => s.write({ ...p, title: "Do not overwrite damaged source" })).toThrow(/JSON/);
   expect(s.handle({ type: "pageSource", id: p.id })).toBe("{broken");
 });
 it("F04 SQL failure rolls back both history and page modification", () => {

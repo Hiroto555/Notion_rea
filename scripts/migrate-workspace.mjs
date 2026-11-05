@@ -19,14 +19,17 @@ const temporary = mkdtempSync(join(tmpdir(), "folio-migrate-"));
 try {
   const bundle = join(temporary, "workspace.mjs");
   await build({
-    entryPoints: ["src/persistence/workspace.ts"],
+    stdin: {
+      contents: 'export {migrateWorkspace} from "./src/persistence/workspace"; export {admitStartupStorage} from "./src/main/workspace-startup";',
+      resolveDir: process.cwd(),
+    },
     outfile: bundle,
     bundle: true,
     platform: "node",
     format: "esm",
   });
-  const { migrateWorkspace } = await import(pathToFileURL(bundle).href);
-  console.log(JSON.stringify(migrateWorkspace(source, destination), null, 2));
+  const { migrateWorkspace, admitStartupStorage } = await import(pathToFileURL(bundle).href);
+  console.log(JSON.stringify(migrateWorkspace(source, destination, {beforeCopy: admitStartupStorage}), null, 2));
 } finally {
   rmSync(temporary, { recursive: true, force: true });
 }

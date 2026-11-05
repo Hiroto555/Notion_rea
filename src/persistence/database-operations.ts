@@ -2,6 +2,7 @@ import { createHash, randomUUID } from "node:crypto";
 import type { Store } from "./store";
 import { RecordRepository } from "./record-repository";
 import { markRecordStoreVersion } from "./record-version";
+import { readRegisteredDatabaseSnapshot } from "./database-read-snapshot";
 import { databaseOperationSchema, type DatabaseSettings, type FilterValue, type Page } from "../shared/types";
 import { canonicalOperation } from "../shared/save-contract";
 import type { DatabaseOperation, DatabaseOperationResult, DatabaseReadSnapshot } from "../shared/database-operation";
@@ -19,14 +20,11 @@ function receipt(store: Store, operation: DatabaseOperation, fingerprint: string
 }
 function fingerprint(operation: DatabaseOperation) {return createHash("sha256").update(canonicalOperation(operation)).digest("hex");}
 
-/** Owner Page, settings and record list all come from Store.load's one read snapshot. */
+/** Owner Page, settings and record list all come from one SQLite read
+ * snapshot scoped to this database's membership rows. Unrelated Pages and
+ * databases are not decoded, so their damage cannot block this database. */
 export function readDatabaseSnapshot(store: Store, databasePageId: string): DatabaseReadSnapshot {
-  const snapshot = store.load();
-  const page = snapshot.pages.find((page) => page.id === databasePageId);
-  if (!page || page.kind !== "database" || !page.database || page.database.rows.length || page.deletedAt !== null || page.documentError ||
-    !snapshot.recordDatabaseIds?.includes(databasePageId)) throw new Error("登録済みデータベースを安全に読み込めません。");
-  const {rows: _rows, ...settings} = page.database;
-  return {page, database: {settings, revision: page.revision, records: (snapshot.records ?? []).filter((record) => record.databasePageId === databasePageId)}};
+  return readRegisteredDatabaseSnapshot(store, databasePageId);
 }
 
 export function resolveDatabaseOperation(store: Store, input: DatabaseOperation): DatabaseOperationResult {

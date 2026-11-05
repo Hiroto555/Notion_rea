@@ -16,3 +16,21 @@ await build({
   format: "cjs",
   external: ["electron"],
 });
+
+await build({
+  entryPoints: ["src/main/storage-overview-worker.ts"],
+  outfile: "dist/storage-overview-worker.cjs",
+  bundle: true,
+  platform: "node",
+  format: "cjs",
+  external: ["node:sqlite"],
+});
+
+await build({
+  entryPoints: ["src/main/raw-rescue-cli.ts"],
+  outfile: "dist/raw-rescue.cjs",
+  bundle: true,
+  platform: "node",
+  format: "cjs",
+  external: ["node:sqlite"],
+});
