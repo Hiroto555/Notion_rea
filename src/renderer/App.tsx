@@ -102,7 +102,7 @@ const icons = [
 ];
 type Dialog =
   "search" | "templates" | "trash" | "move" | "history" | "link" | null;
-export function App() {
+export function App({ syncMessage }: { syncMessage?: string } = {}) {
   const [pages, setPages] = useState<Page[]>([]),
     [recordIds, setRecordIds] = useState<Set<string>>(new Set()),
     [activeId, setActiveId] = useState(""),
@@ -1694,6 +1694,7 @@ export function App() {
             className="topbar-group topbar-actions"
             inert={creatingPage || !!recordView || undefined}
           >
+            {syncMessage && <span className="save-state" title={syncMessage}>{syncMessage}</span>}
             <span
               className={"save-state " + (error ? "error" : "")}
               data-state={error ? "error" : pending || edits.current.size || sessions.current.hasUnsaved() || hasNumberDrafts() || hasDatabasePending() || recoveryStatus?.state !== "saved" || recoveryError ? "pending" : "saved"}

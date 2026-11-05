@@ -34,6 +34,6 @@ export function StartupApp() {
   return status.mode === "readOnly" ? (
     <ReadOnlyWorkspace status={status} />
   ) : (
-    <App />
+    <App syncMessage={status.syncMessage} />
   );
 }

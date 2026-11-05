@@ -19,6 +19,7 @@ import type {
   WorkspaceInventory,
 } from "../shared/workspace-backup";
 import { validateRecordStoreVersion } from "./record-version";
+import { validateV5WorkspaceSchema } from "./schema-startup";
 
 const FORMAT = "folio-workspace-backup";
 const FORMAT_VERSION = 1;
@@ -409,7 +410,7 @@ function validateRecordRelationships(
   if (present.length && present.length !== names.length)
     throw new Error("Incomplete or unsupported record store");
   const marked = tableExists(db, "folio_record_schema");
-  if (marked || storeVersion === 4) validateRecordStoreVersion(db);
+  if (marked || storeVersion >= 4) validateRecordStoreVersion(db);
   if (present.length === names.length) validateRecordTableShapes(db);
   if (!present.length) {
     if (marked) throw new Error("Incomplete or unsupported record store");
@@ -445,6 +446,7 @@ function validateRecordRelationships(
     position: unknown;
     values_json: unknown;
   }[];
+  const memberOwners = new Map<string, string>();
   for (const row of members) {
     if (
       typeof row.page_id !== "string" ||
@@ -464,6 +466,7 @@ function validateRecordRelationships(
     if (!Number.isSafeInteger(row.position) || (row.position as number) < 0)
       throw new Error("Invalid record position");
     parseRecordValues(row.values_json, "record values");
+    memberOwners.set(row.page_id, row.database_page_id);
   }
 
   const versionIds = new Set(
@@ -484,17 +487,20 @@ function validateRecordRelationships(
     parseRecordValues(row.values_json, "record value version");
   }
 
+  const archivedOwners = new Set<string>();
   if (tableExists(db, "legacy_database_archive")) {
     const rows = db
       .prepare("SELECT database_page_id,data FROM legacy_database_archive")
       .all() as { database_page_id: unknown; data: unknown }[];
-    for (const row of rows)
+    for (const row of rows) {
       if (
         typeof row.database_page_id !== "string" ||
         !pages.has(row.database_page_id) ||
         typeof row.data !== "string"
       )
         throw new Error("Invalid legacy database archive");
+      archivedOwners.add(row.database_page_id);
+    }
   }
   if (tableExists(db, "legacy_database_versions")) {
     const rows = db
@@ -510,16 +516,19 @@ function validateRecordRelationships(
   }
   if (tableExists(db, "legacy_record_map")) {
     const rows = db
-      .prepare("SELECT database_page_id,page_id FROM legacy_record_map")
-      .all() as { database_page_id: unknown; page_id: unknown }[];
-    for (const row of rows)
-      if (
-        typeof row.database_page_id !== "string" ||
-        typeof row.page_id !== "string" ||
-        !pages.has(row.database_page_id) ||
-        !pages.has(row.page_id)
-      )
+      .prepare("SELECT database_page_id,legacy_row_id,page_id FROM legacy_record_map")
+      .all() as { database_page_id: unknown; legacy_row_id: unknown; page_id: unknown }[];
+    for (const row of rows) {
+      if (typeof row.database_page_id !== "string" || !registered.has(row.database_page_id) ||
+          typeof row.legacy_row_id !== "string" || !row.legacy_row_id ||
+          typeof row.page_id !== "string" || !row.page_id)
         throw new Error("Invalid legacy record mapping");
+      // Conversion reserves an ID for rows that only exist in history.
+      const valid = pages.has(row.page_id)
+        ? memberOwners.get(row.page_id) === row.database_page_id
+        : archivedOwners.has(row.database_page_id);
+      if (!valid) throw new Error("Invalid legacy record mapping");
+    }
   }
   if (tableExists(db, "record_database_trash_batches")) {
     const rows = db
@@ -658,8 +667,9 @@ export function inspectWorkspaceSnapshot(directory: string): SnapshotInspection 
     const version = (
       db.prepare("PRAGMA user_version").get() as { user_version: number }
     ).user_version;
-    if (version !== 3 && version !== 4)
+    if (version !== 3 && version !== 4 && version !== 5)
       throw new Error("Unsupported workspace database version");
+    if (version === 5) validateV5WorkspaceSchema(db);
     for (const required of [
       "pages",
       "settings",
@@ -743,7 +753,7 @@ function parseManifest(value: unknown): WorkspaceBackupManifest {
     throw new Error("Invalid backup creation time");
   if (
     !Number.isSafeInteger(value.storeVersion) ||
-    (value.storeVersion !== 3 && value.storeVersion !== 4)
+    (value.storeVersion !== 3 && value.storeVersion !== 4 && value.storeVersion !== 5)
   )
     throw new Error("Unsupported workspace database version");
   if (!isPlainObject(value.inventory))

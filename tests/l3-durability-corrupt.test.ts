@@ -162,7 +162,7 @@ it("stops a backup of an unknown schema without publishing it or modifying the s
   const databasePath = join(sourceDirectory, "workspace.sqlite");
   const source = openStore(databasePath);
   const page = source.create(null, "page", "Future schema page");
-  source.db.exec("PRAGMA user_version=5");
+  source.db.exec("PRAGMA user_version=6");
   const pagesBefore = rawPages(source);
   source.close();
 
@@ -175,7 +175,7 @@ it("stops a backup of an unknown schema without publishing it or modifying the s
     expect(
       (raw.prepare("PRAGMA user_version").get() as { user_version: number })
         .user_version,
-    ).toBe(5);
+    ).toBe(6);
     const destination = join(root, "backup");
     expect(() =>
       createFullBackup(raw, sourceDirectory, destination),
@@ -185,7 +185,7 @@ it("stops a backup of an unknown schema without publishing it or modifying the s
     expect(
       (raw.prepare("PRAGMA user_version").get() as { user_version: number })
         .user_version,
-    ).toBe(5);
+    ).toBe(6);
     expect(
       raw.prepare("SELECT id,data,body FROM pages ORDER BY id").all(),
     ).toEqual(pagesBefore);

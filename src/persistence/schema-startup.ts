@@ -11,6 +11,26 @@ import {
 } from "node:fs";
 import { dirname } from "node:path";
 import { validateRecordStoreVersion } from "./record-version";
+import { validateWorkspaceSyncSchema } from "../sync/workspace-checkpoint";
+
+export { validateWorkspaceSyncSchema };
+
+/** A version-5 claim is only accepted with both the record marker and the
+ * complete durable sync structure. A partial v5 is reported as an unsupported
+ * (newer) workspace rather than interpreted as v4. Promotion itself happens
+ * only through the explicit WorkspaceSyncStore.enable transaction; the host
+ * must hold exclusive workspace ownership until that transaction commits. */
+export function validateV5WorkspaceSchema(connection: DatabaseSync): void {
+  try {
+    validateRecordStoreVersion(connection);
+    validateWorkspaceSyncSchema(connection);
+  } catch (error) {
+    throw new Error(
+      "This workspace requires a newer Folio version. Incomplete or unsupported version 5 workspace" +
+        (error instanceof Error ? `: ${error.message}` : ""),
+    );
+  }
+}
 
 export type StoreStartupOptions = {
   allowIncompleteRecovery?: boolean;
@@ -163,9 +183,12 @@ export function inspectWritableStartup(
     const version = readUserVersion(connection);
     if (version > supportedVersion)
       throw new Error("This workspace requires a newer Folio version.");
-    // Unknown v4 record schemas are rejected before journal mode or schema is
-    // touched, matching the writable constructor's version-4 requirement.
+    // Unknown v4 record schemas and incomplete v5 sync structures are rejected
+    // before journal mode or schema is touched, matching the writable
+    // constructor's requirements. Promotion to v5 is explicit and never occurs
+    // here; the host must hold exclusive workspace ownership around it.
     if (version === 4) validateRecordStoreVersion(connection);
+    if (version === 5) validateV5WorkspaceSchema(connection);
     let additionalBytes = 0;
     if (version === 1 || version === 2) {
       // One fresh rollback image is published before the only migration step
@@ -209,6 +232,7 @@ export function openReadOnlyStore(
         "This workspace schema is too old for read-only access; startup refused.",
       );
     if (version === 4) validateRecordStoreVersion(connection);
+    if (version === 5) validateV5WorkspaceSchema(connection);
     return connection;
   } catch (error) {
     try {

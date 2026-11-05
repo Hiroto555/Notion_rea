@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { randomBytes } from "node:crypto";
+import { randomBytes, randomUUID } from "node:crypto";
 import { copyFileSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -226,7 +226,15 @@ describe("checkpoint protocol and isolation", () => {
     ).toThrow("payload-too-large");
     expect(() =>
       parseCheckpoint({ ...checkpoint("x"), assets: [{ id: "asset" }] }),
-    ).toThrow("attachments-not-supported");
+    ).toThrow("invalid-asset-manifest");
+    const asset = { id: randomUUID(), sha256: "a".repeat(64), bytes: 20_000_000 };
+    expect(parseCheckpoint({ ...checkpoint("x"), assets: [asset] }).assets).toEqual([asset]);
+    expect(() =>
+      parseCheckpoint({ ...checkpoint("x"), assets: [asset, asset] }),
+    ).toThrow("duplicate-asset-id");
+    expect(() =>
+      parseCheckpoint({ ...checkpoint("x"), assets: [{ ...asset, bytes: asset.bytes + 1 }] }),
+    ).toThrow("invalid-asset-manifest");
     expect(() =>
       parseCheckpoint({ ...checkpoint("x"), surprise: true }),
     ).toThrow("unexpected-fields");
@@ -306,11 +314,15 @@ describe("checkpoint protocol and isolation", () => {
         })
       ).status,
     ).toBe(422);
+    const withAsset = { ...checkpoint("blob"), assets: [
+      { id: randomUUID(), sha256: "a".repeat(64), bytes: 1 },
+    ] };
     expect(
       (
         await raw("commits", "POST", {
           ...operation,
-          checkpoint: { ...checkpoint("blob"), assets: [{ id: "asset" }] },
+          checkpoint: withAsset,
+          checkpointHash: hashCheckpoint(withAsset),
         })
       ).status,
     ).toBe(422);

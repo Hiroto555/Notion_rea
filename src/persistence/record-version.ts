@@ -20,7 +20,20 @@ export function markRecordStoreVersion(db: DatabaseSync): void {
     "CREATE TABLE IF NOT EXISTS folio_record_schema(version INTEGER NOT NULL); INSERT INTO folio_record_schema(version) SELECT 1 WHERE NOT EXISTS(SELECT 1 FROM folio_record_schema);",
   );
   validateRecordStoreVersion(db);
-  db.exec("PRAGMA user_version=4");
+  // A legacy migration may run inside an already promoted v5 workspace. It
+  // must create the same record marker without downgrading the user version.
+  const row = db.prepare("PRAGMA user_version").get() as
+    | { user_version?: unknown }
+    | undefined;
+  const current = row?.user_version;
+  if (
+    typeof current !== "number" ||
+    !Number.isSafeInteger(current) ||
+    current < 0 ||
+    current > 5
+  )
+    throw new Error("Incomplete or unsupported record store");
+  if (current < 5) db.exec("PRAGMA user_version=4");
 }
 
 /** Unknown or partially created version-4 stores must not be opened. */
