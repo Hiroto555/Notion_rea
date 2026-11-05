@@ -60,9 +60,11 @@ test("real Electron: page edit, slash, undo, blocks, search, clone, trash and re
     .fill("検証ノート English");
   const body = window.getByRole("textbox", { name: "ページ本文" }); // ProseMirror contenteditable has no default role in some versions
   await window.locator(".folio-editor").click();
-  await window.keyboard.type("/heading");
+  await window.locator(".folio-editor").pressSequentially("/heading", { delay: 15 });
+  await expect(window.locator(".folio-editor")).toHaveText("/heading");
   await expect(window.getByRole("listbox")).toBeVisible();
-  await window.keyboard.press("Enter");
+  await window.locator(".folio-editor").press("Enter");
+  await expect(window.locator(".folio-editor h1")).toHaveCount(1);
   await window.keyboard.insertText("見出し Test");
   await window.keyboard.press("Enter");
   await window.keyboard.insertText("日本語とEnglishを一緒に保存します。");
