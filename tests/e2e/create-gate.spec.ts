@@ -17,7 +17,7 @@ test("delayed page creation cannot redirect immediate input into the previous pa
     ipc.removeHandler("folio:request");
     ipc.handle("folio:request", async (event: any, request: any) => {
       const result = await original(event, request);
-      if (request.type === "create") {
+      if (request.type === "page:commit" && request.operation.command.kind === "createPage") {
         (globalThis as any).heldCreate = true;
         await new Promise<void>((resolve) => {
           (globalThis as any).releaseCreate = resolve;
@@ -70,7 +70,7 @@ test("a delayed create does not override a later explicit navigation", async ({
     ipc.removeHandler("folio:request");
     ipc.handle("folio:request", async (event: any, request: any) => {
       const result = await original(event, request);
-      if (request.type === "create") {
+      if (request.type === "page:commit" && request.operation.command.kind === "createPage") {
         (globalThis as any).heldCreate = true;
         await new Promise<void>((resolve) => {
           (globalThis as any).releaseCreate = resolve;
@@ -113,7 +113,7 @@ test("a failed create restores the same Editor and its saved content", async ({
       original = ipc._invokeHandlers.get("folio:request");
     ipc.removeHandler("folio:request");
     ipc.handle("folio:request", async (event: any, request: any) => {
-      if (request.type === "create") {
+      if (request.type === "page:commit" && request.operation.command.kind === "createPage") {
         (globalThis as any).heldCreate = true;
         await new Promise<void>((resolve) => {
           (globalThis as any).releaseCreate = resolve;
@@ -158,7 +158,7 @@ test("a second create is refused while the first is pending", async ({
     (globalThis as any).createCount = 0;
     ipc.removeHandler("folio:request");
     ipc.handle("folio:request", async (event: any, request: any) => {
-      if (request.type === "create") {
+      if (request.type === "page:commit" && request.operation.command.kind === "createPage") {
         (globalThis as any).createCount++;
         const result = await original(event, request);
         (globalThis as any).heldCreate = true;

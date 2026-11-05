@@ -75,8 +75,12 @@ export const test = base.extend<{ folio: Session }>({
       if (app) {
         try { record("main-webcontents-events", await app.evaluate(() => (globalThis as any).folioStartupEvents)); } catch (error) { record("main-events-error", String(error)); }
         const child = app.process();
+        // Fault tests intentionally retain unresolved input and therefore
+        // prevent window unload. Bound teardown and kill only our own child.
+        const timer = setTimeout(() => child.kill("SIGKILL"), 3000);
         try { await app.close(); record("closed", { pid: child.pid, exitCode: child.exitCode, signalCode: child.signalCode }); }
-        catch (error) { record("close-error", String(error)); child.kill(); }
+        catch (error) { record("close-error", String(error)); if (child.exitCode === null && child.signalCode === null) child.kill("SIGKILL"); }
+        finally { clearTimeout(timer); }
       }
       writeFileSync(join(folder, "test-status.json"), JSON.stringify({ title: info.title, status: info.status, retry: info.retry }));
       writeFileSync(info.outputPath("startup-diagnostics.json"), JSON.stringify(diagnostics, null, 2));

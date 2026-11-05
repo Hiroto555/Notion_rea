@@ -155,7 +155,12 @@ export function App() {
   if (!pageCreation.current)
     pageCreation.current = new PageOperationCoordinator(api, {
       persist: () => recoveryBarrierRef.current(),
-      onChange: () => redrawSessions((n) => n + 1),
+      onChange: () => {
+        // Record both retention and resolution. In particular, a successful
+        // duplicate may have no subsequent text edit to clear its checkpoint.
+        checkpointRef.current();
+        redrawSessions((n) => n + 1);
+      },
     });
   const creatingRows = useRef(new Set<string>());
   const filterDrafts = useRef<Record<string, Record<string, Record<string, string>>>>({});
@@ -985,12 +990,14 @@ export function App() {
   }
   function retryUncheckpointedPageCreation() {
     if (composition.current) return;
+    const priorMessage = pageCreation.current?.firstUncheckpointed()?.message;
     const selectionAtStart = selectionVersion.current;
     safe(() => mutate(async () => {
       await recoveryQueue.current?.retry();
       const created = await pageCreation.current!.retryUncheckpointed();
       if (!created) return;
       await refresh();
+      if (priorMessage) setError((current) => current.includes(priorMessage) ? "" : current);
       if (selectionVersion.current === selectionAtStart) select(created.id);
       setNotice("保持していた入力からページを作成しました。");
     }));
@@ -1016,10 +1023,12 @@ export function App() {
     pageCreation.current?.discard(entry.operation.operationId);
     checkpointRef.current();
     await refresh();
+    setError((current) => current.includes(entry.message) ? "" : current);
     setNotice("作成できなかった入力を別ページに保存しました。");
   }
   function resolvePageCreation(retry = false) {
     if (retry && composition.current) return;
+    const priorMessage = pageCreationUnknown()?.message ?? pageCreationRejected()?.message;
     const selectionAtStart = selectionVersion.current;
     safe(() =>
       mutate(async () => {
@@ -1028,6 +1037,7 @@ export function App() {
         if (!result) return;
         if (result.status === "applied" && result.page) {
           await refresh();
+          if (priorMessage) setError((current) => current.includes(priorMessage) ? "" : current);
           if (selectionVersion.current === selectionAtStart && pageRef.current.some((page) => page.id === result.page!.id)) select(result.page.id);
           setNotice("保留していたページ作成の結果を確認しました。");
           return;

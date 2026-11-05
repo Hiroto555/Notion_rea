@@ -292,19 +292,18 @@ test("W3 backup failure retains the rich draft and leaves the saved page untouch
     );
     unlinkSync(block);
     await w.getByRole("button", { name: "保存を再試行", exact: true }).click();
-    await expect(w.getByRole("alert").first()).toContainText(
-      "安全に再試行できません",
-    );
+    // Resolve-first retry now keeps the original revision and operation ID.
+    // With no competing edit, fixing the backup destination permits one save.
+    await expect(w.locator(".save-state")).toHaveText("保存済み");
     await expect(w.locator(".folio-editor table")).toBeVisible();
     const afterRetry = await w.evaluate(() =>
       window.folio.request<any>({ type: "load" }),
     );
-    expect(afterRetry.pages.find((p: any) => p.id === id)).toEqual(
-      before.pages.find((p: any) => p.id === id),
-    );
-    await expect
-      .poll(() => readFileSync(join(data.root, "crash-recovery.json"), "utf8"))
-      .toContain("callout-root");
+    const restored = afterRetry.pages.find((p: any) => p.id === id);
+    expect(restored.revision).toBe(before.pages.find((p: any) => p.id === id).revision + 1);
+    expect(restored.doc.content).toEqual(await w.locator(".folio-editor").evaluate((el) => (el as any).editor.getJSON().content));
+    expect(JSON.stringify(restored.doc)).toContain("callout-root");
+    expect(existsSync(block)).toBe(true);
   } finally {
     await disposeR4(data, app);
   }
