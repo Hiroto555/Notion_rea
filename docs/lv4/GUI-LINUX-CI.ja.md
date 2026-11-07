@@ -50,3 +50,17 @@ GUIの本実行はGitHub上のPRのChecksを参照する。`gui-linux-xvfb`の�
 HTML/JSONレポートと失敗時trace、合成データのスクリーンショットは`output/playwright-linux/`だけをartifactへ保存し、保持は7日。workspace DBやprofileをまとめてuploadしない。通常のMacでreportを自動で開かない。最終結果は本資料とPRへ追記する。
 
 公式根拠：[ElectronのXvfb試験](https://www.electronjs.org/docs/latest/tutorial/testing-on-headless-ci)、[Playwright CI](https://playwright.dev/docs/ci)。この構成は試験実行先の変更であり、Lv4完成やMac GUI合格の宣言ではない。
+
+## ローカルの準備確認
+
+初回候補`2702eb8`の非GUI一括検証は型検査・181ファイル／1,678テスト・buildがPASS。CI専用対象の`--list`は42件を列挙しただけで、GUI成功とは扱わない。Mac上のGUIはNOT_RUN。GitHub上の本実行結果は確認後に追記する。
+
+## 初回CIで見つかった試験側の不整合
+
+[GUI run #1](https://github.com/Hiroto555/Notion_rea/actions/runs/42394940426)は**37件PASS・5件FAIL**。失敗をskip/retryで隠さず、以下の準備・指定を修正して同じ42件を再実行する。
+
+- 回収先の再起動では同期保留表示も`.save-state`を使うため、保存状態のlocatorを`[data-state]`付きへ限定する。保存済みの期待値は維持する。
+- 既存の並び順修復3件は、fixtureのSQLite `json_set`が位置を`4.0`のように書き、原本のバイト再現性検査で正しく拒否されていた。Node/一時SQLiteで拒否を再現し、旧JS writerと同じ`JSON.stringify`のbytesで同順位を作るようfixtureを修正する。製品の安全検査は変更しない。
+- 予約表示fixtureは、現在の取消しボタン名とUUID付き予約IDへ揃える。backendをmockする表示試験という区分は維持する。
+
+同候補の[GitHub quiet-checks](https://github.com/Hiroto555/Notion_rea/actions/runs/42394940256)はPASS。製品ソースを変更せず、修正候補の型検査・対象Node試験を通してからGUI全件を再実行する。

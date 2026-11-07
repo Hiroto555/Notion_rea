@@ -45,21 +45,22 @@ test("shows restart reservation and cancellation as provisional", async ({folio}
     const ipc = ipcMain as any;
     const original = ipc._invokeHandlers.get("folio:request");
     let requested = false;
+    const reservationId = "00000000-0000-4000-8000-000000000001";
     const view = () => ({available: true, state: requested ? "requested" : "idle", scheduled: false,
-      targetRevision: 3, canRequest: !requested, canCancel: requested, reason: null});
+      targetRevision: 3, reservationId: requested ? reservationId : undefined, canRequest: !requested, canCancel: requested, reason: null});
     ipc.removeHandler("folio:request");
     ipc.handle("folio:request", async (event: any, req: any) => {
       if (req.type === "sync:status") return {available: true, connection: "connected", running: false, lastSuccessAt: null, lastError: null,
         workspace: {receivedCursor: 3, appliedRevision: 2, generation: 1, cleanGeneration: 1, pending: false, conflict: false}};
       if (req.type === "sync:restartStatus") return view();
       if (req.type === "sync:restartRequest") {requested = true; return {result: "prepared", view: view()};}
-      if (req.type === "sync:restartCancel") {requested = false; return {result: "cancelled", view: view()};}
+      if (req.type === "sync:restartCancel") {if (req.reservationId !== reservationId) throw new Error("fixture reservation ID changed"); requested = false; return {result: "cancelled", view: view()};}
       return original(event, req);
     });
   });
   await folio.window.reload();
   await folio.window.getByRole("button", {name: "適用を予約"}).click();
   await expect(folio.window.getByText("終了時に安全条件を確認して予約を確定します。")).toBeVisible();
-  await folio.window.getByRole("button", {name: "予約取消"}).click();
+  await folio.window.getByRole("button", {name: "予約を取り消す", exact: true}).click();
   await expect(folio.window.getByText("予約を取り消しました。")).toBeVisible();
 });

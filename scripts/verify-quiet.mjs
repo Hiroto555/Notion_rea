@@ -53,6 +53,7 @@ const FORBIDDEN_SCRIPTS = new Set([
   "package",
   "test:e2e",
   "test:e2e:batch",
+  "test:e2e:linux-ci",
 ]);
 
 // Token-level deny list. This is intentionally broader than the current stage

@@ -180,7 +180,7 @@ export const test = base.extend<{ recovery: RecoverySession }>({
         });
       }, directory);
       await expect(window.locator(".page-title")).toBeVisible();
-      await expect(window.locator(".save-state")).toHaveText("保存済み");
+      await expect(window.locator(".save-state[data-state]")).toHaveText("保存済み");
     }
     try {
       await start();

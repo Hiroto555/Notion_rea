@@ -269,7 +269,7 @@ test("ordinary edits survive Electron close and restart through the real save IP
   await s.window
     .getByLabel("ページタイトル", { exact: true })
     .fill("Linux GUIで保存した題名");
-  await expect(s.window.locator(".save-state")).toHaveText("保存済み");
+  await expect(s.window.locator(".save-state[data-state]")).toHaveText("保存済み");
   await s.restart();
   await expect(
     s.window.getByLabel("ページタイトル", { exact: true }),

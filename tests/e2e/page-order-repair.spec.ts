@@ -35,9 +35,12 @@ async function setupTie(session: Session) {
   // Emulate old stored data only inside the fixture-owned SQLite workspace.
   const db = new DatabaseSync(join(session.folder, "workspace.sqlite"));
   try {
-    db.prepare(
-      "UPDATE pages SET data=json_set(data,'$.position',?) WHERE id=?",
-    ).run(pages[0].position, pages[1].id);
+    // Reproduce the old JS writer's bytes. SQLite json_set renders an integer
+    // bound as REAL as `4.0`, which correctly trips the repair byte-shape gate.
+    const raw = db.prepare("SELECT data FROM pages WHERE id=?").get(pages[1].id)!;
+    const tied = JSON.parse(String(raw.data)) as Page;
+    tied.position = pages[0].position;
+    db.prepare("UPDATE pages SET data=? WHERE id=?").run(JSON.stringify(tied), pages[1].id);
   } finally {
     db.close();
   }
