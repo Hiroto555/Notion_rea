@@ -7,6 +7,7 @@
 | 確認したいこと | 読む資料 |
 |---|---|
 | M1の終了条件・実績・制約・停止地点 | [M1完了記録](M1-COMPLETION.ja.md) |
+| M1のGitHub保存・PRの依存・マージ判断 | [M1保存記録](M1-PUBLICATION.ja.md) |
 | 保全データの回収・コピー復元・失敗時の手順 | [回収手順書](m1/RECOVERY-RUNBOOK.ja.md) |
 | 残作業の優先順・終了条件・概算工数・区切り | [残作業計画](REMAINING-WORK-PLAN.ja.md) |
 | 12項目ごとの実装済み・未達 | [受入ゲート](GATE-STATUS.ja.md) |
@@ -20,7 +21,7 @@
 | 並列実装の当初の会話案 | [並列実装案](PARALLEL-IMPLEMENTATION-PROPOSAL.ja.md) |
 | 保存範囲・検証・公開前検査 | [GitHub保存記録](PUBLICATION-CHECKPOINT.ja.md) |
 
-今の区切りは **M1：通常予約の安全性残件、保全一覧→JSON/添付付き書出し→新規v4 DBへのコピー復元を非GUIで受入したところ**。原本を変更せず、添付欠損や結果不明は保留する。旧sidecarの解除、同期保留markerの解除、A3以降には進んでいない。M1追加分はローカルの`codex/folio-m1-20261108`へcommitし、push/mergeは行っていない。
+今の区切りは **M1：通常予約の安全性残件、保全一覧→JSON/添付付き書出し→新規v4 DBへのコピー復元を非GUIで受入したところ**。原本を変更せず、添付欠損や結果不明は保留する。旧sidecarの解除、同期保留markerの解除、A3以降には進んでいない。利用者の後続指示により`codex/folio-m1-20261108`を別Draft PRでGitHubへ保存する。masterへはマージしない。[保存方針](M1-PUBLICATION.ja.md)を参照。
 
 M1最終の `npm run verify:quiet` は、型検査・180ファイル／1,673テスト・ビルドの全3段階PASS。[M1実行ログ](validation/m1-quiet.txt)。以前のGitHub保存候補は166ファイル／1,509テストだった。[過去ログ](validation/publication-quiet.txt)。どちらも実画面・実終了イベント・IME・実端末同期の成功を意味しない。
 

@@ -1,5 +1,7 @@
 # M1完了記録：非GUIでの競合データ回収まで
 
+> 後続のGitHub反映指示は[M1保存記録](M1-PUBLICATION.ja.md)へ記録した。以下の「push/mergeなし」はM1完了報告時点。今回もmasterへのマージは行わない。
+
 2026-11-08 JST。利用者が指定した **A0〜A2のM1を完了し、A3へ進まず停止**した。確認済みLevelは **Lv3のまま**。GUI・Electron・実IPC・実IME・物理2台の受入は **NOT_RUN**。
 
 Codexが契約・共有部分・統合を管理し、OpenCode GoのDeepSeekを最大4本で並列実行した。Sol XHighは契約、途中候補、最終候補をread-onlyで安全性レビューした。作業は隔離した統合ツリーと一時データに限定し、元masterと利用者の実データを変更していない。
