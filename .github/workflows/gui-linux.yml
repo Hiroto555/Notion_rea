@@ -1,0 +1,47 @@
+name: gui-linux-xvfb
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: gui-linux-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  gui-linux:
+    name: Electron GUI on Linux Xvfb (no local Mac)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      CI: "true"
+      PLAYWRIGHT_HTML_OPEN: never
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: "24"
+          cache: npm
+      - name: Install locked dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Install Linux browser and display dependencies
+        run: |
+          npx playwright install --with-deps chromium
+          sudo apt-get install -y xvfb xauth dbus-x11 openbox fonts-noto-cjk
+      - name: Build the tested application
+        run: npm run build
+      - name: Run isolated Electron and presentation tests
+        run: xvfb-run -a -s '-screen 0 1440x1000x24 -nolisten tcp' dbus-run-session -- node scripts/run-linux-gui-ci.mjs
+      - name: Keep synthetic test report and failure traces
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: linux-gui-${{ github.run_id }}-${{ github.run_attempt }}
+          path: output/playwright-linux/
+          if-no-files-found: warn
+          retention-days: 7

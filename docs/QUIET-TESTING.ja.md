@@ -4,6 +4,8 @@
 
 ## コマンド
 
+2026-11-08追記：Linux GUIの実行先を[GitHub Actionsの仮想画面](lv4/GUI-LINUX-CI.ja.md)へ分離した。`npm run test:e2e:linux-ci`はGitHub Actions/Linux/Xvfbの検査後、既存のbatch入口を使う専用launcher。macOSや通常のローカル環境では起動前に拒否する。Mac/OS固有は別の受入枠で、このMacでの実行許可は追加しない。
+
 | コマンド | 動作 |
 | --- | --- |
 | `npm run verify:quiet` | 型検査 → Vitest（2 workers）→ build。最初の失敗で停止。GUI なし。 |

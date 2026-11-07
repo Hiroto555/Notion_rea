@@ -12,6 +12,7 @@
     "test": "vitest run",
     "test:e2e": "node scripts/run-gui-tests.mjs --mode=refuse",
     "test:e2e:batch": "node scripts/run-gui-tests.mjs --mode=batch",
+    "test:e2e:linux-ci": "node scripts/run-linux-gui-ci.mjs",
     "check": "tsc --noEmit",
     "verify:quiet": "node scripts/verify-quiet.mjs",
     "package": "npm run build && node scripts/package.mjs",

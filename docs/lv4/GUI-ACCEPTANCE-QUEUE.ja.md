@@ -1,5 +1,7 @@
 # Lv4 GUI・実機の受入待ち
 
+> **実行先の分離（2026-11-08）**：利用者がGitHub Actions＋Linux仮想画面でのGUI実行を指示した。[CI対象42件と結果](GUI-LINUX-CI.ja.md)を最新の実行記録とする。[Mac/OS固有](GUI-MAC-ACCEPTANCE.ja.md)は別枠でNOT_RUN。このMacではGUIを起動しない。以下は従来の待ち項目であり、Linuxの確認範囲とMacの未確認範囲を混同しない。
+
 M1は非GUIで完了しA3前で停止した。[候補・証拠](M1-COMPLETION.ja.md)を参照。以下の実行許可や合格を得た意味ではない。
 
 状態: **NOT_RUN**。この候補をLv4完成として扱わない。GUIは利用者の明示指示後、今回の候補をビルドし、専用の一時 `FOLIO_DATA_DIR` で `npm run test:e2e:batch` を入口に実施する。実機2台と実トンネルは別の受入として記録する。

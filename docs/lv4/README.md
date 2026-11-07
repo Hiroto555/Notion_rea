@@ -8,6 +8,8 @@
 |---|---|
 | M1の終了条件・実績・制約・停止地点 | [M1完了記録](M1-COMPLETION.ja.md) |
 | M1のGitHub保存・PRの依存・マージ判断 | [M1保存記録](M1-PUBLICATION.ja.md) |
+| 操作中のMacを使わないGUI試験 | [Linux GUI CI](GUI-LINUX-CI.ja.md) |
+| Mac/OS固有の別枠 | [Mac受入待ち](GUI-MAC-ACCEPTANCE.ja.md) |
 | 保全データの回収・コピー復元・失敗時の手順 | [回収手順書](m1/RECOVERY-RUNBOOK.ja.md) |
 | 残作業の優先順・終了条件・概算工数・区切り | [残作業計画](REMAINING-WORK-PLAN.ja.md) |
 | 12項目ごとの実装済み・未達 | [受入ゲート](GATE-STATUS.ja.md) |
