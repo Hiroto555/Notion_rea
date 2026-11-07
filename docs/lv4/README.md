@@ -2,6 +2,8 @@
 
 2026-11-08 JST、GitHub保存用チェックポイント。**確認済みの段階はLv3。Lv4は実装途中で、GUI・Electron・実機2台の受入はNOT_RUN。** 現状を保存し、追加の実装は停止している。
 
+GitHub保存後、利用者の指示で **M1までの具体的な計画と担当分け** を作成した。[M1実行計画](M1-EXECUTION-PLAN.ja.md)と[12ジョブの担当カード](M1-DISPATCH-PACK.ja.md)を参照。計画作成のみで、実装開始は未指示。
+
 | 確認したいこと | 読む資料 |
 |---|---|
 | 残作業の優先順・終了条件・概算工数・区切り | [残作業計画](REMAINING-WORK-PLAN.ja.md) |
@@ -10,10 +12,13 @@
 | 当初のT01〜T14との対応 | [タスク対応状況](PLAN-TASK-STATUS.ja.md) |
 | 勝者確認→終了時予約→次回起動適用の設計 | [競合解決](CONFLICT-RESOLUTION.ja.md) |
 | GUI・OS・物理2台で残る確認 | [受入待ち一覧](GUI-ACCEPTANCE-QUEUE.ja.md) |
-| 並列実装を再開するときの役割分担案 | [並列実装案](PARALLEL-IMPLEMENTATION-PROPOSAL.ja.md) |
+| M1の具体的な順序・責任・終了条件 | [M1実行計画](M1-EXECUTION-PLAN.ja.md) |
+| DeepSeekの担当ファイル・依存・投入指示 | [12ジョブの担当カード](M1-DISPATCH-PACK.ja.md) |
+| Sol／DeepSeekの計画レビューと採否 | [計画レビュー記録](M1-PLANNING-REVIEW.ja.md) |
+| 並列実装の当初の会話案 | [並列実装案](PARALLEL-IMPLEMENTATION-PROPOSAL.ja.md) |
 | 保存範囲・検証・公開前検査 | [GitHub保存記録](PUBLICATION-CHECKPOINT.ja.md) |
 
-今の区切りは **M0：競合の勝者確認UI、取消し、終了時のSQLite予約、次回起動の適用をコード接続し、非GUIで確認したところ**。保全データの取り出し・コピー復元は未実装で、次のM1案に含めている。M1以降の採用・着手は未決定。Lv4完成まで継続する指示として扱わない。
+今の区切りは **M0：競合の勝者確認UI、取消し、終了時のSQLite予約、次回起動の適用をコード接続し、非GUIで確認したところ**。保全データの取り出し・コピー復元は未実装で、M1の具体計画に含めている。M1を計画対象として選んだ段階で、実装開始は未指示。Lv4完成まで継続する指示として扱わない。
 
 GitHub保存時の `npm run verify:quiet` は、型検査・166ファイル／1,509テスト・ビルドの全3段階PASS。[実行ログ](validation/publication-quiet.txt)。これは実画面・実終了イベント・IME・実端末同期の成功を意味しない。
 

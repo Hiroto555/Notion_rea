@@ -1,0 +1,87 @@
+{
+  "scope": "Planning proposals only; no product tools, edits, or tests",
+  "baseline": "732fad58681c45931c1a16ee90fa1bfcff0a9072",
+  "opencodeVersion": "1.18.30",
+  "initial": [
+    {
+      "name": "work-breakdown",
+      "model": "opencode-go/deepseek-v4.1-flash",
+      "exit": -2,
+      "seconds": 240.0,
+      "eventTypes": {
+        "step_start": 1
+      },
+      "proposalChars": 0,
+      "requestedVariant": "max"
+    },
+    {
+      "name": "fault-matrix",
+      "model": "opencode-go/deepseek-v4-pro",
+      "exit": -2,
+      "seconds": 240.0,
+      "eventTypes": {
+        "step_start": 1
+      },
+      "proposalChars": 0,
+      "requestedVariant": "max"
+    }
+  ],
+  "condensedFinal": [
+    {
+      "name": "work-breakdown",
+      "model": "opencode-go/deepseek-v4.1-flash",
+      "variant": "high",
+      "exit": 0,
+      "seconds": 112.0,
+      "eventTypes": {
+        "step_start": 1,
+        "text": 1,
+        "step_finish": 1
+      },
+      "proposalChars": 1238,
+      "finishReasons": [
+        "stop"
+      ],
+      "tokens": [
+        {
+          "total": 8081,
+          "input": 3531,
+          "output": 644,
+          "reasoning": 2114,
+          "cache": {
+            "write": 0,
+            "read": 1792
+          }
+        }
+      ]
+    },
+    {
+      "name": "fault-matrix",
+      "model": "opencode-go/deepseek-v4-pro",
+      "variant": "high",
+      "exit": 0,
+      "seconds": 30.2,
+      "eventTypes": {
+        "step_start": 1,
+        "text": 1,
+        "step_finish": 1
+      },
+      "proposalChars": 1045,
+      "finishReasons": [
+        "stop"
+      ],
+      "tokens": [
+        {
+          "total": 6492,
+          "input": 5374,
+          "output": 531,
+          "reasoning": 587,
+          "cache": {
+            "write": 0,
+            "read": 0
+          }
+        }
+      ]
+    }
+  ]
+}
