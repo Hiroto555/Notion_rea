@@ -22,7 +22,7 @@ export type WorkspaceSyncView =
 export type WorkspaceSyncRestartReason =
   | "no-staged-target" | "target-changed" | "unsaved-changes" | "recovery-blocked"
   | "sync-active" | "workspace-changed" | "conflict" | "intent-present"
-  | "intent-blocked" | "state-unavailable";
+  | "intent-blocked" | "legacy-intent" | "state-unavailable";
 
 export type WorkspaceSyncRestartView =
   | {available: false; reason: "not-connected" | "read-only"}

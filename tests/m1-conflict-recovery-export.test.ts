@@ -238,3 +238,20 @@ describe("exportRecoveryArchive complete bundle", () => {
     expect(verifyRecoveryBundle(destination).checkpoint).toEqual(checkpoint);
   });
 });
+
+test("measures Japanese checkpoint text in UTF-8 bytes",()=>{
+ const bytes=Buffer.from("添付の内容");const checkpoint=checkpointWithAsset(bytes);
+ const tables=checkpoint.payload.tables as unknown as {assets:string[][]};
+ const metadata=JSON.parse(tables.assets[0][1]);metadata.name="日本語の添付.txt";tables.assets[0][1]=JSON.stringify(metadata);
+ mkdirSync(join(source,"assets"));writeFileSync(join(source,"assets",ASSET_ID),bytes);
+ const destination=join(root,"日本語 回収");exportRecoveryArchive(snapshotFor(checkpoint),source,destination,"complete-bundle",options());
+ expect(verifyRecoveryBundle(destination).manifest.checkpoint.bytes).toBe(Buffer.byteLength(canonicalJson(checkpoint)));
+});
+test("does not acknowledge an uncertain completion-directory fsync",()=>{
+ const destination=join(root,"uncertain-completion");
+ expect(()=>exportRecoveryArchive(snapshotFor(emptyCheckpoint()),source,destination,"complete-bundle",options({fault:stage=>{
+  if(stage==="before-complete-sync")throw new Error("completion sync response unknown");
+ }}))).toThrow("completion sync response unknown");
+ expect(existsSync(join(destination,"checkpoint.json"))).toBe(true);
+ expect(verifyRecoveryBundle(destination).checkpoint).toEqual(emptyCheckpoint());
+});

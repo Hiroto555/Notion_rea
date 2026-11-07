@@ -18,6 +18,7 @@ export class WorkspaceSyncIntentJournal {
     this.selected = {format:"folio-normal-apply/v1",id:randomUUID(),createdAt:Date.now(),
       target:structuredClone(target),state:"pending"};
   }
+  legacyBlocked(): boolean {return legacyApplyIntentPresent(this.directory);}
   pending(): NormalApplyRecord | undefined {
     const read = readNormalApply(this.store.db);
     return read.status === "ready" && read.record.state === "pending" ? structuredClone(read.record) : undefined;

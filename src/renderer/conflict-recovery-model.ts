@@ -277,6 +277,7 @@ export function applyActionResult(
     return {
       ...model,
       busy: null,
+      pendingUnknown: result.reason === "recovery-incomplete-preserved" && !!model.pendingUnknown && result.directory === model.pendingUnknown?.directory && !!result.target && targetIdentityMatches(result.target,model.pendingUnknown.target) ? null : model.pendingUnknown,
       notice: {
         kind: "blocked",
         directory: result.directory,
@@ -415,6 +416,7 @@ export function applyStatus(
     return {
       ...model,
       busy: null,
+      pendingUnknown: result.reason === "recovery-incomplete-preserved" && !!model.pendingUnknown && result.directory === model.pendingUnknown?.directory && !!result.target && targetIdentityMatches(result.target,model.pendingUnknown.target) ? null : model.pendingUnknown,
       notice: {
         kind: "blocked",
         directory: result.directory,

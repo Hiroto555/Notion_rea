@@ -1,3 +1,4 @@
+import { readRecoveryOrigin } from "../persistence/recovery-origin";
 import { ConflictRecoveryService } from "./conflict-recovery-service";
 import { createRichDocumentProtection } from "./rich-document-protection";
 import { openWorkspaceAtStartup, admitStartupStorage } from "./workspace-startup";
@@ -143,7 +144,7 @@ if (startupError) {
       const opened = openWorkspaceAtStartup(dataDir);
       store = opened.store;
       const readOnly = opened.status.mode === "readOnly";
-      if (!readOnly && !startupSyncRequested(process.env) && readUserVersion(store.db) < 5) seed(store);
+      if (!readOnly && readRecoveryOrigin(store.db) === "absent" && !startupSyncRequested(process.env) && readUserVersion(store.db) < 5) seed(store);
       const crashRecovery = readOnly ? undefined : new CrashRecoveryFile(join(dataDir, "crash-recovery.json"), crashRecoveryWorkspaceId(store));
       const assets = join(dataDir, "assets");
       if (!readOnly) mkdirSync(assets, { recursive: true });

@@ -2,7 +2,7 @@ import { canonicalJson } from "../sync/protocol";
 import type { SyncApplyIntentRead, SyncApplyTarget } from "./workspace-sync-intent";
 
 export type RestartIntentPort = {read(): SyncApplyIntentRead; create(target: SyncApplyTarget): void;
-  prepare?(target: SyncApplyTarget): void; pending?(): {id:string;target:SyncApplyTarget} | undefined; cancelStored?(expectedId:string): boolean;
+  legacyBlocked?():boolean; prepare?(target: SyncApplyTarget): void; pending?(): {id:string;target:SyncApplyTarget} | undefined; cancelStored?(expectedId:string): boolean;
   cancelIfMatches(target: SyncApplyTarget): "removed" | "absent" | "different"};
 export type RestartObservation = {
   target: SyncApplyTarget | null;

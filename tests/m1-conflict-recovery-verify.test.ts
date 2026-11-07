@@ -231,3 +231,11 @@ it("rejects an archive hash that does not identify the bundled checkpoint", () =
   const manifest=filesManifest();manifest.archive.checkpointHash="e".repeat(64);
   expect(()=>validateRecoveryManifest(manifest)).toThrow("recovery-archive-hash-mismatch");
 });
+
+it("accepts the exact aggregate byte and file-count boundaries but refuses the next byte",()=>{
+ const manifest=filesManifest();manifest.assets=Array.from({length:6},(_,i)=>({id:`asset-${i}`,file:`assets/asset-${i}`,sha256:"d".repeat(64),bytes:i<5?20_000_000:104_857_600-100_000_000}));
+ expect(validateRecoveryManifest(manifest).assets).toHaveLength(6);
+ manifest.assets[5].bytes++;expect(()=>validateRecoveryManifest(manifest)).toThrow("recovery-asset-total-too-large");
+ manifest.assets=Array.from({length:1000},(_,i)=>({id:`asset-${i}`,file:`assets/asset-${i}`,sha256:"d".repeat(64),bytes:0}));
+ expect(validateRecoveryManifest(manifest).assets).toHaveLength(1000);
+});

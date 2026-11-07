@@ -35,6 +35,7 @@ export function restartApplyText(view: WorkspaceSyncRestartView): string {
     case "conflict": return "競合の解消後に予約できます";
     case "target-changed": return "適用対象が変わったため予約できません";
     case "intent-present": return `次回起動時に${target} を適用予定`;
+    case "legacy-intent": return "旧形式の適用予約を保全して保留しています。解除・移行は未対応です。";
     case "intent-blocked": case "state-unavailable": return "適用予約の状態を確認できません";
     case "no-staged-target": return "";
     case null: return target ? `受信${target} を次回起動時に適用できます` : "";

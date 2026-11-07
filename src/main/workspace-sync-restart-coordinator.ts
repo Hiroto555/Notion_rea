@@ -107,13 +107,13 @@ export class WorkspaceSyncRestartCoordinator {
         targetRevision: selected?.revision ?? (intent.status === "ready" ? intent.target.revision : null),
         canRequest: false,
         canCancel: state !== "none" || !!this.intentFile.pending?.(),
-        reason: localIntent.status === "blocked" ? "intent-blocked" : "state-unavailable",
+        reason: this.intentFile.legacyBlocked?.() ? "legacy-intent" : localIntent.status === "blocked" ? "intent-blocked" : "state-unavailable",
       };
     }
     const scheduled = state === "committed" || intent.status === "ready";
     let reason = evaluation.reason;
     if (state === "none") {
-      if (intent.status === "blocked") reason = "intent-blocked";
+      if (intent.status === "blocked") reason = this.intentFile.legacyBlocked?.() ? "legacy-intent" : "intent-blocked";
       else if (intent.status === "ready") reason = "intent-present";
     }
     return {

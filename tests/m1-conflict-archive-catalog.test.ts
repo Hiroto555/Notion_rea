@@ -1,5 +1,5 @@
 import { DatabaseSync } from "node:sqlite";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import type { ArchiveTarget } from "../src/shared/conflict-recovery";
 import {
   listConflictArchives,
@@ -21,7 +21,7 @@ function database(): DatabaseSync {
 }
 
 afterEach(() => {
-  while (databases.length > 0) databases.pop()!.close();
+  while (databases.length > 0) {const db=databases.pop()!;if(db.isOpen)db.close();}
 });
 
 const STATE_SCHEMA = `CREATE TABLE workspace_sync_state (
@@ -340,4 +340,14 @@ describe("conflict archive catalog", () => {
       archives: db.prepare("SELECT * FROM workspace_sync_archives").all(),
     }).toEqual(before);
   });
+});
+
+it("never reuses an unknown read snapshot after COMMIT and ROLLBACK both fail",()=>{
+ const db=archiveDatabase();insertArchive(db,checkpoint());const exec=db.exec.bind(db);
+ const spy=vi.spyOn(db,"exec").mockImplementation((sql:string)=>{
+  if(sql==="COMMIT" || sql==="ROLLBACK")throw new Error("injected transaction cleanup failure");return exec(sql);
+ });
+ expect(()=>listConflictArchives(db)).toThrow("archive-connection-reopen-required");
+ spy.mockRestore();
+ expect(()=>listConflictArchives(db)).toThrow("archive-connection-reopen-required");
 });

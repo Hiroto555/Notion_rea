@@ -13,7 +13,7 @@ import { canonicalJson, hashCheckpoint, parseCheckpoint, requireCondition } from
 import { RECOVERY_INCOMPLETE, type ArchiveCursor, type ArchiveTarget, type RecoveryActionResult } from "../shared/conflict-recovery";
 
 type Mode = "metadata-only" | "complete-bundle" | "restored";
-type RequestRecord = {target:ArchiveTarget;mode:string;result:RecoveryActionResult;op?:Operation};
+type RequestRecord = {target:ArchiveTarget;mode:string;result:RecoveryActionResult;promise:Promise<RecoveryActionResult>;op?:Operation};
 type Operation = {id:string;target:ArchiveTarget;mode:Mode;directory:string;result:RecoveryActionResult};
 export function admitRecoveryDestination(parent: string, payload: number): void {
   requireCondition(Number.isSafeInteger(payload) && payload >= 0,"recovery-capacity-unknown");
@@ -55,8 +55,13 @@ export class ConflictRecoveryService {
     if(!op)return null;
     if(op.result.kind!=="outcome-unknown" || this.running)return op.result;
     try {
+      const marker=lstatOptional(join(op.directory,RECOVERY_INCOMPLETE));
+      if(marker) {
+        requireCondition(marker.isFile() && !marker.isSymbolicLink() && marker.nlink===1,"unsafe-recovery-marker");
+        op.result={kind:"blocked",reason:"recovery-incomplete-preserved",directory:op.directory,target:op.target};
+        return op.result;
+      }
       this.assertTarget(op.target);
-      requireCondition(!lstatOptional(join(op.directory,RECOVERY_INCOMPLETE)),"recovery-incomplete");
       if(op.mode==="complete-bundle") {
         const verified=verifyRecoveryBundle(op.directory);
         requireCondition(canonicalJson(verified.manifest.archive)===canonicalJson(op.target),"recovery-result-changed");
@@ -76,26 +81,29 @@ export class ConflictRecoveryService {
       const request=this.requests.get(operationId);
       return request ? (request.op ? this.inspectOperation(request.op) : request.result) : {kind:"blocked",reason:"recovery-operation-not-found"};
     }
-    return this.inspectOperation(this.last);
+    const recent=Array.from(this.requests.values()).at(-1);
+    if(this.running && recent && !recent.op && recent.result.kind==="blocked" && recent.result.reason==="recovery-operation-pending")return recent.result;
+    return this.inspectOperation(this.last)??recent?.result??null;
   }
-  async run(target:ArchiveTarget,mode:"metadata-only"|"complete-bundle"|"restore",pick:()=>Promise<string|null>,
+  run(target:ArchiveTarget,mode:"metadata-only"|"complete-bundle"|"restore",pick:()=>Promise<string|null>,
     authorized:()=>boolean,operationId:string=randomUUID()):Promise<RecoveryActionResult> {
     const previous=this.requests.get(operationId);
     if(previous) {
-      if(previous.mode!==mode || canonicalJson(previous.target)!==canonicalJson(target))return {kind:"blocked",reason:"recovery-operation-id-reused"};
-      return this.status(operationId)!;
+      if(previous.mode!==mode || canonicalJson(previous.target)!==canonicalJson(target))return Promise.resolve({kind:"blocked",reason:"recovery-operation-id-reused"});
+      return previous.promise;
     }
-    if(this.requests.size>=16) {
-      for(const [id,request] of this.requests) {
-        if(!request.op || request.op.result.kind!=="outcome-unknown") {this.requests.delete(id);break;}
-      }
-      if(this.requests.size>=16)return {kind:"blocked",reason:"recovery-operation-limit"};
-    }
-    const request:RequestRecord={target:structuredClone(target),mode,result:{kind:"blocked",reason:"recovery-operation-pending",target:structuredClone(target)}};
+    // Session-scoped idempotency: never evict an ID or an in-flight request.
+    if(this.requests.size>=16)return Promise.resolve({kind:"blocked",reason:"recovery-operation-limit"});
+    let settle!:(result:RecoveryActionResult)=>void;
+    const promise=new Promise<RecoveryActionResult>(resolve=>{settle=resolve;});
+    const request:RequestRecord={target:structuredClone(target),mode,promise,result:{kind:"blocked",reason:"recovery-operation-pending",target:structuredClone(target)}};
     this.requests.set(operationId,request);
-    try {request.result=await this.perform(target,mode,pick,authorized,request);}
-    catch {request.result=request.op?.result??{kind:"blocked",reason:"recovery-refused",target:request.target};}
-    return request.result;
+    void this.perform(target,mode,pick,authorized,request).then(result=>{
+      request.result=result;settle(result);
+    },()=>{
+      request.result=request.op?.result??{kind:"blocked",reason:"recovery-refused",target:request.target};settle(request.result);
+    });
+    return promise;
   }
   private async perform(target:ArchiveTarget, mode:"metadata-only"|"complete-bundle"|"restore",
     pick:()=>Promise<string|null>, authorized:()=>boolean,request:RequestRecord):Promise<RecoveryActionResult> {

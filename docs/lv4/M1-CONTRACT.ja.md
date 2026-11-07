@@ -57,3 +57,9 @@ checkpoint上限1,048,576 B、添付1件20,000,000 B、合計100 MiB／1,000件�
 mainはcore例外をRecoveryActionResultの`blocked`（出力前の拒否）／`outcome-unknown`（作成したdirectory、固定target、公開用の安全なreasonを保持）へ変換する。出力後例外を『未作成』とせず、同じ操作の結果照会を提供し、自動再実行・削除しない。rendererはunknownを成功と区別して保全先を示す。
 
 独立試験は別file、期待hashはNode cryptoやfixtureの固定値から。fault stageはbefore/after-file-sync、before/after-directory-syncに加え、各workerがbefore/after-completeを定義。通常COMMIT前後のfaultはStore.transaction seamで注入。結果が不明なら新規ID・同一先再適用・削除をせず再openで照合。
+
+## ホストの操作ID契約追記
+
+UI生成のoperationIdは冪等key、mainが発行する固定target ticketは別物。run/statusはそのIDを照合し、main session中の最大16件は完了済みも削除せず、満杯なら新規だけ拒否。同一IDの同時retryには同じPromiseを返す。main再起動では操作sessionが失効し、過去の未確認出力は自動再実行せず、生成先の手順に従って確認する。通常・競合のSQLite予約はこれと異なり再起動を越えて保持する。
+
+statusは正規INCOMPLETE確認→blocked＋保全先、marker不在で全完成検査成功→成功、検査不能→unknown。未解決unknownの記録を新操作で置換しない。known incompleteは新しい別先への試行を妨げず、前の出力は削除しない。
