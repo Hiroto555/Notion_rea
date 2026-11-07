@@ -4,10 +4,12 @@ import type {
   ArchivePage,
   ArchiveTarget,
   RecoveryActionResult,
+  RecoveryRequestContext,
 } from "../shared/conflict-recovery";
 
 export type RecoveryExportMode = "metadata-only" | "complete-bundle";
-export type RecoverySuccessKind = "metadata-only" | "complete-bundle" | "restored";
+export type RecoverySuccessKind =
+  "metadata-only" | "complete-bundle" | "restored";
 
 export type RecoveryResultView = {
   kind: RecoverySuccessKind;
@@ -18,16 +20,28 @@ export type RecoveryResultView = {
 
 export type RecoveryPendingUnknown = {
   target: ArchiveTarget;
-  directory: string;
+  operationId?: string;
+  mode?: RecoveryRequestContext["mode"];
+  directory?: string;
   reason: string;
 };
 
 export type RecoveryNotice =
   | { kind: "info"; message: string }
   | { kind: "caution"; message: string }
-  | { kind: "blocked"; message: string; target?: ArchiveTarget;directory?:string }
+  | {
+      kind: "blocked";
+      message: string;
+      target?: ArchiveTarget;
+      directory?: string;
+    }
   | { kind: "error"; message: string }
-  | { kind: "outcome-unknown"; message: string; directory: string; target: ArchiveTarget };
+  | {
+      kind: "outcome-unknown";
+      message: string;
+      directory?: string;
+      target: ArchiveTarget;
+    };
 
 export type RecoveryBusy =
   | { kind: "list" }
@@ -59,16 +73,43 @@ export function createRecoveryPanelModel(): RecoveryPanelModel {
   };
 }
 
-export function disposeRecoveryPanelModel(model: RecoveryPanelModel): RecoveryPanelModel {
+export function disposeRecoveryPanelModel(
+  model: RecoveryPanelModel,
+): RecoveryPanelModel {
   if (model.disposed) return model;
-  return { ...model, disposed: true, generation: model.generation + 1, busy: null };
+  return {
+    ...model,
+    disposed: true,
+    generation: model.generation + 1,
+    busy: null,
+  };
+}
+
+export function holdRecoveryRequest(
+  model: RecoveryPanelModel,
+  request: RecoveryRequestContext,
+): RecoveryPanelModel {
+  return {
+    ...model,
+    pendingUnknown: { ...request, reason: "recovery-response-unconfirmed" },
+    notice: {
+      kind: "outcome-unknown",
+      message:
+        "操作の応答を確認できません。同じ操作IDの結果を再照会してください。",
+      target: request.target,
+      directory: request.directory,
+    },
+  };
 }
 
 function isCurrent(model: RecoveryPanelModel, token: number): boolean {
   return !model.disposed && token === model.generation;
 }
 
-export function targetIdentityMatches(a: ArchiveTarget, b: ArchiveTarget): boolean {
+export function targetIdentityMatches(
+  a: ArchiveTarget,
+  b: ArchiveTarget,
+): boolean {
   return (
     a.source === b.source &&
     a.id === b.id &&
@@ -91,7 +132,9 @@ export function selectTarget(
   return { ...model, target, notice: null };
 }
 
-export function clearSelectedTarget(model: RecoveryPanelModel): RecoveryPanelModel {
+export function clearSelectedTarget(
+  model: RecoveryPanelModel,
+): RecoveryPanelModel {
   return { ...model, target: null };
 }
 
@@ -109,7 +152,10 @@ export function beginList(
   };
 }
 
-function mergeItems(existing: ArchiveItem[], incoming: ArchiveItem[]): ArchiveItem[] {
+function mergeItems(
+  existing: ArchiveItem[],
+  incoming: ArchiveItem[],
+): ArchiveItem[] {
   const seen = new Set<number>();
   const merged: ArchiveItem[] = [];
   for (const item of existing) {
@@ -183,6 +229,7 @@ export function beginExport(
     generation: token,
     target,
     busy: { kind: "export", mode, target },
+    lastSuccess: null,
     notice: null,
   };
 }
@@ -198,6 +245,7 @@ export function beginRestore(
     generation: token,
     target,
     busy: { kind: "restore", target },
+    lastSuccess: null,
     notice: null,
   };
 }
@@ -240,20 +288,37 @@ export function applyActionResult(
   const target = busyTarget(model.busy) ?? model.target;
 
   if (isSuccess(result)) {
-    if (target === null) {
+    if (
+      target === null ||
+      target.checkpointHash !== result.checkpointHash ||
+      (model.pendingUnknown?.mode !== undefined &&
+        result.kind !==
+          (model.pendingUnknown.mode === "restore"
+            ? "restored"
+            : model.pendingUnknown.mode))
+    ) {
       return {
         ...model,
         busy: null,
+        pendingUnknown: target
+          ? {
+              target,
+              directory: result.directory,
+              reason: "recovery-result-mismatch",
+            }
+          : model.pendingUnknown,
         notice: {
           kind: "caution",
-          message: "操作は完了しましたが、対象の特定情報を保持できませんでした。結果を再照会してください。",
+          message:
+            "操作は完了しましたが、対象の特定情報を保持できませんでした。結果を再照会してください。",
         },
       };
     }
     const pending = model.pendingUnknown;
     const resolvesPending =
       pending !== null &&
-      pending.directory === result.directory &&
+      (pending.directory === undefined ||
+        pending.directory === result.directory) &&
       targetIdentityMatches(pending.target, target) &&
       pending.target.checkpointHash === result.checkpointHash;
     return {
@@ -277,7 +342,9 @@ export function applyActionResult(
     return {
       ...model,
       busy: null,
-      pendingUnknown: result.reason === "recovery-incomplete-preserved" && !!model.pendingUnknown && result.directory === model.pendingUnknown?.directory && !!result.target && targetIdentityMatches(result.target,model.pendingUnknown.target) ? null : model.pendingUnknown,
+      pendingUnknown: confirmedBlocked(model.pendingUnknown, result)
+        ? null
+        : model.pendingUnknown,
       notice: {
         kind: "blocked",
         directory: result.directory,
@@ -291,6 +358,7 @@ export function applyActionResult(
     return {
       ...model,
       busy: null,
+      pendingUnknown: null,
       notice: { kind: "info", message: "操作はキャンセルされました。" },
     };
   }
@@ -307,6 +375,7 @@ export function applyActionResult(
     };
   }
   const pending: RecoveryPendingUnknown = {
+    ...model.pendingUnknown,
     target: unknownTarget,
     directory: result.directory,
     reason: result.reason,
@@ -327,32 +396,33 @@ export function applyActionResult(
 export function failOperation(
   model: RecoveryPanelModel,
   token: number,
-  context: { target: ArchiveTarget; message: string; directory?: string },
+  context: {
+    target: ArchiveTarget;
+    message: string;
+    directory?: string;
+    request?: RecoveryRequestContext;
+  },
 ): RecoveryPanelModel {
   if (!isCurrent(model, token)) return model;
-  if (context.directory !== undefined && context.directory.length > 0) {
-    return {
-      ...model,
-      busy: null,
-      pendingUnknown: {
-        target: context.target,
-        directory: context.directory,
-        reason: context.message,
-      },
-      notice: {
-        kind: "outcome-unknown",
-        message: context.message,
-        directory: context.directory,
-        target: context.target,
-      },
-    };
-  }
   return {
     ...model,
     busy: null,
+    pendingUnknown: {
+      target: context.request?.target ?? context.target,
+      ...(context.request
+        ? {
+            operationId: context.request.operationId,
+            mode: context.request.mode,
+          }
+        : {}),
+      ...(context.directory ? { directory: context.directory } : {}),
+      reason: context.message,
+    },
     notice: {
-      kind: "error",
-      message: `${context.message} 作成された可能性があります。状態を再照会してください。`,
+      kind: "outcome-unknown",
+      message: context.message,
+      directory: context.directory,
+      target: context.request?.target ?? context.target,
     },
   };
 }
@@ -371,7 +441,8 @@ export function applyStatus(
         busy: null,
         notice: {
           kind: "caution",
-          message: "直近の操作結果を確認できません。保全先が不明な操作は成功として扱いません。",
+          message:
+            "直近の操作結果を確認できません。保全先が不明な操作は成功として扱いません。",
         },
       };
     }
@@ -382,8 +453,12 @@ export function applyStatus(
     const pending = model.pendingUnknown;
     const recovered =
       pending !== null &&
-      pending.directory === result.directory &&
-      pending.target.checkpointHash === result.checkpointHash;
+      (pending.directory === undefined ||
+        pending.directory === result.directory) &&
+      pending.target.checkpointHash === result.checkpointHash &&
+      (pending.mode === undefined ||
+        result.kind ===
+          (pending.mode === "restore" ? "restored" : pending.mode));
     if (!recovered) {
       return {
         ...model,
@@ -416,7 +491,9 @@ export function applyStatus(
     return {
       ...model,
       busy: null,
-      pendingUnknown: result.reason === "recovery-incomplete-preserved" && !!model.pendingUnknown && result.directory === model.pendingUnknown?.directory && !!result.target && targetIdentityMatches(result.target,model.pendingUnknown.target) ? null : model.pendingUnknown,
+      pendingUnknown: confirmedBlocked(model.pendingUnknown, result)
+        ? null
+        : model.pendingUnknown,
       notice: {
         kind: "blocked",
         directory: result.directory,
@@ -438,13 +515,18 @@ export function applyStatus(
   const pending = model.pendingUnknown;
   if (
     pending !== null &&
-    pending.directory === result.directory &&
+    (pending.directory === undefined ||
+      pending.directory === result.directory) &&
     targetIdentityMatches(pending.target, result.target)
   ) {
     return {
       ...model,
       busy: null,
-      pendingUnknown: { ...pending, reason: result.reason },
+      pendingUnknown: {
+        ...pending,
+        directory: result.directory,
+        reason: result.reason,
+      },
       notice: {
         kind: "outcome-unknown",
         message: result.reason,
@@ -462,6 +544,33 @@ export function applyStatus(
       message: `${result.reason} 保全先が不明な操作とは別の結果のため、成功として扱いません。`,
     },
   };
+}
+
+function confirmedBlocked(
+  pending: RecoveryPendingUnknown | null,
+  result: Extract<RecoveryActionResult, { kind: "blocked" }>,
+): boolean {
+  if (
+    !pending ||
+    !result.target ||
+    !targetIdentityMatches(pending.target, result.target)
+  )
+    return false;
+  if (
+    [
+      "recovery-operation-pending",
+      "recovery-operation-not-found",
+      "previous-recovery-result-unconfirmed",
+    ].includes(result.reason)
+  )
+    return false;
+  if (result.reason === "recovery-incomplete-preserved")
+    return (
+      !!result.directory &&
+      (pending.directory === undefined ||
+        pending.directory === result.directory)
+    );
+  return pending.directory === undefined && result.directory === undefined;
 }
 
 export function hasPendingUnknown(model: RecoveryPanelModel): boolean {

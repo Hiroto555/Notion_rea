@@ -19,6 +19,7 @@ import {
   failList,
   failOperation,
   failStatus,
+  holdRecoveryRequest,
   selectTarget,
   targetFromItem,
   type RecoveryExportMode,
@@ -139,12 +140,16 @@ const styles = {
 export function WorkspaceConflictRecoveryPanel(
   props: WorkspaceConflictRecoveryPanelProps,
 ) {
-  const [model, setModel] = useState<RecoveryPanelModel>(createRecoveryPanelModel);
+  const [model, setModel] = useState<RecoveryPanelModel>(
+    createRecoveryPanelModel,
+  );
   const modelRef = useRef(model);
   const tokenRef = useRef(0);
   const aliveRef = useRef(true);
 
-  function applyNow(updater: (current: RecoveryPanelModel) => RecoveryPanelModel): void {
+  function applyNow(
+    updater: (current: RecoveryPanelModel) => RecoveryPanelModel,
+  ): void {
     const next = updater(modelRef.current);
     modelRef.current = next;
     setModel(next);
@@ -189,13 +194,20 @@ export function WorkspaceConflictRecoveryPanel(
     const token = nextToken();
     applyNow((current) => beginExport(current, token, target, mode));
     try {
-      const result = await props.port.export(target, mode);
+      const response = props.port.export(target, mode);
+      const request = props.port.currentRequest();
+      if (request) applyNow((current) => holdRecoveryRequest(current, request));
+      const result = await response;
       if (!aliveRef.current) return;
       applyNow((current) => applyActionResult(current, token, result));
     } catch (error) {
       if (!aliveRef.current) return;
       applyNow((current) =>
-        failOperation(current, token, { target, message: errorMessage(error) }),
+        failOperation(current, token, {
+          target,
+          message: errorMessage(error),
+          request: props.port.currentRequest() ?? undefined,
+        }),
       );
     }
   }
@@ -206,13 +218,20 @@ export function WorkspaceConflictRecoveryPanel(
     const token = nextToken();
     applyNow((current) => beginRestore(current, token, target));
     try {
-      const result = await props.port.restore(target);
+      const response = props.port.restore(target);
+      const request = props.port.currentRequest();
+      if (request) applyNow((current) => holdRecoveryRequest(current, request));
+      const result = await response;
       if (!aliveRef.current) return;
       applyNow((current) => applyActionResult(current, token, result));
     } catch (error) {
       if (!aliveRef.current) return;
       applyNow((current) =>
-        failOperation(current, token, { target, message: errorMessage(error) }),
+        failOperation(current, token, {
+          target,
+          message: errorMessage(error),
+          request: props.port.currentRequest() ?? undefined,
+        }),
       );
     }
   }
@@ -222,6 +241,8 @@ export function WorkspaceConflictRecoveryPanel(
     applyNow((current) =>
       current.disposed ? createRecoveryPanelModel() : current,
     );
+    const request = props.port.currentRequest();
+    if (request) applyNow((current) => holdRecoveryRequest(current, request));
 
     void (async () => {
       await queryStatus();
@@ -255,12 +276,21 @@ export function WorkspaceConflictRecoveryPanel(
           <strong>結果不明（成功ではありません）</strong>
           <div>{notice.message}</div>
           <div style={styles.muted}>
-            保全先の候補（未確認）: <span style={styles.code}>{notice.directory}</span>
+            保全先の候補（未確認）:{" "}
+            <span style={styles.code}>
+              {notice.directory ?? "応答未確認のため不明"}
+            </span>
           </div>
           <div style={styles.muted}>
             対象: <span style={styles.code}>{locked.target.operationId}</span>（
             {locked.target.kind}）
           </div>
+          {pending?.operationId ? (
+            <div style={styles.muted}>
+              再照会する操作ID:{" "}
+              <span style={styles.code}>{pending.operationId}</span>
+            </div>
+          ) : null}
           <div style={styles.muted}>
             成功として扱うには、同じ生成先の完成検査に通る再照会が必要です。新規IDでの再適用や削除は行いません。
           </div>
@@ -272,7 +302,9 @@ export function WorkspaceConflictRecoveryPanel(
         <div role="alert" style={styles.noticeBlocked}>
           <strong>処理を保留しました</strong>
           <div>{notice.message}</div>
-          {notice.directory ? <div>未完了の保全先: {notice.directory}</div> : null}
+          {notice.directory ? (
+            <div>未完了の保全先: {notice.directory}</div>
+          ) : null}
           {notice.target ? (
             <div style={styles.muted}>
               対象: <span style={styles.code}>{notice.target.operationId}</span>
@@ -291,7 +323,10 @@ export function WorkspaceConflictRecoveryPanel(
     }
     if (notice.kind === "error") {
       return (
-        <div role="alert" style={{ ...styles.noticeBlocked, ...styles.noticeError }}>
+        <div
+          role="alert"
+          style={{ ...styles.noticeBlocked, ...styles.noticeError }}
+        >
           <strong>エラー</strong>
           <div>{notice.message}</div>
         </div>
@@ -325,24 +360,30 @@ export function WorkspaceConflictRecoveryPanel(
           <span style={styles.muted}>{formatTimestamp(item.createdAt)}</span>
         </div>
         <div style={styles.muted}>
-          {item.valid ? "読取可能" : "破損のため復元対象外"} / {formatBytes(item.bytes)}
+          {item.valid ? "読取可能" : "破損のため復元対象外"} /{" "}
+          {formatBytes(item.bytes)}
           {item.pages === null ? "" : ` / ${item.pages}ページ`}
           {item.assets === null ? "" : ` / 添付${item.assets}件`}
           {` / 添付検査: ${item.attachmentStatus}`}
         </div>
-        {item.reason ? <div style={styles.muted}>理由: {item.reason}</div> : null}
+        {item.reason ? (
+          <div style={styles.muted}>理由: {item.reason}</div>
+        ) : null}
         <div style={styles.row}>
           <button
             type="button"
             style={styles.button}
             disabled={target === null}
             onClick={() => {
-              if (target !== null) applyNow((current) => selectTarget(current, target));
+              if (target !== null)
+                applyNow((current) => selectTarget(current, target));
             }}
           >
             {isSelected ? "選択中" : "この対象を選択"}
           </button>
-          {locked ? <span style={styles.muted}>結果不明のため操作を保留中</span> : null}
+          {locked ? (
+            <span style={styles.muted}>結果不明のため操作を保留中</span>
+          ) : null}
         </div>
       </div>
     );
@@ -376,7 +417,9 @@ export function WorkspaceConflictRecoveryPanel(
           </button>
           {busy ? <span style={styles.muted}>処理中…</span> : null}
         </div>
-        <p>選択した保全時点の内容です。未保存の入力や、その後の編集、接続設定は含みません。元の作業領域を変更せず、取り出したコピーも自動で起動・同期しません。</p>
+        <p>
+          選択した保全時点の内容です。未保存の入力や、その後の編集、接続設定は含みません。元の作業領域を変更せず、取り出したコピーも自動で起動・同期しません。
+        </p>
         {renderNotice()}
         {model.lastSuccess ? (
           <div style={styles.noticeInfo}>
@@ -389,7 +432,9 @@ export function WorkspaceConflictRecoveryPanel(
             </div>
             <div style={styles.muted}>
               checkpoint hash:{" "}
-              <span style={styles.code}>{model.lastSuccess.checkpointHash}</span>
+              <span style={styles.code}>
+                {model.lastSuccess.checkpointHash}
+              </span>
             </div>
           </div>
         ) : null}
@@ -432,7 +477,9 @@ export function WorkspaceConflictRecoveryPanel(
       <div style={styles.section}>
         <strong>選択中の対象</strong>
         {selectedTarget === null ? (
-          <div style={styles.muted}>一覧から読取可能な対象を選択してください。</div>
+          <div style={styles.muted}>
+            一覧から読取可能な対象を選択してください。
+          </div>
         ) : (
           <>
             <div>

@@ -425,16 +425,18 @@ describe("conflict recovery model: rejected operations", () => {
     expect(model.notice?.kind).toBe("outcome-unknown");
   });
 
-  it("does not create an unknown destination when no output path is known", () => {
+  it("keeps a request unresolved when its RPC failed without an output path", () => {
     const target = makeTarget();
     const model = failOperation(beginExport(createRecoveryPanelModel(), 1, target, "metadata-only"), 1, {
       target,
-      message: "出力前の失敗",
+      message: "応答喪失",
     });
 
-    expect(model.pendingUnknown).toBeNull();
+    expect(model.pendingUnknown?.target).toEqual(target);
+    expect(model.pendingUnknown?.directory).toBeUndefined();
+    expect(canStartOperation(model,target)).toBe(false);
     expect(model.lastSuccess).toBeNull();
-    expect(model.notice?.kind).toBe("error");
+    expect(model.notice?.kind).toBe("outcome-unknown");
     expect(model.busy).toBeNull();
   });
 

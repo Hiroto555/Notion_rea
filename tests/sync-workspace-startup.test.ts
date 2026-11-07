@@ -11,7 +11,7 @@ import { join } from "node:path";
 import { DatabaseSync } from "node:sqlite";
 import { expect, it } from "vitest";
 import { runStartupWorkspaceSync } from "../src/main/workspace-sync-startup";
-import { WorkspaceSyncIntentFile } from "../src/main/workspace-sync-intent";
+import { WorkspaceSyncIntentJournal } from "../src/main/normal-apply-intent";
 import { createFullBackup } from "../src/persistence/full-backup-create";
 import { restoreFullBackup } from "../src/persistence/full-backup-restore";
 import { readUserVersion } from "../src/persistence/schema-startup";
@@ -146,7 +146,7 @@ it("applies startup changes only after saved recovery input is cleared, and neve
     expect(b.store.pages()).toEqual([]);
     const staged = await openWorkspaceSync(b.options);
     const target = staged.stagedTarget()!;
-    new WorkspaceSyncIntentFile(realpathSync(b.env.FOLIO_DATA_DIR)).create({
+    new WorkspaceSyncIntentJournal(realpathSync(b.env.FOLIO_DATA_DIR),b.store).create({
       workspaceId, clientId: b.options.clientId, bindingId: b.options.bindingId,
       serverEpoch: server.serverEpoch, ...target,
     });
