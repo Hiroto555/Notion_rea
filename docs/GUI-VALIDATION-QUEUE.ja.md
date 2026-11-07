@@ -1,5 +1,20 @@
 # GUI検証枠と過去の確認待ち項目
 
+## 2026-11-07 ページツリーと並び順修復の追加差分
+
+対象は `codex/folio-page-tree-dnd-20261105` の専用 worktree。今回の追加 GUI 試験は **NOT_RUN**。AGENTS.md に従い、Electron を開く実行範囲の確認後に次を実施する。
+
+- `tests/e2e/page-move.spec.ts` の before / inside / after、展開した枝の直後、最上位への移動、Escape 取消とインジケータ解除、子孫を含めない移動ダイアログ、編集中の保存と再起動。
+- `tests/e2e/page-order-repair.spec.ts` の読み取り専用プレビュー、変更前の完全バックアップ、適用後の再読み込みと保存、古いプレビューの拒否、適用 ACK 喪失後の再送抑止。
+- `dragstart` の断続的不成立は未特定。既存の capture 監視で実ヒット、フォーカス、DOM 接続、dragstart / drop、move IPC と ACK を採取する。
+- 既存の Level 3 判定は `LEVEL3-STATUS.json` の検証コミットの記録。追加差分の GUI 結果と実端末2台の同期検証を合格として加算しない。
+
+この worktree では依存を `npm ci --ignore-scripts` で導入している。GUI 実行時は `npm rebuild electron`、`npm run build` の後、次の batch 入口を使用する。fixture は専用の一時 `FOLIO_DATA_DIR` を設定する。
+
+```sh
+npm run test:e2e:batch -- tests/e2e/page-move.spec.ts tests/e2e/page-order-repair.spec.ts --retries=0
+```
+
 2026-11-05追記: 今回の明示許可に基づくバッチは **57ファイル / 212件PASS**。現在の結果と検証範囲は [GUI検証結果](LOCAL-FIRST-GUI-VALIDATION-20261105.ja.md) を参照してください。以下は実行前に積み上げた履歴です。OSネイティブの選択パネルと物理IMEは未検証のままです。
 
 過去の計画時点の状態: **NOT_RUN**。この文書の存在は次回のGUI実行の許可ではありません。

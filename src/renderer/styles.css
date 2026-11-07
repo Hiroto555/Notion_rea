@@ -472,6 +472,28 @@ kbd {
   border-radius: 2px;
   background: var(--accent);
 }
+.page-tree-node[data-drop-position="before"]::before,
+.page-tree-node[data-drop-position="after"]::after {
+  content: "";
+  position: absolute;
+  inset-inline: 0;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--accent);
+  pointer-events: none;
+  z-index: 1;
+}
+.page-tree-node[data-drop-position="before"]::before {
+  top: -1px;
+}
+.page-tree-node[data-drop-position="after"]::after {
+  bottom: -1px;
+}
+.page-tree-node[data-drop-position="inside"] > .page-tree-row,
+.new-root[data-drop-position="inside"] {
+  background: var(--accent-soft);
+  box-shadow: inset 0 0 0 2px var(--accent);
+}
 .tree-toggle {
   flex-shrink: 0;
   width: 18px;
@@ -754,6 +776,33 @@ kbd {
 .save-state svg {
   color: var(--accent);
 }
+.conflict-inspector { position: relative; }
+.conflict-decision-controls { position: relative; white-space: normal; }
+.conflict-panel {
+  -webkit-app-region: no-drag;
+  position: absolute;
+  z-index: 50;
+  top: calc(100% + 8px);
+  right: 0;
+  width: min(420px, calc(100vw - 32px));
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 14px;
+  white-space: normal;
+  color: var(--text);
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  box-shadow: 0 8px 30px rgb(0 0 0 / 16%);
+  max-height: min(70vh, 640px);
+  overflow-y: auto;
+}
+.conflict-comparison, .conflict-comparison-page { display: flex; flex-direction: column; gap: 8px; max-width: 100%; }
+.conflict-decision-review { width: min(560px, calc(100vw - 32px)); }
+.conflict-comparison-page { border-top: 1px solid var(--line); padding-top: 8px; overflow-wrap: anywhere; }
+.conflict-comparison-body { display: block; white-space: pre-wrap; overflow-wrap: anywhere; margin: 4px 0 8px; }
 .save-state[data-state="pending"] {
   color: var(--warning);
   background: var(--panel);
@@ -2419,6 +2468,29 @@ kbd {
 /* ==========================================================================
    Native dialog top layer (search / page link / DB record)
    ========================================================================== */
+.page-order-repair {
+  width: min(760px, calc(100vw - 40px));
+}
+.page-order-repair-content {
+  padding: 16px 24px 24px;
+  max-height: 65vh;
+  overflow: auto;
+  overflow-wrap: anywhere;
+}
+.page-order-repair-content table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.page-order-repair-content th,
+.page-order-repair-content td {
+  text-align: left;
+  padding: 8px;
+  border-bottom: 1px solid var(--line);
+  font-size: 12px;
+}
+.page-order-repair-content button {
+  margin-top: 12px;
+}
 .common-dialog {
   padding: 0;
   margin: 12vh auto 0;

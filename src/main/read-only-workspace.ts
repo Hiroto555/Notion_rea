@@ -5,6 +5,12 @@ import type { Request } from "../shared/types";
 export function assertReadOnlyRequest(request: Request): void {
   switch (request.type) {
     case "startup:status":
+    case "sync:status":
+    case "sync:restartStatus":
+    case "sync:conflict":
+    case "sync:conflictDecisionStatus":
+    case "sync:conflictCandidate":
+    case "sync:conflictExport":
     case "load":
     case "search":
     case "pageSource":
@@ -26,6 +32,7 @@ export function assertReadOnlyRequest(request: Request): void {
     case "database:resolve":
     case "property:resolve":
     case "migration:resolve":
+    case "pageOrder:preview":
       return;
     default:
       throw new Error(

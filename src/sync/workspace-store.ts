@@ -20,6 +20,11 @@ import {
   type Commit,
   type CommitResult,
 } from "./protocol";
+import { inspectArchiveRecord, inspectValidatedConflict, validateConflictRecord, type StoredArchiveRow } from "./conflict-inspection";
+import type { WorkspaceConflictArchiveSummary, WorkspaceConflictCandidateSnapshot,
+  WorkspaceConflictCandidateTarget, WorkspaceConflictInspection } from "../shared/workspace-conflict-view";
+import type { WorkspaceConflictResolutionTarget } from "../shared/workspace-conflict-resolution";
+import { assertPendingConflictDecision, completeConflictDecision } from "./conflict-decision";
 import {
   buildWorkspaceCheckpoint,
   installWorkspaceSyncTriggers,
@@ -47,6 +52,15 @@ export type WorkspaceSyncStatus = {
   cleanGeneration: number;
   pending: boolean;
   conflict: boolean;
+};
+
+type ConflictChoiceOptions = {
+  target?: WorkspaceConflictResolutionTarget;
+  decisionId?: string;
+  /** Synchronous admission for all new serialized content, before any insert.
+   * Throwing rolls back the entire decision. This is an estimate, not a SQLite
+   * physical allocation limit. The caller also owns the edit/write barrier. */
+  admitBytes?: (bytes: number) => void;
 };
 
 type StateRow = {
@@ -384,7 +398,20 @@ export class WorkspaceSyncStore {
     };
   }
 
-  prepare(): Commit | null {
+  /** Used to reconcile an apply whose commit acknowledgement or intent
+   * cleanup was lost. Never infer success from a revision number alone. */
+  appliedMatches(revision: number, checkpointHash: string): boolean {
+    const state = this.readState();
+    if (state.applied_revision !== revision || revision <= 0) return false;
+    const row = this.store.db.prepare(
+      "SELECT revision,checkpoint_json FROM workspace_sync_applied WHERE singleton=1",
+    ).get() as { revision: number; checkpoint_json: string } | undefined;
+    if (!row || row.revision !== revision) return false;
+    const checkpoint = JSON.parse(row.checkpoint_json) as Checkpoint;
+    return validateWorkspaceCheckpoint(checkpoint) && hashCheckpoint(checkpoint) === checkpointHash;
+  }
+
+  prepare(beforeEnqueue?: (bytes: number) => void): Commit | null {
     return this.store.transaction(() => {
       const state = this.readState();
       if (this.hasUnresolvedConflict()) return null;
@@ -408,6 +435,8 @@ export class WorkspaceSyncStore {
         checkpoint,
       };
       const fingerprint = fingerprintCommit(commit);
+      const encoded = canonicalJson(commit);
+      beforeEnqueue?.(Buffer.byteLength(encoded));
       this.store.db
         .prepare(
           "INSERT INTO workspace_sync_outbox(operation_id,fingerprint,generation,commit_json,result_json) VALUES(?,?,?,?,NULL)",
@@ -416,7 +445,7 @@ export class WorkspaceSyncStore {
           commit.operationId,
           fingerprint,
           state.generation,
-          canonicalJson(commit),
+          encoded,
         );
       return commit;
     });
@@ -691,15 +720,128 @@ export class WorkspaceSyncStore {
     };
   }
 
-  chooseLocal(expectedRevision: number): Commit {
+  conflictInspection(): WorkspaceConflictInspection | null {
+    const state = this.readState();
+    const row = this.unresolvedConflict();
+    if (!row) return null;
+    requireCondition(
+      Number.isSafeInteger(row.local_generation) &&
+        row.local_generation >= 0 &&
+        row.local_generation <= state.generation,
+      "invalid-conflict-generation",
+    );
+    const conflict = validateConflictRecord(row);
+    return inspectValidatedConflict(
+      conflict,
+      this.status(),
+      row.local_generation,
+    );
+  }
+
+  conflictArchives(limit = 20): {
+    archives: WorkspaceConflictArchiveSummary[];
+    total: number;
+  } {
+    this.readState();
+    requireCondition(
+      Number.isSafeInteger(limit) && limit >= 0 && limit <= 100,
+      "invalid-archive-limit",
+    );
+    const total = (
+      this.store.db
+        .prepare("SELECT count(*) AS count FROM workspace_sync_archives")
+        .get() as { count: number }
+    ).count;
+    const rows = this.store.db
+      .prepare(
+        "SELECT * FROM workspace_sync_archives ORDER BY id DESC LIMIT ?",
+      )
+      .all(limit) as StoredArchiveRow[];
+    return { archives: rows.map(inspectArchiveRecord), total };
+  }
+
+  conflictCandidate(
+    target: WorkspaceConflictCandidateTarget,
+  ): WorkspaceConflictCandidateSnapshot {
+    this.readState();
+    const row = this.unresolvedConflict();
+    requireCondition(!!row, "sync-conflict-not-found", 409);
+    return this.readConflictCandidate(row!, target);
+  }
+
+  conflictResolutionTarget(choice: "local" | "remote"): WorkspaceConflictResolutionTarget {
+    requireCondition(choice === "local" || choice === "remote", "invalid-conflict-choice");
+    const state = this.readState();
+    const inspection = this.conflictInspection();
+    requireCondition(!!inspection, "sync-conflict-not-found", 409);
+    const row = this.unresolvedConflict()!;
+    const validated = validateConflictRecord(row);
+    this.assertCommitIdentity(validated.operation);
+    this.assertResultIdentity(validated.result);
+    const latest = buildWorkspaceCheckpoint(this.store.db);
+    requireCondition(validateWorkspaceCheckpoint(latest,
+      this.checkpointAtRevision(state.applied_revision)), "invalid-local-workspace-checkpoint");
+    return Object.freeze({
+      version: 1, choice, ...this.identity,
+      operationId: inspection!.operationId,
+      localRevision: inspection!.local.revision,
+      localCheckpointHash: inspection!.local.checkpointHash,
+      remoteRevision: inspection!.remote.revision,
+      remoteCheckpointHash: inspection!.remote.checkpointHash,
+      conflictGeneration: inspection!.localGeneration,
+      generation: state.generation,
+      cleanGeneration: state.clean_generation,
+      appliedRevision: state.applied_revision,
+      receivedCursor: state.received_cursor,
+      latestCheckpointHash: hashCheckpoint(latest),
+    });
+  }
+
+  assertConflictResolutionTarget(target: WorkspaceConflictResolutionTarget): void {
+    requireCondition(isPlainObject(target), "invalid-conflict-target", 409);
+    const current = this.conflictResolutionTarget(target.choice);
+    // Receiving more immutable history is allowed. Applying content, editing,
+    // rebinding or changing either candidate always invalidates the decision.
+    requireCondition(Number.isSafeInteger(target.receivedCursor) && target.receivedCursor >= 0 &&
+      current.receivedCursor >= target.receivedCursor &&
+      canonicalJson({...target, receivedCursor: current.receivedCursor}) === canonicalJson(current),
+      "conflict-selection-stale", 409);
+  }
+
+  conflictResolutionPreview(choice: "local" | "remote") {
+    const target = this.conflictResolutionTarget(choice);
+    const latest = buildWorkspaceCheckpoint(this.store.db);
+    requireCondition(hashCheckpoint(latest) === target.latestCheckpointHash, "conflict-selection-stale", 409);
+    const remote = this.conflictCandidate({operationId: target.operationId, side: "remote",
+      expectedRevision: target.remoteRevision, expectedCheckpointHash: target.remoteCheckpointHash});
+    const pages = (latest.payload as unknown as {tables: {pages: unknown[]}}).tables.pages.length;
+    return {target, latestCheckpointJson: canonicalJson(latest), remoteCheckpointJson: remote.checkpointJson,
+      latestPages: pages, latestAssets: latest.assets.length};
+  }
+
+  private assertDecision(options: ConflictChoiceOptions): void {
+    if (options.decisionId) {
+      requireCondition(!!options.target, "conflict-target-required");
+      assertPendingConflictDecision(this.store.db, options.decisionId, options.target!);
+    }
+  }
+
+  chooseLocal(expectedRevision: number, options: ConflictChoiceOptions = {}): Commit {
     return this.store.transaction(() => {
       const state = this.readState(),
         row = this.unresolvedConflict();
       requireCondition(!!row, "sync-conflict-not-found");
-      const result = JSON.parse(row!.remote_result_json) as Extract<
-        CommitResult,
-        { status: "conflict" }
-      >;
+      const validated = validateConflictRecord(row!);
+      this.assertCommitIdentity(validated.operation);
+      this.assertResultIdentity(validated.result);
+      requireCondition(validateWorkspaceCheckpoint(validated.localCheckpoint,
+        this.checkpointAtRevision(validated.operation.baseRevision)), "invalid-local-workspace-checkpoint");
+      if (options.target) {
+        requireCondition(options.target.choice === "local", "invalid-conflict-choice");
+        this.assertConflictResolutionTarget(options.target);
+      }
+      this.assertDecision(options);
+      const result = validated.result;
       requireCondition(
         expectedRevision === result.head.revision &&
           expectedRevision >= state.applied_revision,
@@ -707,6 +849,8 @@ export class WorkspaceSyncStore {
       );
       requireCondition(!this.pendingOutbox(), "sync-outbox-pending");
       const checkpoint = buildWorkspaceCheckpoint(this.store.db);
+      requireCondition(validateWorkspaceCheckpoint(checkpoint,
+        this.checkpointAtRevision(state.applied_revision)), "invalid-local-workspace-checkpoint");
       // A local choice must preserve every Page/asset present in the observed
       // remote head. Dropping remote additions is never implicit.
       requireCondition(
@@ -725,6 +869,16 @@ export class WorkspaceSyncStore {
       };
       const fingerprint = fingerprintCommit(commit),
         now = Date.now();
+      const archives: [string, string][] = [
+        ["conflict-local", canonicalJson(validated.localCheckpoint)],
+        ...(validated.remoteCheckpoint ? [["conflict-remote", canonicalJson(validated.remoteCheckpoint)] as [string, string]] : []),
+        ["choose-local-latest", canonicalJson(checkpoint)],
+      ];
+      const encodedCommit = canonicalJson(commit);
+      options.admitBytes?.(Buffer.byteLength(encodedCommit) +
+        archives.reduce((sum, [, json]) => sum + Buffer.byteLength(json) + 4096, 4096));
+      if (options.target) this.assertConflictResolutionTarget(options.target);
+      this.assertDecision(options);
       this.store.db
         .prepare(
           "INSERT INTO workspace_sync_outbox(operation_id,fingerprint,generation,commit_json,result_json) VALUES(?,?,?,?,NULL)",
@@ -733,23 +887,18 @@ export class WorkspaceSyncStore {
           commit.operationId,
           fingerprint,
           state.generation,
-          canonicalJson(commit),
+          encodedCommit,
         );
-      this.store.db
-        .prepare(
-          "INSERT INTO workspace_sync_archives(operation_id,kind,checkpoint_json,created_at) VALUES(?,?,?,?)",
-        )
-        .run(
-          commit.operationId,
-          "choose-local-latest",
-          canonicalJson(checkpoint),
-          now,
-        );
+      for (const [kind, json] of archives) this.store.db.prepare(
+        "INSERT INTO workspace_sync_archives(operation_id,kind,checkpoint_json,created_at) VALUES(?,?,?,?)",
+      ).run(validated.operation.operationId, kind, json, now);
       this.store.db
         .prepare(
           "UPDATE workspace_sync_conflicts SET chosen='local',chosen_at=? WHERE id=?",
         )
         .run(now, row!.id);
+      if (options.decisionId) completeConflictDecision(this.store.db, options.decisionId, options.target!,
+        {choice: "local", operationId: commit.operationId, checkpointHash: commit.checkpointHash});
       return commit;
     });
   }
@@ -757,15 +906,29 @@ export class WorkspaceSyncStore {
   chooseRemote(
     expected: Change,
     assertAssets: (assets: Checkpoint["assets"]) => void,
+    options: ConflictChoiceOptions = {},
   ): void {
     this.store.transaction(() => {
       const state = this.readState(),
         row = this.unresolvedConflict();
       requireCondition(!!row, "sync-conflict-not-found");
-      const result = JSON.parse(row!.remote_result_json) as Extract<
-        CommitResult,
-        { status: "conflict" }
-      >;
+      // Verify the durable candidates inside the transaction before archiving
+      // or replacing any content. A corrupted conflict is not a choice.
+      const validated = validateConflictRecord(row!);
+      this.assertCommitIdentity(validated.operation);
+      this.assertResultIdentity(validated.result);
+      if (options.target) {
+        requireCondition(options.target.choice === "remote", "invalid-conflict-choice");
+        this.assertConflictResolutionTarget(options.target);
+      }
+      this.assertDecision(options);
+      const result = validated.result;
+      requireCondition(!this.pendingOutbox(), "sync-outbox-pending");
+      requireCondition(
+        validateWorkspaceCheckpoint(validated.localCheckpoint,
+          this.checkpointAtRevision(validated.operation.baseRevision)),
+        "invalid-local-workspace-checkpoint",
+      );
       requireCondition(
         expected.revision === result.head.revision &&
           expected.revision >= state.applied_revision &&
@@ -785,14 +948,25 @@ export class WorkspaceSyncStore {
         "invalid-remote-workspace-checkpoint",
       );
       assertAssets(expected.checkpoint.assets);
+      const latest = buildWorkspaceCheckpoint(this.store.db);
+      requireCondition(validateWorkspaceCheckpoint(latest,
+        this.checkpointAtRevision(state.applied_revision)), "invalid-local-workspace-checkpoint");
+      const latestJson = canonicalJson(latest);
+      const remoteJson = canonicalJson(expected.checkpoint);
+      // Both candidates, latest local content, applied checkpoint, replacement
+      // rows/search index allowance, plus per-record SQLite metadata allowance.
+      options.admitBytes?.(Buffer.byteLength(canonicalJson(validated.localCheckpoint)) +
+        Buffer.byteLength(latestJson) + 4 * Buffer.byteLength(remoteJson) + 6 * 4096);
+      if (options.target) this.assertConflictResolutionTarget(options.target);
+      this.assertDecision(options);
       const now = Date.now(),
-        localCheckpoint = JSON.parse(row!.local_checkpoint_json) as Checkpoint;
+        localCheckpoint = validated.localCheckpoint;
       this.store.db
         .prepare(
           "INSERT INTO workspace_sync_archives(operation_id,kind,checkpoint_json,created_at) VALUES(?,?,?,?)",
         )
         .run(
-          expected.operationId,
+          validated.operation.operationId,
           "conflict-local",
           canonicalJson(localCheckpoint),
           now,
@@ -802,28 +976,20 @@ export class WorkspaceSyncStore {
           "INSERT INTO workspace_sync_archives(operation_id,kind,checkpoint_json,created_at) VALUES(?,?,?,?)",
         )
         .run(
-          expected.operationId,
+          validated.operation.operationId,
           "conflict-remote",
           canonicalJson(expected.checkpoint),
           now,
         );
-      if (state.generation !== row!.local_generation) {
-        const latest = buildWorkspaceCheckpoint(this.store.db);
-        requireCondition(
-          validateWorkspaceCheckpoint(
-            latest,
-            this.checkpointAtRevision(state.applied_revision),
-          ),
-          "invalid-local-workspace-checkpoint",
-        );
+      if (hashCheckpoint(latest) !== validated.localCheckpointHash) {
         this.store.db
           .prepare(
             "INSERT INTO workspace_sync_archives(operation_id,kind,checkpoint_json,created_at) VALUES(?,?,?,?)",
           )
           .run(
-            expected.operationId,
+            validated.operation.operationId,
             "choose-remote-latest",
-            canonicalJson(latest),
+            latestJson,
             now,
           );
       }
@@ -839,6 +1005,8 @@ export class WorkspaceSyncStore {
           "UPDATE workspace_sync_conflicts SET chosen='remote',chosen_at=? WHERE id=?",
         )
         .run(now, row!.id);
+      if (options.decisionId) completeConflictDecision(this.store.db, options.decisionId, options.target!,
+        {choice: "remote", revision: expected.revision, checkpointHash: expected.checkpointHash});
     });
   }
 
@@ -1093,6 +1261,61 @@ export class WorkspaceSyncStore {
         )
         .get() as ConflictRow | undefined) ?? null
     );
+  }
+
+  private readConflictCandidate(
+    row: ConflictRow,
+    target: WorkspaceConflictCandidateTarget,
+  ): WorkspaceConflictCandidateSnapshot {
+    const conflict = validateConflictRecord(row);
+    requireCondition(
+      target.operationId === conflict.operation.operationId,
+      "sync-conflict-changed",
+      409,
+    );
+    if (target.side === "local") {
+      requireCondition(
+        target.expectedRevision === conflict.operation.baseRevision,
+        "conflict-candidate-revision-mismatch",
+        409,
+      );
+      requireCondition(
+        target.expectedCheckpointHash === conflict.localCheckpointHash,
+        "conflict-candidate-hash-mismatch",
+        409,
+      );
+      const checkpointJson = canonicalJson(conflict.localCheckpoint);
+      return {
+        operationId: conflict.operation.operationId,
+        side: "local",
+        revision: conflict.operation.baseRevision,
+        checkpointHash: conflict.localCheckpointHash,
+        checkpointJson,
+        bytes: Buffer.byteLength(checkpointJson),
+      };
+    }
+    requireCondition(target.side === "remote", "invalid-conflict-side");
+    requireCondition(
+      target.expectedRevision === conflict.result.head.revision,
+      "conflict-candidate-revision-mismatch",
+      409,
+    );
+    requireCondition(
+      target.expectedCheckpointHash === conflict.remoteCheckpointHash,
+      "conflict-candidate-hash-mismatch",
+      409,
+    );
+    const checkpointJson = conflict.remoteCheckpoint
+      ? canonicalJson(conflict.remoteCheckpoint)
+      : null;
+    return {
+      operationId: conflict.operation.operationId,
+      side: "remote",
+      revision: conflict.result.head.revision,
+      checkpointHash: conflict.remoteCheckpointHash,
+      checkpointJson,
+      bytes: checkpointJson ? Buffer.byteLength(checkpointJson) : 0,
+    };
   }
 
   private appliedCheckpoint(): Checkpoint | null {

@@ -854,3 +854,17 @@ describe("startup verification", () => {
     );
   });
 });
+
+it("retains local content and no partial outbox when enqueue admission fails", () => {
+  const {store} = makeStore();
+  const sync = new WorkspaceSyncStore(store, identity("admission-client"));
+  const page = store.create(null, "page", "retained");
+  sync.enable("publish", () => {});
+  let estimated = 0;
+  expect(() => sync.prepare((bytes) => {estimated = bytes; throw new Error("admission denied");})).toThrow("admission denied");
+  expect(estimated).toBeGreaterThan(0);
+  expect(store.get(page.id).title).toBe("retained");
+  expect(sync.status().pending).toBe(true);
+  expect(store.db.prepare("SELECT count(*) AS count FROM workspace_sync_outbox").get()).toMatchObject({count: 0});
+  expect(sync.prepare()?.checkpointHash).toMatch(/^[a-f0-9]{64}$/);
+});

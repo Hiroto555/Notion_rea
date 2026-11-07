@@ -1565,3 +1565,54 @@ export function assertWorkspaceAssets(
   const directory = assertAssetsDirectory(assetsDirectory);
   for (const asset of manifest) assertLocalFile(directory, asset);
 }
+
+/**
+ * Publish previously downloaded, verified staging files without network access.
+ * The two directories must be distinct. A fresh copy prevents a later change
+ * to a staged inode from altering an already published asset. On failure the
+ * database has not been changed; previously published files are harmless
+ * unreferenced assets and retries validate them before reuse.
+ */
+export function publishCheckpointAssetsFromStaging(
+  stagingDirectory: string,
+  assetsDirectory: string,
+  assets: readonly WorkspaceBlobAsset[],
+  admitBytes?: (bytes: number) => void,
+): void {
+  const manifest = normalizeAssets(assets);
+  const staging = assertAssetsDirectory(stagingDirectory);
+  const active = assertAssetsDirectory(assetsDirectory);
+  requireCondition(staging !== active, "asset-staging-directory-conflict", 409);
+  const missing: WorkspaceBlobAsset[] = [];
+  for (const asset of manifest) {
+    assertLocalFile(staging, asset);
+    if (!assertStagedTarget(active, asset)) missing.push(asset);
+  }
+  if (missing.length) admitBytes?.(missing.reduce((total, asset) => total + asset.bytes, 0));
+  for (const asset of missing) {
+    const source = openVerified(targetPath(staging, asset), asset.sha256, asset.bytes);
+    if (!source) throw new SyncError("asset-changed", 409);
+    const temporary = join(active, `.folio-blob-${randomBytes(16).toString("hex")}.part`);
+    let output: number | undefined;
+    try {
+      output = openSync(temporary, WRITE_FLAGS | fsConstants.O_EXCL, 0o600);
+      for (let position = 0; position < asset.bytes;) {
+        const size = Math.min(WORKSPACE_BLOB_CHUNK_BYTES, asset.bytes - position);
+        writeAll(output, readChunk(source.descriptor, position, size), position);
+        position += size;
+      }
+      fsyncFile(output);
+      closeSync(output);
+      output = undefined;
+      const verified = openVerified(temporary, asset.sha256, asset.bytes);
+      if (!verified) throw new SyncError("asset-changed", 409);
+      closeQuietly(verified.descriptor);
+      publishStaged(temporary, targetPath(active, asset), active, asset);
+    } finally {
+      closeQuietly(source.descriptor);
+      closeQuietly(output);
+      unlinkQuietly(temporary);
+    }
+  }
+  assertWorkspaceAssets(active, manifest);
+}

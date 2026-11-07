@@ -18,6 +18,7 @@ export type StorageOverview = {
   databaseBytes: number | null;
   databaseLogicalBytes: number | null;
   assetBytes: number | null;
+  syncStagingBytes: number | null;
   backupBytes: number | null;
   receiptRows: number | null;
   receiptBytes: number | null;

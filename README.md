@@ -7,6 +7,8 @@ Notionのコード・ロゴ・イラストを使用していません。Notion�
 
 2026-11-05の保存・復旧・容量管理・起動保護の統合内容は [Local-first checkpoint](docs/LOCAL-FIRST-CHECKPOINT.ja.md) に記録しています。通常の検証入口は `npm run verify:quiet`、起動できないワークスペースの救出入口は `npm run folio:rescue -- --help` です。GUIの実行待ちは [GUI検証一覧](docs/GUI-VALIDATION-QUEUE.ja.md) に記録しています。
 
+2026-11-08の **Lv4実装途中の保存版** は [Lv4の現在地](docs/lv4/README.md) から確認できます。競合の勝者確認・終了時予約・次回起動適用までをコード接続し、型検査・1,509テスト・ビルドが非GUIでPASS。認定はLv3のまま、GUI・実機2台はNOT_RUNです。残作業の優先順・工数・停止地点も保存し、追加実装は停止しています。
+
 外部レビューは [レビューガイド](docs/REVIEW-GUIDE.md) から始めてください。[既知の問題](docs/KNOWN-ISSUES.md)、[共有前検査](docs/SHARING-AUDIT.md)、[画面一覧](docs/screenshots/README.md) も用意しています。
 
 ![Folio W3のCalloutと簡易表・サンプルデータ](docs/screenshots/folio-w3-light.png)

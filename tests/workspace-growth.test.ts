@@ -9,6 +9,7 @@ import {
   writeFileSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
+import { createHash, randomUUID } from "node:crypto";
 import { dirname, join } from "node:path";
 import { DatabaseSync } from "node:sqlite";
 import { expect, it } from "vitest";
@@ -17,6 +18,7 @@ import {
   growthLimitsFromEnv,
   type GrowthLimits,
 } from "../src/main/workspace-growth";
+import { publishCheckpointAssetsFromStaging } from "../src/sync/workspace-blobs";
 
 type Fixture = {
   root: string;
@@ -235,6 +237,51 @@ it("budgets every regular file under assets, including unregistered ones", () =>
   } finally {
     dispose(f);
   }
+});
+
+it("counts staged and active assets together before downloads and publication", () => {
+  const f = fixture();
+  try {
+    write(f.workspace, "assets/active.bin", "123");
+    write(f.workspace, ".folio-sync-assets-staging/complete.bin", "12345");
+    write(f.workspace, ".folio-sync-assets-staging/partial.part", "12");
+    const growth = new WorkspaceGrowth(f.workspace, f.db, {maxAssetBytes: 15});
+    expect(() => growth.assertAssetGrowth(5)).not.toThrow();
+    expect(() => growth.assertAssetGrowth(6)).toThrow(/workspace-limit-exceeded/);
+    expect(readFileSync(join(f.workspace, ".folio-sync-assets-staging/partial.part"), "utf8")).toBe("12");
+  } finally { dispose(f); }
+});
+
+it("fails closed if staged attachment usage cannot be measured safely", () => {
+  const f = fixture();
+  try {
+    write(f.root, "outside/keep.bin", "123");
+    symlinkSync(join(f.root, "outside"), join(f.workspace, ".folio-sync-assets-staging"));
+    expect(() => new WorkspaceGrowth(f.workspace, f.db, {maxAssetBytes: 10}).assertAssetGrowth(0))
+      .toThrow(/workspace-limit-unknown/);
+    expect(readFileSync(join(f.root, "outside/keep.bin"), "utf8")).toBe("123");
+  } finally { dispose(f); }
+});
+
+it("reserves space for the active copy without losing the staged asset", () => {
+  const f = fixture();
+  try {
+    const body = "valid staged bytes";
+    const asset = {id: randomUUID() + ".bin", bytes: Buffer.byteLength(body),
+      sha256: createHash("sha256").update(body).digest("hex")};
+    const staging = join(f.workspace, ".folio-sync-assets-staging");
+    const active = join(f.workspace, "assets");
+    write(f.workspace, `.folio-sync-assets-staging/${asset.id}`, body);
+    mkdirSync(active);
+    const full = new WorkspaceGrowth(f.workspace, f.db, {maxAssetBytes: asset.bytes});
+    expect(() => publishCheckpointAssetsFromStaging(staging, active, [asset],
+      (bytes) => full.assertAssetGrowth(bytes))).toThrow(/workspace-limit-exceeded/);
+    expect(existsSync(join(active, asset.id))).toBe(false);
+    expect(readFileSync(join(staging, asset.id), "utf8")).toBe(body);
+    const room = new WorkspaceGrowth(f.workspace, f.db, {maxAssetBytes: asset.bytes * 2});
+    publishCheckpointAssetsFromStaging(staging, active, [asset], (bytes) => room.assertAssetGrowth(bytes));
+    expect(readFileSync(join(active, asset.id), "utf8")).toBe(body);
+  } finally { dispose(f); }
 });
 
 it("treats only a genuinely missing managed directory as zero bytes", () => {

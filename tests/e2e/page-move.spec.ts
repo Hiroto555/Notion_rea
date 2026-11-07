@@ -112,6 +112,7 @@ test("S2 menu F11: delayed load preserves local edit and page hierarchy through 
     mark("instrumented");
     await w.getByLabel("ページメニュー", { exact: true }).click();
     await w.getByRole("button", { name: "移動する", exact: true }).click();
+    await expect(w.locator(".dialog-list").getByRole("button", { name: /Move Child/ })).toHaveCount(0);
     await w.locator(".dialog-list").getByRole("button", { name: /Move Target/ }).click();
     await expect.poll(() => s.app.evaluate(() => (globalThis as any).heldLoad)).toBe(true);
     mark("load held");
@@ -144,7 +145,11 @@ test("S2 menu F11: delayed load preserves local edit and page hierarchy through 
 
 test("S2 tree order, root, cancellation and cycle rejection", async ({ folio: s }, info) => {
   const ids = await setup(s), w = s.window;
-  const sibling = await w.evaluate(async id => (await window.folio.request<any>({ type: "create", parentId: id, kind: "page", title: "Move Sibling" })).id, ids.target);
+  const sibling = await w.evaluate(async id => {
+    const page = await window.folio.request<{ id: string }>({ type: "create", parentId: id, kind: "page", title: "Move Sibling" });
+    await window.folio.request({ type: "create", parentId: page.id, kind: "page", title: "Nested entry" });
+    return page.id;
+  }, ids.target);
   await w.reload(); await w.waitForSelector(".page-title"); await observeDrag(s);
   const row = (label: string) => w.locator(".page-tree-row").filter({ has: w.locator(".page-tree-label", { hasText: label }) });
   try {
@@ -155,11 +160,37 @@ test("S2 tree order, root, cancellation and cycle rejection", async ({ folio: s 
     try {
       await row("Move Sibling").hover({ position: { x: 10, y: 2 } });
       await row("Move Sibling").hover({ position: { x: 10, y: 2 } });
+      await expect(row("Move Sibling").locator("xpath=..")).toHaveAttribute("data-drop-position", "before");
       await w.mouse.up();
     } finally { await attempt.cleanup(); }
     await expect.poll(async () => (await load(s, ids)).siblings).toEqual([ids.source, sibling]);
+
+    await w.getByRole("button", { name: "Move Sibling を展開", exact: true }).click();
+    await expect(row("Nested entry")).toBeVisible();
+    const after = await beginRealDrag(w, row("Move Source"));
+    try {
+      const target = row("Move Sibling");
+      const bounds = await target.boundingBox();
+      if (!bounds) throw new Error("Expanded sibling row is not visible");
+      const position = { x: 10, y: bounds.height - 2 };
+      await target.hover({ position });
+      await target.hover({ position });
+      await expect(target.locator("xpath=..")).toHaveAttribute("data-drop-position", "after");
+      await w.mouse.up();
+    } finally { await after.cleanup(); }
+    await expect.poll(async () => (await load(s, ids)).siblings).toEqual([sibling, ids.source]);
+    await expect(row("Nested entry")).toBeVisible();
+
     const cancelled = await beginRealDrag(w, row("Move Source"));
-    try { await w.locator(".new-root").hover(); await w.keyboard.press("Escape"); await w.mouse.up(); }
+    try {
+      const root = w.locator(".new-root");
+      await root.hover();
+      await root.hover();
+      await expect(root).toHaveAttribute("data-drop-position", "inside");
+      await w.keyboard.press("Escape");
+      await w.mouse.up();
+      await expect(root).not.toHaveAttribute("data-drop-position", "inside");
+    }
     finally { await cancelled.cleanup(); }
     expect((await load(s, ids)).source.parentId).toBe(ids.target);
     await realDrag(w, row("Move Source"), w.locator(".new-root"));

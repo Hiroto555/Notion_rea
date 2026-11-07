@@ -8,6 +8,7 @@ import {
   readdirSync,
   realpathSync,
   rmSync,
+  symlinkSync,
   writeFileSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
@@ -94,6 +95,39 @@ it("reads usage on one worker for concurrent requests, sees WAL and preserves re
   expect(f.store.get(secondPage.id).title).toBe("計測開始後の編集");
   expect(readFileSync(join(f.assets, "unregistered.txt"), "utf8")).toBe("候補");
   expect(readWorkspaceOverview(f.store.path).receiptRows).toBe(0);
+});
+
+it("includes received staging in displayed attachment and total usage", () => {
+  const f = fixture();
+  writeFileSync(join(f.assets, "active.txt"), "123");
+  const before = readWorkspaceOverview(f.store.path);
+  const staging = join(f.source, ".folio-sync-assets-staging");
+  mkdirSync(staging);
+  writeFileSync(join(staging, "pending.part"), "12345");
+  const after = readWorkspaceOverview(f.store.path);
+  expect(after.assetBytes).toBe(8);
+  expect(after.totalBytes).toBe(before.totalBytes! + 5);
+  expect(readFileSync(join(staging, "pending.part"), "utf8")).toBe("12345");
+});
+
+it("enforces the configured attachment limit across active and sync staging", () => {
+  const f = fixture({FOLIO_MAX_ASSET_BYTES: "5"});
+  writeFileSync(join(f.assets, "active.txt"), "1");
+  const staging = join(f.source, ".folio-sync-assets-staging");
+  mkdirSync(staging);
+  writeFileSync(join(staging, "received.part"), "1234");
+  expect(() => f.storage.admitSyncWrite(1, "assets")).toThrow(/workspace-limit-exceeded/);
+  expect(() => f.storage.admitAttachment(1)).toThrow(/workspace-limit-exceeded/);
+  expect(readFileSync(join(staging, "received.part"), "utf8")).toBe("1234");
+});
+
+it("marks usage unknown when the staging root is a symlink", () => {
+  const f = fixture();
+  symlinkSync(f.outside, join(f.source, ".folio-sync-assets-staging"));
+  const report = readWorkspaceOverview(f.store.path);
+  expect(report.assetBytes).toBeNull();
+  expect(report.totalBytes).toBeNull();
+  expect(report.state).toBe("unknown");
 });
 
 it("rejects DB growth before a receipt while preserving load, resolve, diagnostics and input", async () => {

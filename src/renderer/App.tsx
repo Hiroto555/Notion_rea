@@ -6,14 +6,20 @@ import { versionDocument } from "../shared/rich-document";
 import { queryBacklinks } from "../persistence/backlinks-query";
 import { BacklinksPanel } from "./BacklinksPanel";
 import { WorkspaceMaintenancePanel } from "./WorkspaceMaintenancePanel";
+import { WorkspaceSyncIndicator } from "./WorkspaceSyncIndicator";
+import { inputReadyToClose } from "./input-close-guard";
+import { PageOrderRepairDialog } from "./PageOrderRepairDialog";
+import { sendPageOrderRepair } from "./reliable-page-order-repair";
+import type { PageOrderRepairPreview, PageOrderRepairResult } from "../shared/page-order-repair";
 import { StoragePressurePanel } from "./StoragePressurePanel";
 import { PageLayoutControl } from "./page-layout";
+import { createPageTree, pageDropPosition, type PageDropPosition } from "./page-tree";
 import { effectivePageWidth } from "../shared/page-layout";
 import { WorkspaceBackupDialog } from "./workspace-backup/WorkspaceBackupDialog";
 import type { BackupPreview, BackupRestored } from "../shared/workspace-backup";
 import { SearchResults } from "./SearchPanel";
 import { exportMarkdown, importMarkdown } from "../document-io/markdown";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { flushSync } from "react-dom";
 import type { Editor as TiptapEditor } from "@tiptap/react";
 import {
@@ -86,6 +92,7 @@ import {
   type RecordProjection,
 } from "../shared/types";
 const api = <T,>(r: Request) => window.folio.request<T>(r);
+const pageDragType = "application/x-folio-page";
 const icons = [
   "📄",
   "✳️",
@@ -132,6 +139,12 @@ export function App({ syncMessage }: { syncMessage?: string } = {}) {
     [, redrawSessions] = useState(0),
     [restoringIds, setRestoringIds] = useState<Set<string>>(new Set());
   const [backupOpen, setBackupOpen] = useState(false);
+  const [orderRepairOpen, setOrderRepairOpen] = useState(false);
+  const [pageDrop, setPageDrop] = useState<{
+    targetId: string | null;
+    position: PageDropPosition;
+  } | null>(null);
+  const pageDragSource = useRef<string | null>(null);
   const backupBusy = useRef(false);
   const backlinkFocus = useRef<{pageId: string; blockId: string | null} | null>(null);
   const [startupRecovery, setStartupRecovery] = useState<CrashRecoveryRead | null>(null);
@@ -847,6 +860,18 @@ export function App({ syncMessage }: { syncMessage?: string } = {}) {
     children = live
       .filter((p) => p.parentId === activeId && !recordIds.has(p.id))
       .sort((a, b) => a.position - b.position);
+  const registeredDatabaseIds = recordDatabaseIdsRef.current;
+  const pageTree = useMemo(
+    () => createPageTree(pages, recordIds, registeredDatabaseIds),
+    [pages, recordIds, registeredDatabaseIds],
+  );
+  useEffect(() => {
+    const source = pageDragSource.current;
+    if (source !== null && (!sidebar || !pageTree.canMove(source))) {
+      pageDragSource.current = null;
+      setPageDrop(null);
+    }
+  }, [pageTree, sidebar]);
   if (page && !recordIds.has(page.id) && !recordDatabaseIdsRef.current.has(page.id)) pageSession(page);
   const displayedSession = page && !recordIds.has(page.id) && !recordDatabaseIdsRef.current.has(page.id) ? pageSession(page) : undefined;
   const openedRecord = recordView ? sessions.current.get(recordView.id) : undefined;
@@ -945,7 +970,7 @@ export function App({ syncMessage }: { syncMessage?: string } = {}) {
       }
     };
     const unload = (e: BeforeUnloadEvent) => {
-      if (backupBusy.current || pendingRef.current > 0 || edits.current.size > 0 || sessions.current.hasUnsaved() || hasNumberDrafts() || hasDatabasePending() || pageCreation.current?.hasRetained() || restoring.current.size > 0 || structuralOperation.current || recoveryQueue.current?.getStatus().state !== "saved" || captureError.current) {
+      if (!syncDecisionInputReady()) {
         e.preventDefault();
         e.returnValue = "保存中です";
         setNotice("未保存の入力を保持しています。保存中の処理・保存結果・入力途中の数値を確認してから終了してください。");
@@ -968,6 +993,14 @@ export function App({ syncMessage }: { syncMessage?: string } = {}) {
       window.removeEventListener("beforeunload", unload);
     };
   }, [theme, expanded, menu, iconMenu, findOpen]);
+  function syncDecisionInputReady() {
+    return inputReadyToClose({composing: composition.current, backupBusy: backupBusy.current,
+      pendingSaves: pendingRef.current, retainedEdits: edits.current.size, unsavedSessions: sessions.current.hasUnsaved(),
+      numberDrafts: hasNumberDrafts(), databasePending: !!hasDatabasePending(),
+      retainedPageOperations: !!pageCreation.current?.hasRetained(), restoringPages: restoring.current.size,
+      structuralOperation: !!structuralOperation.current, recoverySaved: recoveryQueue.current?.getStatus().state === "saved",
+      captureError: !!captureError.current});
+  }
   useEffect(() => {
     if (!notice) return;
     const t = setTimeout(() => setNotice(""), 4000);
@@ -1059,13 +1092,16 @@ export function App({ syncMessage }: { syncMessage?: string } = {}) {
     );
   const move = (
     id: string,
-    parentId: string | null,
-    beforeId: string | null = null,
+    targetId: string | null,
+    position: PageDropPosition = "inside",
   ) =>
     mutate(async () => {
-      if ([id, parentId, beforeId].some((value) => value !== null &&
-          (recordIdsRef.current.has(value) || recordDatabaseIdsRef.current.has(value))))
-        throw new Error("読み取り専用のレコードやデータベースは移動できません。");
+      // Resolve again after queued saves or moves. In particular, the next
+      // sibling of an "after" target may have changed while waiting.
+      const destination = createPageTree(pageRef.current, recordIdsRef.current, recordDatabaseIdsRef.current)
+        .destination(id, targetId, position);
+      if (!destination) return;
+      const { parentId, beforeId } = destination;
       const binding = pageSessions.current.get(id);
       const moved = await api<Page>({ type: "move", id, parentId, beforeId });
       if (binding && binding === pageSessions.current.get(id) && moved.id === id &&
@@ -1075,7 +1111,7 @@ export function App({ syncMessage }: { syncMessage?: string } = {}) {
       // refresh overlays any subsequent local edits through PendingEdits.
       setDialog((current) => (current === "move" ? null : current));
       await refresh();
-      if (parentId) setExpanded((prev) => new Set(prev).add(parentId));
+      if (position === "inside" && parentId) setExpanded((prev) => new Set(prev).add(parentId));
     });
   const openHistory = () =>
     safe(() =>
@@ -1299,38 +1335,79 @@ export function App({ syncMessage }: { syncMessage?: string } = {}) {
           })
           .run();
     });
-  function tree(parentId: string | null, depth = 0): React.ReactNode {
-    return live
-      .filter((p) => p.parentId === parentId && !recordIds.has(p.id))
-      .sort((a, b) => a.position - b.position)
-      .map((p) => {
-        const has = live.some(
-          (c) => c.parentId === p.id && !recordIds.has(c.id),
+  function clearPageDrag() {
+    pageDragSource.current = null;
+    setPageDrop(null);
+  }
+  function pageDropEvents(targetId: string | null) {
+    const positionAt = (e: React.DragEvent<HTMLElement>): PageDropPosition => {
+      if (targetId === null) return "inside";
+      const { top, height } = e.currentTarget.getBoundingClientRect();
+      return pageDropPosition(e.clientY, top, height);
+    };
+    return {
+      onDragOver(e: React.DragEvent<HTMLElement>) {
+        const id = pageDragSource.current;
+        if (id === null || !e.dataTransfer.types.includes(pageDragType)) return;
+        const position = positionAt(e);
+        if (!pageTree.destination(id, targetId, position)) {
+          e.dataTransfer.dropEffect = "none";
+          setPageDrop(null);
+          return;
+        }
+        e.preventDefault();
+        e.dataTransfer.dropEffect = "move";
+        setPageDrop((current) =>
+          current?.targetId === targetId && current.position === position
+            ? current
+            : { targetId, position },
         );
+      },
+      onDragLeave(e: React.DragEvent<HTMLElement>) {
+        if (e.relatedTarget instanceof Node && e.currentTarget.contains(e.relatedTarget)) return;
+        setPageDrop((current) => current?.targetId === targetId ? null : current);
+      },
+      onDrop(e: React.DragEvent<HTMLElement>) {
+        if (!e.dataTransfer.types.includes(pageDragType)) return;
+        e.preventDefault();
+        e.stopPropagation();
+        const id = e.dataTransfer.getData(pageDragType);
+        const source = pageDragSource.current;
+        clearPageDrag();
+        if (!id || id !== source) return;
+        const position = positionAt(e);
+        if (pageTree.destination(id, targetId, position)) safe(() => move(id, targetId, position));
+      },
+    };
+  }
+  function tree(parentId: string | null, depth = 0): React.ReactNode {
+    return pageTree
+      .children(parentId)
+      .map((p) => {
+        const has = pageTree.children(p.id).length > 0;
+        const movable = pageTree.canMove(p.id);
         return (
-          <div className="page-tree-node" data-depth={depth} key={p.id}>
+          <div
+            className="page-tree-node"
+            data-depth={depth}
+            key={p.id}
+            data-drop-position={pageDrop?.targetId === p.id ? pageDrop.position : undefined}
+          >
             <div
               className={"page-tree-row " + (p.id === activeId ? "active" : "")}
-              draggable={!recordDatabaseIdsRef.current.has(p.id)}
+              draggable={movable}
+              {...pageDropEvents(p.id)}
               onDragStart={(e) => {
-                if (recordDatabaseIdsRef.current.has(p.id)) { e.preventDefault(); return; }
-                e.dataTransfer.setData("application/x-folio-page", p.id);
-              }}
-              onDragOver={(e) => {
-                if (!recordDatabaseIdsRef.current.has(p.id) && e.dataTransfer.types.includes("application/x-folio-page"))
+                if (!movable) {
                   e.preventDefault();
+                  return;
+                }
+                e.dataTransfer.setData(pageDragType, p.id);
+                e.dataTransfer.effectAllowed = "move";
+                pageDragSource.current = p.id;
+                setPageDrop(null);
               }}
-              onDrop={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                const id = e.dataTransfer.getData("application/x-folio-page");
-                if (!id || recordDatabaseIdsRef.current.has(id) || recordDatabaseIdsRef.current.has(p.id)) return;
-                const rect = e.currentTarget.getBoundingClientRect(),
-                  before = e.clientY < rect.top + rect.height * 0.28;
-                safe(() =>
-                  move(id, before ? p.parentId : p.id, before ? p.id : null),
-                );
-              }}
+              onDragEnd={clearPageDrag}
             >
               <button
                 className={"tree-toggle " + (!has ? "invisible" : "")}
@@ -1415,6 +1492,29 @@ export function App({ syncMessage }: { syncMessage?: string } = {}) {
     await ensureSaved();
     await recoveryBarrierRef.current();
     if (captureError.current || recoveryQueue.current?.getStatus().state !== "saved") throw new Error("復旧記録の保存を確認してからバックアップしてください。");
+  }
+  function assertOrderRepairReady() {
+    assertNoFailed();
+    if (composition.current || creatingCount.current || structuralOperation.current ||
+        edits.current.size || pageOperations.current.size || pageCreation.current?.hasRetained())
+      throw new Error("未保存の入力や処理を完了してから並び順を確認してください。");
+  }
+  function openOrderRepair() {
+    safe(async () => {
+      await ensureSaved();
+      assertOrderRepairReady();
+      setDialog(null);
+      setOrderRepairOpen(true);
+    });
+  }
+  function applyOrderRepair(sourceFingerprint: string) {
+    return enqueue(() => sendPageOrderRepair(sourceFingerprint, async () => {
+      assertOrderRepairReady();
+      await recoveryBarrierRef.current();
+      assertOrderRepairReady();
+      if (captureError.current || recoveryQueue.current?.getStatus().state !== "saved")
+        throw new Error("復旧用保存を確認してから修復してください。");
+    }, (request) => api<PageOrderRepairResult>(request)));
   }
   const headings: Doc[] = page?.documentError
     ? []
@@ -1591,14 +1691,8 @@ export function App({ syncMessage }: { syncMessage?: string } = {}) {
               )}
               <button
                 className="new-root"
-                onDragOver={(e) => {
-                  if (e.dataTransfer.types.includes("application/x-folio-page"))
-                    e.preventDefault();
-                }}
-                onDrop={(e) => {
-                  const id = e.dataTransfer.getData("application/x-folio-page");
-                  if (id) safe(() => move(id, null));
-                }}
+                {...pageDropEvents(null)}
+                data-drop-position={pageDrop?.targetId === null ? pageDrop.position : undefined}
                 onClick={() => safe(() => create())}
               >
                 <Plus size={15} />
@@ -1694,7 +1788,7 @@ export function App({ syncMessage }: { syncMessage?: string } = {}) {
             className="topbar-group topbar-actions"
             inert={creatingPage || !!recordView || undefined}
           >
-            {syncMessage && <span className="save-state" title={syncMessage}>{syncMessage}</span>}
+            <WorkspaceSyncIndicator startupMessage={syncMessage} inputReady={syncDecisionInputReady} />
             <span
               className={"save-state " + (error ? "error" : "")}
               data-state={error ? "error" : pending || edits.current.size || sessions.current.hasUnsaved() || hasNumberDrafts() || hasDatabasePending() || recoveryStatus?.state !== "saved" || recoveryError ? "pending" : "saved"}
@@ -1751,7 +1845,7 @@ export function App({ syncMessage }: { syncMessage?: string } = {}) {
                     複製
                   </button>
                   <button
-                    disabled={recordIds.has(page.id) || recordDatabaseIdsRef.current.has(page.id)}
+                    disabled={!pageTree.canMove(page.id)}
                     onClick={() => {
                       setDialog("move");
                       setMenu(false);
@@ -2318,7 +2412,7 @@ export function App({ syncMessage }: { syncMessage?: string } = {}) {
                   ページを作成
                 </button>
                 <StoragePressurePanel />
-                <WorkspaceMaintenancePanel />
+                <WorkspaceMaintenancePanel onRepairOrder={openOrderRepair} />
               </div>
             )}
           </div>
@@ -2395,7 +2489,7 @@ export function App({ syncMessage }: { syncMessage?: string } = {}) {
                 </dl>
               </section>
               <StoragePressurePanel />
-              <WorkspaceMaintenancePanel />
+              <WorkspaceMaintenancePanel onRepairOrder={openOrderRepair} />
               <section className="inspector-section">
                 <h3 className="inspector-label">アウトライン</h3>
                 {headings.length ? (
@@ -2627,11 +2721,13 @@ export function App({ syncMessage }: { syncMessage?: string } = {}) {
               )}
               {dialog === "move" && (
                 <div className="dialog-list">
-                  <button onClick={() => safe(() => move(activeId, null))}>
-                    ⌂ ワークスペースの最上位
-                  </button>
+                  {pageTree.canMove(activeId) && (
+                    <button onClick={() => safe(() => move(activeId, null))}>
+                      ⌂ ワークスペースの最上位
+                    </button>
+                  )}
                   {live
-                    .filter((p) => p.id !== activeId)
+                    .filter((p) => pageTree.destination(activeId, p.id, "inside"))
                     .map((p) => (
                       <button
                         key={p.id}
@@ -2724,6 +2820,17 @@ export function App({ syncMessage }: { syncMessage?: string } = {}) {
       {structural && <StructuralDatabaseDialog family={structural.family} owner={structural.owner}
         onClose={() => setStructural(null)} retain={retainStructural}
         onApplied={async () => {await ensureSaved(); await retainStructural(null); window.location.reload();}} />}
+      {orderRepairOpen && <PageOrderRepairDialog pages={pages}
+        onPreview={() => api<PageOrderRepairPreview>({ type: "pageOrder:preview" })}
+        onApply={applyOrderRepair}
+        onPendingChange={(pending) => { backupBusy.current = pending; }}
+        onClose={() => setOrderRepairOpen(false)}
+        onReload={async () => {
+          await prepareWorkspaceBackup();
+          assertOrderRepairReady();
+          backupBusy.current = false;
+          window.location.reload();
+        }} />}
     </div>
   );
 }

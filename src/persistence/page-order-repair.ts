@@ -685,17 +685,14 @@ function buildRepairPreview(db: DatabaseSync): PageOrderRepairPreview {
 }
 
 /**
- * Read-only preview. It reuses Store's transaction wrapper so all Pages and
- * record rows come from one SQLite snapshot; the wrapper begins a write-capable
- * transaction but this function performs no INSERT/UPDATE/DELETE and commits
- * without changing data.
+ * Read-only preview over one SQLite snapshot, including read-only startup.
  */
 export function previewPageOrderRepair(
   store: Store,
 ): PageOrderRepairPreview {
   if (store.db.isTransaction)
     throw new Error("未確定のトランザクションでは並び順を確認できません。");
-  return store.transaction(() => {
+  return store.readSnapshot(() => {
     let schemaIssue: string | undefined;
     try {
       store.assertRecordWriteSchema();
@@ -894,6 +891,7 @@ export function applyPageOrderRepair(
   const workspace = dirname(store.path);
   let verifiedBackup: VerifiedWorkspaceBackup;
   try {
+    options.beforeBackup?.();
     const root = options.backupDirectory ?? join(workspace, "backups");
     if (typeof root !== "string" || root.length === 0)
       throw new Error("バックアップ先が不正です。");

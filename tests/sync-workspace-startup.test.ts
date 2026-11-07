@@ -11,6 +11,7 @@ import { join } from "node:path";
 import { DatabaseSync } from "node:sqlite";
 import { expect, it } from "vitest";
 import { runStartupWorkspaceSync } from "../src/main/workspace-sync-startup";
+import { WorkspaceSyncIntentFile } from "../src/main/workspace-sync-intent";
 import { createFullBackup } from "../src/persistence/full-backup-create";
 import { restoreFullBackup } from "../src/persistence/full-backup-restore";
 import { readUserVersion } from "../src/persistence/schema-startup";
@@ -135,6 +136,20 @@ it("applies startup changes only after saved recovery input is cleared, and neve
       ),
     ).toContain("受信済み 1 · 適用済み 0");
     expect(b.store.pages()).toEqual([]);
+    expect(
+      await runStartupWorkspaceSync(b.store, () => clean, b.env),
+    ).toContain("受信済み 1 · 適用済み 0");
+    expect(b.store.pages()).toEqual([]);
+    expect(await runStartupWorkspaceSync(b.store, () => clean, {
+      ...b.env, FOLIO_SYNC_CONFLICT_CHOICE: "remote", FOLIO_SYNC_CONFLICT_REVISION: "1",
+    })).toContain("explicit-conflict-flow-required");
+    expect(b.store.pages()).toEqual([]);
+    const staged = await openWorkspaceSync(b.options);
+    const target = staged.stagedTarget()!;
+    new WorkspaceSyncIntentFile(realpathSync(b.env.FOLIO_DATA_DIR)).create({
+      workspaceId, clientId: b.options.clientId, bindingId: b.options.bindingId,
+      serverEpoch: server.serverEpoch, ...target,
+    });
     expect(
       await runStartupWorkspaceSync(b.store, () => clean, b.env),
     ).toContain("適用済み 1");

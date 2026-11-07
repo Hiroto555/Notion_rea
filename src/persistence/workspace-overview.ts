@@ -7,7 +7,8 @@ import type {
 } from "../shared/storage-overview";
 import { sqliteAllocatedBytes } from "./sqlite-allocation";
 import { mergeUsageStates } from "../shared/storage-usage";
-import { readStorageUsage } from "./storage-usage";
+import type { TreeUsage } from "../shared/storage-usage";
+import { readStorageUsage, scanDirectoryTree } from "./storage-usage";
 
 const unknownRegistry: AssetRegistryObservation = {
   state: "partial",
@@ -73,6 +74,29 @@ function observeRegistry(
   }
 }
 
+/**
+ * Missing staging contributes zero bytes. A symlink, truncated scan or counter
+ * overflow is unmeasured: return null rather than under-report the footprint.
+ */
+export function syncStagingBytesFromUsage(usage: TreeUsage): number | null {
+  if (usage.root === "missing")
+    return usage.state === "complete" && usage.bytes === 0 && !usage.overflow &&
+      !usage.truncated && usage.symlinks === 0 && usage.unscannedEntries === 0 ? 0 : null;
+  if (
+    usage.root !== "present" ||
+    usage.state !== "complete" ||
+    usage.symlinks !== 0 ||
+    usage.unscannedEntries !== 0 ||
+    usage.overflow ||
+    usage.truncated ||
+    typeof usage.bytes !== "number" ||
+    !Number.isSafeInteger(usage.bytes) ||
+    usage.bytes < 0
+  )
+    return null;
+  return usage.bytes;
+}
+
 // A dedicated read-only connection avoids Store's migrations and startup writes.
 export function readWorkspaceOverview(path: string): StorageOverview {
   const db = new DatabaseSync(path, { readOnly: true });
@@ -88,6 +112,25 @@ export function readWorkspaceOverview(path: string): StorageOverview {
     };
     const report = readStorageUsage({ path, db, readSnapshot });
 
+    // The attachment cap includes received staging as well as active assets.
+    // Show the same managed footprint rather than a misleading smaller total.
+    let syncStagingBytes: number | null = null;
+    try {
+      syncStagingBytes = syncStagingBytesFromUsage(
+        scanDirectoryTree(join(dirname(path), ".folio-sync-assets-staging"))
+          .usage,
+      );
+    } catch {
+      /* Keep the rest of the diagnostics available. */
+    }
+    const withStaging = (value: number | null) => {
+      if (value === null || syncStagingBytes === null) return null;
+      const sum = value + syncStagingBytes;
+      return Number.isSafeInteger(sum) && sum >= 0 ? sum : null;
+    };
+    const assetBytes = withStaging(report.totals.assetFileBytes);
+    const totalBytes = withStaging(report.totals.totalFileBytes);
+
     const registry = observeRegistry(db, join(dirname(path), "assets"));
     let databaseLogicalBytes: number | null = null;
     try {
@@ -101,11 +144,14 @@ export function readWorkspaceOverview(path: string): StorageOverview {
         report.state,
         registry.state,
         databaseLogicalBytes === null ? "partial" : "complete",
+        assetBytes === null || totalBytes === null ? "unknown" : "complete",
+        syncStagingBytes === null ? "unknown" : "complete",
       ]),
       databaseLogicalBytes,
-      totalBytes: report.totals.totalFileBytes,
+      totalBytes,
       databaseBytes: report.totals.databaseFileBytes,
-      assetBytes: report.totals.assetFileBytes,
+      assetBytes,
+      syncStagingBytes,
       backupBytes: report.totals.backupFileBytes,
       receiptRows: report.database.receipts.rows,
       receiptBytes: report.database.receipts.storedBytes,

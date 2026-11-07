@@ -1,7 +1,17 @@
 import { createRichDocumentProtection } from "./rich-document-protection";
 import { openWorkspaceAtStartup, admitStartupStorage } from "./workspace-startup";
 import { assertReadOnlyRequest } from "./read-only-workspace";
-import { runStartupWorkspaceSync, startupSyncRequested } from "./workspace-sync-startup";
+import { runStartupWorkspaceSyncDetailed, startupSyncRequested, type WorkspaceSyncStartupResult } from "./workspace-sync-startup";
+import { WorkspaceSyncService } from "./workspace-sync-service";
+import { WorkspaceSyncControl } from "./workspace-sync-control";
+import { WorkspaceSyncGate } from "./workspace-sync-gate";
+import { WorkspaceSyncRestartControl, WorkspaceSyncRestartCoordinator } from "./workspace-sync-restart-coordinator";
+import { WorkspaceSyncIntentFile } from "./workspace-sync-intent";
+import { finishWorkspaceQuit } from "./workspace-quit";
+import { WorkspaceConflictDecisionControl } from "./workspace-conflict-decision-control";
+import { exportConflictAfterPicker, exportConflictCheckpoint } from "./conflict-export";
+import { storageActionForRequest } from "./storage-write-policy";
+import type { WorkspaceSyncStatus } from "../sync/workspace-store";
 import { readUserVersion } from "../persistence/schema-startup";
 import { WorkspaceStorageService } from "./workspace-storage-service";
 import {
@@ -24,6 +34,7 @@ import {
   readFileSync,
   statSync,
   existsSync,
+  realpathSync,
 } from "node:fs";
 import { pathToFileURL } from "node:url";
 import { randomUUID } from "node:crypto";
@@ -43,6 +54,7 @@ import { previewPropertyOperation, commitPropertyOperation, resolvePropertyOpera
 import { previewLegacyMigration, commitLegacyMigration, resolveLegacyMigration } from "../persistence/legacy-migration-operation";
 import { CrashRecoveryFile, crashRecoveryWorkspaceId } from "../persistence/crash-recovery-file";
 import { createRecoveryCopy } from "../persistence/crash-recovery-copy";
+import { handlePageOrderRepair } from "./page-order-repair";
 app.setName("Folio");
 const userData = join(app.getPath("appData"), "Folio");
 const dataDir = workspacePath(userData, process.env.FOLIO_DATA_DIR);
@@ -74,7 +86,10 @@ if (startupError) {
   app.quit();
 } else {
   let win: BrowserWindow | null = null,
-    store: Store;
+    store: Store,
+    restartControl: WorkspaceSyncRestartControl | undefined,
+    conflictDecisionControl: WorkspaceConflictDecisionControl | undefined,
+    recreateWindow: (() => void) | undefined;
   app.on("second-instance", () => {
     win?.show();
     win?.focus();
@@ -137,10 +152,54 @@ if (startupError) {
         });
         return selected.canceled ? null : selected.filePaths[0];
       });
-      const syncMessage = crashRecovery
-        ? await runStartupWorkspaceSync(store, () => crashRecovery.read(), process.env,
+      const syncGate = new WorkspaceSyncGate();
+      const startupSync: WorkspaceSyncStartupResult = crashRecovery
+        ? await runStartupWorkspaceSyncDetailed(store, () => crashRecovery.read(), process.env,
             (bytes, purpose) => storage.admitSyncWrite(bytes, purpose))
-        : undefined;
+        : {};
+      const syncService: WorkspaceSyncService<WorkspaceSyncStatus> | undefined = startupSync.opened
+        ? new WorkspaceSyncService<WorkspaceSyncStatus>(startupSync.opened)
+        : startupSync.reconnect
+          ? WorkspaceSyncService.reconnect<WorkspaceSyncStatus>(startupSync.reconnect)
+          : undefined;
+      const syncControl = new WorkspaceSyncControl(syncService, syncGate, readOnly);
+      let restartCoordinator: WorkspaceSyncRestartCoordinator | undefined;
+      if (!readOnly && syncService && crashRecovery) {
+        try {
+          restartCoordinator = new WorkspaceSyncRestartCoordinator(
+            new WorkspaceSyncIntentFile(dirname(realpathSync(store.path))),
+            {
+              target: () => syncService.restartTarget(),
+              incoming: () => syncService.stagedChange(),
+              status: () => {
+                const status = syncService.status().workspace;
+                if (!status) throw new Error("sync-not-connected");
+                return status;
+              },
+              running: () => syncService.status().running,
+              gateIdle: () => syncGate.isIdle(),
+              recovery: () => crashRecovery.read(),
+              windowsClosed: () => BrowserWindow.getAllWindows().length === 0,
+              otherIntentClear: () => !conflictDecisionControl?.hasReservation(),
+            },
+          );
+        } catch { restartCoordinator = undefined; }
+      }
+      restartControl = new WorkspaceSyncRestartControl(restartCoordinator, readOnly);
+      conflictDecisionControl = new WorkspaceConflictDecisionControl(store, syncService && crashRecovery ? {
+        preview: (choice) => syncService.conflictResolutionPreview(choice),
+        assertTarget: (target) => syncService.assertConflictResolutionTarget(target),
+        hasConflict: () => syncService.status().workspace?.conflict === true,
+        idle: () => !syncService.status().running && syncGate.isIdle(),
+        recovery: () => crashRecovery.read(),
+        windowsClosed: () => BrowserWindow.getAllWindows().length === 0,
+        normalIntentClear: () => {
+          const view = restartControl!.status();
+          return new WorkspaceSyncIntentFile(dirname(realpathSync(store.path))).read().status === "empty" &&
+            (!view.available || (view.state === "idle" && !view.scheduled));
+        },
+      } : undefined, readOnly, (bytes) => storage.admitSyncWrite(bytes, "content"));
+      const syncMessage = startupSync.message;
       const startupStatus = syncMessage ? { ...opened.status, syncMessage } : opened.status;
       const workspaceBackups = storage.backups;
       let layoutBackupDone = false;
@@ -178,6 +237,10 @@ if (startupError) {
           event.senderFrame.url !== url
         )
           throw new Error("Unauthorized IPC sender");
+        const requestWindow = win;
+        const isAuthorized = () => !requestWindow.isDestroyed() && win === requestWindow &&
+          event.sender === requestWindow.webContents && event.senderFrame === requestWindow.webContents.mainFrame &&
+          event.senderFrame.url === url;
         const req = requestSchema.parse(input);
         // Validate size and admission before any backup or workspace mutation.
         if (
@@ -187,6 +250,45 @@ if (startupError) {
           Buffer.byteLength(JSON.stringify(req)) > 32_000_000
         )
           throw new Error("リクエストが大きすぎます");
+        if (req.type === "sync:status") return syncControl.status();
+        if (req.type === "sync:restartStatus") return restartControl!.status();
+        if (req.type === "sync:restartRequest") return restartControl!.request();
+        if (req.type === "sync:restartCancel") return restartControl!.cancel();
+        if (req.type === "sync:run") return syncControl.transfer(() => {
+          if (!isAuthorized()) throw new Error("Unauthorized IPC sender");
+          if (conflictDecisionControl!.hasReservation()) throw new Error("conflict-decision-present");
+        });
+        if (req.type === "sync:conflictDecisionStatus") return conflictDecisionControl!.status();
+        if (req.type === "sync:conflictPreview") return conflictDecisionControl!.preview(req);
+        if (req.type === "sync:conflictConfirm") return conflictDecisionControl!.confirm(req.previewId);
+        if (req.type === "sync:conflictCancel") return syncGate.write(() => {
+          if (!isAuthorized()) throw new Error("Unauthorized IPC sender");
+          return conflictDecisionControl!.cancel(req.decisionId);
+        });
+        if (req.type === "sync:conflict") return syncControl.conflict();
+        if (req.type === "sync:conflictCandidate") return syncControl.conflictCandidate({
+          operationId: req.operationId, side: req.side, expectedRevision: req.expectedRevision,
+          expectedCheckpointHash: req.expectedCheckpointHash,
+        });
+        if (req.type === "sync:conflictExport") {
+          const target = {operationId: req.operationId, side: req.side, expectedRevision: req.expectedRevision,
+            expectedCheckpointHash: req.expectedCheckpointHash};
+          return exportConflictAfterPicker({target, authorized: isAuthorized,
+            candidate: (selected) => syncControl.conflictCandidate(selected),
+            pick: async () => {
+              const result = await dialog.showSaveDialog(requestWindow, {
+                defaultPath: join(app.getPath("downloads"), `folio-conflict-${req.side}.json`),
+                filters: [{name: "Folio conflict checkpoint", extensions: ["json"]}],
+              });
+              return result.canceled ? null : result.filePath ?? null;
+            },
+            save: (path, candidate) => exportConflictCheckpoint(path, candidate, (out) => assertExternalOutput(dataDir, out)),
+          });
+        }
+        const action = storageActionForRequest(req.type);
+        const handle = async () => {
+        if (!isAuthorized()) throw new Error("Unauthorized IPC sender");
+        const win = requestWindow;
         if (req.type === "startup:status") return startupStatus;
         if (readOnly) assertReadOnlyRequest(req);
         const utility = storage.handleUtility(req);
@@ -244,6 +346,8 @@ if (startupError) {
         if (req.type === "recovery:read") return crashRecovery!.read();
         if (req.type === "recovery:write") return crashRecovery!.write(req.expectedGeneration, req.snapshot);
         if (req.type === "recovery:copy") return createRecoveryCopy(store, req.recoveryId, {...req.input, payload: req.input.payload});
+        if (req.type === "pageOrder:preview" || req.type === "pageOrder:apply")
+          return handlePageOrderRepair(store, req, () => storage.admitSnapshot());
         if (req.type === "property:preview") return previewPropertyOperation(store, req);
         if (req.type === "property:commit") return commitPropertyOperation(store, req.operation);
         if (req.type === "property:resolve") return resolvePropertyOperation(store, req.operation);
@@ -362,6 +466,8 @@ if (startupError) {
           };
         }
         return store.handle(req);
+        };
+        return action === "write" || action === "maintenance" ? syncGate.write(handle) : handle();
       });
       function createWindow() {
         win = new BrowserWindow({
@@ -417,6 +523,7 @@ if (startupError) {
           },
         ]),
       );
+      recreateWindow = createWindow;
       createWindow();
       app.on("activate", () => {
         if (BrowserWindow.getAllWindows().length === 0) createWindow();
@@ -427,5 +534,15 @@ if (startupError) {
       app.quit();
     });
   app.on("window-all-closed", () => app.quit());
-  app.on("will-quit", () => store?.close());
+  app.on("will-quit", (event) => {
+    finishWorkspaceQuit({
+      commitRestart: () => {
+        const conflict = conflictDecisionControl?.commitAfterWindowsClosed() ?? "not-prepared";
+        return conflict === "not-prepared" ? restartControl?.commitAfterWindowsClosed() ?? "not-prepared" : conflict;
+      },
+      preventQuit: () => event.preventDefault(),
+      reopenWindow: () => {if (BrowserWindow.getAllWindows().length === 0) recreateWindow?.();},
+      closeStore: () => store?.close(),
+    });
+  });
 }

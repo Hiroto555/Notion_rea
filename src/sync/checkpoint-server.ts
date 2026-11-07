@@ -7,6 +7,10 @@ import {
 import { DatabaseSync } from "node:sqlite";
 import { SyncSqliteGuard, SyncStorageUnavailable } from "./sqlite-guard";
 import {
+  createCheckpointServerBackup,
+  type CheckpointServerBackup,
+} from "./server-backup";
+import {
   canonicalJson,
   fingerprintCommit,
   identifier,
@@ -92,6 +96,12 @@ export type CheckpointServerHandle = {
    */
   registerDevice(registration: DeviceRegistration): void;
   revokeDevice(workspaceId: string, clientId: string): void;
+  /**
+   * Administrative catalog snapshot. It is intentionally not an HTTP route.
+   * The backup runs synchronously through the server's guarded connection, so
+   * it blocks request handling while the snapshot is copied.
+   */
+  backup(destination: string): CheckpointServerBackup;
   close(): Promise<void>;
 };
 
@@ -728,6 +738,15 @@ export async function startCheckpointServer(
     serverEpoch,
     registerDevice,
     revokeDevice,
+    backup(destination: string) {
+      storage.assertUsable();
+      return createCheckpointServerBackup({
+        db: storage.db,
+        databasePath: options.databasePath,
+        destination,
+        serverEpoch,
+      });
+    },
     async close() {
       if (!httpClosed) {
         await new Promise<void>((resolve, reject) => {

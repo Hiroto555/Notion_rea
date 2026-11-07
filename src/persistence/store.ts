@@ -1053,6 +1053,28 @@ export class Store {
         Object.keys(recovered).some((key) => key !== "pageId" && key !== "recoveredAt")))
       throw new Error("未対応のページ原本は移動できません。");
   }
+  private patchPageMetadata(
+    id: string,
+    metadata: Pick<Page, "revision"> &
+      Partial<Pick<Page, "parentId" | "position" | "updatedAt" | "deletedAt">>,
+  ): Page {
+    if (this.get(id).documentError)
+      throw new Error("未対応のページ原本は変更できません。");
+    const entries = Object.entries(metadata);
+    const keys = entries.map(([key]) => key);
+    // Bind paths and JSON text so SQLite preserves untouched numeric tokens.
+    // Duplicate metadata keys are ambiguous, including escaped spellings.
+    const { changes } = this.db.prepare(`
+      UPDATE pages SET data=json_set(data, ${entries.map(() => "?,json(?)").join(",")})
+      WHERE id=? AND (SELECT count(*) FROM json_each(pages.data)
+        WHERE key IN (${keys.map(() => "?").join(",")}))=?
+    `).run(...entries.flatMap(([key, value]) => [`$.${key}`, JSON.stringify(value)]), id, ...keys, keys.length);
+    if (changes !== 1) throw new Error("未対応のページ原本は変更できません。");
+    const written = this.get(id);
+    if (entries.some(([key, value]) => !Object.is(written[key as keyof typeof metadata], value)))
+      throw new Error("ページの更新結果を確認できません。原本を保持しています。");
+    return written;
+  }
   move(id: string, parentId: string | null, beforeId: string | null) {
     return this.transaction(() => {
       this.assertRecordWriteSchema();
@@ -1078,62 +1100,69 @@ export class Store {
       const protectedIds = new Set([...recordIds, ...registeredDatabases]);
       if (protectedIds.has(id))
         throw new Error("レコードまたは登録済みデータベースの移動は未対応です。");
-      if ((parentId && protectedIds.has(parentId)) || (beforeId && recordIds.has(beforeId)))
+      if ((parentId !== null && protectedIds.has(parentId)) || (beforeId !== null && recordIds.has(beforeId)))
         throw new Error("レコードまたは登録済みデータベースを移動先には指定できません。");
-      if ([...this.descendants(id)].some((childId) => protectedIds.has(childId)))
+      const subtree = this.descendants(id);
+      if ([...subtree].some((childId) => protectedIds.has(childId)))
         throw new Error("レコードまたは登録済みデータベースを含むページの移動は未対応です。");
       const p = this.get(id);
       if (hasMemberships) this.assertLosslessMovePage(id);
-      if (parentId) {
+      if (parentId !== null) {
         const parent = this.get(parentId);
-        if (parent.deletedAt) throw new Error("削除済みの親ページです");
-        if (this.descendants(id).has(parentId))
+        if (parent.deletedAt !== null) throw new Error("削除済みの親ページです");
+        if (subtree.has(parentId))
           throw new Error("ページを自身の子孫へ移動できません");
+        if (parent.documentError)
+          throw new Error("未対応の親ページには移動できません。原本を保持しています。");
       }
+      // Record Pages are hidden. Registered DBs and trashed siblings reserve
+      // positions without being rewritten when an ordinary Page moves.
+      const siblings = this.pages().filter((x) =>
+        x.parentId === parentId && x.id !== id && !recordIds.has(x.id),
+      );
+      if (p.documentError || p.deletedAt !== null || p.revision >= Number.MAX_SAFE_INTEGER)
+        throw new Error("ページの安全な並び順を確認できません。原本を保持しています。");
       if (hasMemberships) {
-        // Record Pages are hidden from the tree. Registered DBs are fixed
-        // anchors: moving an ordinary Page must not rewrite their revision or
-        // create an equal-position tie that can reorder the visible tree.
-        // Reserve all trashed Page positions too, so restore cannot introduce a tie.
-        const siblings = this.pages().filter((x) =>
-          x.parentId === parentId && x.id !== id && !recordIds.has(x.id),
-        );
-        if (p.deletedAt !== null || !Number.isSafeInteger(p.revision) ||
-            p.revision < 0 || p.revision >= Number.MAX_SAFE_INTEGER ||
-            siblings.some((x) => !Number.isFinite(x.position) || x.documentError))
+        if (siblings.some((x) => x.documentError))
           throw new Error("ページの安全な並び順を確認できません。原本を保持しています。");
         for (let i = 1; i < siblings.length; i++)
           if (siblings[i - 1].position >= siblings[i].position)
             throw new Error("ページの並び順が重複しています。原本を保持しています。");
-        const index = beforeId ? siblings.findIndex((x) => x.id === beforeId && !x.deletedAt) : siblings.length;
-        if (index < 0) throw new Error("移動先が見つかりません");
-        const lower = index > 0 ? siblings[index - 1].position : undefined;
-        const upper = index < siblings.length ? siblings[index].position : undefined;
-        const position = lower === undefined && upper === undefined ? 0 :
-          lower === undefined ? upper! - 1 : upper === undefined ? lower + 1 : lower / 2 + upper / 2;
-        if (!Number.isFinite(position) || !Object.is(JSON.parse(JSON.stringify(position)), position) ||
-            (lower !== undefined && position <= lower) ||
-            (upper !== undefined && position >= upper))
-          throw new Error("ページの並び順に空きがありません。原本を保持しています。");
-        return this.write({ ...p, parentId, position, revision: p.revision + 1, updatedAt: Date.now() });
       }
-      const siblings = this.pages().filter(
-        (x) => x.parentId === parentId && x.id !== id && !x.deletedAt && !recordIds.has(x.id),
-      );
-      let index = beforeId
-        ? siblings.findIndex((x) => x.id === beforeId)
-        : siblings.length;
+      const index = beforeId === null ? siblings.length :
+        siblings.findIndex((x) => x.id === beforeId && x.deletedAt === null);
       if (index < 0) throw new Error("移動先が見つかりません");
-      siblings.splice(index, 0, { ...p, parentId });
-      siblings.forEach((x, i) =>
-        this.write({
-          ...x,
-          position: i,
-          revision: x.revision + 1,
-          updatedAt: Date.now(),
-        }),
-      );
-      return this.get(id);
+
+      // Compare visible neighbors for a no-op. A tied source still needs a
+      // position of its own, even if it already appears in the requested slot.
+      if (p.parentId === parentId && !siblings.some((x) => x.position === p.position)) {
+        const next = siblings.find((x) => x.deletedAt === null && x.position > p.position);
+        if ((next?.id ?? null) === beforeId) return p;
+      }
+
+      const upper = siblings[index]?.position;
+      let lowerIndex = index - 1;
+      // In a legacy tie, a hidden trash entry at the upper bound does not
+      // force a new tie. Inserting between two tied live pages still fails.
+      while (lowerIndex >= 0 && siblings[lowerIndex].position === upper &&
+             siblings[lowerIndex].deletedAt !== null) lowerIndex--;
+      const lower = siblings[lowerIndex]?.position;
+      const position = lower === undefined && upper === undefined ? 0 :
+        lower === undefined ? upper! - 1 : upper === undefined ? lower + 1 : lower / 2 + upper / 2;
+      // Legacy create appends with +1. Do not move to an unsafe integer at
+      // which that append could introduce an equal position.
+      if (!Number.isFinite(position) || !Object.is(JSON.parse(JSON.stringify(position)), position) ||
+          (!hasMemberships && Math.abs(position) > Number.MAX_SAFE_INTEGER) ||
+          (lower !== undefined && position <= lower) ||
+          (upper !== undefined && position >= upper))
+        throw new Error("ページの並び順に空きがありません。原本を保持しています。");
+
+      const revision = p.revision + 1, updatedAt = Date.now();
+      if (hasMemberships) return this.write({ ...p, parentId, position, revision, updatedAt });
+
+      // Legacy Pages can have extensions that JS would round or normalize.
+      // Update only placement metadata in the stored JSON and keep its body.
+      return this.patchPageMetadata(id, { parentId, position, revision, updatedAt });
     });
   }
   duplicate(id: string) {
@@ -1200,32 +1229,64 @@ export class Store {
   }
   trash(id: string) {
     this.transaction(() => {
-      this.assertLegacyLifecycleSafe(this.descendants(id));
+      this.assertRecordWriteSchema();
       const ids = this.descendants(id),
         now = Date.now();
+      this.assertLegacyLifecycleSafe(ids);
       for (const p of this.pages())
-        if (ids.has(p.id) && !p.deletedAt)
-          this.write({ ...p, deletedAt: now, revision: p.revision + 1 });
+        if (ids.has(p.id) && p.deletedAt === null) {
+          if (p.revision >= Number.MAX_SAFE_INTEGER)
+            throw new Error("ページの安全な更新情報を確認できません。原本を保持しています。");
+          this.patchPageMetadata(p.id, { deletedAt: now, revision: p.revision + 1 });
+        }
     });
   }
   restore(id: string) {
     this.transaction(() => {
-      this.assertLegacyLifecycleSafe(this.descendants(id));
-      const root = this.get(id),
-        stamp = root.deletedAt;
-      for (const p of this.pages())
-        if (this.descendants(id).has(p.id) && p.deletedAt === stamp) {
-          const parentGone =
-            p.parentId &&
-            this.get(p.parentId).deletedAt &&
-            (p.id === id || this.get(p.parentId).deletedAt !== stamp);
-          this.write({
-            ...p,
-            parentId: parentGone ? null : p.parentId,
-            deletedAt: null,
-            revision: p.revision + 1,
-          });
+      this.assertRecordWriteSchema();
+      const ids = this.descendants(id);
+      this.assertLegacyLifecycleSafe(ids);
+      const root = this.get(id), stamp = root.deletedAt;
+      if (stamp === null) return;
+      const pages = this.pages();
+      const byId = new Map(pages.map((page) => [page.id, page]));
+      const hasRecords = !!this.db.prepare(
+        "SELECT 1 FROM sqlite_master WHERE type='table' AND name='record_memberships'",
+      ).get();
+      const recordIds = new Set(hasRecords
+        ? (this.db.prepare("SELECT page_id FROM record_memberships").all() as { page_id: string }[]).map((row) => row.page_id)
+        : []);
+      for (const page of pages) {
+        if (!ids.has(page.id) || page.deletedAt !== stamp) continue;
+        if (page.revision >= Number.MAX_SAFE_INTEGER)
+          throw new Error("ページの安全な更新情報を確認できません。原本を保持しています。");
+        const parent = page.parentId === null ? undefined : byId.get(page.parentId);
+        if (page.parentId !== null && !parent) throw new Error("親ページが見つかりません。");
+        const parentGone = parent && parent.deletedAt !== null &&
+          (page.id === id || parent.deletedAt !== stamp);
+        if (!parentGone && parent?.documentError)
+          throw new Error("未対応の親ページには復元できません。原本を保持しています。");
+        const parentId = parentGone ? null : page.parentId;
+        const siblings = [...byId.values()].filter((other) =>
+          other.parentId === parentId && other.id !== page.id && !recordIds.has(other.id));
+        let position = page.position;
+        if (parentId !== page.parentId) {
+          // A detached child enters another sibling group. Reserve all root
+          // positions, including trash, fixed DBs and earlier restored Pages.
+          const maximum = siblings.reduce((max, sibling) => Math.max(max, sibling.position), 0);
+          position = maximum + 1;
+          if (!Number.isFinite(position) || Math.abs(position) > Number.MAX_SAFE_INTEGER ||
+              !Object.is(JSON.parse(JSON.stringify(position)), position) || position <= maximum)
+            throw new Error("ページの並び順に空きがありません。原本を保持しています。");
+        } else if (siblings.some((other) => other.position === position)) {
+          throw new Error("ページの並び順が重複しています。原本を保持しています。");
         }
+        const restored = this.patchPageMetadata(page.id, {
+          ...(parentId !== page.parentId ? { parentId, position } : {}),
+          deletedAt: null, revision: page.revision + 1,
+        });
+        byId.set(page.id, restored);
+      }
     });
   }
   versions(id: string): Version[] {

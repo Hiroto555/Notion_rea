@@ -1,0 +1,20 @@
+{
+  "generatedAt": "2026-11-07T15:07:07.600Z",
+  "baselineCommit": "e269137f191081cabc0f05aa03ec68339ce413c2",
+  "scope": "Current index paths plus nonignored untracked files, read from working tree. No upload.",
+  "currentFindings": [
+    {
+      "path": "tests/lv4-secret-store.test.ts",
+      "category": "credential-url",
+      "line": 371
+    }
+  ],
+  "reviewedFinding": {
+    "path": "tests/lv4-secret-store.test.ts",
+    "line": 371,
+    "category": "credential-url",
+    "disposition": "synthetic rejection fixture; TOKEN is A repeated 43 times; loopback only; retained unchanged"
+  },
+  "historyScope": "Full local-history scan recorded separately; no history rewrite or extra ref publication.",
+  "limits": "Pattern scan plus a reviewed binary allowlist. Does not prove absence of all secrets, PII, copyrighted material, or application vulnerabilities."
+}
