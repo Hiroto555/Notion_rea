@@ -1,7 +1,8 @@
 import { canonicalJson } from "../sync/protocol";
 import type { SyncApplyIntentRead, SyncApplyTarget } from "./workspace-sync-intent";
 
-type IntentFile = {read(): SyncApplyIntentRead; create(target: SyncApplyTarget): void;
+export type RestartIntentPort = {read(): SyncApplyIntentRead; create(target: SyncApplyTarget): void;
+  prepare?(target: SyncApplyTarget): void; pending?(): {id:string;target:SyncApplyTarget} | undefined; cancelStored?(expectedId:string): boolean;
   cancelIfMatches(target: SyncApplyTarget): "removed" | "absent" | "different"};
 export type RestartObservation = {
   target: SyncApplyTarget | null;
@@ -19,7 +20,7 @@ export type RestartRequestResult = "prepared" | "committed" | "cancelled" | "not
 export class WorkspaceSyncRestartRequest {
   private target?: SyncApplyTarget;
   private publication: "none" | "committed" | "uncertain" = "none";
-  constructor(private readonly file: IntentFile, private readonly observe: () => RestartObservation) {}
+  constructor(private readonly file: RestartIntentPort, private readonly observe: () => RestartObservation) {}
 
   state(): RestartRequestState {
     if (this.publication !== "none") return this.publication;
@@ -35,6 +36,7 @@ export class WorkspaceSyncRestartRequest {
       const current = this.observe();
       if (!current.target || !current.clean || !current.idle || current.windowsClosed || this.file.read().status !== "empty") return "blocked";
       this.target = structuredClone(current.target);
+      this.file.prepare?.(this.target);
       return "prepared";
     } catch {return "blocked";}
   }

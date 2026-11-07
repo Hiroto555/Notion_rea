@@ -27,6 +27,7 @@ export type WorkspaceSyncRestartReason =
 export type WorkspaceSyncRestartView =
   | {available: false; reason: "not-connected" | "read-only"}
   | {available: true; state: "idle" | "requested" | "committed" | "uncertain";
+      reservationId?: string;
       scheduled: boolean; targetRevision: number | null; canRequest: boolean;
       canCancel: boolean; reason: WorkspaceSyncRestartReason | null};
 

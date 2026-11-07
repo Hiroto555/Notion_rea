@@ -1,3 +1,5 @@
+import { WorkspaceConflictRecoveryPanel } from "./WorkspaceConflictRecoveryPanel";
+import { conflictRecoveryPort } from "./conflict-recovery-port";
 import { Slice } from "@tiptap/pm/model";
 import { freshPastedSlice } from "../editor/block-identity";
 import { assertSupportedRichHTML, assertSupportedRichMarkdown } from "../document-io/rich-html-guard";
@@ -1789,6 +1791,7 @@ export function App({ syncMessage }: { syncMessage?: string } = {}) {
             inert={creatingPage || !!recordView || undefined}
           >
             <WorkspaceSyncIndicator startupMessage={syncMessage} inputReady={syncDecisionInputReady} />
+            <details className="conflict-recovery-details"><summary>保全した競合データを取り出す</summary><WorkspaceConflictRecoveryPanel port={conflictRecoveryPort} /></details>
             <span
               className={"save-state " + (error ? "error" : "")}
               data-state={error ? "error" : pending || edits.current.size || sessions.current.hasUnsaved() || hasNumberDrafts() || hasDatabasePending() || recoveryStatus?.state !== "saved" || recoveryError ? "pending" : "saved"}

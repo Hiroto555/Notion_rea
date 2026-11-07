@@ -66,8 +66,27 @@ export function WorkspaceSyncIndicator({startupMessage, inputReady = () => false
     const timer = window.setInterval(() => {void refresh();}, 10_000);
     return () => {active = false; window.clearInterval(timer);};
   }, []);
+  const changeRestart = async (type: "sync:restartRequest" | "sync:restartCancel") => {
+    setRestartBusy(true); setRestartNotice("");
+    try {
+      const action = await window.folio.request<WorkspaceSyncRestartAction>(type === "sync:restartCancel" ? {type,reservationId:restart?.available ? restart.reservationId : undefined} : {type});
+      setRestart(action.view);
+      setRestartNotice(action.result === "prepared" ? "終了時に安全条件を確認して予約を確定します。" :
+        action.result === "cancelled" ? "予約を取り消しました。" :
+        action.result === "blocked" ? "予約を変更できませんでした。" : "");
+    } catch {setRestartNotice("適用予約を操作できませんでした。");}
+    finally {setRestartBusy(false);}
+  };
+  const restartView = restart?.available ? restart : null;
+  const restartText = restartView ? restartApplyText(restartView) : "";
+  const restartControls = restartView && (restartText || restartView.canRequest || restartView.canCancel) ?
+    <span className="save-state" aria-live="polite" title={restartNotice || restartText}>
+      {restartNotice || restartText}{" "}
+      {restartView.canRequest && <button type="button" disabled={restartBusy} onClick={() => void changeRestart("sync:restartRequest")}>適用を予約</button>}
+      {restartView.canCancel && <button type="button" disabled={restartBusy} onClick={() => void changeRestart("sync:restartCancel")}>予約を取り消す</button>}
+    </span> : null;
   if (!view?.available) return <>{startupMessage && <span className="save-state" title={startupMessage}>{startupMessage}</span>}
-    <WorkspaceConflictPanel showCandidates={false} inputReady={inputReady} /></>;
+    <WorkspaceConflictPanel showCandidates={false} inputReady={inputReady} />{restartControls}</>;
   const transfer = async () => {
     setBusy(true); setFailed(false);
     try {
@@ -77,33 +96,15 @@ export function WorkspaceSyncIndicator({startupMessage, inputReady = () => false
     catch {setFailed(true);}
     finally {setBusy(false);}
   };
-  const changeRestart = async (type: "sync:restartRequest" | "sync:restartCancel") => {
-    setRestartBusy(true); setRestartNotice("");
-    try {
-      const action = await window.folio.request<WorkspaceSyncRestartAction>({type});
-      setRestart(action.view);
-      setRestartNotice(action.result === "prepared" ? "終了時に安全条件を確認して予約を確定します。" :
-        action.result === "cancelled" ? "予約を取り消しました。" :
-        action.result === "blocked" ? "予約を変更できませんでした。" : "");
-    } catch {setRestartNotice("適用予約を操作できませんでした。");}
-    finally {setRestartBusy(false);}
-  };
   const detail = view.lastError ? `保留理由: ${view.lastError}` :
     view.lastSuccessAt ? `記録された送受信: ${new Date(view.lastSuccessAt).toLocaleString()}（受信・適用待ちが残る場合があります）` :
       startupMessage?.includes("保留") ? startupMessage : "同期の成功記録はまだありません";
   const label = !view.running && !view.lastSuccessAt && !view.lastError && startupMessage?.includes("保留")
     ? "起動時同期を保留" : syncStatusText(view);
-  const restartView = restart?.available && view.workspace !== null ? restart : null;
-  const restartText = restartView ? restartApplyText(restartView) : "";
   return <><span className="save-state" aria-live="polite" title={detail}>
     {busy ? "同期中…" : failed ? "同期状態を取得できません" : label}{" "}
     <button type="button" onClick={() => void transfer()} disabled={busy || view.running}>
       {busy || view.running ? "同期中…" : view.connection === "disconnected" ? "再接続" : "同期"}
     </button>
-  </span><WorkspaceConflictPanel showCandidates={!!view.workspace?.conflict} inputReady={inputReady} />{restartView && (restartText || restartView.canRequest || restartView.canCancel) &&
-    <span className="save-state" aria-live="polite" title={restartNotice || restartText}>
-      {restartNotice || restartText}{" "}
-      {restartView.canRequest && <button type="button" disabled={restartBusy} onClick={() => void changeRestart("sync:restartRequest")}>適用を予約</button>}
-      {restartView.canCancel && <button type="button" disabled={restartBusy} onClick={() => void changeRestart("sync:restartCancel")}>予約取消</button>}
-    </span>}</>;
+  </span><WorkspaceConflictPanel showCandidates={!!view.workspace?.conflict} inputReady={inputReady} />{restartControls}</>;
 }

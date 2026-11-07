@@ -7,7 +7,7 @@ import { expect, it } from "vitest";
 import { Store } from "../src/persistence/store";
 import { attachFile } from "../src/persistence/assets";
 import { emptyCrashRecoverySnapshot } from "../src/shared/crash-recovery";
-import { WorkspaceSyncIntentFile } from "../src/main/workspace-sync-intent";
+import { WorkspaceSyncIntentJournal } from "../src/main/normal-apply-intent";
 import { applyRestartIntent } from "../src/main/workspace-sync-restart";
 import { runStartupWorkspaceSync } from "../src/main/workspace-sync-startup";
 import { WorkspaceSyncGate } from "../src/main/workspace-sync-gate";
@@ -57,7 +57,7 @@ it("stages without changing content and applies one revision with the server off
     await server.close(); closed = true;
     const reopenedStore = new Store(b.store.path); stores.push(reopenedStore);
     const offline = WorkspaceSync.openStaged({...b, store: reopenedStore, admitBytes: admission}, server.serverEpoch);
-    const intentFile = new WorkspaceSyncIntentFile(join(root, "b"));
+    const intentFile = new WorkspaceSyncIntentJournal(join(root, "b"), reopenedStore);
     const intent = {workspaceId, clientId: b.clientId, bindingId: b.bindingId, serverEpoch: server.serverEpoch, ...target};
     intentFile.create(intent);
     const restoredServer = await startCheckpointServer({databasePath: join(root, "restored-server.sqlite"), capabilities: [],
@@ -112,20 +112,20 @@ it("stages without changing content and applies one revision with the server off
     await expect(offline.applyStaged({...target, revision: 2})).rejects.toThrow("staged-target-mismatch");
     const stagedAsset = join(root, "b", ".folio-sync-assets-staging", asset.id);
     writeFileSync(stagedAsset, "tampered");
-    await expect(offline.applyStaged(target)).rejects.toThrow();
+    await expect(offline.applyStaged(target,intentFile.pending())).rejects.toThrow();
     expect(offline.status().appliedRevision).toBe(0);
     expect(reopenedStore.pages()).toEqual([]);
     writeFileSync(stagedAsset, "attachment bytes");
     allowed = false;
-    expect((await offline.applyStaged(target)).appliedRevision).toBe(0);
+    expect((await offline.applyStaged(target,intentFile.pending())).appliedRevision).toBe(0);
     allowed = true; rejectBackup = true;
-    await expect(offline.applyStaged(target)).rejects.toThrow("backup denied");
+    await expect(offline.applyStaged(target,intentFile.pending())).rejects.toThrow("backup denied");
     expect(offline.status().appliedRevision).toBe(0);
     expect(reopenedStore.pages()).toEqual([]);
     rejectBackup = false;
     reopenedStore.db.exec(`CREATE TEMP TRIGGER fail_lv4_apply BEFORE UPDATE OF applied_revision
       ON workspace_sync_state BEGIN SELECT RAISE(ABORT,'injected apply failure'); END`);
-    await expect(offline.applyStaged(target)).rejects.toThrow("injected apply failure");
+    await expect(offline.applyStaged(target,intentFile.pending())).rejects.toThrow("injected apply failure");
     expect(offline.status()).toMatchObject({receivedCursor: 1, appliedRevision: 0});
     expect(reopenedStore.pages()).toEqual([]);
     reopenedStore.db.exec("DROP TRIGGER fail_lv4_apply");
@@ -137,8 +137,7 @@ it("stages without changing content and applies one revision with the server off
     expect(reopenedStore.get(page.id).title).toBe("remote");
     expect(readFileSync(join(root, "b", "assets", asset.id), "utf8")).toBe("attachment bytes");
     expect(intentFile.read().status).toBe("empty");
-    // An intent surviving after SQLite commit is reconciled without reapplying.
-    intentFile.create(intent);
+    // The consumed SQLite result survives COMMIT acknowledgement loss without new consent.
     expect(await applyRestartIntent(restartOptions)).toBe("already-applied");
     expect(intentFile.read().status).toBe("empty");
   } finally {

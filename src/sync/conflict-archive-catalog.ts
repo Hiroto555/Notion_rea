@@ -20,6 +20,7 @@ import { validateWorkspaceCheckpoint } from "./workspace-checkpoint";
 
 const DEFAULT_LIMIT = 50;
 const MAX_LIMIT = 100;
+const unusable = new WeakSet<DatabaseSync>();
 
 type StateScopeRow = {
   workspace_id: string;
@@ -52,6 +53,7 @@ function hasTable(db: DatabaseSync, name: string): boolean {
 }
 
 function readSnapshot<T>(db: DatabaseSync, work: () => T): T {
+  if (unusable.has(db)) throw new Error("archive-connection-reopen-required");
   if (db.isTransaction) return work();
   db.exec("BEGIN");
   try {
@@ -62,7 +64,11 @@ function readSnapshot<T>(db: DatabaseSync, work: () => T): T {
     if (db.isTransaction) {
       try {
         db.exec("ROLLBACK");
-      } catch {}
+      } catch (cleanup) {
+        unusable.add(db);
+        try {db.close();} catch { /* poisoned even when close is uncertain */ }
+        throw new AggregateError([error,cleanup],"archive-connection-reopen-required");
+      }
     }
     throw error;
   }

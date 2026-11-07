@@ -12,6 +12,7 @@ type StorageAction = "read" | "checkpoint" | "write" | "maintenance";
  * type check instead of silently inheriting an unsafe default.
  */
 const REQUEST_STORAGE_ACTIONS = {
+  "recovery:list":"read", "recovery:status":"read", "recovery:export":"read", "recovery:restore":"read",
   load: "read",
   search: "read",
   versions: "read",

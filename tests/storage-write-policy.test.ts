@@ -11,6 +11,7 @@ type StorageAction = "read" | "checkpoint" | "write" | "maintenance";
 // Independent, exhaustive expectations from the Round 3 contract. The
 // satisfies clause makes a new Request type a type error here as well.
 const EXPECTED = {
+  "recovery:list":"read", "recovery:status":"read", "recovery:export":"read", "recovery:restore":"read",
   load: "read",
   search: "read",
   versions: "read",
@@ -95,7 +96,7 @@ const ROWS = Object.entries(EXPECTED) as [RequestType, StorageAction][];
 
 describe("request storage policy", () => {
   it("classifies every Request type exactly once", () => {
-    expect(ROWS).toHaveLength(76);
+    expect(ROWS).toHaveLength(80);
     expect(new Set(ROWS.map(([type]) => type)).size).toBe(ROWS.length);
     expect(ROWS.filter(([, action]) => action === "write")).toHaveLength(28);
     expect(ROWS.filter(([, action]) => action === "checkpoint")).toHaveLength(6);

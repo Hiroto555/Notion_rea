@@ -1,3 +1,5 @@
+import { assertRecoverySyncAllowed } from "../persistence/recovery-origin";
+import type { NormalApplyRecord } from "./normal-apply-journal";
 import { randomUUID } from "node:crypto";
 import { mkdirSync, realpathSync } from "node:fs";
 import { basename, dirname, join } from "node:path";
@@ -75,6 +77,7 @@ export class WorkspaceSync {
   }
 
   static async open(options: WorkspaceSyncOptions): Promise<WorkspaceSync> {
+    assertRecoverySyncAllowed(options.store.db);
     requireCondition(
       basename(options.store.path) === "workspace.sqlite",
       "invalid-workspace-path",
@@ -139,6 +142,7 @@ export class WorkspaceSync {
    * cannot enroll, send, receive or resolve conflicts. The caller must supply
    * the durable intent's epoch and verify recovery/intent before applying. */
   static openStaged(options: WorkspaceSyncOptions, serverEpoch: string): WorkspaceSync {
+    assertRecoverySyncAllowed(options.store.db);
     requireCondition(basename(options.store.path) === "workspace.sqlite", "invalid-workspace-path");
     requireCondition(typeof options.canApply === "function", "edit-barrier-required");
     requireCondition(options.mode === undefined && readUserVersion(options.store.db) === 5, "not-a-v5-workspace");
@@ -280,13 +284,14 @@ export class WorkspaceSync {
     return next;
   }
 
-  applyStaged(expected: { revision: number; checkpointHash: string }): Promise<SyncStatus> {
+  applyStaged(expected: { revision: number; checkpointHash: string }, reservation?: NormalApplyRecord): Promise<SyncStatus> {
+    const pinned = reservation ? structuredClone(reservation) : undefined;
     return this.exclusive(async () => {
       const incoming = this.reconcileBeforeApply(expected);
       const status = this.local.status();
       if (!incoming || status.pending || status.conflict || status.generation !== status.cleanGeneration)
         return status;
-      await this.apply(incoming, false, true);
+      await this.apply(incoming, false, true, undefined, undefined, pinned);
       return this.local.status();
     });
   }
@@ -401,7 +406,7 @@ export class WorkspaceSync {
   }
 
   private async apply(change: Change, resolving: boolean, offline = false,
-    target?: WorkspaceConflictResolutionTarget, decisionId?: string): Promise<boolean> {
+    target?: WorkspaceConflictResolutionTarget, decisionId?: string, reservation?: NormalApplyRecord): Promise<boolean> {
     if (this.options.canApply() !== true) return false;
     if (target) this.local.assertConflictResolutionTarget(target);
     if (decisionId) assertPendingConflictDecision(this.options.store.db, decisionId, target!);
@@ -462,7 +467,7 @@ export class WorkspaceSync {
         this.admitBytes(bytes, "content");
         requireCondition(this.options.canApply() === true, "edit-session-busy", 409);
       }});
-    else this.local.applyNext(change, assertAssets);
+    else this.local.applyNext(change, assertAssets, reservation);
     return true;
   }
 

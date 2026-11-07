@@ -8,7 +8,7 @@ const EXPOSED_ERRORS = new Set([
   "payload-too-large", "invalid-local-workspace-checkpoint", "sync-already-running",
   "unauthorized", "forbidden", "blob-transfer-failed", "asset-id-hash-conflict",
   "invalid-sync-mode", "explicit-conflict-flow-required", "loopback-only",
-  "reconnect-held", "sync-not-connected",
+  "reconnect-held", "sync-not-connected", "recovered-workspace-sync-held", "normal-apply-present", "legacy-apply-intent-held",
 ]);
 export function safeSyncErrorCode(error: unknown): string {
   if (error instanceof SyncError && EXPOSED_ERRORS.has(error.code)) return error.code;

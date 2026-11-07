@@ -29,7 +29,7 @@ export type RecoveryExportResult = {kind: "metadata-only" | "complete-bundle"; d
 export type RecoveredWorkspace = {directory: string; checkpointHash: string; recoveryId: string};
 export type RecoveryView = {page: ArchivePage; message?: string};
 export type RecoveryActionResult = {kind: "cancelled"} | {kind: "metadata-only" | "complete-bundle" | "restored";
-  directory: string; checkpointHash: string} | {kind: "blocked"; reason: string; target?: ArchiveTarget} |
+  directory: string; checkpointHash: string} | {kind: "blocked"; reason: string; target?: ArchiveTarget;directory?:string} |
   {kind: "outcome-unknown"; reason: string; directory: string; target: ArchiveTarget};
 export type RecoveryPanelPort = {list(cursor?: ArchiveCursor): Promise<ArchivePage>;
   export(target: ArchiveTarget, mode: "metadata-only" | "complete-bundle"): Promise<RecoveryActionResult>;

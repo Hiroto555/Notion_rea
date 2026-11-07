@@ -1,3 +1,4 @@
+import { WorkspaceSyncIntentJournal } from "../src/main/normal-apply-intent";
 import { randomBytes, randomUUID } from "node:crypto";
 import { mkdirSync, mkdtempSync, readFileSync, realpathSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -141,7 +142,7 @@ it("refuses mismatched identity and epoch while preserving the intent and staged
       server, root, stores, workspaceId, ownerId,
     );
     expect(reopened.pages()).toEqual([]);
-    const file = new WorkspaceSyncIntentFile(receiver.directory);
+    const file = new WorkspaceSyncIntentJournal(receiver.directory,reopened);
     const sync = { ...receiver, store: reopened };
 
     const foreign = { ...intent, clientId: randomUUID() };
@@ -194,7 +195,7 @@ it("refuses blocked or pending recovery without applying or consuming the intent
       server, root, stores, workspaceId, ownerId,
     );
     expect(reopened.pages()).toEqual([]);
-    const file = new WorkspaceSyncIntentFile(receiver.directory);
+    const file = new WorkspaceSyncIntentJournal(receiver.directory,reopened);
     file.create(intent);
     const sync = { ...receiver, store: reopened };
 

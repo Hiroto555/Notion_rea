@@ -7,12 +7,13 @@ import type {
 import type { Change } from "../sync/protocol";
 import type { WorkspaceSyncStatus } from "../sync/workspace-store";
 import { checkStagedRestartTarget } from "./workspace-sync-apply-guard";
-import { WorkspaceSyncIntentFile, type SyncApplyTarget } from "./workspace-sync-intent";
+import type { SyncApplyTarget } from "./workspace-sync-intent";
 import {
   WorkspaceSyncRestartRequest,
   type RestartObservation,
   type RestartRequestResult,
   type RestartRequestState,
+  type RestartIntentPort,
 } from "./workspace-sync-restart-request";
 
 export type WorkspaceSyncRestartSource = {
@@ -42,7 +43,7 @@ export class WorkspaceSyncRestartCoordinator {
   private readonly request: WorkspaceSyncRestartRequest;
 
   constructor(
-    private readonly intentFile: WorkspaceSyncIntentFile,
+    private readonly intentFile: RestartIntentPort,
     private readonly source: WorkspaceSyncRestartSource | undefined,
     private readonly readOnly = false,
   ) {
@@ -89,7 +90,8 @@ export class WorkspaceSyncRestartCoordinator {
 
   status(): WorkspaceSyncRestartView {
     if (this.readOnly) return {available: false, reason: "read-only"};
-    if (!this.source) return {available: false, reason: "not-connected"};
+    const localIntent = this.intentFile.read();
+    if (!this.source && !this.intentFile.pending?.() && localIntent.status !== "blocked") return {available: false, reason: "not-connected"};
     const state = this.request.state();
     const selected = this.request.selectedTarget();
     const intent = this.intentFile.read();
@@ -99,12 +101,13 @@ export class WorkspaceSyncRestartCoordinator {
     } catch {
       return {
         available: true,
+        reservationId: this.intentFile.pending?.()?.id,
         state: viewState(state),
         scheduled: state === "committed" || intent.status === "ready",
         targetRevision: selected?.revision ?? (intent.status === "ready" ? intent.target.revision : null),
         canRequest: false,
-        canCancel: state !== "none",
-        reason: "state-unavailable",
+        canCancel: state !== "none" || !!this.intentFile.pending?.(),
+        reason: localIntent.status === "blocked" ? "intent-blocked" : "state-unavailable",
       };
     }
     const scheduled = state === "committed" || intent.status === "ready";
@@ -115,11 +118,12 @@ export class WorkspaceSyncRestartCoordinator {
     }
     return {
       available: true,
+      reservationId: this.intentFile.pending?.()?.id,
       state: viewState(state),
       scheduled,
       targetRevision: selected?.revision ?? (intent.status === "ready" ? intent.target.revision : (evaluation.target?.revision ?? null)),
       canRequest: state === "none" && intent.status === "empty" && evaluation.reason === null,
-      canCancel: state !== "none",
+      canCancel: state !== "none" || !!this.intentFile.pending?.(),
       reason,
     };
   }
@@ -133,10 +137,16 @@ export class WorkspaceSyncRestartCoordinator {
     return {result: result === "prepared" ? "prepared" : "blocked", view: next};
   }
 
-  cancelRestart(): WorkspaceSyncRestartAction {
+  cancelRestart(expectedId?: string): WorkspaceSyncRestartAction {
     const view = this.status();
     if (!view.available) return {result: "unavailable", view};
     if (!view.canCancel) return {result: "not-prepared", view};
+    const pendingId = this.intentFile.pending?.()?.id;
+    if (pendingId && pendingId !== expectedId) return {result:"blocked",view:this.status()};
+    if (this.request.state() === "none" && this.intentFile.cancelStored) {
+      const cancelled = expectedId ? this.intentFile.cancelStored(expectedId) : false;
+      return {result: cancelled ? "cancelled" : "blocked",view:this.status()};
+    }
     const result = this.request.cancel();
     const next = this.status();
     return {
@@ -169,9 +179,9 @@ export class WorkspaceSyncRestartControl {
     return this.coordinator?.requestRestart() ?? unavailable;
   }
 
-  cancel(): WorkspaceSyncRestartAction {
+  cancel(expectedId?: string): WorkspaceSyncRestartAction {
     const unavailable: WorkspaceSyncRestartAction = {result: "unavailable", view: this.unavailable()};
-    return this.coordinator?.cancelRestart() ?? unavailable;
+    return this.coordinator?.cancelRestart(expectedId) ?? unavailable;
   }
 
   commitAfterWindowsClosed(): RestartRequestResult {

@@ -6,7 +6,9 @@ import { readUserVersion } from "../persistence/schema-startup";
 import { requireCondition, SyncError } from "../sync/protocol";
 import { openWorkspaceSync, type WorkspaceSync, type WorkspaceSyncAdmission } from "../sync/workspace-sync";
 import { applyRestartIntent } from "./workspace-sync-restart";
-import { WorkspaceSyncIntentFile } from "./workspace-sync-intent";
+import { WorkspaceSyncIntentJournal, legacyApplyIntentPresent } from "./normal-apply-intent";
+import { readNormalApply, normalApplyBlocks } from "../sync/normal-apply-journal";
+import { assertRecoverySyncAllowed } from "../persistence/recovery-origin";
 import { safeSyncErrorCode } from "./workspace-sync-errors";
 import { CheckpointRemote } from "../sync/client";
 import { consumedDecisionMatches, decisionBelongsToCurrentBinding, readConflictDecision } from "../sync/conflict-decision";
@@ -48,6 +50,7 @@ export async function runStartupWorkspaceSyncDetailed(
   let opened: WorkspaceSync | undefined;
   let reconnect: (() => Promise<WorkspaceSync>) | undefined;
   try {
+    assertRecoverySyncAllowed(store.db);
     const mode = env.FOLIO_SYNC_MODE;
     requireCondition(mode === undefined || mode === "publish" || mode === "join" || mode === "recover", "invalid-sync-mode");
     // The previous environment-variable conflict resolution path could replace
@@ -62,17 +65,22 @@ export async function runStartupWorkspaceSyncDetailed(
     const directory = dirname(realpathSync(store.path));
     // Recovery rebind changes device/epoch ownership. Do not combine it with
     // a pending apply intent belonging to the pre-rebind binding.
-    const existingIntent = new WorkspaceSyncIntentFile(directory).read();
+    const existingIntent = new WorkspaceSyncIntentJournal(directory,store).read();
+    if (legacyApplyIntentPresent(directory)) return {message:"旧形式の同期予約を保全し適用を保留しています (legacy-apply-intent-held)"};
+    const normal = readNormalApply(store.db);
+    if (normal.status === "blocked") return {message:"通常の同期予約を確認できず同期を保留"};
     const conflictDecision = readConflictDecision(store.db);
     // Offer reconnect only for an already bound workspace. Promotion and
     // recovery rebind belong to windowless startup. Recheck at execution too:
     // an intent or schema change could occur after this observation.
     if (existingIntent.status === "empty" && syncMode !== "recover" && readUserVersion(store.db) === 5) {
       reconnect = () => {
+        assertRecoverySyncAllowed(store.db);
         requireCondition(env.FOLIO_SYNC_CONFLICT_CHOICE === undefined, "explicit-conflict-flow-required", 409);
-        const intent = new WorkspaceSyncIntentFile(directory).read();
+        const intent = new WorkspaceSyncIntentJournal(directory,store).read();
         const decision = readConflictDecision(store.db);
-        if (intent.status !== "empty" || readUserVersion(store.db) !== 5 || decision.status === "blocked" ||
+        if (intent.status !== "empty" || normalApplyBlocks(store.db) || readUserVersion(store.db) !== 5 || decision.status === "blocked" ||
+          (decision.status === "ready" && decision.record.state === "consumed" && decisionBelongsToCurrentBinding(store.db,decision.record) && !consumedDecisionMatches(store.db,decision.record)) ||
           (decision.status === "ready" && decision.record.state === "pending"))
           throw new SyncError("reconnect-held", 409);
         return openWorkspaceSync({...options, mode: undefined});

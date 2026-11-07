@@ -21,7 +21,7 @@ import { join } from "node:path";
 import { expect, it } from "vitest";
 import { Store } from "../src/persistence/store";
 import { attachFile } from "../src/persistence/assets";
-import { WorkspaceSyncIntentFile } from "../src/main/workspace-sync-intent";
+import { WorkspaceSyncIntentJournal } from "../src/main/normal-apply-intent";
 import { applyRestartIntent } from "../src/main/workspace-sync-restart";
 import { WorkspaceSyncService } from "../src/main/workspace-sync-service";
 import { WorkspaceSyncControl } from "../src/main/workspace-sync-control";
@@ -170,7 +170,7 @@ it(
       expect(offline.status()).toMatchObject({appliedRevision: 1, pending: true});
       // The windowless intent path reconciles the echo and applies revision 3.
       const intent = {...next, workspaceId, clientId: a.clientId, bindingId: a.bindingId, serverEpoch: server.serverEpoch};
-      const intentFile = new WorkspaceSyncIntentFile(join(root, "a"));
+      const intentFile = new WorkspaceSyncIntentJournal(join(root, "a"), reopenedStore);
       intentFile.create(intent);
       expect(await applyRestartIntent({directory: join(root, "a"), sync: {...a, store: reopenedStore}, readRecovery: () => ({status: "empty", generation: 0})})).toBe("applied");
       expect(intentFile.read().status).toBe("empty");

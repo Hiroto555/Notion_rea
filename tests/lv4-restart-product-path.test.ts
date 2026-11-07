@@ -4,7 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { expect, it, vi } from "vitest";
 import { WorkspaceSyncGate } from "../src/main/workspace-sync-gate";
-import { WorkspaceSyncIntentFile } from "../src/main/workspace-sync-intent";
+import { WorkspaceSyncIntentJournal } from "../src/main/normal-apply-intent";
 import { WorkspaceSyncRestartCoordinator } from "../src/main/workspace-sync-restart-coordinator";
 import { applyRestartIntent } from "../src/main/workspace-sync-restart";
 import { WorkspaceSyncService } from "../src/main/workspace-sync-service";
@@ -35,7 +35,7 @@ it("holds a requested restart until writes finish and applies the pinned staging
     const receiver = await openWorkspaceSync({...b, mode: "join"}); await receiver.receiveAndStage();
     expect(b.store.pages()).toEqual([]);
     const gate = new WorkspaceSyncGate(), service = new WorkspaceSyncService(receiver);
-    const intent = new WorkspaceSyncIntentFile(b.directory);
+    const intent = new WorkspaceSyncIntentJournal(b.directory, b.store);
     let windowsClosed = false;
     const coordinator = new WorkspaceSyncRestartCoordinator(intent, {
       target: () => service.restartTarget(), incoming: () => service.stagedChange(),
@@ -56,13 +56,13 @@ it("holds a requested restart until writes finish and applies the pinned staging
     release(); await write;
     windowsClosed = true;
     expect(finishWorkspaceQuit(options)).toBe("quit");
-    expect(intent.read().status).toBe("ready");
     await server.close(); serverClosed = true;
     const reopened = new Store(join(b.directory, "workspace.sqlite")); stores.push(reopened);
+    expect(new WorkspaceSyncIntentJournal(b.directory,reopened).read().status).toBe("ready");
     expect(await applyRestartIntent({directory: b.directory, sync: {...b, store: reopened},
       readRecovery: () => ({status: "empty", generation: 0})})).toBe("applied");
     expect(reopened.get(page.id).title).toBe("received");
-    expect(intent.read()).toEqual({status: "empty"});
+    expect(new WorkspaceSyncIntentJournal(b.directory,reopened).read()).toEqual({status: "empty"});
   } finally {
     if (!serverClosed) await server.close();
     for (const store of stores) store.close();

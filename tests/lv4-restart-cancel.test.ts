@@ -3,7 +3,7 @@ import { mkdirSync, mkdtempSync, realpathSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { expect, it } from "vitest";
-import { WorkspaceSyncIntentFile } from "../src/main/workspace-sync-intent";
+import { WorkspaceSyncIntentJournal } from "../src/main/normal-apply-intent";
 import { applyRestartIntent } from "../src/main/workspace-sync-restart";
 import { Store } from "../src/persistence/store";
 import { startCheckpointServer } from "../src/sync/checkpoint-server";
@@ -49,7 +49,7 @@ it("does not apply when a restart-intent cancel wins before the apply commit", a
     const directory = join(root, "b");
     const intent = {workspaceId, clientId: b.clientId, bindingId: b.bindingId,
       serverEpoch: server.serverEpoch, ...target};
-    const file = new WorkspaceSyncIntentFile(directory);
+    const file = new WorkspaceSyncIntentJournal(directory, reopened);
 
     // A binding change must leave the intent untouched and apply nothing.
     const foreign = {...intent, bindingId: randomUUID()};

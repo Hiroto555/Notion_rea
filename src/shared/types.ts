@@ -1,3 +1,4 @@
+import { archiveTargetSchema, archiveCursorSchema } from "./conflict-recovery";
 import type { PageWidth } from "./page-layout";
 import { z } from "zod";
 import { crashRecoverySnapshotSchema } from "./crash-recovery";
@@ -376,11 +377,15 @@ const managedGrowthLimitsSchema = z.object({
   maxDatabaseBytes: byteLimit, maxAssetBytes: byteLimit, maxBackupBytes: byteLimit, maxReceiptRows: byteLimit,
 }).strict();
 export const requestSchema = z.discriminatedUnion("type", [
+  z.object({type:z.literal("recovery:list"),cursor:archiveCursorSchema.optional()}).strict(),
+  z.object({type:z.literal("recovery:status"),operationId:z.string().uuid().optional()}).strict(),
+  z.object({type:z.literal("recovery:export"),operationId:z.string().uuid(),target:archiveTargetSchema,mode:z.enum(["metadata-only","complete-bundle"])}).strict(),
+  z.object({type:z.literal("recovery:restore"),operationId:z.string().uuid(),target:archiveTargetSchema}).strict(),
   z.object({type: z.literal("sync:status")}).strict(),
   z.object({type: z.literal("sync:run")}).strict(),
   z.object({type: z.literal("sync:restartStatus")}).strict(),
   z.object({type: z.literal("sync:restartRequest")}).strict(),
-  z.object({type: z.literal("sync:restartCancel")}).strict(),
+  z.object({type: z.literal("sync:restartCancel"), reservationId:z.string().uuid().optional()}).strict(),
   z.object({type: z.literal("sync:conflict")}).strict(),
   z.object({type: z.literal("sync:conflictDecisionStatus")}).strict(),
   z.object({type: z.literal("sync:conflictPreview"), choice: z.enum(["local", "remote"]),

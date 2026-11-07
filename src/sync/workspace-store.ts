@@ -1,3 +1,7 @@
+import { assertRecoverySyncAllowed } from "../persistence/recovery-origin";
+import { legacyApplyIntentPresent } from "./legacy-apply-intent";
+import { dirname } from "node:path";
+import { assertPendingNormalApply, completeNormalApply, normalApplyBlocks, type NormalApplyRecord } from "./normal-apply-journal";
 import { randomUUID } from "node:crypto";
 import type { DatabaseSync } from "node:sqlite";
 import type { Store } from "../persistence/store";
@@ -272,6 +276,7 @@ export class WorkspaceSyncStore {
   }
 
   enable(mode: "publish" | "join", beforeEnable: () => void): void {
+    assertRecoverySyncAllowed(this.store.db);
     requireCondition(
       mode === "publish" || mode === "join",
       "invalid-sync-mode",
@@ -333,6 +338,7 @@ export class WorkspaceSyncStore {
    * device before resetting anything. The restored content becomes a new
    * candidate at revision zero, so it cannot overwrite a remote head. */
   rebindRestored(beforeRebind: () => void): void {
+    assertRecoverySyncAllowed(this.store.db);
     const prior = this.readStateOrNull();
     requireCondition(
       prior && userVersion(this.store.db) === 5,
@@ -668,8 +674,16 @@ export class WorkspaceSyncStore {
   applyNext(
     expected: Change,
     assertAssets: (assets: Checkpoint["assets"]) => void,
+    reservation?: NormalApplyRecord,
   ): void {
     this.store.transaction(() => {
+      requireCondition(!legacyApplyIntentPresent(dirname(this.store.path)), "legacy-apply-intent-held");
+      if (reservation) {
+        assertPendingNormalApply(this.store.db,reservation);
+        requireCondition(reservation.target.revision === expected.revision && reservation.target.checkpointHash === expected.checkpointHash &&
+          reservation.target.workspaceId === this.identity.workspaceId && reservation.target.clientId === this.identity.clientId &&
+          reservation.target.bindingId === this.identity.bindingId && reservation.target.serverEpoch === this.identity.serverEpoch, "normal-apply-target-changed");
+      } else requireCondition(!normalApplyBlocks(this.store.db),"normal-apply-present");
       const state = this.readState();
       requireCondition(!this.hasUnresolvedConflict(), "sync-conflict-open");
       requireCondition(
@@ -701,6 +715,10 @@ export class WorkspaceSyncStore {
         )
         .run(revision, state.generation);
       this.writeApplied(revision, expected.checkpoint);
+      if (reservation) {
+        requireCondition(!legacyApplyIntentPresent(dirname(this.store.path)), "legacy-apply-intent-held");
+        completeNormalApply(this.store.db,reservation);
+      }
     });
   }
 
@@ -828,6 +846,7 @@ export class WorkspaceSyncStore {
 
   chooseLocal(expectedRevision: number, options: ConflictChoiceOptions = {}): Commit {
     return this.store.transaction(() => {
+      requireCondition(!normalApplyBlocks(this.store.db) && !legacyApplyIntentPresent(dirname(this.store.path)),"normal-apply-present");
       const state = this.readState(),
         row = this.unresolvedConflict();
       requireCondition(!!row, "sync-conflict-not-found");
@@ -909,6 +928,7 @@ export class WorkspaceSyncStore {
     options: ConflictChoiceOptions = {},
   ): void {
     this.store.transaction(() => {
+      requireCondition(!normalApplyBlocks(this.store.db) && !legacyApplyIntentPresent(dirname(this.store.path)),"normal-apply-present");
       const state = this.readState(),
         row = this.unresolvedConflict();
       requireCondition(!!row, "sync-conflict-not-found");

@@ -318,6 +318,7 @@ it("classifies every request and enforces the read/checkpoint/write guard before
     Request["type"] | "storage:pressure",
     "read" | "checkpoint" | "write" | "maintenance"
   > = {
+  "recovery:list":"read", "recovery:status":"read", "recovery:export":"read", "recovery:restore":"read",
     "recovery:read": "read",
     "recovery:write": "checkpoint",
     "recovery:copy": "write",

@@ -3,7 +3,7 @@ import { mkdirSync, mkdtempSync, realpathSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { expect, it } from "vitest";
-import { WorkspaceSyncIntentFile } from "../src/main/workspace-sync-intent";
+import { WorkspaceSyncIntentJournal } from "../src/main/normal-apply-intent";
 import { applyRestartIntent } from "../src/main/workspace-sync-restart";
 import { runStartupWorkspaceSync, runStartupWorkspaceSyncDetailed } from "../src/main/workspace-sync-startup";
 import { Store } from "../src/persistence/store";
@@ -70,7 +70,7 @@ async function stagedReceiver(
     serverEpoch: server.serverEpoch,
     ...target,
   };
-  const file = new WorkspaceSyncIntentFile(receiver.directory);
+  const file = new WorkspaceSyncIntentJournal(receiver.directory, reopened);
   file.create(intent);
   return { receiver, reopened, page, intent, file };
 }

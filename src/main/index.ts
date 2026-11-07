@@ -1,3 +1,4 @@
+import { ConflictRecoveryService } from "./conflict-recovery-service";
 import { createRichDocumentProtection } from "./rich-document-protection";
 import { openWorkspaceAtStartup, admitStartupStorage } from "./workspace-startup";
 import { assertReadOnlyRequest } from "./read-only-workspace";
@@ -6,7 +7,7 @@ import { WorkspaceSyncService } from "./workspace-sync-service";
 import { WorkspaceSyncControl } from "./workspace-sync-control";
 import { WorkspaceSyncGate } from "./workspace-sync-gate";
 import { WorkspaceSyncRestartControl, WorkspaceSyncRestartCoordinator } from "./workspace-sync-restart-coordinator";
-import { WorkspaceSyncIntentFile } from "./workspace-sync-intent";
+import { WorkspaceSyncIntentJournal } from "./normal-apply-intent";
 import { finishWorkspaceQuit } from "./workspace-quit";
 import { WorkspaceConflictDecisionControl } from "./workspace-conflict-decision-control";
 import { exportConflictAfterPicker, exportConflictCheckpoint } from "./conflict-export";
@@ -153,6 +154,7 @@ if (startupError) {
         return selected.canceled ? null : selected.filePaths[0];
       });
       const syncGate = new WorkspaceSyncGate();
+      const conflictRecovery = new ConflictRecoveryService(store,dirname(realpathSync(store.path)));
       const startupSync: WorkspaceSyncStartupResult = crashRecovery
         ? await runStartupWorkspaceSyncDetailed(store, () => crashRecovery.read(), process.env,
             (bytes, purpose) => storage.admitSyncWrite(bytes, purpose))
@@ -167,7 +169,7 @@ if (startupError) {
       if (!readOnly && syncService && crashRecovery) {
         try {
           restartCoordinator = new WorkspaceSyncRestartCoordinator(
-            new WorkspaceSyncIntentFile(dirname(realpathSync(store.path))),
+            new WorkspaceSyncIntentJournal(dirname(realpathSync(store.path)),store,(bytes) => storage.admitSyncWrite(bytes,"content")),
             {
               target: () => syncService.restartTarget(),
               incoming: () => syncService.stagedChange(),
@@ -185,6 +187,9 @@ if (startupError) {
           );
         } catch { restartCoordinator = undefined; }
       }
+      if (!readOnly && !restartCoordinator) {
+        restartCoordinator = new WorkspaceSyncRestartCoordinator(new WorkspaceSyncIntentJournal(dirname(realpathSync(store.path)),store),undefined);
+      }
       restartControl = new WorkspaceSyncRestartControl(restartCoordinator, readOnly);
       conflictDecisionControl = new WorkspaceConflictDecisionControl(store, syncService && crashRecovery ? {
         preview: (choice) => syncService.conflictResolutionPreview(choice),
@@ -195,7 +200,7 @@ if (startupError) {
         windowsClosed: () => BrowserWindow.getAllWindows().length === 0,
         normalIntentClear: () => {
           const view = restartControl!.status();
-          return new WorkspaceSyncIntentFile(dirname(realpathSync(store.path))).read().status === "empty" &&
+          return new WorkspaceSyncIntentJournal(dirname(realpathSync(store.path)),store,(bytes) => storage.admitSyncWrite(bytes,"content")).read().status === "empty" &&
             (!view.available || (view.state === "idle" && !view.scheduled));
         },
       } : undefined, readOnly, (bytes) => storage.admitSyncWrite(bytes, "content"));
@@ -250,10 +255,19 @@ if (startupError) {
           Buffer.byteLength(JSON.stringify(req)) > 32_000_000
         )
           throw new Error("リクエストが大きすぎます");
+        if (req.type === "recovery:list") return conflictRecovery.list(req.cursor);
+        if (req.type === "recovery:status") return conflictRecovery.status(req.operationId);
+        if (req.type === "recovery:export" || req.type === "recovery:restore") return syncGate.write(() => {
+          if (!isAuthorized()) throw new Error("Unauthorized IPC sender");
+          return conflictRecovery.run(req.target,req.type === "recovery:restore" ? "restore" : req.mode,async () => {
+            const selected = await dialog.showOpenDialog(requestWindow,{title:"保全データの新規取り出し先",properties:["openDirectory","createDirectory"]});
+            return selected.canceled ? null : selected.filePaths[0] ?? null;
+          },isAuthorized,req.operationId);
+        });
         if (req.type === "sync:status") return syncControl.status();
         if (req.type === "sync:restartStatus") return restartControl!.status();
         if (req.type === "sync:restartRequest") return restartControl!.request();
-        if (req.type === "sync:restartCancel") return restartControl!.cancel();
+        if (req.type === "sync:restartCancel") return restartControl!.cancel(req.reservationId);
         if (req.type === "sync:run") return syncControl.transfer(() => {
           if (!isAuthorized()) throw new Error("Unauthorized IPC sender");
           if (conflictDecisionControl!.hasReservation()) throw new Error("conflict-decision-present");

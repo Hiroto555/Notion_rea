@@ -7,6 +7,12 @@ import { RecordRepository } from "./record-repository";
 import { createLegacyRecordMap } from "./legacy-record-map";
 import { markRecordStoreVersion } from "./record-version";
 import { writeRecoveryOrigin } from "./recovery-origin";
+import { recoveryOriginSchema, readRecoveryOrigin } from "./recovery-origin";
+import { RECOVERY_INCOMPLETE, RECOVERY_ORIGIN_KEY } from "../shared/conflict-recovery";
+import { assertRecoveryDirectory, hashRecoveryFile } from "./recovery-io";
+import { existsSync, readdirSync } from "node:fs";
+import { join } from "node:path";
+import { Store as LocalStore } from "./store";
 
 /** Only a freshly created, empty local v3 Store. Never source DDL or v5 state. */
 export function initializeRecoveredContent(store: Store, checkpoint: Checkpoint, recoveryId: string): void {
@@ -43,4 +49,30 @@ export function initializeRecoveredContent(store: Store, checkpoint: Checkpoint,
     markRecordStoreVersion(db); writeRecoveryOrigin(db,recoveryId,hashCheckpoint(checkpoint));
     requireCondition(hashCheckpoint(buildWorkspaceCheckpoint(db)) === hashCheckpoint(checkpoint),"recovery-content-mismatch");
   });
+}
+
+/** Same complete-content inspection for first completion and unknown recovery. */
+export function inspectRecoveredContent(directory:string, checkpointHash:string, allowIncomplete=false):string {
+  assertRecoveryDirectory(directory);
+  requireCondition(allowIncomplete || !existsSync(join(directory,RECOVERY_INCOMPLETE)),"recovery-incomplete");
+  const store=new LocalStore(join(directory,"workspace.sqlite"),{readOnly:true,allowIncompleteRecovery:allowIncomplete});
+  try {
+    const db=store.db, checkpoint=buildWorkspaceCheckpoint(db);
+    requireCondition(db.prepare("PRAGMA user_version").get()?.user_version===4 && validateWorkspaceCheckpoint(checkpoint) &&
+      hashCheckpoint(checkpoint)===checkpointHash,"recovery-content-mismatch");
+    const settings=db.prepare("SELECT key,value FROM settings").all();
+    requireCondition(settings.length===2 && settings.every(row=>row.key===RECOVERY_ORIGIN_KEY || row.key==="folio.recovery.workspaceId"),"recovery-private-data-present");
+    const marker=recoveryOriginSchema.parse(JSON.parse(String(settings.find(row=>row.key===RECOVERY_ORIGIN_KEY)?.value)));
+    requireCondition(readRecoveryOrigin(db)==="recovered" && marker.checkpointHash===checkpointHash && settings.find(row=>row.key==="folio.recovery.workspaceId")?.value===marker.recoveryId,
+      "recovery-origin-mismatch");
+    requireCondition(db.prepare("SELECT count(*) AS n FROM save_receipts").get()?.n===0 &&
+      db.prepare("SELECT count(*) AS n FROM sqlite_master WHERE name LIKE 'workspace_sync_%'").get()?.n===0,"recovery-private-data-present");
+    const names=readdirSync(join(directory,"assets")).sort();
+    requireCondition(names.length===checkpoint.assets.length,"recovery-assets-mismatch");
+    for(const asset of checkpoint.assets) {
+      const file=hashRecoveryFile(directory,`assets/${asset.id}`,20_000_000);
+      requireCondition(file.bytes===asset.bytes && file.sha256===asset.sha256,"recovery-assets-mismatch");
+    }
+    return marker.recoveryId;
+  } finally {store.close();}
 }

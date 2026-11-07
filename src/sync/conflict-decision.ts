@@ -1,3 +1,6 @@
+import { normalApplyBlocks } from "./normal-apply-journal";
+import { legacyApplyIntentPresent } from "./legacy-apply-intent";
+import { dirname } from "node:path";
 import { z } from "zod";
 import type { DatabaseSync } from "node:sqlite";
 import {
@@ -104,11 +107,17 @@ function writeCas(
   requireCondition(result.changes === 1, "conflict-decision-changed", 409);
 }
 
+function assertNormalClear(db: DatabaseSync): void {
+  requireCondition(db.isTransaction, "conflict-decision-transaction-required");
+  const file = db.prepare("PRAGMA database_list").all().find(row => row.name === "main")?.file;
+  requireCondition(!normalApplyBlocks(db) && (typeof file !== "string" || !file || !legacyApplyIntentPresent(dirname(file))), "normal-apply-present",409);
+}
 export function reserveConflictDecision(
   db: DatabaseSync,
   id: string,
   target: WorkspaceConflictResolutionTarget,
 ): void {
+  assertNormalClear(db);
   const previous = readConflictDecision(db);
   requireCondition(
     previous.status === "empty" ||
@@ -149,6 +158,7 @@ export function completeConflictDecision(
   target: WorkspaceConflictResolutionTarget,
   result: ConflictDecisionResult,
 ): void {
+  assertNormalClear(db);
   assertPendingConflictDecision(db, id, target);
   const previous = readConflictDecision(db) as Extract<
     ConflictDecisionRead,

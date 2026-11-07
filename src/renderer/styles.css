@@ -2671,3 +2671,6 @@ kbd {
 .readonly-workspace nav { display: flex; flex-wrap: wrap; gap: 8px; margin: 20px 0; }
 .readonly-workspace pre { white-space: pre-wrap; font-family: inherit; }
 .readonly-workspace input { margin-left: 8px; }
+
+.conflict-recovery-details { max-width: 960px; margin: 12px 0; padding: 12px; border: 1px solid var(--border); border-radius: 8px; overflow-wrap: anywhere; }
+.conflict-recovery-details > summary { cursor: pointer; }
