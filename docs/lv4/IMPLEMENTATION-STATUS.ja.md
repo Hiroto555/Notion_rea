@@ -1,5 +1,7 @@
 # Lv4 実装状況（M1非GUI完了・停止）
 
+> **Linux GUI追加受入**：GitHub Actionsの仮想画面で42/42件PASS（retry/skip 0）。[範囲・証拠・初回失敗の修正](GUI-LINUX-CI.ja.md)を参照。このMacのGUIは起動せず、製品srcはM1と同一。Mac/OS固有・実機2台・未移植GUIはNOT_RUN、Lv3維持、A3未着手。以下のM1完了当時のGUI未実施記録と区別する。
+
 > **2026-11-08 M1完了**：利用者の明示指示でA0〜A2を実施し、A3へ進まず停止した。通常予約をUUID/CASのSQLite journalへ移し、保全archiveの一覧・JSON/添付付き書出し・新規v4 DBへのコピー復元を接続した。結果不明とIPC応答喪失は同じ操作IDで照会するまで新効果を止める。最終候補`d509edf`は型検査・**180ファイル／1,673テスト**・build PASS、Sol XHigh最終レビューで未解決P0/P1なし。[M1完了記録](M1-COMPLETION.ja.md)、[手順書](m1/RECOVERY-RUNBOOK.ja.md)、[最終ログ](validation/m1-quiet.txt)を参照。
 
 GUI/Electron/実IPC/実IME/物理2台はNOT_RUN、確認済みLevelはLv3のまま。元master・実データは変更せず、ローカルM1ブランチへcommitした。M1追加分のpush/mergeは行っていない。旧sidecarは保全停止し、解除/移行は未対応。回収先の同期保留markerも解除しない。

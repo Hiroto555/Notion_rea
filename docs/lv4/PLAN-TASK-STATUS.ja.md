@@ -18,7 +18,7 @@
 | T10 | 未完・条件付き | 容量上限の保全停止と一部計測を実施。履歴の有界保持・bootstrap・差分転送の必要性と方式は未確定 |
 | T11 | 部分 | fixture運用CLIと、添付を含まないserver catalog snapshotの作成・読み取り専用概要検査の内部API。履歴全件・復元可能性の検査、実serverのCLI、添付を含む完全backup・復元・epoch更新は未完 |
 | T12 | 部分 | ACK/IPC応答喪失、通信断、backup失敗、識別/入力、両予約のCOMMIT前後、FD/path差替え・FIFO・ENOSPC注入、回収完了不明の再照合を一時環境で確認。製品全経路の実操作故障受入は未完 |
-| T13 | 部分 | 非GUI状態遷移試験とGUI受入待ちの項目を記録。表示用fixtureのGUI spec 2件を追加し一覧確認のみ。製品の実IPC・終了・dialog等のGUI specと画面検証は未完 |
+| T13 | 部分 | Linux仮想画面で実Electron/実IPC14件、代替応答Electron表示2件、Chromium表示26件の計42件PASS。Mac/OS・未移植GUI suiteはNOT_RUN。全GUI受入ではない |
 | T14 | NOT_RUN | GUI batch、物理Mac 2台・実トンネル、Windows分岐の受入を未実施 |
 
 最新の試験結果と制約は `IMPLEMENTATION-STATUS.ja.md`、各受入条件は `GATE-STATUS.ja.md` を参照する。

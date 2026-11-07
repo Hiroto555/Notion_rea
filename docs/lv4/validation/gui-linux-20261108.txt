@@ -1,0 +1,61 @@
+Linux GUI CI acceptance — 2026-11-08 JST
+Candidate: b7df7f6ab6a6ae00e1b549158b6b729e91537bbc
+GUI: https://github.com/Hiroto555/Notion_rea/actions/runs/42395400484
+Quiet: https://github.com/Hiroto555/Notion_rea/actions/runs/42395400463
+Artifact: https://github.com/Hiroto555/Notion_rea/actions/runs/42395400484/artifacts/13583387355
+One worker; retries=0; all 42 registered tests passed. macOS GUI/native OS/physical IME NOT_RUN.
+Scope: real Electron + real IPC 14, Electron mocked presentation 2, Chromium mocked presentation 26.
+No local Electron/browser, master merge, or A3 implementation.
+
+2026-11-07T17:16:35.3022047Z Running 42 tests using 1 worker
+2026-11-07T17:16:44.4259980Z   ✓   1 [electron-linux-real-ipc] › tests/e2e/linux-ci/m1-recovery.spec.ts:14:1 › real IPC lists offline archives, isolates corruption, paginates and handles Escape (8.5s)
+2026-11-07T17:16:45.8737935Z   ✓   2 [electron-linux-real-ipc] › tests/e2e/linux-ci/m1-recovery.spec.ts:38:1 › real IPC writes JSON-only without a manifest or attachments (1.4s)
+2026-11-07T17:16:47.2586421Z   ✓   3 [electron-linux-real-ipc] › tests/e2e/linux-ci/m1-recovery.spec.ts:63:1 › real IPC exports and independently verifies every bundled attachment (1.4s)
+2026-11-07T17:16:49.4079581Z   ✓   4 [electron-linux-real-ipc] › tests/e2e/linux-ci/m1-recovery.spec.ts:90:1 › real IPC restores a new v4 copy, then reopening it holds ambient sync (2.1s)
+2026-11-07T17:16:50.7775148Z   ✓   5 [electron-linux-real-ipc] › tests/e2e/linux-ci/m1-recovery.spec.ts:144:1 › cancelled picker creates no output and allows a later request (1.4s)
+2026-11-07T17:16:52.1721865Z   ✓   6 [electron-linux-real-ipc] › tests/e2e/linux-ci/m1-recovery.spec.ts:165:1 › missing attachment preserves an incomplete output and never reports success (1.4s)
+2026-11-07T17:16:53.5166015Z   ✓   7 [electron-linux-real-ipc] › tests/e2e/linux-ci/m1-recovery.spec.ts:186:1 › source destination is refused without overwriting source (1.3s)
+2026-11-07T17:16:54.8686955Z   ✓   8 [electron-linux-real-ipc] › tests/e2e/linux-ci/m1-recovery.spec.ts:205:1 › target changed while picker waits is refused before creating output (1.3s)
+2026-11-07T17:16:56.3381465Z   ✓   9 [electron-linux-real-ipc] › tests/e2e/linux-ci/m1-recovery.spec.ts:231:1 › lost host success reply is reconciled by the same operation ID without a second effect (1.5s)
+2026-11-07T17:16:58.2932094Z   ✓  10 [electron-linux-real-ipc] › tests/e2e/linux-ci/m1-recovery.spec.ts:266:1 › ordinary edits survive Electron close and restart through the real save IPC (1.9s)
+2026-11-07T17:17:00.0767032Z   ✓  11 [electron-linux-real-ipc] › tests/e2e/output-boundary.spec.ts:5:1 › S1 real IPC protects workspace outputs and permits external namesake (1.8s)
+2026-11-07T17:17:03.0435524Z   ✓  12 [electron-linux-real-ipc] › tests/e2e/page-order-repair.spec.ts:83:1 › page order repair previews, backs up and reloads before saving the changed Page (3.0s)
+2026-11-07T17:17:05.0844869Z   ✓  13 [electron-linux-real-ipc] › tests/e2e/page-order-repair.spec.ts:127:1 › page order repair rejects a stale preview and leaves the current Pages untouched (2.0s)
+2026-11-07T17:17:07.1147891Z   ✓  14 [electron-linux-real-ipc] › tests/e2e/page-order-repair.spec.ts:157:1 › page order repair keeps a lost reply pending until saved state is reloaded without a resend (2.0s)
+2026-11-07T17:17:09.5525930Z   ✓  15 [electron-linux-presentation-mocked] › tests/e2e/lv4-sync-presentation.spec.ts:5:1 › shows bounded conflict excerpts and explains what is excluded (1.9s)
+2026-11-07T17:17:11.0166692Z   ✓  16 [electron-linux-presentation-mocked] › tests/e2e/lv4-sync-presentation.spec.ts:43:1 › shows restart reservation and cancellation as provisional (1.4s)
+2026-11-07T17:17:13.7458840Z   ✓  17 [chromium-presentation-mocked] › tests/e2e/db-ui-legacy.spec.ts:10:1 › legacy board keeps a saved descending group direction (2.2s)
+2026-11-07T17:17:17.4611738Z   ✓  18 [chromium-presentation-mocked] › tests/e2e/db-ui-readonly.spec.ts:52:1 › view-only modes permit local navigation without creating drafts or mutation callbacks (2.9s)
+2026-11-07T17:17:18.1478184Z   ✓  19 [chromium-presentation-mocked] › tests/e2e/db-ui-readonly.spec.ts:77:1 › opening a live uniquely owned row sends only the navigation callback (665ms)
+2026-11-07T17:17:18.8624970Z   ✓  20 [chromium-presentation-mocked] › tests/e2e/db-ui-readonly.spec.ts:83:1 › a mismatched owner or duplicated page identity cannot navigate (679ms)
+2026-11-07T17:17:22.7628774Z   ✓  21 [chromium-presentation-mocked] › tests/e2e/db-ui.spec.ts:127:1 › table, board, gallery and calendar open the same record identity and values (3.1s)
+2026-11-07T17:17:28.7610999Z   ✓  22 [chromium-presentation-mocked] › tests/e2e/db-ui.spec.ts:168:1 › record page saves, retains a failed edit, retries and handles trash/restore and read-only (6.0s)
+2026-11-07T17:17:30.4153743Z   ✓  23 [chromium-presentation-mocked] › tests/e2e/db-ui.spec.ts:226:1 › inline table edits call record patches with pageId and never save rows (1.6s)
+2026-11-07T17:17:32.1555491Z   ✓  24 [chromium-presentation-mocked] › tests/e2e/db-ui.spec.ts:286:1 › filter, multiple sorts, grouping and view CRUD persist through updateSettings (1.7s)
+2026-11-07T17:17:34.0219703Z   ✓  25 [chromium-presentation-mocked] › tests/e2e/db-ui.spec.ts:332:1 › filter builder adds a typed condition and a settings failure can be retried (1.9s)
+2026-11-07T17:17:36.3867611Z   ✓  26 [chromium-presentation-mocked] › tests/e2e/db-ui.spec.ts:356:1 › a pending settings write is rebased onto an external projection (2.3s)
+2026-11-07T17:17:37.6093164Z   ✓  27 [chromium-presentation-mocked] › tests/e2e/db-ui.spec.ts:394:1 › board grouping follows the saved direction and the direction control (1.2s)
+2026-11-07T17:17:39.1369372Z   ✓  28 [chromium-presentation-mocked] › tests/e2e/db-ui.spec.ts:409:1 › board drag moves a record between groups through patchRecord (1.5s)
+2026-11-07T17:17:40.4741935Z   ✓  29 [chromium-presentation-mocked] › tests/e2e/db-ui.spec.ts:431:1 › keyboard handoff, Escape return, origin focus and scroll restoration (1.3s)
+2026-11-07T17:17:41.7427360Z   ✓  30 [chromium-presentation-mocked] › tests/e2e/db-ui.spec.ts:491:1 › a filtered-out record stays open and returning does not focus a hidden row (1.3s)
+2026-11-07T17:17:44.4302517Z   ✓  31 [chromium-presentation-mocked] › tests/e2e/db-ui.spec.ts:510:1 › create, duplicate, trash and restore show ACKs and update the projection (2.7s)
+2026-11-07T17:17:46.0162598Z   ✓  32 [chromium-presentation-mocked] › tests/e2e/db-ui.spec.ts:551:1 › a failed cell stays retryable after another cell succeeds (1.6s)
+2026-11-07T17:17:47.5664137Z   ✓  33 [chromium-presentation-mocked] › tests/e2e/db-ui.spec.ts:581:1 › retry retains a failed cell when another writer changed the same cell (1.5s)
+2026-11-07T17:17:49.0376300Z   ✓  34 [chromium-presentation-mocked] › tests/e2e/db-ui.spec.ts:614:1 › Escape on an absent cell writes nothing and deletes after a value (1.5s)
+2026-11-07T17:17:51.2575311Z   ✓  35 [chromium-presentation-mocked] › tests/e2e/db-ui.spec.ts:646:1 › an optimistic view keeps its id through a failed add and queued rename (2.2s)
+2026-11-07T17:17:53.1695030Z   ✓  36 [chromium-presentation-mocked] › tests/e2e/db-ui.spec.ts:689:1 › an optimistic duplicate keeps its id through a failed write and queued rename (1.9s)
+2026-11-07T17:17:55.0688087Z   ✓  37 [chromium-presentation-mocked] › tests/e2e/db-ui.spec.ts:730:1 › a same-field external change is reported instead of overwritten (1.9s)
+2026-11-07T17:17:56.9623114Z   ✓  38 [chromium-presentation-mocked] › tests/e2e/db-ui.spec.ts:764:1 › filter and view-name edits are sent before navigation without blur (1.9s)
+2026-11-07T17:17:59.0895818Z   ✓  39 [chromium-presentation-mocked] › tests/e2e/db-ui.spec.ts:809:1 › deleting a view is rejected after the same view changed externally (2.1s)
+2026-11-07T17:18:01.2315482Z   ✓  40 [chromium-presentation-mocked] › tests/e2e/db-ui.spec.ts:846:1 › a newer cell edit supersedes an older failed patch before its ACK (2.1s)
+2026-11-07T17:18:04.8430420Z   ✓  41 [chromium-presentation-mocked] › tests/e2e/db-ui.spec.ts:901:1 › a failed new view keeps stable filter/sort ids for queued edits (3.6s)
+2026-11-07T17:18:06.8757141Z   ✓  42 [chromium-presentation-mocked] › tests/e2e/db-ui.spec.ts:947:1 › 960/1024/1440 and narrow layout, dark theme, long text and an image do not overflow (2.0s)
+2026-11-07T17:18:06.9896425Z   42 passed (1.6m)
+
+2026-11-07T17:15:57.5166876Z [quiet] PASS stage=typecheck in 14.0s
+2026-11-07T17:17:31.8928010Z  Test Files  181 passed (181)
+2026-11-07T17:17:31.8935809Z       Tests  1678 passed (1678)
+2026-11-07T17:17:32.0630546Z [quiet] PASS stage=test in 94.5s
+2026-11-07T17:17:50.5903223Z [quiet] PASS stage=build in 18.5s
+2026-11-07T17:17:50.5903827Z [quiet] PASS all 3 stages in 127.1s
+2026-11-07T17:17:50.6398559Z {"status":"PASS","files":3,"scope":"HTML script/style references and CSS dependencies are local build files"}

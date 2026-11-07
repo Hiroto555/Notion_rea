@@ -1,5 +1,7 @@
 # GUI検証枠と過去の確認待ち項目
 
+> **2026-11-08 Linux CI**：統合ツリーの並び順修復3件とM1等を含む[42件がPASS](lv4/GUI-LINUX-CI.ja.md)。Macの実操作とページツリーの実dragは引き続きNOT_RUN。以下は各記録時点の状態。
+
 ## 2026-11-07 ページツリーと並び順修復の追加差分
 
 対象は `codex/folio-page-tree-dnd-20261105` の専用 worktree。今回の追加 GUI 試験は **NOT_RUN**。AGENTS.md に従い、Electron を開く実行範囲の確認後に次を実施する。

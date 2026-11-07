@@ -1,14 +1,14 @@
 # Lv4 GUI・実機の受入待ち
 
-> **実行先の分離（2026-11-08）**：利用者がGitHub Actions＋Linux仮想画面でのGUI実行を指示した。[CI対象42件と結果](GUI-LINUX-CI.ja.md)を最新の実行記録とする。[Mac/OS固有](GUI-MAC-ACCEPTANCE.ja.md)は別枠でNOT_RUN。このMacではGUIを起動しない。以下は従来の待ち項目であり、Linuxの確認範囲とMacの未確認範囲を混同しない。
+> **実行先の分離（2026-11-08）**：利用者の指示によりGitHub Actions＋Linux仮想画面の42件がPASSした（実Electron/実IPC14件、代替応答のElectron表示2件、Chromium表示26件）。[CI対象42件と結果](GUI-LINUX-CI.ja.md)を最新の実行記録とする。[Mac/OS固有](GUI-MAC-ACCEPTANCE.ja.md)は別枠でNOT_RUN。このMacではGUIを起動しない。以下は従来の待ち項目であり、Linuxの確認範囲とMacの未確認範囲を混同しない。
 
 M1は非GUIで完了しA3前で停止した。[候補・証拠](M1-COMPLETION.ja.md)を参照。以下の実行許可や合格を得た意味ではない。
 
-状態: **NOT_RUN**。この候補をLv4完成として扱わない。GUIは利用者の明示指示後、今回の候補をビルドし、専用の一時 `FOLIO_DATA_DIR` で `npm run test:e2e:batch` を入口に実施する。実機2台と実トンネルは別の受入として記録する。
+Mac・実機の状態: **NOT_RUN**。この候補をLv4完成として扱わない。GUIは利用者の明示指示後、今回の候補をビルドし、専用の一時 `FOLIO_DATA_DIR` で `npm run test:e2e:batch` を入口に実施する。実機2台と実トンネルは別の受入として記録する。
 
 ## M1で追加した導線のGUI受入待ち
 
-すべて **NOT_RUN**。Nodeのmock/pure modelの合格と区別する。
+Macの実操作はすべて **NOT_RUN**。Linuxでは上記CI範囲を実行済み。Nodeのmock/pure modelとも区別する。
 
 - 同期設定なし・無効・未接続・read-onlyでも、保全一覧と回収操作へ到達する。通常/競合予約の保留・取消し、旧sidecarの解除未対応が分かる。
 - 「保全した競合データを取り出す」の表示、小画面・dark theme・スクロール・focus・Escape・キーボード、破損行とpagination、選択対象の表示を確認する。

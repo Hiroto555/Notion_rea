@@ -1,6 +1,6 @@
 # Folio Lv4 の現在地
 
-2026-11-08 JST。**M1（A0〜A2）の非GUI実装・受入を完了し、A3へ進まず停止した。確認済みの段階はLv3。** GUI・Electron・実機2台の受入はNOT_RUN。Lv4全体は未完成。
+2026-11-08 JST。**M1（A0〜A2）を完了し、Linux仮想画面のGUI 42件も受入した。A3未着手、確認済みLevelはLv3。** [CIの範囲と結果](GUI-LINUX-CI.ja.md)を参照。Mac固有・実機2台・未移植GUI suiteはNOT_RUN。Lv4全体は未完成。
 
 利用者のM1実行指示に従い、Codexが管理・統合、DeepSeekが最大4本で並列実装・独立試験、Sol XHighが安全性レビューを担当した。最終候補は`d509edf`、型検査・**180ファイル／1,673テスト**・build PASS、未解決P0/P1なし。[M1完了記録](M1-COMPLETION.ja.md)と[回収手順書](m1/RECOVERY-RUNBOOK.ja.md)を最初に読む。
 

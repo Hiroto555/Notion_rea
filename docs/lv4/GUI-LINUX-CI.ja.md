@@ -2,6 +2,8 @@
 
 2026-11-08。利用者の指示により、GUI試験の実行先をGitHub-hosted Linuxの仮想画面へ分ける。このMacではElectron/ブラウザ/OS clipboard/native dialogを起動しない。統合ツリーと合成一時データを使用し、masterへマージせず、A3以降の製品実装は開始しない。
 
+**実行済み：Linux GUI 42件すべてPASS（skip 0、retry 0、1 worker）。** 候補`b7df7f6`の[GUI run #2](https://github.com/Hiroto555/Notion_rea/actions/runs/42395400484)と[quiet-checks](https://github.com/Hiroto555/Notion_rea/actions/runs/42395400463)が合格した。非GUIは181ファイル／1,678テスト・型検査・build PASS。[抜粋ログ](validation/gui-linux-20261108.txt)、[レポートartifact](https://github.com/Hiroto555/Notion_rea/actions/runs/42395400484/artifacts/13583387355)。Mac固有・未移植suiteは未確認のまま残す。
+
 ## 実行の境界
 
 | 区分 | 場所・入口 | 扱う証拠 |
@@ -47,13 +49,13 @@ npm run test:e2e -- --list --config playwright.linux-ci.config.ts
 
 GUIの本実行はGitHub上のPRのChecksを参照する。`gui-linux-xvfb`の成功、件数、skip/retryの有無、対象headを確認する。失敗はassertion・fixture・環境導入に分けて調べ、未実行をPASSにしたり、失敗を自動skipへ変更したりしない。
 
-HTML/JSONレポートと失敗時trace、合成データのスクリーンショットは`output/playwright-linux/`だけをartifactへ保存し、保持は7日。workspace DBやprofileをまとめてuploadしない。通常のMacでreportを自動で開かない。最終結果は本資料とPRへ追記する。
+HTML/JSONレポートと失敗時trace、合成データのスクリーンショットは`output/playwright-linux/`だけをartifactへ保存し、保持は7日。workspace DBやprofileをまとめてuploadしない。通常のMacでreportを自動で開かない。最新の実行結果は[Draft PR #9](https://github.com/Hiroto555/Notion_rea/pull/9)のChecksでも確認できる。
 
 公式根拠：[ElectronのXvfb試験](https://www.electronjs.org/docs/latest/tutorial/testing-on-headless-ci)、[Playwright CI](https://playwright.dev/docs/ci)。この構成は試験実行先の変更であり、Lv4完成やMac GUI合格の宣言ではない。
 
 ## ローカルの準備確認
 
-初回候補`2702eb8`の非GUI一括検証は型検査・181ファイル／1,678テスト・buildがPASS。CI専用対象の`--list`は42件を列挙しただけで、GUI成功とは扱わない。Mac上のGUIはNOT_RUN。GitHub上の本実行結果は確認後に追記する。
+初回候補`2702eb8`の非GUI一括検証は型検査・181ファイル／1,678テスト・buildがPASS。CI専用対象の`--list`は42件を列挙しただけで、GUI成功とは扱わない。Mac上のGUIはNOT_RUN。GUIの証拠は上記GitHubの本実行。
 
 ## 初回CIで見つかった試験側の不整合
 
@@ -64,3 +66,7 @@ HTML/JSONレポートと失敗時trace、合成データのスクリーンショ
 - 予約表示fixtureは、現在の取消しボタン名とUUID付き予約IDへ揃える。backendをmockする表示試験という区分は維持する。
 
 同候補の[GitHub quiet-checks](https://github.com/Hiroto555/Notion_rea/actions/runs/42394940256)はPASS。製品ソースを変更せず、修正候補の型検査・対象Node試験を通してからGUI全件を再実行する。
+
+## 修正後の終了状態
+
+42/42がPASS。元masterとM1保存ブランチを変更せず、`codex/folio-gui-ci-20261108`へ保存した。製品src treeはM1と同じ`378c75ce5f86f7d2feb5ec462bac1d84ee622a94`。実行候補のtests treeは`64a7dadc3861c9f1c8d08e5bb327e51c0a247932`、scripts treeは`dacc55ea5e9661cf205b61ab46d0cb252e687c5e`、workflow treeは`e2b1d74ffbc8fb93dc0c985a93f3d3c0fc11f665`。後続の文書保存でこの実装・試験・実行定義は変更しない。LevelはLv3、A3未着手のまま停止する。
