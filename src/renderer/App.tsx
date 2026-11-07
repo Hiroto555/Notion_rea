@@ -1791,7 +1791,7 @@ export function App({ syncMessage }: { syncMessage?: string } = {}) {
             inert={creatingPage || !!recordView || undefined}
           >
             <WorkspaceSyncIndicator startupMessage={syncMessage} inputReady={syncDecisionInputReady} />
-            <details className="conflict-recovery-details"><summary>保全した競合データを取り出す</summary><WorkspaceConflictRecoveryPanel port={conflictRecoveryPort} /></details>
+            <details className="conflict-recovery-details" onKeyDown={event => {if(event.key === "Escape") {event.preventDefault();event.stopPropagation();event.currentTarget.open=false;event.currentTarget.querySelector("summary")?.focus();}}}><summary>保全した競合データを取り出す</summary><WorkspaceConflictRecoveryPanel port={conflictRecoveryPort} /></details>
             <span
               className={"save-state " + (error ? "error" : "")}
               data-state={error ? "error" : pending || edits.current.size || sessions.current.hasUnsaved() || hasNumberDrafts() || hasDatabasePending() || recoveryStatus?.state !== "saved" || recoveryError ? "pending" : "saved"}

@@ -30,7 +30,8 @@ function targetOf(intent: Intent): SyncApplyTarget {
   return target;
 }
 
-/** One workspace owner. Invalid or interrupted records block apply, never imply consent. */
+/** @deprecated Legacy fixture codec only. Product flows use the SQLite journal.
+ * Its read/unlink operations are not atomic against an external same-UID writer. */
 export class WorkspaceSyncIntentFile {
   readonly path: string;
   constructor(directory: string) {

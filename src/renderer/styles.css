@@ -2672,5 +2672,7 @@ kbd {
 .readonly-workspace pre { white-space: pre-wrap; font-family: inherit; }
 .readonly-workspace input { margin-left: 8px; }
 
-.conflict-recovery-details { max-width: 960px; margin: 12px 0; padding: 12px; border: 1px solid var(--border); border-radius: 8px; overflow-wrap: anywhere; }
+.conflict-recovery-details { max-width: 960px; margin: 12px 0; padding: 12px; border: 1px solid var(--line); border-radius: 8px; overflow-wrap: anywhere; }
 .conflict-recovery-details > summary { cursor: pointer; }
+
+.conflict-recovery-details[open] { position: fixed; z-index: 80; top: 58px; right: 20px; bottom: 20px; width: min(880px, calc(100vw - 40px)); max-width: none; margin: 0; overflow: auto; background: var(--surface); color: var(--text); box-shadow: var(--shadow); }

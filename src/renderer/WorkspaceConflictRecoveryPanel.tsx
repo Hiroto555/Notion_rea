@@ -62,7 +62,7 @@ const styles = {
     fontSize: 13,
   } satisfies CSSProperties,
   section: {
-    border: "1px solid #d0d7de",
+    border: "1px solid var(--line)",
     borderRadius: 6,
     padding: 12,
     display: "flex",
@@ -76,41 +76,41 @@ const styles = {
     alignItems: "center",
   } satisfies CSSProperties,
   item: {
-    border: "1px solid #d8dee4",
+    border: "1px solid var(--line)",
     borderRadius: 4,
     padding: 8,
     display: "flex",
     flexDirection: "column",
     gap: 4,
   } satisfies CSSProperties,
-  muted: { color: "#57606a" } satisfies CSSProperties,
+  muted: { color: "var(--muted)" } satisfies CSSProperties,
   noticeInfo: {
-    background: "#ddf4ff",
-    border: "1px solid #54aeff",
+    background: "var(--accent-soft)",
+    border: "1px solid var(--line-strong)",
     borderRadius: 4,
     padding: 8,
   } satisfies CSSProperties,
   noticeCaution: {
-    background: "#fff8c5",
-    border: "1px solid #d4a72c",
+    background: "var(--panel)",
+    border: "1px solid var(--warning)",
     borderRadius: 4,
     padding: 8,
   } satisfies CSSProperties,
   noticeBlocked: {
-    background: "#ffebe9",
-    border: "1px solid #ff8182",
+    background: "var(--danger-soft)",
+    border: "1px solid var(--danger)",
     borderRadius: 4,
     padding: 8,
   } satisfies CSSProperties,
   noticeUnknown: {
-    background: "#fbefff",
-    border: "1px solid #c297ff",
+    background: "var(--panel)",
+    border: "1px solid var(--warning)",
     borderRadius: 4,
     padding: 8,
   } satisfies CSSProperties,
   noticeError: {
-    background: "#ffebe9",
-    border: "1px solid #ff8182",
+    background: "var(--danger-soft)",
+    border: "1px solid var(--danger)",
     borderRadius: 4,
     padding: 8,
   } satisfies CSSProperties,
@@ -125,12 +125,12 @@ const styles = {
   } satisfies CSSProperties,
   th: {
     textAlign: "left",
-    borderBottom: "1px solid #d0d7de",
+    borderBottom: "1px solid var(--line)",
     padding: "4px 6px",
     fontWeight: 600,
   } satisfies CSSProperties,
   td: {
-    borderBottom: "1px solid #eaeef2",
+    borderBottom: "1px solid var(--line)",
     padding: "4px 6px",
     verticalAlign: "top",
   } satisfies CSSProperties,
@@ -352,7 +352,7 @@ export function WorkspaceConflictRecoveryPanel(
     <div style={styles.root} aria-label="競合アーカイブの復元">
       <div style={styles.section}>
         <div style={styles.row}>
-          <strong>競合アーカイブ</strong>
+          <strong>保全した競合データ</strong>
           <span style={styles.muted}>
             {model.page === null
               ? "未読込"
@@ -376,6 +376,7 @@ export function WorkspaceConflictRecoveryPanel(
           </button>
           {busy ? <span style={styles.muted}>処理中…</span> : null}
         </div>
+        <p>選択した保全時点の内容です。未保存の入力や、その後の編集、接続設定は含みません。元の作業領域を変更せず、取り出したコピーも自動で起動・同期しません。</p>
         {renderNotice()}
         {model.lastSuccess ? (
           <div style={styles.noticeInfo}>

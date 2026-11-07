@@ -54,8 +54,8 @@ export class WorkspaceSyncRestartRequest {
       this.publication = "committed";
       return "committed";
     } catch {
-      // A failed fsync/readback can leave the name published. Cancellation
-      // must inspect it, not assume the write failed before publication.
+      // Durable consent may have committed before its response was received.
+      // Cancellation must inspect the exact reservation rather than assume no write.
       this.publication = "uncertain";
       return "blocked";
     }
