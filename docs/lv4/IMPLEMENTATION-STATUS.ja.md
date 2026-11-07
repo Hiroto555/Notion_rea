@@ -1,6 +1,12 @@
-# Lv4 実装状況（非GUI作業中）
+# Lv4 実装状況（M1非GUI完了・停止）
 
-> **2026-11-08保存時点**：利用者の指示で、現状の実装・計画・レビュー・検証記録を専用ブランチとPRへ保存する。追加実装は停止中。下記の「未コミット」「pushなし」「GitHub Actions NOT_RUN」は各記録当時の状態。現在の保存範囲と検査結果は[GitHub保存記録](PUBLICATION-CHECKPOINT.ja.md)、全体の入口は[Lv4の現在地](README.md)を参照。
+> **2026-11-08 M1完了**：利用者の明示指示でA0〜A2を実施し、A3へ進まず停止した。通常予約をUUID/CASのSQLite journalへ移し、保全archiveの一覧・JSON/添付付き書出し・新規v4 DBへのコピー復元を接続した。結果不明とIPC応答喪失は同じ操作IDで照会するまで新効果を止める。最終候補`d509edf`は型検査・**180ファイル／1,673テスト**・build PASS、Sol XHigh最終レビューで未解決P0/P1なし。[M1完了記録](M1-COMPLETION.ja.md)、[手順書](m1/RECOVERY-RUNBOOK.ja.md)、[最終ログ](validation/m1-quiet.txt)を参照。
+
+GUI/Electron/実IPC/実IME/物理2台はNOT_RUN、確認済みLevelはLv3のまま。元master・実データは変更せず、ローカルM1ブランチへcommitした。M1追加分のpush/mergeは行っていない。旧sidecarは保全停止し、解除/移行は未対応。回収先の同期保留markerも解除しない。
+
+## M1以前の履歴（以下は各記録当時の状態）
+
+> **2026-11-08の過去保存時点**：当時の実装・計画・レビュー・検証記録を専用ブランチとPRへ保存した。以下の「未コミット」「pushなし」「sidecar」「未実装」などは各記録当時の状態。[GitHub保存記録](PUBLICATION-CHECKPOINT.ja.md)を参照。M1後の現状は上記と[M1完了記録](M1-COMPLETION.ja.md)を優先する。
 
 基準: e269137 と、ハッシュ照合したDnD/復元等の未コミットdraft。作業は別worktree。現在の認定はLv3のまま。Lv4の完了や利用可能性の認定ではない。
 

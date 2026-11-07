@@ -1,5 +1,7 @@
 # M1計画のレビュー・提案と採否
 
+> 後続の実装・受入は[M1完了記録](M1-COMPLETION.ja.md)、[実装のSolレビュー](reviews/m1/SOL-XHIGH-M1-REVIEW.ja.md)に記録した。以下は実装指示より前の計画レビューとして残す。
+
 2026-11-08。対象は基準 `732fad5` からの**計画作成だけ**。実装・製品試験・GUI実行の記録ではない。計画と担当表は [実行計画](M1-EXECUTION-PLAN.ja.md)、[担当カード](M1-DISPATCH-PACK.ja.md)。
 
 ## 実施したことと未実施

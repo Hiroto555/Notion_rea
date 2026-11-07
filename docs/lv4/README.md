@@ -1,11 +1,13 @@
 # Folio Lv4 の現在地
 
-2026-11-08 JST、GitHub保存用チェックポイント。**確認済みの段階はLv3。Lv4は実装途中で、GUI・Electron・実機2台の受入はNOT_RUN。** 現状を保存し、追加の実装は停止している。
+2026-11-08 JST。**M1（A0〜A2）の非GUI実装・受入を完了し、A3へ進まず停止した。確認済みの段階はLv3。** GUI・Electron・実機2台の受入はNOT_RUN。Lv4全体は未完成。
 
-GitHub保存後、利用者の指示で **M1までの具体的な計画と担当分け** を作成した。[M1実行計画](M1-EXECUTION-PLAN.ja.md)と[12ジョブの担当カード](M1-DISPATCH-PACK.ja.md)を参照。計画作成のみで、実装開始は未指示。
+利用者のM1実行指示に従い、Codexが管理・統合、DeepSeekが最大4本で並列実装・独立試験、Sol XHighが安全性レビューを担当した。最終候補は`d509edf`、型検査・**180ファイル／1,673テスト**・build PASS、未解決P0/P1なし。[M1完了記録](M1-COMPLETION.ja.md)と[回収手順書](m1/RECOVERY-RUNBOOK.ja.md)を最初に読む。
 
 | 確認したいこと | 読む資料 |
 |---|---|
+| M1の終了条件・実績・制約・停止地点 | [M1完了記録](M1-COMPLETION.ja.md) |
+| 保全データの回収・コピー復元・失敗時の手順 | [回収手順書](m1/RECOVERY-RUNBOOK.ja.md) |
 | 残作業の優先順・終了条件・概算工数・区切り | [残作業計画](REMAINING-WORK-PLAN.ja.md) |
 | 12項目ごとの実装済み・未達 | [受入ゲート](GATE-STATUS.ja.md) |
 | これまでの実装と試験の履歴 | [実装状況](IMPLEMENTATION-STATUS.ja.md) |
@@ -18,9 +20,9 @@ GitHub保存後、利用者の指示で **M1までの具体的な計画と担当
 | 並列実装の当初の会話案 | [並列実装案](PARALLEL-IMPLEMENTATION-PROPOSAL.ja.md) |
 | 保存範囲・検証・公開前検査 | [GitHub保存記録](PUBLICATION-CHECKPOINT.ja.md) |
 
-今の区切りは **M0：競合の勝者確認UI、取消し、終了時のSQLite予約、次回起動の適用をコード接続し、非GUIで確認したところ**。保全データの取り出し・コピー復元は未実装で、M1の具体計画に含めている。M1を計画対象として選んだ段階で、実装開始は未指示。Lv4完成まで継続する指示として扱わない。
+今の区切りは **M1：通常予約の安全性残件、保全一覧→JSON/添付付き書出し→新規v4 DBへのコピー復元を非GUIで受入したところ**。原本を変更せず、添付欠損や結果不明は保留する。旧sidecarの解除、同期保留markerの解除、A3以降には進んでいない。M1追加分はローカルの`codex/folio-m1-20261108`へcommitし、push/mergeは行っていない。
 
-GitHub保存時の `npm run verify:quiet` は、型検査・166ファイル／1,509テスト・ビルドの全3段階PASS。[実行ログ](validation/publication-quiet.txt)。これは実画面・実終了イベント・IME・実端末同期の成功を意味しない。
+M1最終の `npm run verify:quiet` は、型検査・180ファイル／1,673テスト・ビルドの全3段階PASS。[M1実行ログ](validation/m1-quiet.txt)。以前のGitHub保存候補は166ファイル／1,509テストだった。[過去ログ](validation/publication-quiet.txt)。どちらも実画面・実終了イベント・IME・実端末同期の成功を意味しない。
 
 ## 図と元の計画・レビュー
 

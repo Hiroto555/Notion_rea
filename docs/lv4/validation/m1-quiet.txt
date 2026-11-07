@@ -1,0 +1,296 @@
+
+> folio-desktop@0.1.0 verify:quiet
+> node scripts/verify-quiet.mjs
+
+[quiet] ==> typecheck: npm run check
+
+> folio-desktop@0.1.0 check
+> tsc --noEmit
+
+[quiet] PASS stage=typecheck in 6.2s
+[quiet] ==> test: npm run test -- --maxWorkers=2
+
+> folio-desktop@0.1.0 test
+> vitest run --maxWorkers=2
+
+
+ RUN  v3.2.7 <INTEGRATION_WORKTREE>
+
+ ✓ tests/lv4-conflict-resolution.test.ts (34 tests) 8143ms
+   ✓ connects remote preview, normal quit, reopen and exactly one windowless decision  427ms
+   ✓ does no startup transfer with pending decision and normal-intent  375ms
+ ✓ tests/sync-level4.test.ts (14 tests) 14354ms
+   ✓ Level 4 workspace sync product verification > saves one page, publishes, pulls into a fresh join, and reopens both stores  821ms
+   ✓ Level 4 workspace sync product verification > propagates edits and new pages in both directions without duplicating ids  1156ms
+   ✓ Level 4 workspace sync product verification > transfers database schema, records and values, then a database tombstone batch  1191ms
+   ✓ Level 4 workspace sync product verification > transfers the asset file/id/hash and preserves it across page trash and restore  1790ms
+   ✓ Level 4 workspace sync product verification > defers remote apply while canApply is false and rejects the stale write epoch  1082ms
+   ✓ Level 4 workspace sync product verification > recovers a locally committed page after SIGKILL and reopens without duplicates  1004ms
+   ✓ Level 4 workspace sync product verification > keeps offline work through process exit, server restart and a new connection  923ms
+   ✓ Level 4 workspace sync product verification > recovers from an ACK lost strictly after the server committed  794ms
+   ✓ Level 4 workspace sync product verification > rejects a replayed stale change page and resumes from the durable cursor  998ms
+   ✓ Level 4 workspace sync product verification > rejects an out-of-order change page without applying or advancing the cursor  961ms
+   ✓ Level 4 workspace sync product verification > preserves both conflict snapshots across reopen and resolves explicitly to remote  905ms
+   ✓ Level 4 workspace sync product verification > resolves a later conflict to the local candidate against the observed head  933ms
+   ✓ Level 4 workspace sync product verification > denies a token from another workspace on every sync entry  381ms
+   ✓ Level 4 workspace sync product verification > stops a revoked device, keeps its local pending work, and persists revocation  727ms
+ ✓ tests/recovery.test.ts (16 tests) 8315ms
+   ✓ R1 x UTF-8 boundary -1: schema/file/store/reopen  1479ms
+   ✓ R1 x UTF-8 boundary 0: schema/file/store/reopen  1340ms
+   ✓ R1 あ UTF-8 boundary -1: schema/file/store/reopen  1113ms
+   ✓ R1 あ UTF-8 boundary 0: schema/file/store/reopen  1010ms
+   ✓ R1 😀 UTF-8 boundary -1: schema/file/store/reopen  1453ms
+   ✓ R1 😀 UTF-8 boundary 0: schema/file/store/reopen  1432ms
+ ✓ tests/sync-workspace-blobs-transfer.test.ts (9 tests) 6283ms
+   ✓ workspace blob client transfers > uploads and stages verified files, then skips already verified targets  1104ms
+   ✓ workspace blob client transfers > resumes an interrupted download at the exact staged byte offset  2269ms
+   ✓ workspace blob client transfers > retries a lost upload acknowledgement without re-reading a whole file  2186ms
+   ✓ workspace blob client transfers > transfers the full 20,000,000-byte attachment bound  484ms
+ ✓ tests/sync-workspace-blobs.test.ts (8 tests) 5921ms
+   ✓ WorkspaceBlobStore > stores and serves exact workspace bytes, ranges, and HEAD without redirects  1104ms
+   ✓ WorkspaceBlobStore > resumes Content-Range chunks, never exposes partials, and checks the final hash  2266ms
+   ✓ WorkspaceBlobStore > keeps a transport-interrupted partial and resumes from its stored byte offset  2263ms
+ ✓ tests/r5-raw-rescue-cli.test.ts (7 tests) 3524ms
+   ✓ rejects unsafe paths, hardlinks, symlinks and sidecars before creating output  412ms
+   ✓ detects a writer committing during capture even when --workspace-closed was given  2475ms
+ ✓ tests/r8-perf-seed.test.ts (3 tests) 1672ms
+   ✓ R8 synthetic performance fixture > seeds 300 regular pages and 200 records through Store receipts, then refuses overwrite  1478ms
+stdout | tests/record-scale.test.ts > measures synthetic record conversion, load, view-model query, search and saves
+RECORD_SCALE {"size":1000,"migration":106.699334,"open":0.9346669999999904,"samples":[{"load":16.193249999999978,"viewModel":16.057583000000022,"search":18.604542000000038,"bodySave":4.654665999999963,"propertySave":5.354499999999973},{"load":15.417290999999977,"viewModel":18.801958000000013,"search":14.421416000000022,"bodySave":4.394292000000007,"propertySave":0.4574999999999818},{"load":16.34254199999998,"viewModel":13.56045800000004,"search":14.410541999999964,"bodySave":4.648459000000003,"propertySave":0.7065839999999639}],"scope":"synthetic SQLite + model only; no GUI/startup/input timing"}
+RECORD_SCALE {"size":10000,"migration":1372.427959,"open":1.0323750000000018,"samples":[{"load":160.84120899999994,"viewModel":179.04366700000037,"search":165.6152500000003,"bodySave":0.8315420000003542,"propertySave":0.4200420000001941},{"load":160.32108400000016,"viewModel":162.20354199999974,"search":163.8889589999999,"bodySave":0.5489579999998568,"propertySave":0.39037499999994907},{"load":156.35583299999962,"viewModel":175.20058400000016,"search":166.96087499999976,"bodySave":0.5998329999997623,"propertySave":0.46820800000023155}],"scope":"synthetic SQLite + model only; no GUI/startup/input timing"}
+
+ ✓ tests/record-scale.test.ts (1 test) 3248ms
+   ✓ measures synthetic record conversion, load, view-model query, search and saves  3247ms
+ ✓ tests/backup-maintenance.test.ts (12 tests) 2419ms
+   ✓ archiveBackup > refuses nested or aliased destinations and allows similarly named siblings  376ms
+ ✓ tests/lv4-core-split.test.ts (6 tests) 2534ms
+   ✓ stages without changing content and applies one revision with the server offline  697ms
+   ✓ stages attachments for every received revision before going offline  504ms
+   ✓ resolves a remote conflict whose head is more than one revision past the cursor  451ms
+   ✓ keeps both candidates if the remote head advances during a choice  341ms
+ ✓ tests/r5-workspace-import.test.ts (13 tests) 960ms
+ ✓ tests/sync-level4-transport.test.ts (5 tests) 1786ms
+   ✓ independent transport child and fault proxy > recovers a committed operation after the ACK is dropped post-COMMIT  320ms
+   ✓ independent transport child and fault proxy > rejects a replayed stale changes page without double-applying it  406ms
+   ✓ independent transport child and fault proxy > rejects an out-of-order change page and resumes from the durable cursor  474ms
+   ✓ independent transport child and fault proxy > keeps offline work and resumes after the persistent server restarts  320ms
+ ✓ tests/l3-crash-boundaries.test.ts (9 tests) 1049ms
+ ✓ tests/sync-workspace-store.test.ts (18 tests) 747ms
+ ✓ tests/m1-recovery-flow.test.ts (6 tests) 1443ms
+   ✓ M1 recovery flow > preserves an incomplete output, keeps the source, and allows a different new destination  555ms
+ ✓ tests/m1-conflict-recovery-acceptance.test.ts (10 tests) 1477ms
+ ✓ tests/m1-normal-apply-faults.test.ts (12 tests) 1112ms
+   ✓ normal apply product path > rolls content and consumed back together before COMMIT, then applies on retry  485ms
+   ✓ normal apply product path > keeps content and consumed atomic after COMMIT and reconciles by reopen without replay  425ms
+ ✓ tests/portable-recovery-mixed.test.ts (35 tests) 1477ms
+ ✓ tests/sync-checkpoint.test.ts (39 tests) 443ms
+ ✓ tests/sync-conflict-inspection.test.ts (16 tests) 337ms
+ ✓ tests/page-order-repair.test.ts (20 tests) 975ms
+ ✓ tests/r8-backup-independent.test.ts (5 tests) 926ms
+   ✓ round-trips the real v4 fixture table-for-table and byte-for-byte without trusting verification  386ms
+ ✓ tests/dsh-r4-storage-integration.test.ts (14 tests) 763ms
+ ✓ tests/lv4-restart-identity-faults.test.ts (3 tests) 746ms
+ ✓ tests/portable-recovery.test.ts (12 tests) 505ms
+ ✓ tests/r5-schema-startup.test.ts (18 tests) 462ms
+ ✓ tests/lv4-restart-faults.test.ts (2 tests) 660ms
+   ✓ keeps a restart intent when the preflight request is aborted instead of refused  344ms
+   ✓ retains a restart intent and the staged revision when the backup write fails  315ms
+ ✓ tests/lv4-core-echo-offline.test.ts (1 test) 654ms
+   ✓ reconciles a staged own echo and applies the remote revision behind it offline  654ms
+ ✓ tests/workspace.test.ts (7 tests) 486ms
+   ✓ F03 migration and backup restoration preserve pages, DB rows and attachment bytes, retaining original  354ms
+ ✓ tests/bulk-storage-budget.test.ts (6 tests) 542ms
+ ✓ tests/lv4-go-capacity.test.ts (3 tests) 396ms
+   ✓ reports bounded record, DB/WAL, attachment and backup sizes without claiming network bytes  393ms
+ ✓ tests/r8-backup-verify.test.ts (9 tests) 469ms
+ ✓ tests/r8-backup-restore.test.ts (5 tests) 462ms
+ ✓ tests/r8-backup-create.test.ts (6 tests) 518ms
+ ✓ tests/r5-offline-lifecycle.test.ts (1 test) 310ms
+   ✓ resumes one offline Page operation without a duplicate or GUI  309ms
+ ✓ tests/m1-conflict-recovery-export.test.ts (12 tests) 416ms
+ ✓ tests/page-restore-order.test.ts (28 tests) 275ms
+ ✓ tests/lv4-server-backup.test.ts (9 tests) 422ms
+ ✓ tests/sync-workspace-startup.test.ts (1 test) 569ms
+   ✓ applies startup changes only after saved recovery input is cleared, and never uses a restored binding  568ms
+ ✓ tests/sync-device-auth.test.ts (7 tests) 423ms
+ ✓ tests/property-operation-r6.test.ts (33 tests) 262ms
+ ✓ tests/lv4-go-ops.test.ts (5 tests) 386ms
+ ✓ tests/lv4-go-core-echo-dirty.test.ts (1 test) 288ms
+ ✓ tests/r8-backup-service.test.ts (2 tests) 215ms
+ ✓ tests/record-version.test.ts (2 tests) 367ms
+   ✓ the fetched old Store rejects a synthetic v4 sentinel and can open the pre-conversion snapshot  326ms
+ ✓ tests/orphan-maintenance.test.ts (13 tests) 241ms
+ ✓ tests/lv4-sync-reconnect-startup.test.ts (1 test) 217ms
+ ✓ tests/crash-recovery.test.ts (13 tests) 287ms
+ ✓ tests/raw-workspace-salvage.test.ts (5 tests) 243ms
+stdout | tests/database-read-snapshot.test.ts > decodes only the target database when 10k unrelated Pages surround it
+DATABASE_READ_SCALE {"unrelatedPages":10000,"targetRecords":2,"decodedPages":3,"pageSelects":3,"setupMs":38,"readMs":0.22,"fullLoadMs":43.14,"scope":"synthetic SQLite read only; elapsed is a reference, not an SLA"}
+
+ ✓ tests/database-read-snapshot.test.ts (21 tests) 230ms
+ ✓ tests/dsh-r3-integration-regressions.test.ts (8 tests) 142ms
+ ✓ tests/r9-rich-persistence.test.ts (13 tests) 151ms
+ ✓ tests/store-raw-database-guard.test.ts (7 tests) 148ms
+ ✓ tests/lv4-restart-cancel.test.ts (1 test) 155ms
+ ✓ tests/move-record-isolation.test.ts (17 tests) 226ms
+ ✓ tests/lv4-secret-record-file.test.ts (14 tests) 170ms
+ ✓ tests/dsh-integration-regressions.test.ts (7 tests) 107ms
+ ✓ tests/legacy-migration-operation.test.ts (8 tests) 187ms
+ ✓ tests/gui-test-policy.test.ts (17 tests) 221ms
+ ✓ tests/r5-source-readers.test.ts (2 tests) 103ms
+ ✓ tests/m1-conflict-recovery-import.test.ts (6 tests) 401ms
+ ✓ tests/durability-attachment-backup.test.ts (12 tests) 361ms
+ ✓ tests/l3-durability-backup.test.ts (2 tests) 267ms
+ ✓ tests/lv4-restart-product-path.test.ts (1 test) 298ms
+ ✓ tests/local-integrity-regressions.test.ts (12 tests) 102ms
+ ✓ tests/page-tree-move.test.ts (24 tests) 123ms
+ ✓ tests/r5-startup-integration.test.ts (4 tests) 189ms
+ ✓ tests/r8-width-persistence.test.ts (3 tests) 263ms
+stdout | tests/l3-storage-usage.test.ts > handles 10k receipts and counts malformed result_json without exposing it
+[l3-storage-usage] 10k receipts measured in 35.1ms (synthetic fixture; reference only)
+
+ ✓ tests/l3-storage-usage.test.ts (15 tests) 108ms
+ ✓ tests/r5-local-assets.test.ts (1 test) 155ms
+ ✓ tests/database-v2.test.ts (19 tests) 140ms
+ ✓ tests/corrupt-page-isolation.test.ts (13 tests) 161ms
+ ✓ tests/lv4-server-backup-inspection-product.test.ts (3 tests) 161ms
+ ✓ tests/record-migration.test.ts (10 tests) 157ms
+ ✓ tests/pending-journal-file.test.ts (10 tests) 141ms
+ ✓ tests/lv4-server-backup-inspection.test.ts (9 tests) 151ms
+ ✓ tests/fixtures/r7/r7-demo-seed.test.ts (1 test) 103ms
+ ✓ tests/store.test.ts (13 tests) 115ms
+ ✓ tests/record-repository.test.ts (16 tests) 80ms
+ ✓ tests/dsh-r2-integration-regressions.test.ts (6 tests) 88ms
+ ✓ tests/page-order-repair-routing.test.ts (6 tests) 105ms
+ ✓ tests/integration-migration.test.ts (3 tests) 90ms
+ ✓ tests/edit-session-coordinator.test.ts (6 tests) 66ms
+ ✓ tests/pending-journal.test.ts (7 tests) 109ms
+ ✓ tests/m1-conflict-recovery-adversarial.test.ts (14 tests) 119ms
+ ✓ tests/m1-conflict-recovery-verify.test.ts (9 tests) 144ms
+ ✓ tests/l3-page-recovery-retry.test.ts (9 tests) 66ms
+ ✓ tests/record-page-schema-guard.test.ts (6 tests) 98ms
+ ✓ tests/m1-conflict-recovery-assets.test.ts (12 tests) 63ms
+ ✓ tests/editor-legacy-compat.test.ts (1 test) 80ms
+ ✓ tests/migration-snapshot.test.ts (7 tests) 58ms
+ ✓ tests/l3-durability-corrupt.test.ts (2 tests) 57ms
+ ✓ tests/sync-device-blobs.test.ts (3 tests) 157ms
+ ✓ tests/prepare-crash-recovery.test.ts (11 tests) 146ms
+ ✓ tests/lv4-server-backup-inspection-race.test.ts (1 test) 76ms
+ ✓ tests/storage-pressure-integration.test.ts (4 tests) 82ms
+ ✓ tests/store-atomic-load.test.ts (15 tests) 114ms
+ ✓ tests/record-read-snapshot.test.ts (2 tests) 17ms
+ ✓ tests/r5-parent-regressions.test.ts (1 test) 73ms
+ ✓ tests/lv4-sync-intent.test.ts (4 tests) 69ms
+ ✓ tests/save-receipts.test.ts (8 tests) 61ms
+ ✓ tests/database-operations-r5.test.ts (9 tests) 63ms
+ ✓ tests/record-lifecycle.test.ts (8 tests) 52ms
+ ✓ tests/record-page-owner-update.test.ts (11 tests) 67ms
+ ✓ tests/sync-device-remote.test.ts (5 tests) 52ms
+ ✓ tests/lv4-sync-service.test.ts (9 tests) 56ms
+ ✓ tests/lv4-sync-restart-request.test.ts (5 tests) 57ms
+ ✓ tests/lv4-sync-restart-coordinator.test.ts (10 tests) 40ms
+ ✓ tests/storage-overview-sync-staging.test.ts (5 tests) 29ms
+ ✓ tests/database-session-r5.test.ts (6 tests) 49ms
+ ✓ tests/r7-card-excerpt.test.ts (10 tests) 29ms
+ ✓ tests/lv4-conflict-export.test.ts (2 tests) 33ms
+ ✓ tests/page-operation-coordinator.test.ts (8 tests) 36ms
+ ✓ tests/workspace-growth.test.ts (15 tests) 45ms
+ ✓ tests/gate-a.test.ts (11 tests) 55ms
+ ✓ tests/lv4-fixture-ops.test.ts (3 tests) 53ms
+ ✓ tests/l3-page-initial-doc.test.ts (11 tests) 48ms
+ ✓ tests/v4-database-create.test.ts (6 tests) 30ms
+ ✓ tests/page-operation-receipts.test.ts (7 tests) 36ms
+ ✓ tests/r9-rich-recovery.test.ts (3 tests) 50ms
+ ✓ tests/lv4-staged-assets.test.ts (3 tests) 24ms
+ ✓ tests/lv4-conflict-record-comparison.test.ts (6 tests) 21ms
+ ✓ tests/r7-settings-menu.test.ts (4 tests) 28ms
+ ✓ tests/r9-simple-table.test.ts (23 tests) 27ms
+ ✓ tests/m1-conflict-archive-catalog.test.ts (9 tests) 20ms
+ ✓ tests/record-save-coordinator.test.ts (48 tests) 25ms
+ ✓ tests/workspace-limit-settings.test.ts (8 tests) 22ms
+ ✓ tests/record-projection.test.ts (2 tests) 16ms
+ ✓ tests/m1-recovery-io-faults.test.ts (4 tests) 16ms
+ ✓ tests/recovery-checkpoint.test.ts (9 tests) 16ms
+ ✓ tests/m1-normal-apply-journal.test.ts (29 tests) 15ms
+ ✓ tests/settings-owner-lineage.test.ts (16 tests) 16ms
+ ✓ tests/r8-workspace-backup-ui.test.ts (11 tests) 17ms
+ ✓ tests/editor-r3-clipboard.test.ts (9 tests) 15ms
+ ✓ tests/lv4-sync-history.test.ts (1 test) 15ms
+ ✓ tests/storage-pressure.test.ts (18 tests) 8ms
+ ✓ tests/storage-write-policy.test.ts (7 tests) 10ms
+ ✓ tests/lv4-sync-control.test.ts (6 tests) 9ms
+ ✓ tests/record-list-binding.test.ts (12 tests) 11ms
+ ✓ tests/r8-backlinks.test.ts (12 tests) 9ms
+ ✓ tests/settings-save-coordinator.test.ts (9 tests) 11ms
+ ✓ tests/fidelity-evidence.test.ts (10 tests) 13ms
+ ✓ tests/research/parity-docs.test.ts (10 tests) 12ms
+ ✓ tests/r7-search.test.ts (14 tests) 13ms
+ ✓ tests/quiet-runner.test.ts (16 tests) 11ms
+ ✓ tests/editor-identity.test.ts (5 tests) 12ms
+ ✓ tests/r8-page-layout.test.ts (6 tests) 8ms
+ ✓ tests/r9-callout.test.ts (11 tests) 8ms
+ ✓ tests/r9-rich-block-html.test.ts (18 tests) 8ms
+ ✓ tests/record-owner-invalidation.test.ts (8 tests) 6ms
+ ✓ tests/lv4-secret-store.test.ts (18 tests) 6ms
+ ✓ tests/database-ui.test.ts (34 tests) 10ms
+ ✓ tests/l3-storage-usage-files.test.ts (13 tests) 7ms
+ ✓ tests/output-path.test.ts (1 test) 8ms
+ ✓ tests/settings-panel-intents.test.ts (4 tests) 8ms
+ ✓ tests/legacy-record-map.test.ts (5 tests) 7ms
+ ✓ tests/legacy-record-plan.test.ts (3 tests) 7ms
+ ✓ tests/lv4-secret-record-file-failure.test.ts (1 test) 5ms
+ ✓ tests/database-input-guard.test.ts (11 tests) 5ms
+ ✓ tests/m1-recovery-response-loss.test.ts (11 tests) 5ms
+ ✓ tests/m1-conflict-recovery-model.test.ts (27 tests) 5ms
+ ✓ tests/lv4-conflict-decision-ui.test.ts (21 tests) 5ms
+ ✓ tests/fidelity-display-contract.test.ts (8 tests) 3ms
+ ✓ tests/database-settings-pending.test.ts (6 tests) 7ms
+ ✓ tests/record-pending-edits.test.ts (7 tests) 4ms
+ ✓ tests/editor-r3-selection.test.ts (3 tests) 3ms
+ ✓ tests/r7-markdown.test.ts (26 tests) 3ms
+ ✓ tests/m1-recovery-routing.test.ts (3 tests) 3ms
+ ✓ tests/lv4-conflict-page-comparison.test.ts (3 tests) 3ms
+ ✓ tests/lv4-sync-gate.test.ts (4 tests) 3ms
+ ✓ tests/reliable-page-order-repair.test.ts (5 tests) 3ms
+ ✓ tests/recovery-file-ownership.test.ts (1 test) 2ms
+ ✓ tests/pending-edits.test.ts (3 tests) 2ms
+ ✓ tests/pending-record-overlay.test.ts (2 tests) 2ms
+ ✓ tests/lv4-workspace-quit.test.ts (3 tests) 2ms
+ ✓ tests/page-tree.test.ts (4 tests) 2ms
+ ✓ tests/fidelity-modal-contract.test.ts (8 tests) 2ms
+ ✓ tests/property-number-input.test.ts (3 tests) 2ms
+ ✓ tests/lv4-sync-apply-guard.test.ts (2 tests) 1ms
+ ✓ tests/lv4-sync-status-text.test.ts (2 tests) 1ms
+
+ Test Files  180 passed (180)
+      Tests  1673 passed (1673)
+   Start at  01:36:00
+   Duration  64.34s (transform 2.46s, setup 0ms, collect 14.85s, tests 89.42s, environment 17ms, prepare 6.29s)
+
+[quiet] PASS stage=test in 64.9s
+[quiet] ==> build: npm run build
+
+> folio-desktop@0.1.0 build
+> tsc --noEmit && vite build && node scripts/build.mjs
+
+vite v7.3.7 building client environment for production...
+transforming...
+✓ 1765 modules transformed.
+[plugin vite:reporter] 
+(!) <INTEGRATION_WORKTREE>/node_modules/@tiptap/core/dist/index.js is dynamically imported by <INTEGRATION_WORKTREE>/src/renderer/App.tsx but also statically imported by <INTEGRATION_WORKTREE>/node_modules/@tiptap/extension-blockquote/dist/index.js, <INTEGRATION_WORKTREE>/node_modules/@tiptap/extension-bold/dist/index.js, <INTEGRATION_WORKTREE>/node_modules/@tiptap/extension-code-block/dist/index.js, <INTEGRATION_WORKTREE>/node_modules/@tiptap/extension-code/dist/index.js, <INTEGRATION_WORKTREE>/node_modules/@tiptap/extension-details/dist/index.js, <INTEGRATION_WORKTREE>/node_modules/@tiptap/extension-document/dist/index.js, <INTEGRATION_WORKTREE>/node_modules/@tiptap/extension-hard-break/dist/index.js, <INTEGRATION_WORKTREE>/node_modules/@tiptap/extension-heading/dist/index.js, <INTEGRATION_WORKTREE>/node_modules/@tiptap/extension-horizontal-rule/dist/index.js, <INTEGRATION_WORKTREE>/node_modules/@tiptap/extension-image/dist/index.js, <INTEGRATION_WORKTREE>/node_modules/@tiptap/extension-italic/dist/index.js, <INTEGRATION_WORKTREE>/node_modules/@tiptap/extension-link/dist/index.js, <INTEGRATION_WORKTREE>/node_modules/@tiptap/extension-list/dist/index.js, <INTEGRATION_WORKTREE>/node_modules/@tiptap/extension-paragraph/dist/index.js, <INTEGRATION_WORKTREE>/node_modules/@tiptap/extension-strike/dist/index.js, <INTEGRATION_WORKTREE>/node_modules/@tiptap/extension-text/dist/index.js, <INTEGRATION_WORKTREE>/node_modules/@tiptap/extension-underline/dist/index.js, <INTEGRATION_WORKTREE>/node_modules/@tiptap/extensions/dist/index.js, <INTEGRATION_WORKTREE>/node_modules/@tiptap/markdown/dist/index.js, <INTEGRATION_WORKTREE>/node_modules/@tiptap/react/dist/index.js, <INTEGRATION_WORKTREE>/node_modules/@tiptap/starter-kit/dist/index.js, <INTEGRATION_WORKTREE>/src/editor/block-identity.ts, <INTEGRATION_WORKTREE>/src/editor/callout.ts, <INTEGRATION_WORKTREE>/src/editor/rich-structure-guard.ts, <INTEGRATION_WORKTREE>/src/editor/simple-table.ts, <INTEGRATION_WORKTREE>/src/shared/editor-schema.ts, dynamic import will not move module into another chunk.
+
+[plugin vite:reporter] 
+(!) <INTEGRATION_WORKTREE>/src/editor/Editor.tsx is dynamically imported by <INTEGRATION_WORKTREE>/src/renderer/App.tsx but also statically imported by <INTEGRATION_WORKTREE>/src/renderer/App.tsx, dynamic import will not move module into another chunk.
+
+rendering chunks...
+computing gzip size...
+dist/renderer/index.html                     0.60 kB │ gzip:   0.38 kB
+dist/renderer/assets/index-DnpAevfH.css     84.05 kB │ gzip:  15.92 kB
+dist/renderer/assets/index-lfuEdwHJ.js   1,191.97 kB │ gzip: 360.10 kB
+
+(!) Some chunks are larger than 500 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+✓ built in 1.70s
+[quiet] PASS stage=build in 7.7s
+[quiet] PASS all 3 stages in 78.7s

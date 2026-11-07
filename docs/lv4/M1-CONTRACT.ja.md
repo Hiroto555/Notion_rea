@@ -60,6 +60,8 @@ mainはcore例外をRecoveryActionResultの`blocked`（出力前の拒否）／`
 
 ## ホストの操作ID契約追記
 
+renderer bridgeも操作ID/target/modeと既知の生成先を保持する。IPC rejectを出力前拒否と推定せず、path不明でも未解決requestとして保留する。Panel再mountではbridge contextを引継ぎ、同IDのstatusからhash/mode/既知pathを照合して結果を回収する。not-found・pending・照会失敗では新効果を開始しない。
+
 UI生成のoperationIdは冪等key、mainが発行する固定target ticketは別物。run/statusはそのIDを照合し、main session中の最大16件は完了済みも削除せず、満杯なら新規だけ拒否。同一IDの同時retryには同じPromiseを返す。main再起動では操作sessionが失効し、過去の未確認出力は自動再実行せず、生成先の手順に従って確認する。通常・競合のSQLite予約はこれと異なり再起動を越えて保持する。
 
 statusは正規INCOMPLETE確認→blocked＋保全先、marker不在で全完成検査成功→成功、検査不能→unknown。未解決unknownの記録を新操作で置換しない。known incompleteは新しい別先への試行を妨げず、前の出力は削除しない。
