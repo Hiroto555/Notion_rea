@@ -52,6 +52,8 @@ checkpoint上限1,048,576 B、添付1件20,000,000 B、合計100 MiB／1,000件�
 
 `WorkspaceConflictRecoveryPanel` propsは`{port:RecoveryPanelPort}`。`conflict-recovery-model.ts`は世代と不明応答を守るpure model。UIを起動する試験は禁止。list/target/JSON-only/bundle/新規コピー復元／結果path／未完了・不明の注意／pagination。IPC/App接続はCodex。
 
+`RecoveryPanelPort.status()`はmainが保持した直近操作の結果を再照会する。unknownはdirectory/targetを必須とし、再照合した同じ生成先の完成検査に通った場合だけ成功へ回収する。
+
 mainはcore例外をRecoveryActionResultの`blocked`（出力前の拒否）／`outcome-unknown`（作成したdirectory、固定target、公開用の安全なreasonを保持）へ変換する。出力後例外を『未作成』とせず、同じ操作の結果照会を提供し、自動再実行・削除しない。rendererはunknownを成功と区別して保全先を示す。
 
 独立試験は別file、期待hashはNode cryptoやfixtureの固定値から。fault stageはbefore/after-file-sync、before/after-directory-syncに加え、各workerがbefore/after-completeを定義。通常COMMIT前後のfaultはStore.transaction seamで注入。結果が不明なら新規ID・同一先再適用・削除をせず再openで照合。
