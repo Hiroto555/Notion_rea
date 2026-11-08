@@ -64,6 +64,9 @@ export class WorkspaceSync {
   private readonly assetsDirectory: string;
   private readonly admitBytes: WorkspaceSyncAdmission;
   private readonly remote: CheckpointRemote;
+  private transferAllowed: () => boolean = () => true;
+  setTransferAllowed(allowed: () => boolean): void {this.transferAllowed = allowed;}
+  private assertTransferAllowed(): void {requireCondition(this.transferAllowed(), "sync-disabled", 409);}
 
   private constructor(
     private readonly options: WorkspaceSyncOptions,
@@ -77,6 +80,7 @@ export class WorkspaceSync {
     this.admitBytes =
       options.admitBytes ?? ((bytes) => pressure.assertWritable(bytes));
     this.remote = remote;
+    remote.setRequestGuard(() => this.assertTransferAllowed());
   }
 
   static async open(options: WorkspaceSyncOptions): Promise<WorkspaceSync> {
@@ -509,6 +513,7 @@ export class WorkspaceSync {
       token,
       workspaceId,
       timeoutMs,
+      assertRequest: () => this.assertTransferAllowed(),
       assetsDirectory: this.assetsDirectory,
       transfer: { scope, directory: join(this.directory, ".folio-sync-transfers", sha256(canonicalJson(scope))), workspaceDirectory: this.directory },
     };

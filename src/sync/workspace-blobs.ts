@@ -110,6 +110,7 @@ export type WorkspaceBlobRequestContext = {
 };
 
 export type WorkspaceBlobClientOptions = {
+  assertRequest?: () => void;
   baseUrl: string;
   workspaceId: string;
   token: string;
@@ -125,6 +126,7 @@ export type WorkspaceBlobClientOptions = {
 };
 
 type NormalizedOptions = {
+  assertRequest?: () => void;
   baseUrl: string;
   workspaceId: string;
   token: string;
@@ -945,6 +947,7 @@ function normalizeClientOptions(
     assetsDirectory: canonical,
     timeoutMs,
     admitBytes: options.admitBytes,
+    assertRequest: options.assertRequest,
   };
 }
 
@@ -1049,6 +1052,7 @@ function requestBlob(
   return new Promise((resolve, reject) => {
     let request: ReturnType<typeof httpRequest>;
     try {
+      options.assertRequest?.();
       request = httpRequest(
         blobUrl(options, asset.sha256),
         {

@@ -14,7 +14,7 @@ if (!hasSafeListFlag(process.argv)) {
 export default defineConfig({
   testDir: "tests/e2e",
   timeout: 60_000,
-  globalTimeout: 12 * 60_000,
+  globalTimeout: 25 * 60_000,
   workers: 1,
   fullyParallel: false,
   retries: 0,
@@ -33,25 +33,13 @@ export default defineConfig({
   projects: [
     {
       name: "electron-linux-real-ipc",
-      testMatch: [
-        "**/linux-ci/*.spec.ts",
-        "**/page-order-repair.spec.ts",
-        "**/page-move.spec.ts",
-        "**/output-boundary.spec.ts",
-        "**/r4-page-save.spec.ts",
-        "**/queued-failure-guard.spec.ts",
-        "**/pending-journal.spec.ts",
-        "**/recovery-race-guard.spec.ts",
-        "**/r6-recovery.spec.ts",
-        "**/r7-data-safety/raw-input.spec.ts",
-        "**/r7-data-safety/restart.spec.ts",
-        "**/r7-data-safety/save-ack.spec.ts",
-        "**/r7-data-safety/side-full-editor.spec.ts",
-      ],
+      testMatch: "**/*.spec.ts",
+      testIgnore: ["**/db-ui.spec.ts", "**/db-ui-readonly.spec.ts", "**/db-ui-legacy.spec.ts",
+        "**/lv4-sync-presentation.spec.ts", "**/record-page-presentation.spec.ts"],
     },
     {
       name: "electron-linux-presentation-mocked",
-      testMatch: "**/lv4-sync-presentation.spec.ts",
+      testMatch: ["**/lv4-sync-presentation.spec.ts", "**/record-page-presentation.spec.ts"],
     },
     {
       name: "chromium-presentation-mocked",

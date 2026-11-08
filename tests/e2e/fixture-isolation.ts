@@ -49,7 +49,8 @@ export function fixtureElectronOptions(
   child.FOLIO_DATA_DIR = directory;
   child.FOLIO_CREDENTIAL_DIR = directory + "-credentials";
   return {
-    args: [...(base ? ["--no-sandbox"] : []), resolve("dist/main.cjs")],
+    args: [...(base ? ["--no-sandbox"] : []),
+      ...(base && env.FOLIO_GUI_CI_KEYRING === "1" ? ["--password-store=gnome-libsecret"] : []), resolve("dist/main.cjs")],
     env: child,
   };
 }

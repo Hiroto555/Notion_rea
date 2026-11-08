@@ -8,6 +8,7 @@ import type { ConflictDecisionPreview, WorkspaceConflictResolutionTarget } from 
 
 /** The active-window service may transfer changes, but never applies them. */
 export interface WorkspaceSyncTransport<Status> {
+  setTransferAllowed?(allowed: () => boolean): void;
   status(): Status | null;
   sendPending(): Promise<unknown>;
   receiveAndStage(): Promise<unknown>;
@@ -63,6 +64,7 @@ export class WorkspaceSyncService<Status> {
     private readonly connector?: WorkspaceSyncConnector<Status>,
   ) {
     this.transport = transport;
+    transport?.setTransferAllowed?.(() => !this.suspended);
     if (transport) this.restoreLastSuccess(transport);
   }
 
@@ -167,6 +169,7 @@ export class WorkspaceSyncService<Status> {
       // Concurrent requests share both the connector attempt and its result.
       this.connecting = this.connector()
         .then((transport) => {
+          transport.setTransferAllowed?.(() => !this.suspended);
           this.transport = transport;
           this.restoreLastSuccess(transport);
           return transport;

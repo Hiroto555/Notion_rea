@@ -46,6 +46,7 @@ export function isolatedGuiEnv(env, dataRoot) {
         "FOLIO_DATA_DIR",
         "FOLIO_DEV_URL",
         "FOLIO_TEST_FORCE_READY_FAILURE",
+        "FOLIO_CREDENTIAL_DIR", "FOLIO_EMPTY_WORKSPACE", "FOLIO_GUI_CI_KEYRING",
         "PWDEBUG",
         "PWTEST_WATCH",
       ].includes(key)
