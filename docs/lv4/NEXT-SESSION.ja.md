@@ -2,6 +2,8 @@
 
 2026-11-08。実装と計画の区切りでチャットを切り替えるための入口。**この文書は新しい実装・GUI実行・mergeの許可ではない。新チャットの最新ユーザー指示を優先する。**
 
+追記：利用者の具体的な依頼を受け、`codex/folio-mac-poc-quiet-20261108` でMac PoCのguard/schema/validator/外部watchdogを非GUIで実装し、最終レビュー後に同branchへローカルcommitで保存する。pushはしない。[今回の実装・境界・最終レビュー/検証記録](MAC-POC-QUIET-IMPLEMENTATION.ja.md)を参照。下記の「計画のみ」「未着手」は保存commit当時の記録。実Electron・Keychain・別ホスト・workflowへの接続は引き続きNOT_RUNで、M3待ち/Lv3/Lv4未認定を維持する。
+
 ## 作業場所と保存状態
 
 - 既存の統合ツリー：`<INTEGRATION_WORKTREE>`。実際のローカルパスは新チャットの引継ぎメッセージで指定する。

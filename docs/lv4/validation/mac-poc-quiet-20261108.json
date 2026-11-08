@@ -1,0 +1,89 @@
+{
+  "schemaVersion": 1,
+  "recordedAt": "2026-11-08T17:43:36+09:00",
+  "scope": "MAC-P01/P03/P04 quiet infrastructure; synthetic Node verification only",
+  "branch": "codex/folio-mac-poc-quiet-20261108",
+  "baseCommit": "e6a019b4bedf133f7269a721510c8964f13f55ee",
+  "productAcceptanceCommit": "bd65b73b492b95b8b9a2a1f73ad9a5e114c509dc",
+  "masterCommit": "e269137f191081cabc0f05aa03ec68339ce413c2",
+  "localChangesUncommitted": true,
+  "runtime": {
+    "node": "v24.20.0",
+    "platform": "darwin",
+    "arch": "arm64"
+  },
+  "command": "npm run verify:quiet",
+  "exitCode": 0,
+  "stages": [
+    {
+      "command": "npm run check",
+      "result": "PASS"
+    },
+    {
+      "command": "npm test -- --maxWorkers=2",
+      "result": "PASS",
+      "files": 231,
+      "tests": 2155,
+      "skipped": 0
+    },
+    {
+      "command": "npm run build",
+      "result": "PASS"
+    }
+  ],
+  "newTests": {
+    "tests/acceptance-metadata/mac-evidence.test.ts": 59,
+    "tests/acceptance-metadata/mac-policy.test.ts": 7,
+    "tests/acceptance-metadata/mac-watchdog.test.ts": 11
+  },
+  "newTestsTotal": 77,
+  "codeUnchangedDuringFinalVerification": true,
+  "sha256": {
+    "scripts/mac-acceptance/policy/guard.mjs": "f3ce715b3867da905e2aca7238a57faea412bd316f5e108b4ea009efd5e8f5e8",
+    "scripts/mac-acceptance/policy/schema.mjs": "e06651b84b96ec1766328823ce9c8c951b24ade46ebf373edad54637afd6c507",
+    "scripts/mac-acceptance/validate.mjs": "cf2da9e91e13ff640941f6fbeb5011033d5f5e380baeb32a1bc4a310242b343b",
+    "scripts/mac-acceptance/watchdog/node-probe-worker.mjs": "631ee306befae0f1d02adc41c60b53ccc69de4a48c80d526c05e388cb37dc18b",
+    "scripts/mac-acceptance/watchdog/node-probe.mjs": "ba24d4cd512c369b4383e7d6c71356b93be7d9d7731e4de5e17727fad90c5247",
+    "tests/acceptance-metadata/fixtures.ts": "a70c70ceec45b56073976d7d94ef730dc40788c07c5bb882f5ddb1019caa74a9",
+    "tests/acceptance-metadata/mac-evidence.test.ts": "bb4ed7245c65c45fe1a8f4ce1ce7560acf079d45550180e3cc77604890340ce9",
+    "tests/acceptance-metadata/mac-policy.test.ts": "0bca6312d734db26d0d36dd8f3f6153480c885bcb3e39449e0dd41d5480f3b4c",
+    "tests/acceptance-metadata/mac-watchdog.test.ts": "d6e95a0005cd0146e15b80c9f041de2e98376dbb89722c001a5cfaafad1b317e"
+  },
+  "fullLogSha256": "b76b96b483c6fb876a00aefff2f4cf9a8d793f2b0935685478d7d9fbe9fcf4af",
+  "priorAttempts": [
+    {
+      "result": "FAIL",
+      "stage": "typecheck",
+      "reason": "ESM import suppression moved by formatter; fixed before final verification; tests/build not run"
+    },
+    {
+      "result": "FAIL",
+      "stage": "typecheck",
+      "reason": "Transient import syntax during repair; fixed before final verification; tests/build not run"
+    }
+  ],
+  "buildWarnings": [
+    "Existing static/dynamic import overlap for @tiptap/core and Editor.tsx",
+    "Existing renderer chunk exceeds 500 kB"
+  ],
+  "unchangedPaths": [
+    "src",
+    "package.json",
+    "package-lock.json",
+    ".github/workflows",
+    "scripts/run-gui-tests.mjs",
+    "playwright.config.ts",
+    "playwright.linux-ci.config.ts"
+  ],
+  "notRun": [
+    "Electron/GUI/headless browser",
+    "real macOS Keychain and OS interactions",
+    "physical Mac A/B and server S acceptance",
+    "Mac batch integration (MAC-P05)",
+    "new workflow creation/execution",
+    "additional model consultation"
+  ],
+  "productResult": "NOT_RUN",
+  "confirmedLevel": 3,
+  "level4Certified": false
+}

@@ -1,5 +1,7 @@
 # Folio：このMacの操作を奪わない最終受入計画
 
+2026-11-08追記：具体的な後続依頼に基づく[非GUIのguard/schema/validator/watchdog実装](MAC-POC-QUIET-IMPLEMENTATION.ja.md)を追加した。以下は当初計画。MacのGUI/実Keychain/別ホスト/workflowは引き続きNOT_RUN。
+
 2026-11-08、計画のみ。製品候補 bd65b73（darwin/arm64、Electron45.0.0、Node24、lockfileのPlaywright1.64.1）。M2/A0〜A7とLinux GUI238件は受入済み。Mac/物理2台の追加試験はすべてNOT_RUN。現用MacのGUI、workflow追加・実行、環境構築、署名/秘密の設定、製品改修、master mergeは今回行わない。
 
 ## 結論と配置
