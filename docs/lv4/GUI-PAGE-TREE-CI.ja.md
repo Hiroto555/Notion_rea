@@ -25,3 +25,16 @@ npm run test:e2e -- --list --config playwright.linux-ci.config.ts
 ```
 
 本実行はGitHubの新しいDraft PRの`gui-linux-xvfb` Checksで確認する。実行結果と対象headは確認後に記録する。Mac固有の実IME・Cmd+Q・native dialog・物理2台の状態は[別枠のNOT_RUN](GUI-MAC-ACCEPTANCE.ja.md)を維持する。Linuxでの合格だけでLv4認定は行わない。
+
+## 初回の結果と試験の修正
+
+候補`7701a8c`の[GUI run #4](https://github.com/Hiroto555/Notion_rea/actions/runs/42436558051)は44 PASS / 1 FAIL、retry 0。実ポインタの2件はPASSしたが、load保留中の題名編集を確認するF11が旧題名を読み取り失敗した。[quiet-checks](https://github.com/Hiroto555/Notion_rea/actions/runs/42436558032)はPASS。
+
+artifactの`f11-journal.json`では、`fill`の呼出し後にも題名のinputイベントと`save:commit`が一度も発生せず、move/loadだけが記録された。製品による入力消失とは判定しない。mainのload保留はReactによるnative modalの終了より早く観測されうるため、試験を次の条件へ補強する。
+
+- 移動dialogが閉じ、題名を実クリックしてフォーカスできた後に入力する。
+- trusted inputイベント、入力後の値、loadが未解放であること、保存中表示を確認してから応答を解放する。
+- 新題名を含む実`save:commit`の結果と保存済み表示を確認し、実loadと再起動後の状態も照合する。
+- 文書の比較基準は、storageによるblock ID等の正規化後の移動前文書に揃える。ID・本文・子孫・順序の保持を引き続き検査する。
+
+製品`src`は変更せず、assertionの削除・skip・自動retryも行わない。修正後も既存42件を含む45件を再実行する。

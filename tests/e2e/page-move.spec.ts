@@ -48,6 +48,7 @@ test("S2 menu F11: delayed load preserves local edit and page hierarchy through 
   const mark = (stage: string) => checkpoints.push({ time: Date.now(), stage });
   try {
     const ids = await setup(s), w = s.window;
+    const before = await load(s, ids);
     originalWindow = w;
     originalApp = s.app;
     await w.evaluate(() => {
@@ -55,7 +56,7 @@ test("S2 menu F11: delayed load preserves local edit and page hierarchy through 
       (globalThis as any).f11RendererJournal = journal;
       const clock = () => ({ time: Date.now(), monotonicMs: performance.now() });
       const recordState = () => {
-        const state = document.querySelector(".save-state"), title = document.querySelector<HTMLInputElement>(".page-title");
+        const state = document.querySelector(".save-state[data-state]"), title = document.querySelector<HTMLInputElement>(".page-title");
         return { state: state?.getAttribute("data-state"), text: state?.textContent?.trim(), title: title?.value };
       };
       let lastState = "";
@@ -68,7 +69,7 @@ test("S2 menu F11: delayed load preserves local edit and page hierarchy through 
           const target = event.target as HTMLElement | null;
           if (!target?.closest(".page-title, .folio-editor")) return;
           const input = event as InputEvent;
-          journal.push({ ...clock(), kind: "input-event", type, target: target.matches(".page-title") ? "title" : "editor",
+          journal.push({ ...clock(), kind: "input-event", type, trusted: event.isTrusted, target: target.matches(".page-title") ? "title" : "editor",
             value: target instanceof HTMLInputElement ? target.value : undefined,
             inputType: input.inputType, data: input.data, isComposing: input.isComposing, ...recordState() });
         }, true);
@@ -116,15 +117,31 @@ test("S2 menu F11: delayed load preserves local edit and page hierarchy through 
     await w.locator(".dialog-list").getByRole("button", { name: /Move Target/ }).click();
     await expect.poll(() => s.app.evaluate(() => (globalThis as any).heldLoad)).toBe(true);
     mark("load held");
-    await w.getByLabel("ページタイトル", { exact: true }).fill("Move Source edited");
-    mark("title filled");
+    // The main-process load can be held before React has removed the native
+    // modal. fill() alone can silently target its still-inert background.
+    await expect(w.getByRole("dialog", { name: "ページを移動", exact: true })).toHaveCount(0);
+    const title = w.getByLabel("ページタイトル", { exact: true });
+    await title.click();
+    await expect(title).toBeFocused();
+    await title.fill("Move Source edited");
+    await expect(title).toHaveValue("Move Source edited");
+    const inputDelivered = await w.evaluate(() => (globalThis as any).f11RendererJournal.some((entry: any) =>
+      entry.kind === "input-event" && entry.type === "input" && entry.trusted && entry.target === "title" && entry.value === "Move Source edited"));
+    expect(inputDelivered).toBe(true);
+    // No response has escaped the gate while input was delivered; a later
+    // saved-state assertion must refer to this edit, not just the move.
+    expect(await s.app.evaluate(() => (globalThis as any).moveJournal.some((entry: any) => entry.stage === "released"))).toBe(false);
+    await expect(w.locator(".save-state[data-state]")).toHaveAttribute("data-state", "pending");
+    mark("trusted title input delivered while load held");
     await s.app.evaluate(() => (globalThis as any).releaseLoad());
     mark("load release requested");
     await saved(s);
     mark("saved observed");
+    expect(await s.app.evaluate(() => (globalThis as any).moveJournal.some((entry: any) =>
+      entry.type === "save:commit" && entry.stage === "store-result" && entry.title === "Move Source edited"))).toBe(true);
     const after = await load(s, ids);
     expect(after.source.id).toBe(ids.source); expect(after.source.title).toBe("Move Source edited");
-    expect(after.source.parentId).toBe(ids.target); expect(after.source.doc).toEqual(ids.doc);
+    expect(after.source.parentId).toBe(ids.target); expect(after.source.doc).toEqual(before.source.doc);
     expect(after.child.parentId).toBe(ids.source); expect(after.siblings).toContain(ids.source);
     beforeRestart = {
       ipc: await s.app.evaluate(() => (globalThis as any).moveJournal),
@@ -134,7 +151,7 @@ test("S2 menu F11: delayed load preserves local edit and page hierarchy through 
     await s.restart();
     const reopened = await load(s, ids);
     expect(reopened.source.title).toBe(after.source.title); expect(reopened.source.parentId).toBe(ids.target);
-    expect(reopened.source.doc).toEqual(ids.doc); expect(reopened.child.parentId).toBe(ids.source); expect(reopened.siblings).toEqual(after.siblings);
+    expect(reopened.source.doc).toEqual(before.source.doc); expect(reopened.child.parentId).toBe(ids.source); expect(reopened.siblings).toEqual(after.siblings);
   } finally {
     await originalApp?.evaluate(() => (globalThis as any).releaseLoad?.()).catch(() => {});
     const ipc = await originalApp?.evaluate(() => (globalThis as any).moveJournal).catch((error: unknown) => ({ unavailable: String(error) }));
