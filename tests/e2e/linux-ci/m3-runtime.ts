@@ -1,4 +1,4 @@
-import { _electron as electron, expect, type ElectronApplication, type Page } from "@playwright/test";
+import { _electron as electron, expect, test, type ElectronApplication, type Page } from "@playwright/test";
 import { mkdirSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import { createServer } from "node:net";
@@ -19,12 +19,15 @@ export class M3GuiFixture {
   readonly vaultDirectory = join(this.root, "credentials");
   app?: ElectronApplication;
   window?: Page;
+  private sequence = 0;
   constructor() {mkdirSync(this.directory, {mode: 0o700});}
   async start(extra: Record<string, string> = {}, passwordStore?: "basic" | "gnome-libsecret") {
     const options = fixtureElectronOptions(this.directory);
     let args = options.args;
     if (passwordStore) args = [...args.slice(0,-1).filter(arg => !arg.startsWith("--password-store=")), "--password-store=" + passwordStore, args.at(-1)!];
     this.app = await electron.launch({args, env: {...options.env, FOLIO_CREDENTIAL_DIR: this.vaultDirectory, ...extra}});
+    this.sequence++;
+    await this.app.context().tracing.start({screenshots: true, snapshots: true, sources: true});
     this.window = await this.app.firstWindow();
     await this.window.locator(".page-title").waitFor();
     return this.window;
@@ -36,13 +39,23 @@ export class M3GuiFixture {
     await expect(dialog.getByRole("button", {name: "接続状態を更新"})).toBeEnabled();
     return dialog;
   }
-  async stop() {if (this.app) {await killFixture(this.app); this.app = undefined; this.window = undefined;}}
+  private async trace() {
+    try {await this.app?.context().tracing.stop({path: test.info().outputPath(`m3-session-${this.sequence}.zip`)});} catch {}
+  }
+  async stop() {if (this.app) {await this.trace(); await killFixture(this.app); this.app = undefined; this.window = undefined;}}
   async quit() {
     const app = this.app; if (!app) return;
+    await this.trace();
     const child = app.process();
     await app.evaluate(({app}) => app.quit()).catch(() => {});
     await expect.poll(() => child.exitCode !== null || child.signalCode !== null, {timeout: 10_000}).toBe(true);
     this.app = undefined; this.window = undefined;
   }
-  async dispose() {await this.stop(); rmSync(this.root, {recursive: true, force: true});}
+  async dispose() {
+    try {
+      if (test.info().status !== test.info().expectedStatus)
+        await this.window?.screenshot({path: test.info().outputPath("m3-failure.png")});
+    } catch {}
+    await this.stop(); rmSync(this.root, {recursive: true, force: true});
+  }
 }

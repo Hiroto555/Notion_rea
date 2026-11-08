@@ -420,6 +420,9 @@ describe("SyncManagementControl actual vault", () => {
       expect(readFileSync(bindingPath, "utf8")).toBe(bindingBefore);
       expect(vault.load(f.store.path)).toMatchObject({ workspaceId, clientId, token, revision: input.requestId });
       expect(readUserVersion(f.store.db)).toBe(5);
+      const recover = await makeControl(f, vault).configure(connectionInput({mode: "recover", expectedRevision: input.requestId}));
+      expect(recover).toMatchObject({outcome: "held", view: {reason: "recovery-copy-required"}});
+      expect(readFileSync(bindingPath, "utf8")).toBe(bindingBefore);
     } finally {
       await server.close();
     }

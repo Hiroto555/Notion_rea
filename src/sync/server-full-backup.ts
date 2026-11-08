@@ -77,6 +77,7 @@ function normalize(error: unknown): never {
  * directory lease, so no legitimate writer/upload can interleave. */
 export function createServerFullBackup(options: {sourceDirectory: string; destination: string; lease: ServerDirectoryLease}): {destination: string; manifest: ServerFullBackupManifest} {
   let database: DatabaseSync | undefined;
+  let published = false;
   try {
     const source = pinPrivateRoot(options.sourceDirectory);
     options.lease.assertOwned();
@@ -125,9 +126,10 @@ export function createServerFullBackup(options: {sourceDirectory: string; destin
     options.lease.assertOwned(); assertPrivateRoot(source);
     verifyStagedFullServerBackup(destination, output.marker);
     finish(output.root, output.marker);
+    published = true;
     return {destination, manifest: inspectFullServerBackup(destination)};
-  } catch (e) {return normalize(e);}
-  finally {database?.close();}
+  } catch (e) {if (published) throw new SyncError("server-full-published-unverified", 409); return normalize(e);}
+  finally {try {database?.close();} catch (e) {if (published) throw new SyncError("server-full-published-unverified", 409); normalize(e);}}
 }
 
 /** Restore only into a fresh private directory. Old devices stay revoked;
@@ -135,6 +137,7 @@ export function createServerFullBackup(options: {sourceDirectory: string; destin
 export function restoreServerFullBackup(options: {backupDirectory: string; destination: string; port: number}): {destination: string; previousEpoch: string; serverEpoch: string} {
   let lease: ServerDirectoryLease | undefined;
   let guard: SyncSqliteGuard | undefined;
+  let published = false;
   try {
     const source = pinPrivateRoot(options.backupDirectory), manifest = inspectFullServerBackup(source.path);
     requireCondition(manifest.workspaces.length === 1 && Number.isInteger(options.port) && options.port > 0 && options.port <= 65535, "server-full-unsupported", 409);
@@ -171,7 +174,11 @@ export function restoreServerFullBackup(options: {backupDirectory: string; desti
     requireCondition(inspectVerifiedServerFile(join(source.path, SERVER_FULL_MANIFEST), undefined, MAX_MANIFEST).sha256 === manifestHash, "server-full-changed", 409);
     inspectFullServerBackup(source.path); lease.assertOwned();
     finish(output.root, output.marker);
+    published = true;
     return {destination, previousEpoch: manifest.serverEpoch, serverEpoch};
   } catch (e) {return normalize(e);}
-  finally {try {guard?.close();} finally {lease?.close();}}
+  finally {
+    try {try {guard?.close();} finally {lease?.close();}}
+    catch (e) {if (published) throw new SyncError("server-full-published-unverified", 409); normalize(e);}
+  }
 }

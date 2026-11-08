@@ -12,7 +12,7 @@ export const syncConnectionInputSchema = z.object({
 export type SyncConnectionInput = z.infer<typeof syncConnectionInputSchema>;
 export type SyncConnectionTargetView = Pick<SyncConnectionInput, "baseUrl" | "workspaceId" | "clientId" | "mode">;
 export type SyncConnectionReason = "read-only" | "recovery-copy-held" | "secure-store-unavailable" |
-  "identity-changed" | "busy" | "intent-present" | "conflict" | "invalid-input" | "outcome-unknown" | "local-error";
+  "identity-changed" | "recovery-copy-required" | "busy" | "intent-present" | "conflict" | "invalid-input" | "outcome-unknown" | "local-error";
 /** No credential or ciphertext is returned to the renderer. */
 export type SyncConnectionView = {
   state: "unconfigured" | "configured" | "pending-restart" | "disabled" | "held";

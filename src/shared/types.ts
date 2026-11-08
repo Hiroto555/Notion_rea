@@ -423,7 +423,9 @@ export const requestSchema = z.discriminatedUnion("type", [
   z.object({type: z.literal("storage:rawSalvage")}).strict(),
   z.object({type: z.literal("workspaceBackup:release")}).strict(),
   z.object({type: z.literal("recovery:read")}).strict(),
-  z.object({type: z.literal("recovery:write"), expectedGeneration: z.number().int().nonnegative().safe(), snapshot: crashRecoverySnapshotSchema}).strict(),
+  // Recovery imports the operation schemas in this module. Defer this edge
+  // so either entry order (including the bundled main entry) is safe.
+  z.object({type: z.literal("recovery:write"), expectedGeneration: z.number().int().nonnegative().safe(), snapshot: z.lazy(() => crashRecoverySnapshotSchema)}).strict(),
   z.object({type: z.literal("recovery:copy"), recoveryId: z.string().regex(/^[a-zA-Z0-9:_-]{1,200}$/),
     input: z.object({title: z.string().max(500), doc: z.custom<Doc>(isDocument).optional(), sourcePageId: z.string().max(500).optional(), payload: z.unknown()}).strict()}).strict(),
   migrationPreviewRequestSchema, migrationCommitRequestSchema, migrationResolveRequestSchema,

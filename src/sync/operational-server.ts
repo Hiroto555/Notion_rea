@@ -129,14 +129,15 @@ export function inspectOperationalServer(directory: string) {
   try {
     const {root} = existing(directory), path = join(root.path, "server.sqlite");
     const db = new DatabaseSync(path, {readOnly: true});
-    let history, devices;
+    let history, devices, serverEpoch;
     try {
       history = inspectSyncRetention(db, "server");
       devices = Number(db.prepare("SELECT COUNT(*) AS n FROM checkpoint_devices").get()!.n);
+      serverEpoch = String(db.prepare("SELECT epoch FROM checkpoint_server_identity WHERE singleton=1").get()!.epoch);
     } finally {db.close();}
     let blobs = null, held: string | null = null;
     try {blobs = inspectServerBlobRetention(join(root.path, "blobs"));} catch {held = "server-blob-retention-unknown";}
     lease.assertOwned();
-    return {history, devices, maxDevices: 512, blobs, held};
+    return {serverEpoch, history, devices, maxDevices: 512, blobs, held};
   } finally {lease.close();}
 }

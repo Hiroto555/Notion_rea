@@ -241,7 +241,7 @@ export function WorkspaceConflictDecisionControls({
           )}
           <span>
             比較は本文・値の各500文字までの抜粋です。旧形式DB行・DB設定・履歴・書式・添付本体の完全比較ではありません。保全するcheckpoint
-            JSONは完全バックアップではなく、保全内容の復元画面も未実装です。
+            JSONは完全バックアップではありません。取り出し・復元は「保全した競合データ」から新しい保存先へ行えます。
           </span>
           <label>
             <input

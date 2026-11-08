@@ -1,5 +1,5 @@
 import { existsSync, mkdirSync } from "node:fs";
-import { dirname } from "node:path";
+import { dirname, join } from "node:path";
 import type { Store } from "../persistence/store";
 import { assertRecoverySyncAllowed } from "../persistence/recovery-origin";
 import { hasCrashRecoveryInput, type CrashRecoveryRead } from "../shared/crash-recovery";
@@ -39,6 +39,8 @@ export class SyncManagementControl {
     const code = (error as {code?: string})?.code;
     return {...empty(), state: "held", reason: code === "read-only" ? "read-only" :
       code === "recovered-workspace-sync-held" ? "recovery-copy-held" :
+      code === "connection-recovery-new-copy-required" ? "recovery-copy-required" :
+      code === "connection-recovery-requires-v5" ? "invalid-input" :
       code === "sync-management-busy" ? "busy" : code === "sync-management-intent" || code === "sync-management-input" ? "intent-present" : "local-error"};
   }
   status(): SyncConnectionView {
@@ -52,6 +54,10 @@ export class SyncManagementControl {
       requireCondition(this.options.gate.isIdle(), "sync-management-busy", 409); this.quiet();
       return await this.options.gate.write(() => {
         this.quiet();
+        if (input.mode === "recover") {
+          requireCondition(readUserVersion(this.options.store.db) === 5, "connection-recovery-requires-v5", 409);
+          requireCondition(!existsSync(join(dirname(this.options.store.path), ".folio-sync-binding")), "connection-recovery-new-copy-required", 409);
+        }
         // Only an explicitly authorized save creates the external vault root.
         if (!existsSync(this.options.vaultDirectory)) mkdirSync(this.options.vaultDirectory, {mode: 0o700});
         const result = this.options.vault.configure(this.options.store.path, input);

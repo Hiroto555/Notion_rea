@@ -34,6 +34,7 @@ const NOTICE: Record<string, string> = {
   "outcome-unknown": "前回の操作結果を確認できません。更新して状態を確認してください。",
   "identity-changed": "保存済みの接続先と現在の識別情報が一致しません。内容を確認してください。",
   "recovery-copy-held": "復旧用コピーが保留されています。状態を更新してください。",
+  "recovery-copy-required": "通常の完全バックアップを新しい保存先へ復元し、その保存先から新しい端末 ID で復旧してください。現在の保存先や送信記録は変更していません。",
   busy: "接続の処理中です。",
   "intent-present": "未完了の接続操作があります。更新して状態を確認してください。",
   conflict: "接続設定が競合しています。更新して状態を確認してください。",
@@ -90,9 +91,9 @@ export function canDisableConnection(
   return connectionDisableBlockReason(view, busy, pendingRequestId) === null;
 }
 export function connectionStateNotice(view: SyncConnectionView): string {
+  if (view.reason && NOTICE[view.reason]) return NOTICE[view.reason];
   if (view.state === "held") return NOTICE.held;
   if (view.state === "pending-restart") return NOTICE["pending-restart"];
-  if (view.reason && NOTICE[view.reason]) return NOTICE[view.reason];
   return NOTICE[view.state] ?? NOTICE.unconfigured;
 }
 function feedbackTone(feedback: SyncConnectionFeedback): "status" | "alert" {
