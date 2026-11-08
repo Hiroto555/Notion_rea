@@ -1,3 +1,9 @@
+# 現在のLinux GUI受入
+
+2026-11-08。**M3候補9ddb60cで238/238 PASS、skip/retry/flaky 0。実IPC207、Electron表示5、Chromium表示26。** [最新の証拠](M3-ACCEPTANCE.ja.md)、[集計](validation/m3-gui-linux-20261108.json)を参照。6 shardで既存suiteと新M3実IPCを再受入した。以下の69件などは以前の段階の履歴。Mac固有・物理2台はNOT_RUN。
+
+## 初期のCI構築と受入の記録
+
 # 操作中のMacを使わないGUI試験
 
 2026-11-08。利用者の指示により、GUI試験の実行先をGitHub-hosted Linuxの仮想画面へ分ける。このMacではElectron/ブラウザ/OS clipboard/native dialogを起動しない。統合ツリーと合成一時データを使用し、masterへマージせず、A3以降の製品実装は開始しない。

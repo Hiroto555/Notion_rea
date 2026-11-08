@@ -1,0 +1,70 @@
+{
+  "sourceCandidate": "9ddb60c",
+  "environment": "local macOS Node-only synthetic temporary data; no GUI",
+  "observations": {
+    "PASS": true,
+    "counts": {
+      "ordinaryPages": 100,
+      "databaseOwners": 1,
+      "recordPages": 100,
+      "pageCount": 201,
+      "recordCount": 100,
+      "assets": 5,
+      "revisions": 8,
+      "headRevision": 8,
+      "changes": 8,
+      "operations": 8,
+      "devices": 1,
+      "activeDevicesAfterRestore": 0,
+      "revokedDevicesAfterRestore": 1
+    },
+    "timingsMs": {
+      "checkpointBuildHash": 5.843040999999971,
+      "windowlessStartup": 181.24433399999998,
+      "sends": [
+        1237.20775,
+        197.36924999999997,
+        179.81849999999986,
+        183.76783299999988,
+        193.3414160000002,
+        184.23762499999975,
+        179.79100000000017,
+        180.11479199999985
+      ],
+      "maxSend": 1237.20775,
+      "offlineBackup": 621.5586670000002,
+      "restore": 622.8082079999995
+    },
+    "sizes": {
+      "assetsTotalBytes": 100000000,
+      "checkpointUtf8Bytes": 169900,
+      "backupBytes": 103057648,
+      "restoreBytes": 103089318,
+      "clientWorkspaceBytes": 204757978,
+      "tempEstimatedBytes": 614002128,
+      "maxRssBytes": 429637632
+    },
+    "checks": {
+      "checkpointValid": true,
+      "checkpointWithinLimit": true,
+      "headIsEight": true,
+      "revisionsUnique": true,
+      "assetReferencesRetained": true,
+      "epochChanged": true,
+      "oldDevicesRevoked": true,
+      "assetHashesMatch": true,
+      "countsMatch": true,
+      "sourceUnchanged": true,
+      "originalServerPersistentContentUnchanged": true
+    },
+    "budgets": {
+      "checkpointBuildHashMs": 500,
+      "windowlessStartupMs": 10000,
+      "offlineBackupMs": 30000,
+      "restoreMs": 30000,
+      "maxRssBytes": 1073741824
+    }
+  },
+  "benchmarkSha256": "13d6bd5cb6ca37083a5cf5c6c44fc90a0acaadaffe6aa0a23335ddbd7311c324",
+  "note": "Production src matches 9ddb60c; benchmark-only addition measures owned Store reopen + windowless startup, not Electron or OS startup."
+}

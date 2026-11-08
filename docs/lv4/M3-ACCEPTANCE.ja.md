@@ -1,6 +1,6 @@
 # M3：最終受入候補の到達点
 
-2026-11-08。**現在は最終検証中。M3最終受入待ちの判定は保留。確認済みLevelはLv3。** 利用者の今回の停止地点は、A0〜A7とLinuxで実行できるGUI受入を完了し、Mac固有・物理2台の最終受入だけを残すところ。従来計画の「M3＝Lv4完成」と区別する。
+2026-11-08。**M3最終受入待ちへ到達。M2（A0〜A7）の実装・非GUI検証とLinux共通GUIを完了。確認済みLevelはLv3、Lv4は未認定。** 利用者が指定した今回の停止地点は、Mac固有・物理2台の最終受入だけを残すところ。従来計画の「M3＝Lv4完成」と区別する。
 
 統合branchは `codex/folio-m3-ready-20261108`。[Draft PR #12](https://github.com/Hiroto555/Notion_rea/pull/12) は既存の未マージPR #11をbaseとする。masterは `e269137` のまま。原本・実データ・このMacのGUIは使わない。
 
@@ -21,7 +21,18 @@
 
 ## 証拠と再現
 
-最終候補のquiet・Linux CIのSHA/件数は検証終了後にここへ固定する。古い69件のPASSを今回の変更の証拠へ流用しない。
+製品ソース候補 `9ddb60c6f13e8cb3c771f276205bc929fb056919` で以下を確認した。後続は記録とNodeベンチマークの補足で、製品の `src` は同じ。古い69件のPASSを今回の変更の証拠へ流用していない。
+
+| 検証 | 結果・証拠 |
+|---|---|
+| ローカルquiet | 型検査・228ファイル/2,078テスト・buildすべてPASS。[記録](validation/m3-quiet-20261108.txt) |
+| Actions quiet | [run 42458609320](https://github.com/Hiroto555/Notion_rea/actions/runs/42458609320) 全job PASS |
+| Actions Linux GUI | [run 42458609224](https://github.com/Hiroto555/Notion_rea/actions/runs/42458609224) **238/238 PASS、skip 0・retry 0・flaky 0**、6 shard。[集計](validation/m3-gui-linux-20261108.json) |
+| GUIの内訳 | 実Electron/実IPC 207、応答を代替したElectron表示5、Chromium表示26。Mac固有OS操作の証拠に含めない |
+| 新M3の実IPC | 接続保存/有効化/更新/無効化/basic拒否/応答喪失4件、cache解放/取消/変更検出/再開5件、通常/競合の終了時予約→起動適用2件、計11件を上記へ含む |
+| 安全性レビュー | Devin CLI Opus 5.5による方針＋契約＋ソース＋完全復元＋最終差分。確認できたP1を修正、最終提示範囲の確定P0/P1なし。[採否](reviews/OPUS-M3-REVIEW.ja.md) |
+
+100MB同期fixtureは通常100ページ＋DB owner1＋record page100、計201ページ/100records、5添付、8 revision。checkpoint 169,900B、全履歴/receipt/添付の完全backup/restore、新UUID・旧端末全失効・原本内容不変を確認。[計測](validation/m3-scale-20261108.json)。100MiB/1,000添付の回収ではcheckpoint 459,789B、全byte/hash・別inode・原本不変・恒久同期保留を確認。[計測](validation/m3-recovery-20261108.json)。これらを上限内の任意の本文/履歴量へ一般化しない。
 
 - 非GUI：`npm run verify:quiet`（型検査→Vitest 2 worker→build）。一時Node/SQLite/loopbackだけを使う。
 - 大容量：`node scripts/run-m3-benchmarks.mjs all`。対象は `tests/benchmarks/m3-scale.ts`、`tests/benchmarks/m3-recovery.ts`。通常のVitestに重い計測を混ぜず、Node/esbuildで個別実行する。事前に一時volumeの空き3GiB以上を確認し、全所有出力をfinallyで削除する。

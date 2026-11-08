@@ -1,4 +1,21 @@
-# Lv4 GUI・実機の受入待ち
+# Lv4 GUI・実機の受入待ち（M3候補）
+
+2026-11-08。**M3最終受入待ち。M2（A0〜A7）の実装と非GUI・Linux共通GUIを完了。確認済みLevelはLv3、Lv4は未認定。** [到達点・終了条件・証拠](M3-ACCEPTANCE.ja.md)、[運用・保全手順](M3-OPERATIONS.ja.md)、[分担・Usage](M3-USAGE.ja.md)を最新の入口とする。製品候補 `9ddb60c` は型検査・228ファイル/2,078テスト・build PASS、Linux GUI 238/238 PASS（実IPC207、Electron表示5、Chromium表示26、skip/retry/flaky 0）。Mac固有・物理2台はNOT_RUN。master `e269137`・実データ・このMacのGUIは変更/使用していない。
+
+| 実行先 | 現在の結果・残件 |
+|---|---|
+| GitHub Actions＋仮想画面 | Linux設定下の全238件PASS。新M3の実IPC11件を含む。[集計](validation/m3-gui-linux-20261108.json) |
+| Mac固有 | 実IME、Cmd+Q/赤ボタン/終了取消し、native picker/clipboard、Keychainの保存/更新/無効化/ロックがNOT_RUN |
+| 物理Mac 2台＋サーバー | 実SSH、双方向データ/添付、切断・回線変更・スリープ・競合・復元後の新端末登録と性能受入がNOT_RUN |
+| Lv4最終判定 | 上記を同じ候補へ揃え、L4-01〜12を照合する。まだ認定・master mergeしない |
+
+[Mac受入項目](GUI-MAC-ACCEPTANCE.ja.md)。Linux上の実IPCでもnative picker返答やcompositionイベントを合成する試験は、OS実操作の代わりにしない。
+
+## 以前の待ち項目（当時の履歴）
+
+以下のNOT_RUNや69件という記述は各時点の記録。今回のLinux共通受入については上記の238件を優先する。
+
+### M2以前の記録
 
 > **M2第1区切り追加後**：[添付再開・保持・限定解放](M2-CHECKPOINT-1.ja.md)のsrc変更は非GUI検証のみ。以下のLinux69件は`3aac7e9`までの証拠。今回候補のLinux GUI再受入、Mac/OS、物理2台はいずれも **NOT_RUN**。
 

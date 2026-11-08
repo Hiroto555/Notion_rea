@@ -25,6 +25,7 @@ export class M3GuiFixture {
     const options = fixtureElectronOptions(this.directory);
     let args = options.args;
     if (process.env.FOLIO_LINUX_GUI_CI === "1") {
+      expect(args.at(-1)).toBe(resolve("dist/main.cjs"));
       // Playwright's loader appends --password-store=basic after launch args.
       // This fixture-only entry restores the requested real backend before
       // loading product code. Production never gets a test storage override.
@@ -37,6 +38,9 @@ export class M3GuiFixture {
     await this.app.context().tracing.start({screenshots: true, snapshots: true, sources: true});
     this.window = await this.app.firstWindow();
     await this.window.locator(".page-title").waitFor();
+    if (process.env.FOLIO_LINUX_GUI_CI === "1")
+      expect(await this.app.evaluate(({safeStorage}) => safeStorage.getSelectedStorageBackend()))
+        .toBe(passwordStore === "basic" ? "basic_text" : "gnome_libsecret");
     return this.window;
   }
   async openSettings() {
@@ -63,6 +67,6 @@ export class M3GuiFixture {
       if (test.info().status !== test.info().expectedStatus)
         await this.window?.screenshot({path: test.info().outputPath("m3-failure.png")});
     } catch {}
-    await this.stop(); rmSync(this.root, {recursive: true, force: true});
+    try {await this.stop();} finally {rmSync(this.root, {recursive: true, force: true});}
   }
 }

@@ -1,0 +1,17 @@
+{
+  "date": "2026-11-08",
+  "scope": "Current tracked candidate and locally reachable history; no history rewrite",
+  "currentFileCount": 1218,
+  "currentFindings": [
+    {
+      "path": "tests/lv4-secret-store.test.ts",
+      "category": "credential-url",
+      "line": 371
+    }
+  ],
+  "currentFindingDisposition": "Only preexisting credential-URL rejection fixture tests/lv4-secret-store.test.ts:371; no newly added credential finding",
+  "historicalFindingsCount": 17765,
+  "historicalDisposition": "Preexisting findings retained and not certified clean. This task does not rewrite unrelated reachable history.",
+  "productionSrcTree": "66fcc1e87658fd8c6ddb55dfee66d242857e9bbb",
+  "exclusions": "No raw model conversation, credential handoff, temporary database, GUI trace, node_modules or build output added"
+}

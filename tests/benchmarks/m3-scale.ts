@@ -19,6 +19,7 @@ import { attachFile } from "../../src/persistence/assets";
 import { commitDatabaseOperation } from "../../src/persistence/database-operations";
 import { RecordRepository } from "../../src/persistence/record-repository";
 import { Store } from "../../src/persistence/store";
+import { runStartupWorkspaceSyncDetailed } from "../../src/main/workspace-sync-startup";
 import { prepareDatabaseCreation } from "../../src/shared/database-operation";
 import { preparePageCreation } from "../../src/shared/page-operation";
 import { emptyDatabase, type Doc } from "../../src/shared/types";
@@ -54,6 +55,7 @@ type AssetInfo = { id: string; sha256: string; size: number };
 
 const BUDGETS = Object.freeze({
   checkpointBuildHashMs: 500,
+  windowlessStartupMs: 10_000,
   offlineBackupMs: 30_000,
   restoreMs: 30_000,
   maxRssBytes: 1024 * 1024 * 1024,
@@ -276,11 +278,12 @@ async function main(): Promise<void> {
     server = await startOperationalServer(serverDirectory);
     assert.equal(server.serverEpoch, oldEpoch);
 
+    const bindingId = randomUUID();
     const publisher = await openWorkspaceSync({
       store,
       workspaceId,
       clientId,
-      bindingId: randomUUID(),
+      bindingId,
       token: credential.token,
       baseUrl: server.url,
       canApply: () => true,
@@ -336,6 +339,22 @@ async function main(): Promise<void> {
     for (const reference of assetReferences)
       assert.ok(targetDocumentJson.includes(reference));
     assert.ok(targetDocumentJson.includes(TEXT_512));
+
+    store.close();
+    const startupStarted = performance.now();
+    store = new Store(join(clientDirectory, "workspace.sqlite"));
+    const startup = await runStartupWorkspaceSyncDetailed(store,
+      () => ({status: "empty", generation: 0}), {
+        FOLIO_SYNC_ENABLED: "1", FOLIO_DATA_DIR: clientDirectory,
+        FOLIO_SYNC_URL: server.url, FOLIO_SYNC_WORKSPACE: workspaceId,
+        FOLIO_SYNC_CLIENT: clientId, FOLIO_SYNC_BINDING: bindingId,
+        FOLIO_SYNC_TOKEN: credential.token,
+      });
+    const windowlessStartupMs = performance.now() - startupStarted;
+    assert.ok(startup.opened);
+    assert.equal(startup.opened.status().appliedRevision, REVISIONS);
+    assert.equal(store.pages().length, pageCount);
+    assertBudget("windowless startup", windowlessStartupMs, BUDGETS.windowlessStartupMs);
 
     await server.close();
     server = undefined;
@@ -491,6 +510,7 @@ async function main(): Promise<void> {
       },
       timingsMs: {
         checkpointBuildHash: checkpointBuildHashMs,
+        windowlessStartup: windowlessStartupMs,
         sends: sendMs,
         maxSend: Math.max(...sendMs),
         offlineBackup: offlineBackupMs,

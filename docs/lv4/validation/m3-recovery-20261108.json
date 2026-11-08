@@ -1,0 +1,53 @@
+{
+  "sourceCandidate": "9ddb60c",
+  "environment": "local macOS Node-only synthetic temporary data; no GUI",
+  "observations": {
+    "counts": {
+      "sourceFiles": 1000,
+      "attachedAssets": 1000,
+      "expectedAssets": 1000,
+      "exportedAssets": 1000,
+      "restoredAssets": 1000,
+      "sourceFilesVerified": 1000,
+      "restoredFilesVerified": 1000
+    },
+    "exactBytes": 104857600,
+    "sourceBytes": 104857600,
+    "exportedBytes": 104857600,
+    "restoredBytes": 104857600,
+    "checkpointBytes": 459789,
+    "durations": {
+      "exportMs": 7072.168,
+      "verifyMs": 149.706,
+      "restoreMs": 8723.262,
+      "totalMs": 15945.135
+    },
+    "budgets": {
+      "exportMs": 60000,
+      "verifyMs": 30000,
+      "restoreMs": 60000,
+      "maxRssBytes": 1073741824
+    },
+    "maxRssBytes": 197443584,
+    "freeBytesBefore": 191339130880,
+    "freeBytesAfter": 190908596224,
+    "booleans": {
+      "diskPrecheck": true,
+      "checkpointWithinOneMiB": true,
+      "checkpointFrozen": true,
+      "checkpointValid": true,
+      "exportedManifestMatches": true,
+      "allSourceBytesVerified": true,
+      "allRestoredBytesVerified": true,
+      "allHashesVerified": true,
+      "newInodes": true,
+      "sourceDatabaseUnchanged": true,
+      "sourceAssetsUnchanged": true,
+      "restoredMarkerAbsent": true,
+      "recoveryOriginHeld": true,
+      "syncHeld": true,
+      "restoreInspectionMatched": true,
+      "budgetsMet": true
+    }
+  }
+}

@@ -1,20 +1,20 @@
-# Lv4 受入ゲートの途中記録
+# Lv4 Gateの現在の証拠と最終受入
 
-2026-11-08 M2第1区切り時点。[添付転送の再開・保持上限・限定解放](M2-CHECKPOINT-1.ja.md)を非GUI確認。A3全体/M2/Lv4は未完。以前のLinux GUI69件はM2変更前の証拠。「部分確認」はNode/SQLite/loopbackの証拠に限り、GUI・実機・実運用を満たした意味ではない。[M1終了条件](M1-COMPLETION.ja.md)、[全体の入口](README.md)、[最終検証ログ](validation/m1-quiet.txt)を参照。
+2026-11-08。**M3最終受入待ち、Lv4未認定。** [製品候補と証拠](M3-ACCEPTANCE.ja.md)で非GUI2,078件・Linux GUI238件を受入した。以下の部分確認はMac/物理2台を含むGate全体の合格ではない。原本master・実データ・このMacのGUIは使用していない。
 
-| Gate | 状態 | 今回の範囲・残件 |
+| Gate | 状態 | 取得した証拠 / 最終受入で残すもの |
 |---|---|---|
-| L4-01 | 部分確認 | 非GUI回帰を実行。既存draftと新UIのGUIはNOT_RUN |
-| L4-02 | 部分確認 | 合成端末で本文・添付等の同期部品を試験。全データ種別の新製品導線と実機2台は未受入 |
-| L4-03 | 部分確認 | ACK喪失・echo・未送信保持、再起動後のoffline適用をNodeで試験。製品全体の中断受入は未完 |
-| L4-04 | 部分確認 | recovery inputで適用を保留し、IMEを含む共通入力保護条件をコード接続。実IME、入力途中、画面終了時の全条件はNOT_RUN |
-| L4-05 | 部分確認 | 稼働中サービスは送信とstagingのみ。保存/保守の書込み排他はNodeで試験、実IPC/GUIと全操作経路は未受入 |
-| L4-06 | 部分確認 | 候補比較・勝者確認/予約に加え、保全archive一覧・JSON/添付付き回収・別領域へのv4コピー復元をNode受入。内容11表/履歴/添付同値、source不変、不明時の再照合を確認。旧形式DB行・添付本体の比較と完全diff、実画面受入は未完 |
-| L4-07 | 部分確認 | 添付の隔離staging・hash・容量拒否・offline公開に加え、実SIGKILL後の送受信再開、scope排他、保持上限、確定適用後の限定解放をNode受入。明示解放/最大規模/実機は未完 |
-| L4-08 | 部分確認 | 通常/競合ともUUID/CASと同一transaction消費、COMMIT応答不明をNode検証。製品で旧sidecarを実行/削除しない。コピー復元の完了不明も保全。GUI・実server運用/復元受入は未完。任意の同一UID改竄全般の防御は主張しない |
-| L4-09 | 部分確認 | 既存のdevice/binding/schema検査とfixture失効を試験。SecretStore製品連携・OS試験はNOT_RUN |
-| L4-10 | 未完 | M1回収の上限と保守的な容量判定を固定・境界検証。最大物理コピーの性能、Lv4全体の規模・保持・有界化・実通信/実端末の予算は未確定 |
-| L4-11 | 部分確認 | 手動同期・状態表示・競合勝者確認／予約／取消しと終了・起動処理を接続しNode確認。同期設定なしでもpending取消しに到達するコードを追加。接続設定・SecretStore製品接続・画面検証は未完。成功時刻は保存失敗時にメモリのみ |
-| L4-12 | NOT_RUN | 同じ候補の物理Mac 2台と実トンネルによる受入を実施していない |
+| L4-01 | 部分確認 | quiet/buildと既存GUI全体・DnD・保存/復旧のLinux回帰PASS / Mac OS操作 |
+| L4-02 | 部分確認 | rich内容/records/添付・履歴の実HTTP/Node統合 / 物理2台の双方向全データ照合 |
+| L4-03 | 部分確認 | ACK喪失・echo・同一操作照合・再起動・SIGKILL / 実回線/スリープ |
+| L4-04 | 部分確認 | 入力/unknown保存/構造操作/recovery gate、Linux composition合成 / 実IME・OS入力途中 |
+| L4-05 | 部分確認 | 稼働中は送受信のみ、実IPCの保存/保守排他とwindowless適用 / 実Mac終了経路 |
+| L4-06 | 部分確認 | 両候補と最新localを保全、勝者確認/明示予約、archive回収/復元・同一ID照会 / 2台の同時更新とOS導線。完全diffは初期範囲外 |
+| L4-07 | 部分確認 | 添付再開/hash/容量/所有/中断/明示解放、大容量実ファイル / 実スリープ・通信断 |
+| L4-08 | 部分確認 | 通常完全backup→新clientコピーrecover、server完全restore/fresh epoch/全旧端末失効、旧queue自動再送拒否 / 物理2台で手順再現 |
+| L4-09 | 部分確認 | workspace/device/schema拒否、外部暗号化vault、実Secret Serviceとbasic拒否、コピーDBの秘密分離 / Mac Keychain |
+| L4-10 | 部分確認 | 固定fixtureのcheckpoint/送信/Node windowless startup/完全backup/回収復元の時間・増加量・RSS / Mac実起動・描画と実通信の性能 |
+| L4-11 | 部分確認 | 接続/保留/未確定/競合/予約の実UI/IPC、運用CLIと手順 / OS側での設定と回復 |
+| L4-12 | NOT_RUN | 同じ候補の物理Mac2台・実SSH・スリープ・回線切替・復元再登録は未実行 |
 
-GUI関連の具体的な待ち項目は `GUI-ACCEPTANCE-QUEUE.ja.md`。本番データ、実server、既存バックアップには触れていない。
+同一UIDによる任意改竄全般への防御や、fsyncによる実停電耐性を主張しない。[Mac項目](GUI-MAC-ACCEPTANCE.ja.md)、[運用手順](M3-OPERATIONS.ja.md)を用い、一時データと明示された実行枠で最終受入する。masterへのマージ判断はその後に別途行う。

@@ -1,4 +1,12 @@
-# Lv4 実装状況（M2第1区切り）
+# Lv4 実装状況（M3最終受入待ち）
+
+2026-11-08。**M3最終受入待ち。M2（A0〜A7）の実装と非GUI・Linux共通GUIを完了。確認済みLevelはLv3、Lv4は未認定。** [到達点・終了条件・証拠](M3-ACCEPTANCE.ja.md)、[運用・保全手順](M3-OPERATIONS.ja.md)、[分担・Usage](M3-USAGE.ja.md)を最新の入口とする。製品候補 `9ddb60c` は型検査・228ファイル/2,078テスト・build PASS、Linux GUI 238/238 PASS（実IPC207、Electron表示5、Chromium表示26、skip/retry/flaky 0）。Mac固有・物理2台はNOT_RUN。master `e269137`・実データ・このMacのGUIは変更/使用していない。
+
+A3診断/所有ticket付き明示cache解放、A4接続UI/暗号化vault/更新/無効化/新規コピーrecover、A5完全server backup/restore/CLI、新epoch＋全旧端末失効、A6有界保持と保全停止、A7製品経路統合を追加した。DeepSeek 56 job、Opus 5.5の5回の完了レビューを使い、確認したP1を修正。最終提示範囲に確定P0/P1なし。旧GUI69件を今回の証拠へ流用していない。
+
+以下は各時点の履歴。現在の判定は上記とM3受入記録を優先する。
+
+## 過去の記録：M2第1区切り
 
 > **2026-11-08 M2第1区切り**：利用者の「できるだけ進めて」を受け、A3の添付転送再開・保持上限・検証付きcache回復・確定適用後の限定的なstaging解放を追加した。Flashの実装/独立試験をCodexが統合し、Devin CLIのOpus 5.5へ方針・契約・差分を相談した。[現在地・終了条件・残件](M2-CHECKPOINT-1.ja.md)、[使用量](M2-USAGE.ja.md)を最初に読む。コード候補`522589d`は型検査・191ファイル/1,760テスト・build PASS。[ログ](validation/m2-checkpoint-1-quiet.txt)。A3全体/A4〜A7/M2は未完、Lv3維持。今回srcのGUI/実機受入はNOT_RUN。master・実データは変更していない。
 

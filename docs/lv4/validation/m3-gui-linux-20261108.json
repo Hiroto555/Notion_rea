@@ -1,0 +1,66 @@
+{
+  "candidate": "9ddb60c6f13e8cb3c771f276205bc929fb056919",
+  "workflowRunId": 42458609224,
+  "url": "https://github.com/Hiroto555/Notion_rea/actions/runs/42458609224",
+  "status": "PASS",
+  "total": 238,
+  "byProject": {
+    "electron-linux-real-ipc": 207,
+    "electron-linux-presentation-mocked": 5,
+    "chromium-presentation-mocked": 26
+  },
+  "shards": [
+    {
+      "jobId": 128662833423,
+      "name": "Linux Xvfb 6/6 (no local Mac)",
+      "status": "success",
+      "running": 36,
+      "passed": 36,
+      "listedPasses": 36
+    },
+    {
+      "jobId": 128662833580,
+      "name": "Linux Xvfb 1/6 (no local Mac)",
+      "status": "success",
+      "running": 47,
+      "passed": 47,
+      "listedPasses": 47
+    },
+    {
+      "jobId": 128662833583,
+      "name": "Linux Xvfb 3/6 (no local Mac)",
+      "status": "success",
+      "running": 38,
+      "passed": 38,
+      "listedPasses": 38
+    },
+    {
+      "jobId": 128662833651,
+      "name": "Linux Xvfb 5/6 (no local Mac)",
+      "status": "success",
+      "running": 41,
+      "passed": 41,
+      "listedPasses": 41
+    },
+    {
+      "jobId": 128662833671,
+      "name": "Linux Xvfb 4/6 (no local Mac)",
+      "status": "success",
+      "running": 39,
+      "passed": 39,
+      "listedPasses": 39
+    },
+    {
+      "jobId": 128662833681,
+      "name": "Linux Xvfb 2/6 (no local Mac)",
+      "status": "success",
+      "running": 37,
+      "passed": 37,
+      "listedPasses": 37
+    }
+  ],
+  "skipped": 0,
+  "retries": 0,
+  "flaky": 0,
+  "evidenceBasis": "All six jobs succeeded. Each running case has exactly one passing log entry (238/238); fixed retries=0. Real IPC and mocked presentation counted separately."
+}

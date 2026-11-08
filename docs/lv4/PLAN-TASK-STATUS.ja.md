@@ -1,26 +1,22 @@
-# Opus案のタスク対応状況
+# Lv4計画タスクの対応状況（M3最終受入待ち）
 
-2026-11-08 M2第1区切りの隔離統合候補について、[レビュー版計画](planning/LV4-PLAN.ja.md)のT01〜T14に対応させた途中記録。Node/一時SQLite/loopbackでの確認であり、GUI・実機・OS・実運用の受入やLv4完成の判定ではない。
+2026-11-08。[M3候補・証拠](M3-ACCEPTANCE.ja.md)が現在地。A0〜A7の実装・非GUIとLinux共通GUIを受入した。物理Mac 2台やOS固有を未確認のままLv4完成とはしない。確認済みLevelはLv3。masterは未マージ。
 
-**現在はM1完了後、A3添付転送の第1区切りまで進めた。A3全体・M2は未完。** [今回の結果と残件](M2-CHECKPOINT-1.ja.md)。M1については [終了条件と証拠](M1-COMPLETION.ja.md)、[今後の残作業](REMAINING-WORK-PLAN.ja.md)を参照。
-
-| ID | 状態 | 今回の実装・残り |
+| ID | 現在の範囲 | 残す確認 |
 |---|---|---|
-| T01 | 実施 | 基準・元draft・GUI未実施を記録。作業は別ツリー |
-| T02 | 部分 | 合成checkpoint・record・添付・backupを計測。M1の1MiB/添付100MiB・1,000件等の上限とfixtureを固定・境界検証。Lv4全体の実機・通信・性能予算は未完 |
-| T03 | 部分 | 同一所有者Mac 2台、R1、loopback/トンネル等を候補として記録。対応規模・OS・保持と秘密情報の運用判断は未確定 |
-| T04 | 実装・非GUI確認 | 送信・受信staging・対象指定適用を分離し、既存入口も維持 |
-| T05 | 部分 | 実process SIGKILL後の送受信再開、prefix/全体hash、scope付きSQLite排他、横断保持上限、検証済み公開の回復と確定適用後の限定解放を非GUI確認。手動解放/古いscope回収/最大規模/実機は未完 |
-| T06 | 部分 | mainサービス、手動同期、登録済みv5の手動再接続とtyped IPCを実装。自動同期・初回登録の接続設定は未完 |
-| T07 | 部分 | 保存・保守と同期の排他、ゲートのidle、適用前の検査をNodeで確認。Electronの全操作経路はNOT_RUN |
-| T08 | 部分 | 通常適用もUUID/CASのSQLite予約へ統一し、本文と消費を同一transactionで確定。通常/競合の排他、COMMIT前後・古いIDの取消し拒否を独立試験。旧sidecarは保全停止。実終了取消し・入力/IME保護のGUI受入はNOT_RUN |
-| T09 | 部分 | 勝者確認/予約/取消しに加え、保全archive一覧・JSON/添付付き回収・新規v4コピー復元・結果再照会をtyped IPC/UIへ接続しNode確認。IPC応答喪失のID保持と部品再生成も検証。実画面・実IPCはNOT_RUN。旧形式DB行の比較・完全diff、接続設定、秘密の更新/削除・製品/OS連携は未完 |
-| T10 | 未完・条件付き | 容量上限の保全停止と一部計測を実施。履歴の有界保持・bootstrap・差分転送の必要性と方式は未確定 |
-| T11 | 部分 | fixture運用CLIと、添付を含まないserver catalog snapshotの作成・読み取り専用概要検査の内部API。履歴全件・復元可能性の検査、実serverのCLI、添付を含む完全backup・復元・epoch更新は未完 |
-| T12 | 部分 | 実client/server SIGKILL後の添付再開、共有添付2revision、COMMIT後cleanup障害、容量/所有異常からの保全再試行を追加。ACK/IPC応答喪失、通信断、backup失敗、識別/入力、両予約のCOMMIT前後、FD/path差替え・FIFO・ENOSPC注入、回収完了不明の再照合を一時環境で確認。製品全経路の実操作故障受入は未完 |
-| T13 | 部分 | M2追加前のLinux仮想画面で実Electron/実IPC41件、代替応答Electron表示2件、Chromium表示26件の計69件PASS。ページツリー3件と保存・復旧24件を含む。Mac/OS・残りの未移植GUI suiteはNOT_RUN。全GUI受入ではない |
-| T14 | 部分 | M2追加前のLinux共通GUI69件PASS。今回srcのGUIはNOT_RUN。Mac GUI batch、物理Mac 2台・実トンネル、Windows分岐はNOT_RUN |
+| T01 | 統合branch・製品候補9ddb60c・quiet/CI・公開先を固定 | Mac受入も同じ候補へ揃える |
+| T02 | 1MiB、201ページ/100records/100MB添付/8revision、100MiB・1,000添付の実byte/hash・時間・RSSを計測 | Mac実起動/描画・実通信/スリープでの性能 |
+| T03 | 同一所有者Mac2台/単一server、R1/手動同期、外部暗号化vault、保持上限を固定 | 実機・実SSHで再現 |
+| T04 | 送信/受信staging/固定対象の起動時適用を分離 | 実機2台の両方向受入 |
+| T05 | 添付再開・scope排他・全体hash・容量/所有拒否、診断と所有ticketによる明示cache解放 | 物理回線断/スリープの受入 |
+| T06 | main同期サービス・手動送受信/再接続・初回設定/更新/無効化・通常復元後recoverを接続 | Mac Keychain、初回空workspaceのOS起動手順 |
+| T07 | 入力・保存・保守と同期の排他、実IPC/Linux回帰を受入 | 実IME・数値途中・native picker中の終了 |
+| T08 | 通常/競合ともUUID/CAS・原子的消費。実終了→windowless起動→一度だけ適用をLinux受入 | Mac Cmd+Q/赤ボタン/終了取消し/Dock復帰 |
+| T09 | 状態/設定・勝者確認・archive回収/復元・秘密の保存更新無効化を製品へ接続 | Mac OS連携。比較は抜粋で、全データの完全diffは初期対象外 |
+| T10 | server/client履歴・ACK余白・blob/cache/backupを有界化。上限時は保全停止、手順を記録 | 大規模長期運用・自動rollover/bootstrap/差分転送は別設計 |
+| T11 | 実server CLI、排他・発行/失効・全履歴/receipt/敗者添付の完全backup、新規先restore/fresh epoch/全旧device失効 | 2台目で実運用手順を再現 |
+| T12 | SIGKILL・ACK/COMMIT/IPC喪失・sidecar回復・所有差替え・ENOSPC注入・quota競合・復元後再登録を一時環境で試験 | 物理故障/停電を模擬注入の合格へ含めない |
+| T13 | Linux GUI全238件PASS：実IPC207、Electron表示5、Chromium表示26。skip/retry/flaky 0 | native OS操作を代替応答の合格へ含めない |
+| T14 | Linux側の共通受入を完了、Mac/物理2台のキューを固定 | **NOT_RUN**：Mac固有・物理2台・L4-01〜12の最終判定 |
 
-最新の試験結果と制約は `IMPLEMENTATION-STATUS.ja.md`、各受入条件は `GATE-STATUS.ja.md` を参照する。
-
-競合選択の固定対象・保全範囲・結果不明時の扱いは `CONFLICT-RESOLUTION.ja.md` に記録。コアの試験合格を製品UIでの勝者選択完了として扱わない。
+[運用・保全手順](M3-OPERATIONS.ja.md)、[GUI待ち](GUI-ACCEPTANCE-QUEUE.ja.md)、[Gate状況](GATE-STATUS.ja.md)を参照。M1/M2第1区切りの古い未完記録は各時点の履歴として残す。
