@@ -151,6 +151,32 @@ export async function runGuiTests({
   const childEnv = { ...env };
   if (decision.optIn) childEnv[GUI_TEST_OPT_IN_ENV] = GUI_TEST_OPT_IN_VALUE;
   else delete childEnv[GUI_TEST_OPT_IN_ENV];
+  // Remote supervision is reachable only through the existing explicit batch
+  // entry. It has its own live host guard and accepts no extra Playwright args.
+  if (args.some((arg) => /^--mac-acceptance-plan(?:=|$)/.test(arg))) {
+    if (
+      !batch ||
+      args.length !== 2 ||
+      args[0] !== "--mac-acceptance-plan" ||
+      typeof args[1] !== "string" ||
+      !args[1]
+    )
+      return {
+        code: 1,
+        signal: null,
+        refused: true,
+        message:
+          "Remote Mac acceptance requires only --mac-acceptance-plan PATH through the batch entry",
+      };
+    const { runRemoteMacBatch } =
+      await import("./mac-acceptance/remote-batch.mjs");
+    return runRemoteMacBatch({
+      planPath: args[1],
+      cwd,
+      env: childEnv,
+      forwardSignals,
+    });
+  }
   const invocation = buildPlaywrightInvocation(args, { cliPath });
 
   return await new Promise((resolvePromise, rejectPromise) => {

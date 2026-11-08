@@ -2,6 +2,8 @@
 
 2026-11-08。実装と計画の区切りでチャットを切り替えるための入口。**この文書は新しい実装・GUI実行・mergeの許可ではない。新チャットの最新ユーザー指示を優先する。**
 
+最新の非GUI追記：`codex/folio-lv4-quiet-residuals-20261108`（開始 `ab48aab`）で、DeepSeek最大10並列＋限定修正2件を統合した。終了予約の書込み前失敗後の取消しと、既存binding不一致の接続設定保存を修正し、外部監視・remote H1起動経路・artifact snapshot・Keychain/native観測判定・12条件台帳を実装した。**型検査・243ファイル/2,292 Nodeテスト・build PASS、今回の変更は追加GUIなしの最終レビュー後、この文書を含むローカルcommitへ保存する。** [実装・再現・境界](QUIET-RESIDUAL-EXECUTION.ja.md)と[最終レビューJSON](validation/lv4-quiet-residuals-final-review-20261108.json)を最優先する。製品srcが変わったため、以下のGUI240件は前候補の履歴。新候補のGUIはNOT_RUN、Lv3確認済み/Lv4未認定、追加GUI・push・workflow・master mergeなし。
+
 最新追記：利用者のTV視聴中の明示指示で、このMacのGUI受入を実施した。**240 PASS / 実IME 1 INFRA_BLOCKED**、最終quietは型検査・232ファイル/2,165テスト・build PASS。[今回の範囲と残件](MAC-LOCAL-GUI-ACCEPTANCE-20261108.ja.md)を最優先する。作業branchは `codex/folio-mac-gui-acceptance-20261108`、開始HEADは `b19ecbe1fd9700575d75474c5e08573ffcbb75d9`。今回のharness・結果文書は追加GUIなしの最終レビュー後、この文書を含むローカルcommitへ保存する。結果JSONの `harnessStateAtRun` は未コミットだった実行時の記録であり、保存後の未保存差分を意味しない。実Keychain・別ホスト・物理2台はNOT_RUNで、Lv3/Lv4未認定を維持する。[MAC-P05の機材・権限・最小H1範囲](MAC-P05-RESOURCES-AND-SCOPE.ja.md)も整理済み。以下の「このMacのGUIは未使用」は今回より前の履歴であり、今後のGUI起動は再び既定拒否とする。
 
 追記：利用者の具体的な依頼を受け、`codex/folio-mac-poc-quiet-20261108` でMac PoCのguard/schema/validator/外部watchdogを非GUIで実装し、最終レビュー後に同branchへローカルcommitで保存する。pushはしない。[今回の実装・境界・最終レビュー/検証記録](MAC-POC-QUIET-IMPLEMENTATION.ja.md)を参照。下記の「計画のみ」「未着手」は保存commit当時の記録。実Electron・Keychain・別ホスト・workflowへの接続は引き続きNOT_RUNで、M3待ち/Lv3/Lv4未認定を維持する。

@@ -1,0 +1,143 @@
+{
+  "recordType": "folio-lv4-quiet-residuals-v1",
+  "date": "2026-11-08",
+  "branch": "codex/folio-lv4-quiet-residuals-20261108",
+  "baseCommit": "ab48aab830ae9d924829c9fd66e195a8df3ebd70",
+  "temporaryEvidenceRoot": "/private/var/folders/fm/qk5fr3z11wq8hbphz6gk9llc0000gn/T/folio-lv4-quiet-deepseek-20261108-8tm0e7ir",
+  "codeSha256": {
+    "playwright.remote-mac.config.ts": "0f747601ee6636b453b1ebb2a588c5c4aa590334ea2212c5bcc68962cdbbf376",
+    "scripts/mac-acceptance/gate-ledger.d.mts": "8b4914cb89e56dcab4143f299c5678f33685ada221ae1e935aada146829f79a6",
+    "scripts/mac-acceptance/gate-ledger.mjs": "dffd78e6cacb3646a498910f4593db4cc0c949ffdfc37153b5bc829c2b7a14a5",
+    "scripts/mac-acceptance/native-observations.d.mts": "511000e9a81bade7d4a9b48b5fabcdacbbf6442b2d58292c5caf96b6ef836544",
+    "scripts/mac-acceptance/native-observations.mjs": "cd40d8e83f10a99060364f700107e1ca79dcf983daa0ff845db80538441aa331",
+    "scripts/mac-acceptance/preflight/artifacts.d.mts": "4843ec78b42ec1268cd8e75d631ffc5f04af7e27a3da878410653aca1f8dce35",
+    "scripts/mac-acceptance/preflight/artifacts.mjs": "bfc49253404eb87b4d6e1e98bbd579e910d566464c9f6d29e4be7bfdf05efb63",
+    "scripts/mac-acceptance/preflight/keychain.d.mts": "39af4f97f0cfd08833d938620daf69f582a5a2323d95c185f45fe8eebd7bc030",
+    "scripts/mac-acceptance/preflight/keychain.mjs": "09fa65c1e2021d5c0d7ed47a56fbd3abd0cb8580e8b6def2e53c27120340a73b",
+    "scripts/mac-acceptance/preflight/remote-h1.d.mts": "6409d97c2fceb0cbfb466e641bbd9cbcd674a850b9afec9c5d48b779118bbfc0",
+    "scripts/mac-acceptance/preflight/remote-h1.mjs": "c1fe7ddbcd06b574687a80ba112d5bb9cc75a37cd972647a4026e7b29de91766",
+    "scripts/mac-acceptance/remote-batch.mjs": "57407ba7f00cfe2dc7c2ebde5651e3532cbe06a6a8e03541c891ed26e29ca5ab",
+    "scripts/mac-acceptance/watchdog/owned-process.d.mts": "7465c5480c51f0b2573f0b453fb9f27729bded1a76ea32219d6137d08699cb75",
+    "scripts/mac-acceptance/watchdog/owned-process.mjs": "3632906b5595b6b8a18f1fa654782bbcfe6033b12c420297f19e86ee0a7f4d36",
+    "scripts/run-gui-tests.mjs": "f3f2ab1205beded2c032b2e5a1e38936d97920ad3572502e1db04fd2f32eafb6",
+    "src/main/normal-apply-intent.ts": "d5f72f99bbb22703f15fa786645a19d999e4ad9a9a823d206892cbc8bc98283f",
+    "src/main/sync-connection-vault.ts": "ec61fe2dd32cc2e197de282bc933d717583e536828a19469fbf44491e7032b90",
+    "tests/acceptance-metadata/mac-artifacts.test.ts": "4c013bcadf98fbf5418b88cf6f5e909a6da805e9b15d2e5ce2b88688766f7bad",
+    "tests/acceptance-metadata/mac-gate-ledger.test.ts": "60c563dca1d5e2ce331855a1a94e6f97af50d2fe76e995a4b9854db9df022cce",
+    "tests/acceptance-metadata/mac-keychain-preflight.test.ts": "278526da7ce7007201d0063a40cca50fe0f61b99487caf56ccdd95b202053347",
+    "tests/acceptance-metadata/mac-native-observations.test.ts": "2f2b03bec40fa7b473fed55314b1aff08238f76254c77d78b1abb60e928471b6",
+    "tests/acceptance-metadata/mac-owned-process.test.ts": "d67a662879c9911dcd4bcaaf6585ccd95d6fa62a713c89beabf281a97eab9a29",
+    "tests/acceptance-metadata/mac-remote-h1-preflight.test.ts": "521b0f1b57037e65d41c38fc4b6d67470dbb0d0d1940ee0eeeddad42830eee51",
+    "tests/acceptance-metadata/mac-supervisor-binding.test.ts": "b55a8b34a64c67414bd6ae8bf604b9172e67239ddecb4851f2bddcb2179fe271",
+    "tests/acceptance/macos/remote-h1.spec.ts": "c884666eca9fe9b8c6f4c999b89a25bf74db29b387e5178e4308856ce0b246d8",
+    "tests/lv4-connection-binding-preflight.test.ts": "65ebbce39bdc1c001eb7ce665595813a1f5f5b8938d8d0a5d3c4e5bbb6ac2e4b",
+    "tests/lv4-normal-journal-cancel-fault.test.ts": "371d8088b5c770dd2290268d9e276e1264163e6cc2671700318f57cec7a8dab1",
+    "tests/mac-remote-batch.test.ts": "06e71f96bba5471b6e206de227d394e2cfecdbdb387bfc09fd6a5141e58f07ff",
+    "tsconfig.json": "2c4c43436ef62968cb80a656d766b71503c70b7e9067bbe7fa35d478cdf282e1"
+  },
+  "codeUnchangedThroughoutFinalQuiet": true,
+  "finalQuiet": {
+    "command": ["npm", "run", "verify:quiet"],
+    "exit": 0,
+    "typecheck": "PASS",
+    "testFiles": 242,
+    "nodeTests": 2290,
+    "addedNodeTestsFromBaseline": 125,
+    "baselineNodeTests": 2165,
+    "build": "PASS",
+    "seconds": 117.86,
+    "log": "verify-quiet-final.txt",
+    "logSha256": "388a2c0356e712560f102e880a1ed37f88fd11ae8581d02215b2fcd6667cf442"
+  },
+  "regressionProofs": [
+    {
+      "id": "restart-cancel-before-write",
+      "test": "tests/lv4-normal-journal-cancel-fault.test.ts",
+      "beforeFix": {
+        "failed": 1,
+        "passed": 4
+      },
+      "afterFocused": {
+        "files": 6,
+        "passed": 62
+      },
+      "adopted": "An empty durable journal permits cancellation of the selected in-memory intent; blocked/different/consumed reservations remain protected. Lost-ack uncertainty remains deliberately held."
+    },
+    {
+      "id": "connection-existing-binding",
+      "test": "tests/lv4-connection-binding-preflight.test.ts",
+      "beforeFix": {
+        "failed": 3,
+        "passed": 1
+      },
+      "beforeSecondCommitCheck": {
+        "failed": 1,
+        "passed": 4
+      },
+      "afterFocused": {
+        "files": 2,
+        "passed": 13
+      },
+      "adopted": "Validate the existing sidecar before encryption and again before the transaction writes; preserve old ciphertext/profile and reject mismatched pending configuration."
+    }
+  ],
+  "harnessReviewCorrections": [
+    "Strict, detached watchdog binding rejects arbitrary secret fields and mutation; two failing Node regression tests fixed.",
+    "Accept repeated trusted IME updates and classify missing observations as NOT_RUN; failing regression fixed.",
+    "Bound artifact read to 16MiB; preserve hash/identity checks.",
+    "Strengthen independent supervisor tests so null PID cannot satisfy exited-process assertions.",
+    "Correct remote environment declaration and include the new config in typecheck.",
+    "Use bounded metadata reads and a second normal app exit in the future remote-H1 suite."
+  ],
+  "artifactSha256": {
+    "dist/preload.cjs": "3e39ba8560acf6abee58233896192a26f313dc2402abf82ad260650b42f1fc26",
+    "dist/main.cjs.map": "c159a86d031949efcaa2dc397873fb9e971f61dd04377f1d1aaa94fb385fb97c",
+    "dist/server-ops.cjs": "a7a27224af0d6cf6aaac50a316ef86334c191d599954f21c4194540e262bcd7c",
+    "dist/storage-overview-worker.cjs": "81b48fd581652dc26c7eaf46885e6dd27c0860e8091aa5591469a99ff6ae68c9",
+    "dist/main.cjs": "79e276240478877cfea2a324787b2d77bff097c417f6c456fc669e23ec25128d",
+    "dist/raw-rescue.cjs": "64f3c6ac6e8503e6bf10655536c23fd6d8cfa7e6946139b99a7765f9214f419c",
+    "dist/renderer/index.html": "dca4ba1945167e937cc05c200dde11c3cbb166c2d3de7f2516be101306e3aaf2",
+    "dist/renderer/assets/index-CSVd0Aq2.js": "63e97a7ec49aa15701a0fd1226f3e3e6d40f701347f04d57f37bbafdaafbc9ed",
+    "dist/renderer/assets/index-Bpd3T6nf.css": "10308de7ce698d992abaae455858de017f8054c3f8af58741987582aee0eec74"
+  },
+  "acceptance": {
+    "confirmedLevel": 3,
+    "level4Certified": false,
+    "newCandidateGui": "NOT_RUN",
+    "previousCandidateGui": {
+      "baseCommit": "ab48aab830ae9d924829c9fd66e195a8df3ebd70",
+      "passed": 240,
+      "ime": "INFRA_BLOCKED",
+      "recordSha256": "033e746dde9e54014e9595fbebf2b561473349ef555e8326c67b8daaadf9f470",
+      "carriedForwardAsNewCandidatePass": false
+    },
+    "remoteH1": "NOT_RUN",
+    "realMacKeychain": "NOT_RUN",
+    "nativeImeDockPickerResiduals": "NOT_RUN",
+    "physicalTwoMacsSshSleepServerRestore": "NOT_RUN"
+  },
+  "constraints": {
+    "additionalGuiStarted": false,
+    "push": false,
+    "workflowCreatedOrRun": false,
+    "masterMerged": false,
+    "billingOrGlobalSecuritySettingsChanged": false,
+    "remoteHostGuardChanged": false
+  },
+  "modelUsageRecord": "lv4-quiet-residuals-model-usage-20261108.json",
+  "finalStaticChecks": {
+    "codeAndEvidenceHashes": "PASS",
+    "localLinks": 50,
+    "whitespaceAndScopedSecretPatterns": "PASS",
+    "changedFiles": 38,
+    "productSourceFiles": 2,
+    "remoteGuardValidatorWorkflowsDependencies": "UNCHANGED",
+    "master": "UNCHANGED",
+    "index": "empty",
+    "ownedIntegrationElectronProcesses": 0,
+    "scopedFormatting": "PASS"
+  },
+  "changesUncommittedAtVerification": true,
+  "validationPhase": "implementation-before-final-review",
+  "supersededByFinalReviewRecord": "lv4-quiet-residuals-final-review-20261108.json"
+}

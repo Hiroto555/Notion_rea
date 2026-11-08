@@ -1,5 +1,7 @@
 # Lv4 GUI・実機の受入待ち（M3候補）
 
+最新の非GUI追記：終了予約の取消しと既存binding不一致の保存を修正した新候補は、型検査・243ファイル/2,292 Nodeテスト・build PASS。[今回の実装と境界](QUIET-RESIDUAL-EXECUTION.ja.md)。**新候補のGUI再受入はNOT_RUN。以下の240件は前候補 `ab48aab` までの履歴であり、今回の製品src修正への合格として流用しない。** 実IME・実Keychain・物理2台の残条件も未受入、Lv4未認定を維持する。
+
 2026-11-08更新。**M3最終受入待ち。確認済みLevelはLv3、Lv4は未認定。** 明示許可された[このMacのGUI受入](MAC-LOCAL-GUI-ACCEPTANCE-20261108.ja.md)は240 PASS / 実IME 1 INFRA_BLOCKED。最終quietは232ファイル/2,165テスト・型検査・build PASS。実Keychain・物理2台は未実行。製品 `src` は受入基準 `bd65b73` と同じで、master `e269137`・実データは変更していない。[到達点](M3-ACCEPTANCE.ja.md)、[運用](M3-OPERATIONS.ja.md)、[分担・Usage](M3-USAGE.ja.md)も参照する。
 
 | 実行先 | 現在の結果・残件 |

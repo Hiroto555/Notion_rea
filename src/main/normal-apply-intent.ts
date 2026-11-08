@@ -47,6 +47,9 @@ export class WorkspaceSyncIntentJournal {
     const selected = this.selected;
     if (!selected || canonicalJson(selected.target) !== canonicalJson(target)) return "different";
     const before = readNormalApply(this.store.db);
+    // A pre-write failure can leave only this in-memory selection. An empty
+    // durable journal is absent; blocked or different reservations stay held.
+    if (before.status === "empty") return "absent";
     if (before.status === "ready" && before.record.id === selected.id && before.record.state === "cancelled") return "absent";
     if (before.status !== "ready" || canonicalJson(before.record) !== canonicalJson(selected)) return "different";
     this.store.transaction(() => cancelNormalApply(this.store.db,selected));

@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { lstatSync, realpathSync } from "node:fs";
-import { resolve } from "node:path";
+import { dirname, join, resolve } from "node:path";
 import { z } from "zod";
 import { syncConnectionInputSchema, type SyncConnectionAction, type SyncConnectionInput, type SyncConnectionReason, type SyncConnectionView } from "../shared/sync-management";
 import { canonicalJson, requireCondition, sha256, SyncError } from "../sync/protocol";
@@ -83,6 +83,23 @@ export class SyncConnectionVault {
     return {outcome: reason === "outcome-unknown" ? "outcome-unknown" : "held",
       view: {...this.describe(prior, false), state: "held", reason}};
   }
+  /** Refuse a pending profile that cannot match an existing device sidecar.
+   * Missing sidecars keep the new-workspace path; malformed or copied bindings
+   * must not replace the current profile or reach encryption. */
+  private assertExistingWorkspaceBinding(path: string,
+    config: {workspaceId: string; clientId: string; bindingId: string}): void {
+    const sidecar = join(dirname(realpathSync(path)), ".folio-sync-binding");
+    try { lstatSync(sidecar); }
+    catch (error) {
+      if ((error as NodeJS.ErrnoException).code === "ENOENT") return;
+      throw new SyncError("workspace-binding-mismatch", 409);
+    }
+    try { verifyWorkspaceBinding(path, config, false); }
+    catch (error) {
+      if (error instanceof SyncError && error.code.startsWith("workspace-binding-")) throw error;
+      throw new SyncError("workspace-binding-mismatch", 409);
+    }
+  }
   view(path: string): SyncConnectionView {
     try {return this.ledger(path, (db, binding) => this.describe(this.profile(db.read(binding.key))));}
     catch (error) {return {...emptyView(), state: "held", reason: this.reason(error)};}
@@ -105,12 +122,14 @@ export class SyncConnectionVault {
         const sameDevice = prior?.config?.workspaceId === input.workspaceId && prior.config.clientId === input.clientId && input.mode !== "recover";
         const config = {baseUrl: new URL(input.baseUrl).origin, workspaceId: input.workspaceId, clientId: input.clientId,
           bindingId: sameDevice ? prior!.config!.bindingId : randomUUID(), mode: input.mode};
+        this.assertExistingWorkspaceBinding(path, config);
         const nonce = prior?.nonce ?? randomUUID();
         const ciphertext = sealConnectionToken(this.options.safeStorage, this.options.platform ?? process.platform,
           {profileKey: binding.hash, nonce, targetHash: sha256(canonicalJson(config))}, input.token);
         const next: Profile = {nonce, config, ciphertext, enabled: true, activated: false, revision: input.requestId};
         db.transaction(() => {
           requireCondition(this.binding(path).key === binding.key && db.read(binding.key) === oldRaw && db.read(requestKey) === null, "connection-stale", 409);
+          this.assertExistingWorkspaceBinding(path, config);
           db.write(binding.key, canonicalJson(next));
           db.write(requestKey, canonicalJson({fingerprint, kind: "configure", outcome: "saved", revision: next.revision}));
         });

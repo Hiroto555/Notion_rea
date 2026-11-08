@@ -1,5 +1,7 @@
 # M3：最終受入候補の到達点
 
+最新の非GUI追記：`ab48aab` から終了予約の取消し・接続設定の既存binding照合を修正し、検証基盤を追加した。[実装記録](QUIET-RESIDUAL-EXECUTION.ja.md)。型検査・243ファイル/2,292 Nodeテスト・build PASS。新しいmain artifactは前候補と異なり、新候補のGUI/実機受入はNOT_RUN。以下のLinux/Mac GUIはそれぞれ当時の候補の履歴で、Lv4未認定は維持する。
+
 2026-11-08。**M3最終受入待ちへ到達。M2（A0〜A7）の実装・非GUI検証とLinux共通GUIを完了。確認済みLevelはLv3、Lv4は未認定。** 利用者が指定した今回の停止地点は、Mac固有・物理2台の最終受入だけを残すところ。従来計画の「M3＝Lv4完成」と区別する。
 
 同日追記：その後のTV視聴中の明示指示で、[このMacのGUI受入](MAC-LOCAL-GUI-ACCEPTANCE-20261108.ja.md)を実行。共通236＋native4の240 PASS、実IME1 INFRA_BLOCKED。最新quietは232ファイル/2,165テスト・型検査・build PASS。製品 `src` は `bd65b73` と同じで、実Keychain/物理2台は未実行。以下の過去の「このMacのGUIは使わない」は当時の実行範囲で、Lv4未認定とmaster未mergeは維持する。

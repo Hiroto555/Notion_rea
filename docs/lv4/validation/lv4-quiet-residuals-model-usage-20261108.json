@@ -1,0 +1,673 @@
+{
+  "date": "2026-11-08",
+  "model": "opencode-go/deepseek-v4.1-flash",
+  "variant": "high",
+  "opencodeVersion": "1.18.30",
+  "initialParallelTasks": 10,
+  "followupFixTasks": 2,
+  "uniqueSessions": 10,
+  "peakOverlappingCliDispatches": 10,
+  "providerHardConcurrencyLimitVerified": false,
+  "dispatchAttemptsIncludingLocalArgumentFailuresAndInterruptedPermissionAttempts": 42,
+  "totalsAsReported": {
+    "input": 1561366,
+    "output": 199078,
+    "reasoning": 381125,
+    "cacheRead": 35584640,
+    "cacheWrite": 0,
+    "reportedTotal": 37726209
+  },
+  "incompleteAssistantMessages": 20,
+  "usageCaveat": "Exported counters only. Interrupted assistant messages may have no final usage. Do not interpret this as a complete bill, savings estimate or rate-limit balance.",
+  "localSetupCorrections": [
+    "CLI --file consumed the trailing positional message; message moved before flags. Initial local failures retained.",
+    "File-specific edit permission denied canonical paths; writes were preserved, then editing allowed only inside each disposable copy. Shell/delegation/external directories stayed denied."
+  ],
+  "sessions": [
+    {
+      "worker": "D01-supervisor",
+      "sessionId": "ses_e44aec6beffeDN6zIUAXs2i4Hl",
+      "model": "opencode-go/deepseek-v4.1-flash",
+      "variant": "high",
+      "exportSha256": "888ad0a1ed77ff2e1fce63ff491e22c5ac5ade879d30f08554d7151fc3420324",
+      "assistantMessages": 35,
+      "incompleteAssistantMessages": 2,
+      "reportedTokens": {
+        "input": 106292,
+        "output": 21303,
+        "reasoning": 34320,
+        "cacheRead": 1686144,
+        "cacheWrite": 0,
+        "reportedTotal": 1848059
+      },
+      "toolErrorCount": 9,
+      "completedToolCounts": {
+        "read": 21,
+        "glob": 12,
+        "grep": 3,
+        "write": 2,
+        "edit": 3
+      },
+      "attempts": [
+        {
+          "state": "finished",
+          "exit": 0,
+          "seconds": 223.76,
+          "started": 1794144475.795104
+        },
+        {
+          "state": "finished",
+          "exit": 1,
+          "seconds": 3.16,
+          "started": 1794143947.122858
+        },
+        {
+          "state": "finished",
+          "exit": -15,
+          "seconds": 354.66,
+          "started": 1794144022.402551
+        },
+        {
+          "state": "finished",
+          "exit": -15,
+          "seconds": 98.16,
+          "started": 1794144377.3967931
+        }
+      ],
+      "adoptedCandidateFiles": [
+        {
+          "path": "scripts/mac-acceptance/watchdog/owned-process.mjs",
+          "workerSha256": "74d6dd9046b426d69d80bc1c78dd2578673dc1a69a632a84172d8bd7088554ae"
+        },
+        {
+          "path": "scripts/mac-acceptance/watchdog/owned-process.d.mts",
+          "workerSha256": "4362d7f677eb9e2c2f797b5c2817283d98f6e18fb2f737add1d38ce54e7f3d68"
+        }
+      ],
+      "outsideOwnedChanges": []
+    },
+    {
+      "worker": "D02-supervisor-tests",
+      "sessionId": "ses_e44aec615ffeKSttv6VdCI0ozi",
+      "model": "opencode-go/deepseek-v4.1-flash",
+      "variant": "high",
+      "exportSha256": "adc6426002042af5196d5f170891dd8988a5adf945a07e6d15becba48ce35e76",
+      "assistantMessages": 31,
+      "incompleteAssistantMessages": 2,
+      "reportedTokens": {
+        "input": 99020,
+        "output": 11625,
+        "reasoning": 38715,
+        "cacheRead": 1652992,
+        "cacheWrite": 0,
+        "reportedTotal": 1802352
+      },
+      "toolErrorCount": 3,
+      "completedToolCounts": {
+        "read": 22,
+        "glob": 9,
+        "grep": 5,
+        "write": 2,
+        "edit": 10
+      },
+      "attempts": [
+        {
+          "state": "finished",
+          "exit": 0,
+          "seconds": 572.57,
+          "started": 1794144475.795209
+        },
+        {
+          "state": "finished",
+          "exit": 1,
+          "seconds": 3.12,
+          "started": 1794143947.122968
+        },
+        {
+          "state": "finished",
+          "exit": -15,
+          "seconds": 354.67,
+          "started": 1794144022.4026382
+        },
+        {
+          "state": "finished",
+          "exit": -15,
+          "seconds": 98.16,
+          "started": 1794144377.396893
+        }
+      ],
+      "adoptedCandidateFiles": [
+        {
+          "path": "tests/acceptance-metadata/mac-owned-process.test.ts",
+          "workerSha256": "84b7ee7c2ddff6754c63b05d39f03536466e497dec72602689c43130ab0ba464"
+        }
+      ],
+      "outsideOwnedChanges": []
+    },
+    {
+      "worker": "D03-artifacts",
+      "sessionId": "ses_e44aec6d7ffeIQqvq7La32gYXj",
+      "model": "opencode-go/deepseek-v4.1-flash",
+      "variant": "high",
+      "exportSha256": "7a9eab532ebacb5184ca1d6b8750391569ac21b37632f1cc72c40f6fb40e106a",
+      "assistantMessages": 47,
+      "incompleteAssistantMessages": 2,
+      "reportedTokens": {
+        "input": 139041,
+        "output": 22288,
+        "reasoning": 42776,
+        "cacheRead": 3327488,
+        "cacheWrite": 0,
+        "reportedTotal": 3531593
+      },
+      "toolErrorCount": 25,
+      "completedToolCounts": {
+        "read": 29,
+        "glob": 9,
+        "grep": 3,
+        "edit": 5
+      },
+      "attempts": [
+        {
+          "state": "finished",
+          "exit": 0,
+          "seconds": 180.45,
+          "started": 1794144475.795323
+        },
+        {
+          "state": "finished",
+          "exit": 1,
+          "seconds": 3.15,
+          "started": 1794143947.123054
+        },
+        {
+          "state": "finished",
+          "exit": -15,
+          "seconds": 354.65,
+          "started": 1794144022.402733
+        },
+        {
+          "state": "finished",
+          "exit": -15,
+          "seconds": 98.11,
+          "started": 1794144377.3969762
+        }
+      ],
+      "adoptedCandidateFiles": [
+        {
+          "path": "scripts/mac-acceptance/preflight/artifacts.mjs",
+          "workerSha256": "bfc49253404eb87b4d6e1e98bbd579e910d566464c9f6d29e4be7bfdf05efb63"
+        },
+        {
+          "path": "scripts/mac-acceptance/preflight/artifacts.d.mts",
+          "workerSha256": "4843ec78b42ec1268cd8e75d631ffc5f04af7e27a3da878410653aca1f8dce35"
+        },
+        {
+          "path": "tests/acceptance-metadata/mac-artifacts.test.ts",
+          "workerSha256": "9052c80336a8b2a085f789728110bf890a6545e544e051d5cac1b1e06d18577e"
+        }
+      ],
+      "outsideOwnedChanges": []
+    },
+    {
+      "worker": "D04-remote-preflight",
+      "sessionId": "ses_e44aec6d4ffeWTqQGFgDV07Ty9",
+      "model": "opencode-go/deepseek-v4.1-flash",
+      "variant": "high",
+      "exportSha256": "8ff070b7fb53e1fad8aade58e11f057e839932ac439f73de70f298b9a1e5e395",
+      "assistantMessages": 65,
+      "incompleteAssistantMessages": 2,
+      "reportedTokens": {
+        "input": 216942,
+        "output": 27188,
+        "reasoning": 42035,
+        "cacheRead": 6377472,
+        "cacheWrite": 0,
+        "reportedTotal": 6663637
+      },
+      "toolErrorCount": 21,
+      "completedToolCounts": {
+        "read": 51,
+        "glob": 9,
+        "grep": 13,
+        "write": 5,
+        "edit": 12
+      },
+      "attempts": [
+        {
+          "state": "finished",
+          "exit": 0,
+          "seconds": 256.17,
+          "started": 1794144475.7954502
+        },
+        {
+          "state": "finished",
+          "exit": 1,
+          "seconds": 3.17,
+          "started": 1794143947.123189
+        },
+        {
+          "state": "finished",
+          "exit": -15,
+          "seconds": 354.68,
+          "started": 1794144022.402817
+        },
+        {
+          "state": "finished",
+          "exit": -15,
+          "seconds": 98.11,
+          "started": 1794144377.3970392
+        }
+      ],
+      "adoptedCandidateFiles": [
+        {
+          "path": "scripts/mac-acceptance/preflight/remote-h1.mjs",
+          "workerSha256": "948a1f3eefca689cca7c6c61ac22958d31aa1a93a1930d7cc0172a52b325a261"
+        },
+        {
+          "path": "scripts/mac-acceptance/preflight/remote-h1.d.mts",
+          "workerSha256": "b961116d349c51209793647b5d550295728be46dc7e434d69364e52d21309cfb"
+        },
+        {
+          "path": "tests/acceptance-metadata/mac-remote-h1-preflight.test.ts",
+          "workerSha256": "233d4aff796dd7deda611675de640cfb47cc3d56021b3f7cf823f32c1ba35688"
+        }
+      ],
+      "outsideOwnedChanges": []
+    },
+    {
+      "worker": "D05-keychain-preflight",
+      "sessionId": "ses_e44aec657ffen7WNTdVDNg0THI",
+      "model": "opencode-go/deepseek-v4.1-flash",
+      "variant": "high",
+      "exportSha256": "3a037e50cc116b967ee27b3066cd9404958b94841903d662c3a4473b0f1532d8",
+      "assistantMessages": 40,
+      "incompleteAssistantMessages": 2,
+      "reportedTokens": {
+        "input": 122722,
+        "output": 16666,
+        "reasoning": 33609,
+        "cacheRead": 3064064,
+        "cacheWrite": 0,
+        "reportedTotal": 3237061
+      },
+      "toolErrorCount": 25,
+      "completedToolCounts": {
+        "read": 25,
+        "grep": 4,
+        "glob": 7,
+        "write": 2,
+        "edit": 5
+      },
+      "attempts": [
+        {
+          "state": "finished",
+          "exit": 0,
+          "seconds": 138.28,
+          "started": 1794144475.7955358
+        },
+        {
+          "state": "finished",
+          "exit": 1,
+          "seconds": 2.94,
+          "started": 1794143947.123399
+        },
+        {
+          "state": "finished",
+          "exit": -15,
+          "seconds": 354.61,
+          "started": 1794144022.4028978
+        },
+        {
+          "state": "finished",
+          "exit": -15,
+          "seconds": 98.16,
+          "started": 1794144377.397126
+        }
+      ],
+      "adoptedCandidateFiles": [
+        {
+          "path": "scripts/mac-acceptance/preflight/keychain.mjs",
+          "workerSha256": "09fa65c1e2021d5c0d7ed47a56fbd3abd0cb8580e8b6def2e53c27120340a73b"
+        },
+        {
+          "path": "scripts/mac-acceptance/preflight/keychain.d.mts",
+          "workerSha256": "df37d1d02d7b5785e73eaebc276855c83268c3d4444f39cc060b5b1714e8aad5"
+        },
+        {
+          "path": "tests/acceptance-metadata/mac-keychain-preflight.test.ts",
+          "workerSha256": "278526da7ce7007201d0063a40cca50fe0f61b99487caf56ccdd95b202053347"
+        }
+      ],
+      "outsideOwnedChanges": []
+    },
+    {
+      "worker": "D06-native-evidence",
+      "sessionId": "ses_e44aec68bffebD2unoFSw2sldv",
+      "model": "opencode-go/deepseek-v4.1-flash",
+      "variant": "high",
+      "exportSha256": "acfb9e1bd5aca9bb4d31fdb061b76074a810f399707f1898e21bf0183a325549",
+      "assistantMessages": 50,
+      "incompleteAssistantMessages": 2,
+      "reportedTokens": {
+        "input": 126674,
+        "output": 23681,
+        "reasoning": 47253,
+        "cacheRead": 3487616,
+        "cacheWrite": 0,
+        "reportedTotal": 3685224
+      },
+      "toolErrorCount": 30,
+      "completedToolCounts": {
+        "read": 27,
+        "glob": 6,
+        "grep": 3,
+        "write": 4,
+        "edit": 1
+      },
+      "attempts": [
+        {
+          "state": "finished",
+          "exit": 0,
+          "seconds": 142.21,
+          "started": 1794144475.795606
+        },
+        {
+          "state": "finished",
+          "exit": 1,
+          "seconds": 3.12,
+          "started": 1794143947.123494
+        },
+        {
+          "state": "finished",
+          "exit": -15,
+          "seconds": 354.69,
+          "started": 1794144022.40297
+        },
+        {
+          "state": "finished",
+          "exit": -15,
+          "seconds": 98.1,
+          "started": 1794144377.397184
+        }
+      ],
+      "adoptedCandidateFiles": [
+        {
+          "path": "scripts/mac-acceptance/native-observations.mjs",
+          "workerSha256": "da1b21933820ad129da94409e451b754ab7a55d92de876c567697a37f89e759a"
+        },
+        {
+          "path": "scripts/mac-acceptance/native-observations.d.mts",
+          "workerSha256": "50647df20ea61a3bf89564a52d0eb7ca7fac6a0d3502ae4ea8e53901db0b28ba"
+        },
+        {
+          "path": "tests/acceptance-metadata/mac-native-observations.test.ts",
+          "workerSha256": "1b7e7cbb8735823f3cba2c7d909849fce82a4d990e46ae543d81fe3fd93b094a"
+        }
+      ],
+      "outsideOwnedChanges": []
+    },
+    {
+      "worker": "D07-remote-h1-suite",
+      "sessionId": "ses_e44aec72effeQe0sj2a3qFaxc6",
+      "model": "opencode-go/deepseek-v4.1-flash",
+      "variant": "high",
+      "exportSha256": "133e369caaa8c6e54aa8e7870e5251fbff12b7914f9aa5a5143b2085162f296d",
+      "assistantMessages": 51,
+      "incompleteAssistantMessages": 2,
+      "reportedTokens": {
+        "input": 159277,
+        "output": 19811,
+        "reasoning": 43620,
+        "cacheRead": 4999168,
+        "cacheWrite": 0,
+        "reportedTotal": 5221876
+      },
+      "toolErrorCount": 25,
+      "completedToolCounts": {
+        "read": 44,
+        "glob": 9,
+        "grep": 7,
+        "write": 2,
+        "edit": 10
+      },
+      "attempts": [
+        {
+          "state": "finished",
+          "exit": 0,
+          "seconds": 112.07,
+          "started": 1794144475.798382
+        },
+        {
+          "state": "finished",
+          "exit": 1,
+          "seconds": 3.12,
+          "started": 1794143947.12365
+        },
+        {
+          "state": "finished",
+          "exit": -15,
+          "seconds": 354.73,
+          "started": 1794144022.403101
+        },
+        {
+          "state": "finished",
+          "exit": -15,
+          "seconds": 98.1,
+          "started": 1794144377.3973498
+        }
+      ],
+      "adoptedCandidateFiles": [
+        {
+          "path": "playwright.remote-mac.config.ts",
+          "workerSha256": "906b5be3780fcdb5ffeb1c53323e14d23a7969062e07a7c8b3202bac941a3ca7"
+        },
+        {
+          "path": "tests/acceptance/macos/remote-h1.spec.ts",
+          "workerSha256": "86cf3a0dfbfde1aa0e45f4b076fb5d09db4d2d8414daef937f29cbac51d737ec"
+        }
+      ],
+      "outsideOwnedChanges": []
+    },
+    {
+      "worker": "D08-gate-ledger",
+      "sessionId": "ses_e44aec6a8ffedDtuZeqQ7DRdKx",
+      "model": "opencode-go/deepseek-v4.1-flash",
+      "variant": "high",
+      "exportSha256": "7169dafc10118ad234f80741bfc17d2e6c668dd4142dd8388e4ecd39852e7ae7",
+      "assistantMessages": 33,
+      "incompleteAssistantMessages": 2,
+      "reportedTokens": {
+        "input": 119517,
+        "output": 14760,
+        "reasoning": 33915,
+        "cacheRead": 2126208,
+        "cacheWrite": 0,
+        "reportedTotal": 2294400
+      },
+      "toolErrorCount": 5,
+      "completedToolCounts": {
+        "read": 25,
+        "glob": 7,
+        "grep": 3,
+        "write": 4,
+        "edit": 8
+      },
+      "attempts": [
+        {
+          "state": "finished",
+          "exit": 0,
+          "seconds": 537.94,
+          "started": 1794144475.798717
+        },
+        {
+          "state": "finished",
+          "exit": 1,
+          "seconds": 3.11,
+          "started": 1794143947.123747
+        },
+        {
+          "state": "finished",
+          "exit": -15,
+          "seconds": 354.68,
+          "started": 1794144022.403378
+        },
+        {
+          "state": "finished",
+          "exit": -15,
+          "seconds": 98.1,
+          "started": 1794144377.397488
+        }
+      ],
+      "adoptedCandidateFiles": [
+        {
+          "path": "scripts/mac-acceptance/gate-ledger.mjs",
+          "workerSha256": "d7ee328ba4cc81d700395e760b00d8a191aa10b27f931b2c14173aa530d539c5"
+        },
+        {
+          "path": "scripts/mac-acceptance/gate-ledger.d.mts",
+          "workerSha256": "4fb724a83192c9ab28b7f483b8c9a00901db5d657c9f4af7f14e50ca28780049"
+        },
+        {
+          "path": "tests/acceptance-metadata/mac-gate-ledger.test.ts",
+          "workerSha256": "c70eb4f374ac6a1b17672cb7722c33b99da14577c2cb3433640f2d08c486c1ad"
+        }
+      ],
+      "outsideOwnedChanges": []
+    },
+    {
+      "worker": "D09-product-review",
+      "sessionId": "ses_e44aec710ffeWasDh1XIbryFK2",
+      "model": "opencode-go/deepseek-v4.1-flash",
+      "variant": "high",
+      "exportSha256": "ed2da901b49dd8a55bda62865d61bf3c3e1c625bdb7ca9f26b028689573986bb",
+      "assistantMessages": 58,
+      "incompleteAssistantMessages": 2,
+      "reportedTokens": {
+        "input": 373041,
+        "output": 15465,
+        "reasoning": 49368,
+        "cacheRead": 6923136,
+        "cacheWrite": 0,
+        "reportedTotal": 7361010
+      },
+      "toolErrorCount": 1,
+      "completedToolCounts": {
+        "read": 56,
+        "glob": 5,
+        "grep": 22,
+        "write": 3,
+        "edit": 1
+      },
+      "attempts": [
+        {
+          "state": "finished",
+          "exit": 0,
+          "seconds": 306.8,
+          "started": 1794144475.7988749
+        },
+        {
+          "state": "finished",
+          "exit": 1,
+          "seconds": 3.12,
+          "started": 1794143947.1238852
+        },
+        {
+          "state": "finished",
+          "exit": -15,
+          "seconds": 354.73,
+          "started": 1794144022.40346
+        },
+        {
+          "state": "finished",
+          "exit": -15,
+          "seconds": 98.14,
+          "started": 1794144377.4023669
+        }
+      ],
+      "adoptedCandidateFiles": [],
+      "outsideOwnedChanges": []
+    },
+    {
+      "worker": "D10-runbook",
+      "sessionId": "ses_e44aec687ffe70M1CBcqVS4voC",
+      "model": "opencode-go/deepseek-v4.1-flash",
+      "variant": "high",
+      "exportSha256": "945491bdb6659d9dc67d47456545cb719106db2362341951b6c7555a74b13c23",
+      "assistantMessages": 35,
+      "incompleteAssistantMessages": 2,
+      "reportedTokens": {
+        "input": 98840,
+        "output": 26291,
+        "reasoning": 15514,
+        "cacheRead": 1940352,
+        "cacheWrite": 0,
+        "reportedTotal": 2080997
+      },
+      "toolErrorCount": 20,
+      "completedToolCounts": {
+        "read": 16,
+        "glob": 8,
+        "grep": 5,
+        "write": 1
+      },
+      "attempts": [
+        {
+          "state": "finished",
+          "exit": 0,
+          "seconds": 30.67,
+          "started": 1794144475.800086
+        },
+        {
+          "state": "finished",
+          "exit": 1,
+          "seconds": 3.06,
+          "started": 1794143947.127829
+        },
+        {
+          "state": "finished",
+          "exit": -15,
+          "seconds": 354.74,
+          "started": 1794144022.4035761
+        },
+        {
+          "state": "finished",
+          "exit": -15,
+          "seconds": 98.15,
+          "started": 1794144377.404097
+        }
+      ],
+      "adoptedCandidateFiles": [
+        {
+          "path": "docs/lv4/QUIET-RESIDUAL-EXECUTION.ja.md",
+          "workerSha256": "8b2dab0923e8736152f04d6beee0c63076e3c7c7b565581293c024beed304330"
+        }
+      ],
+      "outsideOwnedChanges": []
+    }
+  ],
+  "followupRuns": [
+    {
+      "name": "F01-restart-cancel",
+      "sessionId": "ses_e44aec710ffeWasDh1XIbryFK2",
+      "exit": 0,
+      "seconds": 151.79,
+      "owned": [
+        "src/main/normal-apply-intent.ts",
+        "tests/lv4-normal-journal-cancel-fault.test.ts"
+      ]
+    },
+    {
+      "name": "F02-connection-binding",
+      "sessionId": "ses_e44aec6d4ffeWTqQGFgDV07Ty9",
+      "exit": 0,
+      "seconds": 274.07,
+      "owned": [
+        "src/main/sync-connection-vault.ts",
+        "tests/lv4-connection-binding-preflight.test.ts"
+      ]
+    }
+  ],
+  "evidenceRoot": "/private/var/folders/fm/qk5fr3z11wq8hbphz6gk9llc0000gn/T/folio-lv4-quiet-deepseek-20261108-8tm0e7ir",
+  "allOriginalAndFollowupTasksFinalExitZero": true
+}

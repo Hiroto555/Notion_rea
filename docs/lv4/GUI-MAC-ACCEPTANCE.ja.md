@@ -1,5 +1,7 @@
 # Mac固有のGUI受入（別枠）
 
+最新の非GUI追記：[終了予約・接続設定の修正と検証準備](QUIET-RESIDUAL-EXECUTION.ja.md)を追加。243ファイル/2,292 Nodeテスト・型検査・build PASS。今回srcを2ファイル変更したため、新候補のMac GUIはNOT_RUN。下記240件とnative4件は前候補の実測として保持し、新候補へ自動で引き継がない。追加GUIは起動していない。
+
 2026-11-08更新。利用者のTV視聴中の明示許可により、このMacで**240 PASS / 実IME 1 INFRA_BLOCKED**。[ローカル実行結果・残件・試行履歴](MAC-LOCAL-GUI-ACCEPTANCE-20261108.ja.md)を最新記録とする。実Keychain・物理2台はNOT_RUN。Lv3確認済み、Lv4未認定、masterへはマージしない。Linuxの共通GUIは[CI実行範囲](GUI-LINUX-CI.ja.md)、A0〜A7は[M3候補](M3-ACCEPTANCE.ja.md)に分離して記録する。
 
 今回PASSしたnative条件は、保存処理中のCmd+Q拒否と保存後の正常終了/新PID再読込、赤ボタンの正常終了/新PID再読込、file picker取消し/合成ファイル選択、実Cmd+C/V。下表の終了条件全体を満たした意味ではなく、Dock、変換中保護、予約COMMIT失敗後の同PID再表示、親フォルダ/権限拒否などは残る。今回の実行許可は終了しており、新たなGUI起動は最新ユーザー指示に従う。

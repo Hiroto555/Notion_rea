@@ -1,5 +1,7 @@
 # MAC-P05：実行先・権限・最小PoCの範囲
 
+最新の非GUI追記：[今回の実装](QUIET-RESIDUAL-EXECUTION.ja.md)でH1用の起動前検査、固定batch経路、所有groupの外部監視、artifact hash収集、診断suite/configを追加した。型検査・243ファイル/2,292 Nodeテスト・build PASS。別ホストでの実行、実Keychain、正式なOS証拠の受入はNOT_RUN。このMacの別ホストguard拒否と下記の機材・権限条件は維持する。下記の実装前の案は今回の実装記録で補足する。
+
 2026-11-08。MAC-P01/P03/P04の保存commitは `b19ecbe1fd9700575d75474c5e08573ffcbb75d9`、製品受入基準は `bd65b73b492b95b8b9a2a1f73ad9a5e114c509dc`。これは後続の実装範囲を決める計画書で、別Mac・サーバーの存在や利用権限を確認した記録ではない。
 
 その後、利用者はTV視聴中の**このMacでのアプリ起動検証**を明示許可した。[今回のローカルGUI受入](MAC-LOCAL-GUI-ACCEPTANCE-20261108.ja.md)は240 PASS / 実IME 1 INFRA_BLOCKED。既存 `test:e2e:batch` と専用一時領域で別に記録した。別ホスト用MAC-P05の現用Mac拒否は維持し、その環境変数を偽装してローカル結果を別ホストの証拠にしない。push・workflow作成/実行・課金設定変更・master mergeは引き続き行わない。

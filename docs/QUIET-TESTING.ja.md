@@ -30,6 +30,8 @@ CLI 引数は配列のまま子プロセスへ渡し、シェル文字列に連�
 
 ## 対象外
 
+2026-11-08追記：別ホストMac H1用に、明示batch限定の `--mac-acceptance-plan PATH` 経路を追加した。実OS identityの登録guardがこのMacを拒否し、固定suite・一時data/vault・外部watchdogへ接続する。通常のquietコマンドからは起動しない。今回この経路のGUI実行はNOT_RUNで、起動前拒否と監視はNodeで検証した。[実装・使用条件](lv4/QUIET-RESIDUAL-EXECUTION.ja.md)を参照する。
+
 `scripts/r9-screenshots.mjs`、`scripts/r8-screenshots.mjs`、各 demo/verify スクリプトなど、このゲートを通らない standalone スクリプトは対象外です。これらはユーザーが GUI 実行を明示的に許可した後でだけ実行してください。
 
 この仕組みは「OS レベルですべての GUI 起動を防ぐ」ものではありません。Electron を直接起動するコマンドや他スクリプト、手動操作までは防ぎません。対象は、このリポジトリの `test:e2e` / `test:e2e:batch` と Playwright config の評価経路です。
