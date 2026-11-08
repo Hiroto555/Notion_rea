@@ -1,0 +1,337 @@
+{
+  "scope": "restricted-schema-text-insert",
+  "cases": [
+    {
+      "seed": 1,
+      "engine": "B",
+      "operationCount": 8,
+      "scheduleHash": "83c275dbc6d204cbc115d2ccc3f52f3c12c78729348cce9d64fa28b22db5c717",
+      "projectionHash": "e65fc94a89589845f8a2e423b0ee896b0abdf98078cea6f0edaf03f96da7925e",
+      "traceEvents": 29,
+      "milliseconds": 9.091,
+      "result": "PASS_IN_RESTRICTED_SCOPE"
+    },
+    {
+      "seed": 1,
+      "engine": "C",
+      "operationCount": 8,
+      "scheduleHash": "83c275dbc6d204cbc115d2ccc3f52f3c12c78729348cce9d64fa28b22db5c717",
+      "projectionHash": "118a4f37cfbfe05913cee0dacdff6f1afc73c327518017420c069f1497eda99b",
+      "traceEvents": 11,
+      "milliseconds": 3.164,
+      "result": "PASS_IN_RESTRICTED_SCOPE"
+    },
+    {
+      "seed": 2,
+      "engine": "B",
+      "operationCount": 8,
+      "scheduleHash": "e9ce2414e6ac13c1e09bd2b21f3680176cd8f1f4509bbb3bf8234cfb6d678d25",
+      "projectionHash": "d414dfca659141503894ae99bb1fcfe16b803bee81ca31c257c8a1883f80a946",
+      "traceEvents": 29,
+      "milliseconds": 2.888,
+      "result": "PASS_IN_RESTRICTED_SCOPE"
+    },
+    {
+      "seed": 2,
+      "engine": "C",
+      "operationCount": 8,
+      "scheduleHash": "e9ce2414e6ac13c1e09bd2b21f3680176cd8f1f4509bbb3bf8234cfb6d678d25",
+      "projectionHash": "8b2f2e307cc236d468f1e694d3fef86e8552196d8d31eb0b4f43ba11f22ec9b2",
+      "traceEvents": 11,
+      "milliseconds": 1.184,
+      "result": "PASS_IN_RESTRICTED_SCOPE"
+    },
+    {
+      "seed": 3,
+      "engine": "B",
+      "operationCount": 8,
+      "scheduleHash": "94b4590627a300d872f10d3c96758c51c6f7717be57a9b19ebaa5a44024cd840",
+      "projectionHash": "473a1d2220b4346b660a75dc4fbeccf2274ba74032fd69eb4d9353b90082a1d0",
+      "traceEvents": 29,
+      "milliseconds": 1.93,
+      "result": "PASS_IN_RESTRICTED_SCOPE"
+    },
+    {
+      "seed": 3,
+      "engine": "C",
+      "operationCount": 8,
+      "scheduleHash": "94b4590627a300d872f10d3c96758c51c6f7717be57a9b19ebaa5a44024cd840",
+      "projectionHash": "eee851631c1dd73835e81c625547a3bd960d55cfcfeb64f596c985531b38a12a",
+      "traceEvents": 11,
+      "milliseconds": 0.91,
+      "result": "PASS_IN_RESTRICTED_SCOPE"
+    },
+    {
+      "seed": 4,
+      "engine": "B",
+      "operationCount": 8,
+      "scheduleHash": "e893b6417a603dedaaafac8b9447183b9e990e4ef57b95d79bf68198cefa8c62",
+      "projectionHash": "0dd4af218dcab917493ca28dc9687b7b5f77f6c6998081917b24e9e0bf3ef060",
+      "traceEvents": 29,
+      "milliseconds": 1.512,
+      "result": "PASS_IN_RESTRICTED_SCOPE"
+    },
+    {
+      "seed": 4,
+      "engine": "C",
+      "operationCount": 8,
+      "scheduleHash": "e893b6417a603dedaaafac8b9447183b9e990e4ef57b95d79bf68198cefa8c62",
+      "projectionHash": "80e95f9a4db01988ed2f802e83f32f3c45d0b7b8e01d885cb075f8404ce23cde",
+      "traceEvents": 11,
+      "milliseconds": 0.687,
+      "result": "PASS_IN_RESTRICTED_SCOPE"
+    },
+    {
+      "seed": 5,
+      "engine": "B",
+      "operationCount": 8,
+      "scheduleHash": "d95372815e676f8ac8aaf50d1289d2d275787641dae39885fad56d51656e1da8",
+      "projectionHash": "2627a849f5219eac9d827b3e0298ad7eef09c551c6bdc810ed4f9ca48c12ecd5",
+      "traceEvents": 29,
+      "milliseconds": 1.608,
+      "result": "PASS_IN_RESTRICTED_SCOPE"
+    },
+    {
+      "seed": 5,
+      "engine": "C",
+      "operationCount": 8,
+      "scheduleHash": "d95372815e676f8ac8aaf50d1289d2d275787641dae39885fad56d51656e1da8",
+      "projectionHash": "bfe266891d76cada3c9f7655218e986129751319d89543792bf7f101c021b08a",
+      "traceEvents": 11,
+      "milliseconds": 0.702,
+      "result": "PASS_IN_RESTRICTED_SCOPE"
+    },
+    {
+      "seed": 6,
+      "engine": "B",
+      "operationCount": 8,
+      "scheduleHash": "d54b948f5535526703a9c223611388108716bbec6de8d4faeb57fde9899170d1",
+      "projectionHash": "40c3e175317a97e2475320c9beca362f2a91654611ff6cc1782db2bc0c0b6444",
+      "traceEvents": 29,
+      "milliseconds": 1.553,
+      "result": "PASS_IN_RESTRICTED_SCOPE"
+    },
+    {
+      "seed": 6,
+      "engine": "C",
+      "operationCount": 8,
+      "scheduleHash": "d54b948f5535526703a9c223611388108716bbec6de8d4faeb57fde9899170d1",
+      "projectionHash": "ef52f4d9db6b80deeba9104b2400be0e5e32762d969db83f87be7d28a9e69550",
+      "traceEvents": 11,
+      "milliseconds": 0.671,
+      "result": "PASS_IN_RESTRICTED_SCOPE"
+    },
+    {
+      "seed": 7,
+      "engine": "B",
+      "operationCount": 8,
+      "scheduleHash": "c142436f58c32ec6a60591e60b9dbc5ec37b5a6b514ac1e7a023d03b5ab7cb34",
+      "projectionHash": "46333289826eba5a9288d82642b62b90739687b5c21ad3278337c2a3807ab937",
+      "traceEvents": 29,
+      "milliseconds": 1.642,
+      "result": "PASS_IN_RESTRICTED_SCOPE"
+    },
+    {
+      "seed": 7,
+      "engine": "C",
+      "operationCount": 8,
+      "scheduleHash": "c142436f58c32ec6a60591e60b9dbc5ec37b5a6b514ac1e7a023d03b5ab7cb34",
+      "projectionHash": "5a39aa055faf8d40f16ea63acc82e7d3456a8caac724fc783613ad6d12061529",
+      "traceEvents": 11,
+      "milliseconds": 0.66,
+      "result": "PASS_IN_RESTRICTED_SCOPE"
+    },
+    {
+      "seed": 8,
+      "engine": "B",
+      "operationCount": 8,
+      "scheduleHash": "529d6dca43b90865d9da9e53c0dd49e88fb9f854163d16d3ef70061d7ceb879c",
+      "projectionHash": "c06456e208f1413a04dd2c67289bb3d7b46d1e6a48485f9b2bb2a59c3cf4f47b",
+      "traceEvents": 29,
+      "milliseconds": 1.444,
+      "result": "PASS_IN_RESTRICTED_SCOPE"
+    },
+    {
+      "seed": 8,
+      "engine": "C",
+      "operationCount": 8,
+      "scheduleHash": "529d6dca43b90865d9da9e53c0dd49e88fb9f854163d16d3ef70061d7ceb879c",
+      "projectionHash": "29e68b9144f5fa25bbe48df80c08eaf042e0756eb1581784616d878d90b4a309",
+      "traceEvents": 11,
+      "milliseconds": 0.619,
+      "result": "PASS_IN_RESTRICTED_SCOPE"
+    },
+    {
+      "seed": 9,
+      "engine": "B",
+      "operationCount": 8,
+      "scheduleHash": "0409f04b49d10bc6b40e5c34758a0f42047e0d45723fb32a1e23b5cc45f4951d",
+      "projectionHash": "c023fbb4a77a29c0372f02a7560ce67157f0acf592bee22b34b6c6c8ddc466a5",
+      "traceEvents": 29,
+      "milliseconds": 1.552,
+      "result": "PASS_IN_RESTRICTED_SCOPE"
+    },
+    {
+      "seed": 9,
+      "engine": "C",
+      "operationCount": 8,
+      "scheduleHash": "0409f04b49d10bc6b40e5c34758a0f42047e0d45723fb32a1e23b5cc45f4951d",
+      "projectionHash": "267151d23d95e23f2fbf352187be9e7b213e570dfa105bc756af04d4a42e7d09",
+      "traceEvents": 11,
+      "milliseconds": 0.624,
+      "result": "PASS_IN_RESTRICTED_SCOPE"
+    },
+    {
+      "seed": 10,
+      "engine": "B",
+      "operationCount": 8,
+      "scheduleHash": "76ab386463c06de98bba7e3ada1b662acc7fe310657a38c0ddd39f3423d22648",
+      "projectionHash": "b2966385e2c30f85be0864db1fc88c637b5763e74cf2c06021499f1964857b64",
+      "traceEvents": 29,
+      "milliseconds": 1.317,
+      "result": "PASS_IN_RESTRICTED_SCOPE"
+    },
+    {
+      "seed": 10,
+      "engine": "C",
+      "operationCount": 8,
+      "scheduleHash": "76ab386463c06de98bba7e3ada1b662acc7fe310657a38c0ddd39f3423d22648",
+      "projectionHash": "de5a04f34f243bec016e753d4b11a8ccd5a438608d389f4aba5c7d5830c24be7",
+      "traceEvents": 11,
+      "milliseconds": 0.716,
+      "result": "PASS_IN_RESTRICTED_SCOPE"
+    },
+    {
+      "seed": 11,
+      "engine": "B",
+      "operationCount": 8,
+      "scheduleHash": "c436cb8bdf59487d3e16016fa5de5df6a4fff047c60aac2875660e72db21a026",
+      "projectionHash": "c14bc09d5ade873869bb475fe1668d3b87932a90cc577a4b8a6f872fa50f6811",
+      "traceEvents": 29,
+      "milliseconds": 1.342,
+      "result": "PASS_IN_RESTRICTED_SCOPE"
+    },
+    {
+      "seed": 11,
+      "engine": "C",
+      "operationCount": 8,
+      "scheduleHash": "c436cb8bdf59487d3e16016fa5de5df6a4fff047c60aac2875660e72db21a026",
+      "projectionHash": "accf23f85c8ee7b5ea6b86c1ba4f7615bfcb46c73fc620e3272bee3b10f536ca",
+      "traceEvents": 11,
+      "milliseconds": 0.648,
+      "result": "PASS_IN_RESTRICTED_SCOPE"
+    },
+    {
+      "seed": 12,
+      "engine": "B",
+      "operationCount": 8,
+      "scheduleHash": "238556667cd442fc3ca11f20c738460ff5644d8d56f5dd997401ed233e84e7af",
+      "projectionHash": "63048b994878b3072fb7e8a6ac52b321ca7c241b431e73ef520b9ac754cb9460",
+      "traceEvents": 29,
+      "milliseconds": 1.28,
+      "result": "PASS_IN_RESTRICTED_SCOPE"
+    },
+    {
+      "seed": 12,
+      "engine": "C",
+      "operationCount": 8,
+      "scheduleHash": "238556667cd442fc3ca11f20c738460ff5644d8d56f5dd997401ed233e84e7af",
+      "projectionHash": "aeff5b921eccd987015ea4671ef65171d14ebcdbb6b9cbfc0ac87ccd606f80c3",
+      "traceEvents": 11,
+      "milliseconds": 0.6,
+      "result": "PASS_IN_RESTRICTED_SCOPE"
+    },
+    {
+      "seed": 13,
+      "engine": "B",
+      "operationCount": 8,
+      "scheduleHash": "445fe299637fce4ff4afb4219d763887f3d15e00962e9ae5fde4d7cf249566ad",
+      "projectionHash": "eedf642608be904dcc6cc2d3e0c8c87f8066db509da9dd803ec41efc8cf95703",
+      "traceEvents": 29,
+      "milliseconds": 1.266,
+      "result": "PASS_IN_RESTRICTED_SCOPE"
+    },
+    {
+      "seed": 13,
+      "engine": "C",
+      "operationCount": 8,
+      "scheduleHash": "445fe299637fce4ff4afb4219d763887f3d15e00962e9ae5fde4d7cf249566ad",
+      "projectionHash": "b21b71e991623a18607fbaaf943a9724fa35586241734d54156f6f9f5ff32670",
+      "traceEvents": 11,
+      "milliseconds": 0.588,
+      "result": "PASS_IN_RESTRICTED_SCOPE"
+    },
+    {
+      "seed": 14,
+      "engine": "B",
+      "operationCount": 8,
+      "scheduleHash": "c256c3048264713f6c575952c6feaf554b8e57853f7d17b01f33540cb6984b74",
+      "projectionHash": "682be4121b8f6d6b53e73a0f9f7121539d8c8e8fcc2d3bd3ac4ef61c571ef2d9",
+      "traceEvents": 29,
+      "milliseconds": 1.084,
+      "result": "PASS_IN_RESTRICTED_SCOPE"
+    },
+    {
+      "seed": 14,
+      "engine": "C",
+      "operationCount": 8,
+      "scheduleHash": "c256c3048264713f6c575952c6feaf554b8e57853f7d17b01f33540cb6984b74",
+      "projectionHash": "cd9d228498dc9215f13cbc0b276c0a24d9a94eda7e8c2671c0e5a77d2a342a2f",
+      "traceEvents": 11,
+      "milliseconds": 0.764,
+      "result": "PASS_IN_RESTRICTED_SCOPE"
+    },
+    {
+      "seed": 15,
+      "engine": "B",
+      "operationCount": 8,
+      "scheduleHash": "9d58661635e80053fd627ba017b25e7faba79ac3cbf7ef5ba63dc1c2198bb804",
+      "projectionHash": "55199e817fce9a462e4c2b55da18868b9fde2552e5ea7cad9f496b70365c4f29",
+      "traceEvents": 29,
+      "milliseconds": 1.081,
+      "result": "PASS_IN_RESTRICTED_SCOPE"
+    },
+    {
+      "seed": 15,
+      "engine": "C",
+      "operationCount": 8,
+      "scheduleHash": "9d58661635e80053fd627ba017b25e7faba79ac3cbf7ef5ba63dc1c2198bb804",
+      "projectionHash": "a3b0fcf2a46b1d00165a3d8aaf2d586aeb1b10b7a94a464f67195984bd17c978",
+      "traceEvents": 11,
+      "milliseconds": 0.564,
+      "result": "PASS_IN_RESTRICTED_SCOPE"
+    },
+    {
+      "seed": 16,
+      "engine": "B",
+      "operationCount": 8,
+      "scheduleHash": "fcb8f17b088828436400b39726ebbd38cc4b4119ad5b9431e58a08e6dcc51ec2",
+      "projectionHash": "788008661af916b477cea6b8f1db354c367fcfacec5f1760c3a710f740b47ab9",
+      "traceEvents": 29,
+      "milliseconds": 1.205,
+      "result": "PASS_IN_RESTRICTED_SCOPE"
+    },
+    {
+      "seed": 16,
+      "engine": "C",
+      "operationCount": 8,
+      "scheduleHash": "fcb8f17b088828436400b39726ebbd38cc4b4119ad5b9431e58a08e6dcc51ec2",
+      "projectionHash": "102fdf0ad201608c141f082d0b1a7e1e2e71466ce676c899303cf66d491a14bc",
+      "traceEvents": 11,
+      "milliseconds": 0.862,
+      "result": "PASS_IN_RESTRICTED_SCOPE"
+    }
+  ],
+  "engineAdoption": "UNDECIDED",
+  "productAcceptance": "NOT_RUN",
+  "notCovered": [
+    "table structural concurrency",
+    "local Undo",
+    "IME",
+    "real network partition",
+    "server durability of either engine",
+    "causal hidden roots",
+    "physical devices",
+    "full V01-V05 or L5 gates"
+  ]
+}
