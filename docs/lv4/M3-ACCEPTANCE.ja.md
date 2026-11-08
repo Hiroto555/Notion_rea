@@ -2,6 +2,8 @@
 
 2026-11-08。**M3最終受入待ちへ到達。M2（A0〜A7）の実装・非GUI検証とLinux共通GUIを完了。確認済みLevelはLv3、Lv4は未認定。** 利用者が指定した今回の停止地点は、Mac固有・物理2台の最終受入だけを残すところ。従来計画の「M3＝Lv4完成」と区別する。
 
+同日追記：その後のTV視聴中の明示指示で、[このMacのGUI受入](MAC-LOCAL-GUI-ACCEPTANCE-20261108.ja.md)を実行。共通236＋native4の240 PASS、実IME1 INFRA_BLOCKED。最新quietは232ファイル/2,165テスト・型検査・build PASS。製品 `src` は `bd65b73` と同じで、実Keychain/物理2台は未実行。以下の過去の「このMacのGUIは使わない」は当時の実行範囲で、Lv4未認定とmaster未mergeは維持する。
+
 統合branchは `codex/folio-m3-ready-20261108`。[Draft PR #12](https://github.com/Hiroto555/Notion_rea/pull/12) は既存の未マージPR #11をbaseとする。masterは `e269137` のまま。原本・実データ・このMacのGUIは使わない。
 
 ## 機能と終了条件
@@ -45,7 +47,7 @@
 
 | 受入先 | 残す内容 | 状態 |
 |---|---|---|
-| Mac固有 | 実Keychainの保存/更新/無効化・ロック、実IME、Cmd+Q/閉鎖取消し、native picker/clipboard | NOT_RUN |
+| Mac固有 | 実Keychain、実IMEの確定/変換中保護、Dock、予約確定失敗後の同PID再表示、native親フォルダ/権限拒否等 | 一部受入済み。実IMEはINFRA_BLOCKED、残条件はNOT_RUN。Cmd+Q/赤ボタン/file picker/clipboardの限定4件は上記でPASS |
 | 物理Mac 2台＋サーバー | 実SSHトンネル、双方向の本文/階層/DB/record/添付/削除復元、切断・回線変更・スリープ・再接続、完全server復元後の新端末登録 | NOT_RUN |
 | 最終判定 | 同じ候補のL4-01〜12証拠を照合、未解決の重大不具合がないことを確認 | 受入待ち。Lv4認定前 |
 

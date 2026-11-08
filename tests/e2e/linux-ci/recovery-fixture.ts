@@ -6,7 +6,7 @@ import {
   type Page,
 } from "@playwright/test";
 import { randomUUID } from "node:crypto";
-import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
+import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { Store } from "../../../src/persistence/store";
 import { attachFile } from "../../../src/persistence/assets";
@@ -20,8 +20,9 @@ import type {
 import {
   assertCiDataRoot,
   assertLinuxGuiCi,
-  isolatedGuiEnv,
 } from "../../../scripts/linux-gui-ci-policy.mjs";
+import { localGuiDataRoot } from "../../../scripts/local-gui-batch-policy.mjs";
+import { fixtureElectronOptions, fixtureRoot } from "../fixture-isolation";
 
 export type RecoverySession = {
   app: ElectronApplication;
@@ -46,14 +47,17 @@ export type RecoverySession = {
 
 export const test = base.extend<{ recovery: RecoverySession }>({
   recovery: async ({}, use, info) => {
-    assertLinuxGuiCi();
-    assertCiDataRoot(
-      process.env.FOLIO_GUI_CI_DATA_ROOT,
-      process.env.RUNNER_TEMP,
-    );
-    const root = mkdtempSync(
-      join(process.env.FOLIO_GUI_CI_DATA_ROOT!, "recovery-"),
-    );
+    // Existing Linux CI guard remains the default; a separately authorized
+    // local Mac batch can reuse the real IPC cases with native dialog replies
+    // substituted. This is not a native picker or remote MAC-P05 result.
+    if (!localGuiDataRoot()) {
+      assertLinuxGuiCi();
+      assertCiDataRoot(
+        process.env.FOLIO_GUI_CI_DATA_ROOT,
+        process.env.RUNNER_TEMP,
+      );
+    }
+    const root = fixtureRoot("recovery-");
     const source = join(root, "source"),
       external = join(root, "external");
     mkdirSync(source);
@@ -124,13 +128,15 @@ export const test = base.extend<{ recovery: RecoverySession }>({
       directory = source,
       extra: Record<string, string> = {},
     ) {
-      const env = isolatedGuiEnv(
-        process.env,
-        process.env.FOLIO_GUI_CI_DATA_ROOT!,
-      );
+      const options = fixtureElectronOptions(directory);
       app = await electron.launch({
-        args: ["--no-sandbox", resolve("dist/main.cjs")],
-        env: { ...env, ...extra, FOLIO_DATA_DIR: directory },
+        ...options,
+        env: {
+          ...options.env,
+          ...extra,
+          FOLIO_DATA_DIR: directory,
+          FOLIO_CREDENTIAL_DIR: directory + "-credentials",
+        },
       });
       window = await app.firstWindow();
       await app
@@ -156,7 +162,9 @@ export const test = base.extend<{ recovery: RecoverySession }>({
           };
         }) as typeof dialog.showOpenDialog;
         dialog.showSaveDialog = (async () => {
-          throw new Error("Native save dialog is outside Linux CI acceptance");
+          throw new Error(
+            "Native save dialog is outside this substituted-dialog acceptance",
+          );
         }) as typeof dialog.showSaveDialog;
         const ipc = ipcMain as any,
           original = ipc._invokeHandlers.get("folio:request");
@@ -180,7 +188,9 @@ export const test = base.extend<{ recovery: RecoverySession }>({
         });
       }, directory);
       await expect(window.locator(".page-title")).toBeVisible();
-      await expect(window.locator(".save-state[data-state]")).toHaveText("保存済み");
+      await expect(window.locator(".save-state[data-state]")).toHaveText(
+        "保存済み",
+      );
     }
     try {
       await start();

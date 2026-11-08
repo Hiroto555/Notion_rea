@@ -4,6 +4,7 @@ import {
   assertCiDataRoot,
   assertLinuxGuiCi,
 } from "../../scripts/linux-gui-ci-policy.mjs";
+import { localGuiDataRoot } from "../../scripts/local-gui-batch-policy.mjs";
 
 function ciRoot(env: NodeJS.ProcessEnv, platform: NodeJS.Platform) {
   if (env.FOLIO_LINUX_GUI_CI !== "1" && !env.FOLIO_GUI_CI_DATA_ROOT) return;
@@ -12,13 +13,18 @@ function ciRoot(env: NodeJS.ProcessEnv, platform: NodeJS.Platform) {
   return realpathSync(env.FOLIO_GUI_CI_DATA_ROOT!);
 }
 
+function dataRoot(env: NodeJS.ProcessEnv, platform: NodeJS.Platform) {
+  const local = localGuiDataRoot(env, platform);
+  return ciRoot(env, platform) ?? local;
+}
+
 export function fixtureRoot(
   prefix: string,
   env = process.env,
   platform = process.platform,
 ) {
   if (!/^[a-z0-9-]+-$/.test(prefix)) throw new Error("Invalid fixture prefix");
-  const base = ciRoot(env, platform) ?? resolve("output");
+  const base = dataRoot(env, platform) ?? resolve("output");
   mkdirSync(base, { recursive: true });
   return mkdtempSync(join(base, prefix));
 }
@@ -29,7 +35,7 @@ export function fixtureElectronOptions(
   env = process.env,
   platform = process.platform,
 ) {
-  const base = ciRoot(env, platform);
+  const base = dataRoot(env, platform);
   if (base) assertCiDataRoot(realpathSync(directory), base);
   const child: Record<string, string> = Object.fromEntries(
     Object.entries(env).filter(
@@ -48,9 +54,10 @@ export function fixtureElectronOptions(
       delete child[key];
   child.FOLIO_DATA_DIR = directory;
   child.FOLIO_CREDENTIAL_DIR = directory + "-credentials";
+  const linuxCi = base && platform === "linux" && env.FOLIO_LINUX_GUI_CI === "1";
   return {
-    args: [...(base ? ["--no-sandbox"] : []),
-      ...(base && env.FOLIO_GUI_CI_KEYRING === "1" ? ["--password-store=gnome-libsecret"] : []), resolve("dist/main.cjs")],
+    args: [...(linuxCi ? ["--no-sandbox"] : []),
+      ...(linuxCi && env.FOLIO_GUI_CI_KEYRING === "1" ? ["--password-store=gnome-libsecret"] : []), resolve("dist/main.cjs")],
     env: child,
   };
 }

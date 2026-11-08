@@ -1,11 +1,13 @@
 # Lv4 GUI・実機の受入待ち（M3候補）
 
-2026-11-08。**M3最終受入待ち。M2（A0〜A7）の実装と非GUI・Linux共通GUIを完了。確認済みLevelはLv3、Lv4は未認定。** [到達点・終了条件・証拠](M3-ACCEPTANCE.ja.md)、[運用・保全手順](M3-OPERATIONS.ja.md)、[分担・Usage](M3-USAGE.ja.md)を最新の入口とする。製品候補 `9ddb60c` は型検査・228ファイル/2,078テスト・build PASS、Linux GUI 238/238 PASS（実IPC207、Electron表示5、Chromium表示26、skip/retry/flaky 0）。Mac固有・物理2台はNOT_RUN。master `e269137`・実データ・このMacのGUIは変更/使用していない。
+2026-11-08更新。**M3最終受入待ち。確認済みLevelはLv3、Lv4は未認定。** 明示許可された[このMacのGUI受入](MAC-LOCAL-GUI-ACCEPTANCE-20261108.ja.md)は240 PASS / 実IME 1 INFRA_BLOCKED。最終quietは232ファイル/2,165テスト・型検査・build PASS。実Keychain・物理2台は未実行。製品 `src` は受入基準 `bd65b73` と同じで、master `e269137`・実データは変更していない。[到達点](M3-ACCEPTANCE.ja.md)、[運用](M3-OPERATIONS.ja.md)、[分担・Usage](M3-USAGE.ja.md)も参照する。
 
 | 実行先 | 現在の結果・残件 |
 |---|---|
 | GitHub Actions＋仮想画面 | Linux設定下の全238件PASS。新M3の実IPC11件を含む。[集計](validation/m3-gui-linux-20261108.json) |
-| Mac固有 | 実IME、Cmd+Q/赤ボタン/終了取消し、native picker/clipboard、Keychainの保存/更新/無効化/ロックがNOT_RUN |
+| このMacの共通GUI | 236 PASS（Linux backend固有2件を除く）。実際のfixtureでElectron UI/IPC206・Electron表示代替2・Chromium28 |
+| Mac native | Cmd+Q/赤ボタン/file picker/clipboardの限定4件PASS。実IMEはINFRA_BLOCKED。Dock・変換中保護・予約COMMIT失敗後の同PID再表示・親フォルダ/権限拒否等はNOT_RUN |
+| Mac Keychain | 保存/独立process復号/更新/無効化/利用不能時の保留はNOT_RUN。今回のstock Playwright mock Keychainを代替証拠にしない |
 | 物理Mac 2台＋サーバー | 実SSH、双方向データ/添付、切断・回線変更・スリープ・競合・復元後の新端末登録と性能受入がNOT_RUN |
 | Lv4最終判定 | 上記を同じ候補へ揃え、L4-01〜12を照合する。まだ認定・master mergeしない |
 
@@ -13,7 +15,7 @@
 
 ## 以前の待ち項目（当時の履歴）
 
-以下のNOT_RUNや69件という記述は各時点の記録。今回のLinux共通受入については上記の238件を優先する。
+以下のNOT_RUNや69件という記述は各時点の記録。消化済みの範囲は上記の最新Mac結果とLinux238件を優先し、歴史上のNOT_RUNを再び現行の待ち項目へ数えない。
 
 ### M2以前の記録
 

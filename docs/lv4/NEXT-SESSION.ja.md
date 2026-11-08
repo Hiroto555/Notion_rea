@@ -2,6 +2,8 @@
 
 2026-11-08。実装と計画の区切りでチャットを切り替えるための入口。**この文書は新しい実装・GUI実行・mergeの許可ではない。新チャットの最新ユーザー指示を優先する。**
 
+最新追記：利用者のTV視聴中の明示指示で、このMacのGUI受入を実施した。**240 PASS / 実IME 1 INFRA_BLOCKED**、最終quietは型検査・232ファイル/2,165テスト・build PASS。[今回の範囲と残件](MAC-LOCAL-GUI-ACCEPTANCE-20261108.ja.md)を最優先する。作業branchは `codex/folio-mac-gui-acceptance-20261108`、開始HEADは `b19ecbe1fd9700575d75474c5e08573ffcbb75d9`。今回のharness・結果文書は追加GUIなしの最終レビュー後、この文書を含むローカルcommitへ保存する。結果JSONの `harnessStateAtRun` は未コミットだった実行時の記録であり、保存後の未保存差分を意味しない。実Keychain・別ホスト・物理2台はNOT_RUNで、Lv3/Lv4未認定を維持する。[MAC-P05の機材・権限・最小H1範囲](MAC-P05-RESOURCES-AND-SCOPE.ja.md)も整理済み。以下の「このMacのGUIは未使用」は今回より前の履歴であり、今後のGUI起動は再び既定拒否とする。
+
 追記：利用者の具体的な依頼を受け、`codex/folio-mac-poc-quiet-20261108` でMac PoCのguard/schema/validator/外部watchdogを非GUIで実装し、最終レビュー後に同branchへローカルcommitで保存する。pushはしない。[今回の実装・境界・最終レビュー/検証記録](MAC-POC-QUIET-IMPLEMENTATION.ja.md)を参照。下記の「計画のみ」「未着手」は保存commit当時の記録。実Electron・Keychain・別ホスト・workflowへの接続は引き続きNOT_RUNで、M3待ち/Lv3/Lv4未認定を維持する。
 
 ## 作業場所と保存状態
@@ -19,7 +21,7 @@
 |---|---|
 | 確認済みLevel | Lv3。Lv4は未認定 |
 | Lv4 M1/M2（A0〜A7） | 実装・非GUI・Linux共通GUIを受入済み |
-| M3 | 最終受入待ち。Mac固有・物理Mac2台はNOT_RUN |
+| M3 | 最終受入待ち。Mac nativeの一部は上記でPASS、実IMEは基盤保留、実Keychain・物理Mac2台はNOT_RUN |
 | 最終候補の検証 | 型検査・228ファイル/2,078テスト・build PASS。Linux GUI238/238 PASS、skip/retry/flaky 0 |
 | Mac用workflow/実機基盤 | 計画のみ。未作成・未実行 |
 | Lv5 | 既存V01〜V05等を具体化した設計候補。今回の実装・依存導入・試験はなし |
@@ -38,7 +40,7 @@
 
 ## 維持する制約
 
-- **このMacではGUI/Electron/ブラウザ/E2E/スクリーンショット用アプリ/native dialog/OS clipboard/遠隔画面viewer/VMを起動しない。** 非表示・headless・直接起動で迂回しない。
+- **今回の明示許可によるGUI受入は終了。今後は、このMacのGUI/Electron/ブラウザ/E2E/スクリーンショット用アプリ/native dialog/OS clipboard/遠隔画面viewer/VMを新しい明示指示まで起動しない。** 非表示・headless・直接起動で迂回しない。
 - 原本master・実データは変更せず、統合ツリーと使い捨てデータを使う。master mergeは別途の指示まで行わない。
 - GUIの実行先候補はGitHub側macOSまたは別の専用Mac。実機2台をこのMac抜きで満たすには、別物理Mac A/Bと常時稼働server Sが必要。台数/利用枠は未確認。
 - 課金・global設定・クラウド契約・TCC/OS保護設定を自動変更しない。モデル使用量は報告値を保存し、quota画像をlive値と扱わない。
@@ -46,7 +48,7 @@
 
 ## 次の小さな候補
 
-**Mac受入の最小PoC一式。** MAC-P01〜04の実行先guard・証拠schema・validator・外部watchdogを非GUIで具体化し、その後、別ホストの起動/保存/終了と実Keychainの可否を限定jobで確認する案。今回は着手していない。
+**別ホストMAC-P05のH1だけ。** MAC-P01/P03/P04は `b19ecbe` で実装済み。このMacの一部native操作は上記で受入済み。別ホストのguard/監督接続と起動・保存・正常終了・再読込は未実装/未実行で、実行先1台から始める候補。[機材と実装範囲](MAC-P05-RESOURCES-AND-SCOPE.ja.md)を参照し、自動着手しない。
 
 注意点：Playwright標準loaderの模擬Keychainを実Keychain証拠にしない。新規workflow_dispatchの初回起動を作業branchだけで成立すると仮定しない。専用PR経路・対象source/artifactとharnessの別記録を検討する。正常終了/Dock新PID・入力による閉鎖拒否・予約失敗による同PID再表示を区別する。
 

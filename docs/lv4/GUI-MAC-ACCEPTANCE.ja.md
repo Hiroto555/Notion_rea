@@ -1,8 +1,10 @@
 # Mac固有のGUI受入（別枠）
 
-2026-11-08。**すべてNOT_RUN。今回の指示はGitHub ActionsのLinux仮想画面だけで、このMacでのGUI実行は含まない。** Linuxの共通GUI試験は[CI実行範囲](GUI-LINUX-CI.ja.md)に分離した。Lv3確認済み、Lv4未認定、masterへはマージしない。A0〜A7とLinux共通GUIは[M3候補](M3-ACCEPTANCE.ja.md)で受入済み。
+2026-11-08更新。利用者のTV視聴中の明示許可により、このMacで**240 PASS / 実IME 1 INFRA_BLOCKED**。[ローカル実行結果・残件・試行履歴](MAC-LOCAL-GUI-ACCEPTANCE-20261108.ja.md)を最新記録とする。実Keychain・物理2台はNOT_RUN。Lv3確認済み、Lv4未認定、masterへはマージしない。Linuxの共通GUIは[CI実行範囲](GUI-LINUX-CI.ja.md)、A0〜A7は[M3候補](M3-ACCEPTANCE.ja.md)に分離して記録する。
 
-[このMacの操作を奪わない最終受入計画](MAC-QUIET-ACCEPTANCE-PLAN.ja.md)に、GitHub-hosted macOS・別Mac A/B・サーバーSの担当、必要な準備、実行前の区切りを整理した。**計画だけで、Mac workflow/GUI/実機試験はまだ開始していない。**
+今回PASSしたnative条件は、保存処理中のCmd+Q拒否と保存後の正常終了/新PID再読込、赤ボタンの正常終了/新PID再読込、file picker取消し/合成ファイル選択、実Cmd+C/V。下表の終了条件全体を満たした意味ではなく、Dock、変換中保護、予約COMMIT失敗後の同PID再表示、親フォルダ/権限拒否などは残る。今回の実行許可は終了しており、新たなGUI起動は最新ユーザー指示に従う。
+
+[このMacの操作を奪わない最終受入計画](MAC-QUIET-ACCEPTANCE-PLAN.ja.md)と[MAC-P05の機材・権限・最小範囲](MAC-P05-RESOURCES-AND-SCOPE.ja.md)に、別host・Mac A/B・Sと実行前の区切りを整理した。**別hostのworkflow/実機試験は未作成・未実行。** ローカルの合格を別hostや実Keychainの証拠にしない。
 
 | 優先 | Mac/OSで確認するもの | 終了条件 |
 |---|---|---|
@@ -13,6 +15,6 @@
 | 2 | Keychain/safeStorage | 接続設定・更新・無効化の製品導線は実装済み。Macで保存/復号/ロック時の保留・更新・無効化を受入 |
 | 別工程 | 物理Mac2台・実トンネル | 方向、切断、スリープ、競合、添付、削除/復元を同じ候補で確認。Linux上の一時DB/loopbackと区別する |
 
-候補環境は専用の仮想Macまたは別Mac。共有clipboard・共有フォルダ・認証情報の持込みを避け、試験用プロフィールと一時`FOLIO_DATA_DIR`を使う。環境構築・Mac GUI実行の開始は今回行わない。
+後続の候補環境は専用の仮想Macまたは別Mac。共有clipboard・共有フォルダ・認証情報の持込みを避け、試験用プロフィールと一時`FOLIO_DATA_DIR`を使う。別hostの環境構築は今回行っていない。
 
-ページツリーの実drag・移動中編集・再起動の3件は[Linuxで追加受入済み](GUI-PAGE-TREE-CI.ja.md)。このMacでのドラッグや物理入力の合格は意味しない。ほかのOS共通で未移植の試験も、このMac固有表とは別の未実行バックログとして扱う。残件は[従来の受入待ち](GUI-ACCEPTANCE-QUEUE.ja.md)、[GUIの履歴](../GUI-VALIDATION-QUEUE.ja.md)を参照する。
+ページツリーのdrag・移動中編集・再起動は[Linuxの記録](GUI-PAGE-TREE-CI.ja.md)に加え、今回のMac共通GUIでも実行済み。ただしnative物理dragや全キーボード配列の受入へは拡張しない。残件は[受入待ち](GUI-ACCEPTANCE-QUEUE.ja.md)、以前の記録は[GUIの履歴](../GUI-VALIDATION-QUEUE.ja.md)を参照する。
