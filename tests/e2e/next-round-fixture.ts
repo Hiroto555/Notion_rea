@@ -100,4 +100,4 @@ export async function saveDialog(s: Session, path: string | null) {
 export async function openDialog(s: Session, path: string | null) {
   await s.app.evaluate(({ dialog }, p) => { dialog.showOpenDialog = (async () => ({ canceled: p === null, filePaths: p ? [p] : [] })) as typeof dialog.showOpenDialog; }, path);
 }
-export const saved = async (s: Session) => { await expect(s.window.locator(".save-state")).toHaveText("保存済み"); };
+export const saved = async (s: Session) => { await expect(s.window.locator(".save-state[data-state]")).toHaveText("保存済み"); };

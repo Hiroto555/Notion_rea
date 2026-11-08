@@ -14,6 +14,7 @@ export async function beginRealDrag(page: Page, source: Locator) {
     g.pointerDragStarted = false; g.pointerDragEnded = false; g.pointerDropped = false;
     const entries: any[] = [];
     g.dragAttempt = { id: attempt, entries };
+    (g.dragAttempts ??= []).push(g.dragAttempt);
     const describe = (e: Element | null) => e && ({ tag: e.tagName, className: e.getAttribute("class"), label: e.getAttribute("aria-label"), text: e.textContent?.slice(0, 100), connected: e.isConnected });
     const bounds = (e: Element) => { const r = e.getBoundingClientRect(); return { x: r.x, y: r.y, width: r.width, height: r.height }; };
     entries.push({ type: "before", source: describe(element), rect: bounds(element), hit: describe(document.elementFromPoint(bounds(element).x + bounds(element).width / 2, bounds(element).y + bounds(element).height / 2)), focused: document.hasFocus(), active: describe(document.activeElement), scroll: { x: scrollX, y: scrollY } });
@@ -21,10 +22,12 @@ export async function beginRealDrag(page: Page, source: Locator) {
     const listen = (event: Event) => {
       const e = event as DragEvent; const target = e.target as Element;
       const start = event.type === "dragstart" && (target === element || element.contains(target));
-      if (start) g.pointerDragStarted = true;
-      if (g.pointerDragStarted && event.type === "drop") g.pointerDropped = true;
+      if (start && e.isTrusted) g.pointerDragStarted = true;
+      if (g.pointerDragStarted && event.type === "drop" && e.isTrusted) g.pointerDropped = true;
       if (g.pointerDragStarted && event.type === "dragend" && (target === element || element.contains(target))) g.pointerDragEnded = true;
-      entries.push({ type: event.type, time: performance.now(), target: describe(target), hit: describe(document.elementFromPoint(e.clientX, e.clientY)), x: e.clientX, y: e.clientY, sourceConnected: element.isConnected, active: describe(document.activeElement), focused: document.hasFocus(), types: [...(e.dataTransfer?.types ?? [])], pageId: event.type === "drop" ? e.dataTransfer?.getData("application/x-folio-page") : undefined });
+      const entry = { type: event.type, trusted: e.isTrusted, defaultPrevented: e.defaultPrevented, time: performance.now(), target: describe(target), hit: describe(document.elementFromPoint(e.clientX, e.clientY)), x: e.clientX, y: e.clientY, sourceConnected: element.isConnected, active: describe(document.activeElement), focused: document.hasFocus(), types: [...(e.dataTransfer?.types ?? [])], pageId: event.type === "drop" ? e.dataTransfer?.getData("application/x-folio-page") : undefined };
+      entries.push(entry);
+      queueMicrotask(() => { entry.defaultPrevented = e.defaultPrevented; });
     };
     types.forEach(type => document.addEventListener(type, listen, true));
     g.dragAttemptCleanup = () => { types.forEach(type => document.removeEventListener(type, listen, true)); delete g.dragAttemptCleanup; };

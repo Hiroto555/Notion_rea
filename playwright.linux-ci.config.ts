@@ -36,6 +36,7 @@ export default defineConfig({
       testMatch: [
         "**/linux-ci/*.spec.ts",
         "**/page-order-repair.spec.ts",
+        "**/page-move.spec.ts",
         "**/output-boundary.spec.ts",
       ],
     },
