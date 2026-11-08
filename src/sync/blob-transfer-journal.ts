@@ -63,23 +63,25 @@ export class BlobTransferJournal {
 
   constructor(
     directory: string,
-    scope: BlobTransferScope,
+    scope: BlobTransferScope | Readonly<{ scopeHash: string }>,
     limits: Partial<BlobTransferLimits> = {},
   ) {
-    requireCondition(
+    const maintenance = scope && Object.keys(scope).join() === "scopeHash";
+    if (maintenance) requireCondition(HASH.test((scope as {scopeHash: string}).scopeHash), "invalid-blob-transfer-scope");
+    else requireCondition(
       scope &&
         Object.keys(scope).sort().join() ===
           "baseUrlHash,bindingId,clientId,serverEpoch,workspaceId" &&
-        HASH.test(scope.baseUrlHash) &&
+        HASH.test((scope as BlobTransferScope).baseUrlHash) &&
         [
-          scope.workspaceId,
-          scope.clientId,
-          scope.bindingId,
-          scope.serverEpoch,
+          (scope as BlobTransferScope).workspaceId,
+          (scope as BlobTransferScope).clientId,
+          (scope as BlobTransferScope).bindingId,
+          (scope as BlobTransferScope).serverEpoch,
         ].every((x) => typeof x === "string" && ID.test(x)),
       "invalid-blob-transfer-scope",
     );
-    this.scopeHash = digest(canonicalJson(scope));
+    this.scopeHash = maintenance ? (scope as {scopeHash: string}).scopeHash : digest(canonicalJson(scope));
     this.limits = { ...defaults, ...limits };
     requireCondition(
       Number.isSafeInteger(this.limits.maxEntries) &&
@@ -227,7 +229,7 @@ export class BlobTransferJournal {
         record.offset <= record.bytes &&
         HASH.test(record.prefixHash) &&
         (record.offset !== 0 || record.prefixHash === EMPTY) &&
-        ["active", "completed", "blocked"].includes(record.state) &&
+        ["active", "completed", "blocked", "releasing"].includes(record.state) &&
         Number.isSafeInteger(record.updatedAt) &&
         record.updatedAt >= 0 &&
         (record.reason === null || /^[a-z0-9-]{1,100}$/.test(record.reason)) &&
@@ -282,6 +284,7 @@ export class BlobTransferJournal {
     const key = this.key(descriptor);
     const previous = this.get(key);
     if (previous) {
+      requireCondition(previous.state !== "releasing", "blob-transfer-release-pending", 409);
       requireCondition(
         previous.state !== "blocked",
         "blob-transfer-blocked",
@@ -352,7 +355,7 @@ export class BlobTransferJournal {
   }
   complete(key: string) {
     return this.change(key, (old) => {
-      requireCondition(old.state !== "blocked", "blob-transfer-blocked", 409);
+      requireCondition(old.state === "active" || old.state === "completed", "blob-transfer-blocked", 409);
       return {
         ...old,
         offset: old.bytes,
@@ -369,7 +372,7 @@ export class BlobTransferJournal {
     );
     return this.change(key, (old) => {
       requireCondition(
-        old.state !== "completed",
+        old.state === "active" || old.state === "blocked",
         "blob-transfer-completed",
         409,
       );
@@ -390,6 +393,24 @@ export class BlobTransferJournal {
           );
     });
     return count;
+  }
+  /** Caller owns the global cache mutex and a durable release operation. */
+  markRelease(expected: BlobTransferRecord, operationId: string) {
+    requireCondition(/^[a-f0-9-]{36}$/.test(operationId), "invalid-cache-release-id");
+    return this.change(expected.key, old => {
+      if (old.state === "releasing" && old.reason === operationId) return old;
+      requireCondition(old.state !== "releasing" && canonicalJson(old) === canonicalJson(expected), "cache-release-stale", 409);
+      return {...old, state: "releasing", reason: operationId, updatedAt: Date.now()};
+    });
+  }
+  finishRelease(key: string, operationId: string): boolean {
+    this.assertOwned();
+    return this.guard.transaction(() => {
+      const old = this.get(key);
+      if (!old || old.state !== "releasing" || old.reason !== operationId) return false;
+      return this.guard.db.prepare("DELETE FROM blob_transfers WHERE key=? AND data=?")
+        .run(key, canonicalJson(old)).changes === 1;
+    });
   }
   close() {
     if (this.closed) return;

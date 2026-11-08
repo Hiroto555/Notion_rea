@@ -1760,6 +1760,7 @@ async function withClientTransfer<T>(
         options.transfer.scope,
       );
       normalized.transferJournal = journal;
+      requireCondition(!journal.inventory().some(record => record.state === "releasing"), "blob-transfer-release-pending", 409);
       // Recover the hard-link publication window before rejecting nlink=2 in
       // the read-only inventory. Only full, verified destination bytes count.
       if (direction === "download") {

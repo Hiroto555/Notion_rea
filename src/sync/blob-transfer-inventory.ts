@@ -7,7 +7,7 @@ import type {
 import { SyncError } from "./protocol";
 
 export type BlobTransferInventoryKind =
-  "active" | "completed" | "blocked" | "orphan" | "unsafe" | "metadata";
+  "active" | "completed" | "blocked" | "releasing" | "orphan" | "unsafe" | "metadata";
 
 export type BlobTransferInventoryItem = {
   name: string;
@@ -27,12 +27,12 @@ const DEFAULT_MAX_ENTRIES = 1000;
 const METADATA_ALLOWANCE = 16;
 const MAX_KEY_BYTES = 251;
 const MAX_NAME_BYTES = 255;
-const STATES = new Set(["active", "completed", "blocked"]);
+const STATES = new Set(["active", "completed", "blocked", "releasing"]);
 
 type ValidatedRecord = {
   key: string;
   name: string;
-  state: "active" | "completed" | "blocked";
+  state: "active" | "completed" | "blocked" | "releasing";
   signature: string;
 };
 

@@ -18,7 +18,7 @@ export type BlobTransferRecord = BlobTransferDescriptor &
     partialName: string;
     offset: number;
     prefixHash: string;
-    state: "active" | "completed" | "blocked";
+    state: "active" | "completed" | "blocked" | "releasing";
     reason: string | null;
     updatedAt: number;
   }>;

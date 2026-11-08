@@ -315,33 +315,36 @@ export class SyncSecretStore {
     }
   }
 
-  private assertEncryption(): void {
+  private assertEncryption(): void { assertSecureStorageBackend(this.safeStorage, this.platform); }
+}
+
+/** Shared with the product vault; no plaintext backend is accepted. */
+export function assertSecureStorageBackend(safeStorage: SafeStoragePort, platform: NodeJS.Platform = process.platform): void {
     let available: unknown = undefined;
     try {
-      available = this.safeStorage.isEncryptionAvailable();
+      available = safeStorage.isEncryptionAvailable();
     } catch {
       fail("secret-store-unavailable");
     }
     if (available !== true) fail("secret-store-unavailable");
     let backend: SafeStoragePort["getSelectedStorageBackend"];
-    try { backend = this.safeStorage.getSelectedStorageBackend; }
+    try { backend = safeStorage.getSelectedStorageBackend; }
     catch { fail("secret-store-unavailable"); }
     if (typeof backend !== "function") {
-      if (this.platform === "linux") fail("secret-store-unavailable");
+      if (platform === "linux") fail("secret-store-unavailable");
       return;
     }
     let selected: unknown = undefined;
     try {
-      selected = backend.call(this.safeStorage);
+      selected = backend.call(safeStorage);
     } catch {
       fail("secret-store-unavailable");
     }
-    if (selected === undefined && this.platform === "linux") fail("secret-store-unavailable");
+    if (selected === undefined && platform === "linux") fail("secret-store-unavailable");
     if (
       selected !== undefined &&
       (typeof selected !== "string" ||
         !SECURE_LINUX_BACKENDS.has(selected))
     )
       fail("secret-store-insecure-backend");
-  }
 }
