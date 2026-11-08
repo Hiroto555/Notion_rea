@@ -17,6 +17,7 @@ import {
   canonicalJson,
   hashCheckpoint,
   requireCondition,
+  sha256,
   type Change,
   type Commit,
 } from "./protocol";
@@ -493,12 +494,15 @@ export class WorkspaceSync {
 
   private transferOptions() {
     const { baseUrl, token, workspaceId, timeoutMs } = this.options;
+    const scope = { baseUrlHash: sha256(new URL(baseUrl).origin), workspaceId,
+      clientId: this.options.clientId, bindingId: this.options.bindingId, serverEpoch: this.local.identity.serverEpoch };
     return {
       baseUrl,
       token,
       workspaceId,
       timeoutMs,
       assetsDirectory: this.assetsDirectory,
+      transfer: { scope, directory: join(this.directory, ".folio-sync-transfers", sha256(canonicalJson(scope))) },
     };
   }
 }

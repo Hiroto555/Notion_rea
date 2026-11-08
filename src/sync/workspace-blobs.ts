@@ -60,6 +60,19 @@ import { pipeline } from "node:stream/promises";
 import { parseAssetURL } from "../shared/assets";
 import { syncPath } from "../persistence/durable-file";
 import { requireCondition, sha256 as hashText, SyncError } from "./protocol";
+import { BlobTransferJournal } from "./blob-transfer-journal";
+import {
+  openBlobTransferPartial,
+  checkpointBlobTransferPartial,
+  reconcilePublishedPartial,
+  type BlobTransferPartial,
+} from "./blob-transfer-partial";
+import {
+  inspectBlobUploadPartial,
+  withBlobUploadLock,
+} from "./blob-upload-resume";
+import type { BlobTransferScope } from "./blob-transfer-types";
+import { inspectBlobTransferInventory } from "./blob-transfer-inventory";
 
 /** Attachment limit already enforced by `attachFile` in the base application. */
 export const WORKSPACE_BLOB_MAX_BYTES = 20_000_000;
@@ -96,6 +109,8 @@ export type WorkspaceBlobClientOptions = {
   assetsDirectory: string;
   timeoutMs?: number;
   admitBytes?: (bytes: number) => void;
+  /** Private transfer cache, never a workspace content DB or credential file. */
+  transfer?: { directory: string; scope: BlobTransferScope };
 };
 
 type NormalizedOptions = {
@@ -105,6 +120,7 @@ type NormalizedOptions = {
   assetsDirectory: string;
   timeoutMs: number;
   admitBytes?: (bytes: number) => void;
+  transferJournal?: BlobTransferJournal;
 };
 
 type FileState =
@@ -136,12 +152,17 @@ function unlinkQuietly(path: string): void {
   }
 }
 
-function hashDescriptor(descriptor: number): string {
+function hashDescriptor(descriptor: number, prefixBytes?: number): string {
   const hash = createHash("sha256");
   const buffer = Buffer.allocUnsafe(64 * 1024);
   let position = 0;
   for (;;) {
-    const read = readSync(descriptor, buffer, 0, buffer.length, position);
+    const size =
+      prefixBytes === undefined
+        ? buffer.length
+        : Math.min(buffer.length, prefixBytes - position);
+    if (!size) break;
+    const read = readSync(descriptor, buffer, 0, size, position);
     if (read === 0) break;
     position += read;
     requireCondition(
@@ -151,6 +172,11 @@ function hashDescriptor(descriptor: number): string {
     );
     hash.update(buffer.subarray(0, read));
   }
+  requireCondition(
+    prefixBytes === undefined || position === prefixBytes,
+    "asset-changed",
+    409,
+  );
   return hash.digest("hex");
 }
 
@@ -549,6 +575,40 @@ export class WorkspaceBlobStore {
       return;
     }
     if (request.method === "HEAD") {
+      if (request.headers["x-folio-blob-resume"] === "1") {
+        const bytes = headerNumber(request.headers["x-folio-blob-bytes"]);
+        requireCondition(
+          bytes !== undefined && bytes <= WORKSPACE_BLOB_MAX_BYTES,
+          "invalid-blob-size",
+        );
+        const directory = this.workspacePath(workspaceId, true);
+        await withBlobUploadLock(directory, async () => {
+          const completed = openVerified(
+            join(directory, sha256),
+            sha256,
+            bytes,
+          );
+          if (completed) {
+            closeQuietly(completed.descriptor);
+            context.assertAuthorized();
+            send(response, 204, {
+              "X-Folio-Blob-Resume": "1",
+              "X-Folio-Blob-Received": String(bytes),
+              "X-Folio-Blob-Prefix-Sha256": sha256,
+            });
+            return;
+          }
+          const partial = inspectBlobUploadPartial(directory, sha256, bytes);
+          context.assertAuthorized();
+          send(response, 204, {
+            "X-Folio-Blob-Resume": "1",
+            "X-Folio-Blob-Received": String(partial?.received ?? 0),
+            "X-Folio-Blob-Prefix-Sha256":
+              partial?.prefixHash ?? createHash("sha256").digest("hex"),
+          });
+        });
+        return;
+      }
       await this.get(request, response, workspaceId, sha256, true);
       return;
     }
@@ -561,7 +621,10 @@ export class WorkspaceBlobStore {
       );
       this.activeUploads.add(key);
       try {
-        await this.put(request, response, workspaceId, sha256, context);
+        const directory = this.workspacePath(workspaceId, true);
+        await withBlobUploadLock(directory, () =>
+          this.put(request, response, workspaceId, sha256, context),
+        );
       } finally {
         this.activeUploads.delete(key);
       }
@@ -1222,6 +1285,36 @@ async function uploadOne(
     }
 
     let offset = 0;
+    if (options.transferJournal) {
+      const response = await requestBlob(options, asset, "HEAD", {
+        "X-Folio-Blob-Resume": "1",
+        "X-Folio-Blob-Bytes": String(asset.bytes),
+      });
+      const status = response.statusCode ?? 0;
+      if (status === 204 && response.headers["x-folio-blob-resume"] === "1") {
+        const received = headerNumber(
+          response.headers["x-folio-blob-received"],
+        );
+        const prefix = response.headers["x-folio-blob-prefix-sha256"];
+        response.resume();
+        requireCondition(
+          received !== undefined &&
+            received <= asset.bytes &&
+            typeof prefix === "string" &&
+            HASH.test(prefix),
+          "blob-resume-mismatch",
+          409,
+        );
+        requireCondition(
+          hashDescriptor(descriptor, received) === prefix,
+          "blob-resume-mismatch",
+          409,
+        );
+        offset = received;
+      } else if ([200, 404, 405, 501].includes(status)) {
+        response.resume(); // Older servers may not implement the resume probe.
+      } else throw await responseError(response, status);
+    }
     let failures = 0;
     while (offset < asset.bytes) {
       const end = Math.min(offset + WORKSPACE_BLOB_CHUNK_BYTES, asset.bytes);
@@ -1349,15 +1442,47 @@ async function downloadOne(
   directory: string,
 ): Promise<void> {
   const target = targetPath(directory, asset);
-  const temporary = join(
+  const journal = options.transferJournal;
+  let record = journal?.begin({
+    direction: "download",
+    assetId: asset.id,
+    sha256: asset.sha256,
+    bytes: asset.bytes,
+  });
+  if (record)
+    requireCondition(
+      record.state === "active",
+      "blob-transfer-state-conflict",
+      409,
+    );
+  let temporary = join(
     directory,
     `.folio-blob-${randomBytes(16).toString("hex")}.part`,
   );
   let descriptor: number | undefined;
+  let partial: BlobTransferPartial | undefined;
+  const checkpoint = (offset: number) => {
+    if (journal && record && partial && offset > record.offset)
+      record = journal.checkpoint(
+        record.key,
+        offset,
+        checkpointBlobTransferPartial(partial, offset),
+      );
+  };
   try {
     try {
-      descriptor = openSync(temporary, WRITE_FLAGS | fsConstants.O_EXCL, 0o600);
+      if (journal && record) {
+        partial = openBlobTransferPartial(journal.directory, record);
+        temporary = partial.path;
+        descriptor = partial.descriptor;
+      } else
+        descriptor = openSync(
+          temporary,
+          WRITE_FLAGS | fsConstants.O_EXCL,
+          0o600,
+        );
     } catch (error) {
+      if (error instanceof SyncError) throw error;
       if (errorCode(error) === "ENOSPC")
         throw new SyncError("insufficient-storage", 507);
       throw new SyncError("asset-staging-failed", 500);
@@ -1374,9 +1499,10 @@ async function downloadOne(
       }
       response.resume();
     } else {
-      let offset = 0;
+      let offset = partial?.offset ?? 0;
       let failures = 0;
       while (offset < asset.bytes) {
+        checkpoint(offset);
         const end = Math.min(offset + WORKSPACE_BLOB_CHUNK_BYTES, asset.bytes);
         let response: IncomingMessage;
         try {
@@ -1403,6 +1529,7 @@ async function downloadOne(
             (length !== undefined && length !== asset.bytes)
           ) {
             response.destroy();
+            if (journal) throw new SyncError("blob-range-mismatch", 502);
             ftruncateSync(descriptor, 0);
             offset = 0;
             failures++;
@@ -1419,6 +1546,11 @@ async function downloadOne(
               }
               writeAll(descriptor, part, received);
               received += part.length;
+              if (
+                record &&
+                received - record.offset >= WORKSPACE_BLOB_CHUNK_BYTES
+              )
+                checkpoint(received);
             }
             if (received !== asset.bytes)
               throw new SyncError("blob-transfer-failed", 502);
@@ -1491,6 +1623,7 @@ async function downloadOne(
         }
         throw error;
       }
+      checkpoint(offset);
     }
 
     fsyncFile(descriptor);
@@ -1501,10 +1634,90 @@ async function downloadOne(
     if (!verified) throw new SyncError("blob-hash-mismatch", 422);
     closeQuietly(verified.descriptor);
     publishStaged(temporary, target, directory, asset);
+    if (journal && record) {
+      syncPath(journal.directory);
+      journal.complete(record.key);
+    }
   } catch (error) {
     closeQuietly(descriptor);
-    unlinkQuietly(temporary);
+    if (!journal) unlinkQuietly(temporary);
+    else if (
+      record &&
+      error instanceof SyncError &&
+      /unsafe|hash-mismatch|state-conflict|changed/.test(error.code)
+    ) {
+      try {
+        journal.block(record.key, error.code);
+      } catch {
+        /* Keep the first failure and durable evidence. */
+      }
+    }
     throw error;
+  }
+}
+
+async function withClientTransfer<T>(
+  options: WorkspaceBlobClientOptions,
+  direction: "download" | "upload",
+  work: (normalized: NormalizedOptions) => Promise<T>,
+): Promise<T> {
+  const normalized = normalizeClientOptions(options);
+  let journal: BlobTransferJournal | undefined;
+  try {
+    if (options.transfer) {
+      requireCondition(
+        options.transfer.scope.baseUrlHash === hashText(normalized.baseUrl) &&
+          options.transfer.scope.workspaceId === normalized.workspaceId,
+        "blob-transfer-scope-mismatch",
+        409,
+      );
+      journal = new BlobTransferJournal(
+        join(
+          options.transfer.directory,
+          direction + "-" + hashText(normalized.assetsDirectory),
+        ),
+        options.transfer.scope,
+      );
+      normalized.transferJournal = journal;
+      // Recover the hard-link publication window before rejecting nlink=2 in
+      // the read-only inventory. Only full, verified destination bytes count.
+      if (direction === "download") {
+        for (const record of journal.inventory()) {
+          const asset = validateAsset({
+            id: record.assetId,
+            sha256: record.sha256,
+            bytes: record.bytes,
+          });
+          if (
+            record.direction === "download" &&
+            assertStagedTarget(normalized.assetsDirectory, asset)
+          ) {
+            reconcilePublishedPartial(
+              journal.directory,
+              record,
+              targetPath(normalized.assetsDirectory, asset),
+            );
+            journal.complete(record.key);
+          }
+        }
+        journal.compactCompleted();
+      }
+      const inventory = inspectBlobTransferInventory(
+        journal.directory,
+        journal.inventory(),
+        { maxBytes: 100 * 1024 * 1024 },
+      );
+      requireCondition(
+        !inventory.overLimit &&
+          inventory.unsafeCount === 0 &&
+          !inventory.items.some((item) => item.kind === "orphan"),
+        "blob-transfer-cache-held",
+        409,
+      );
+    }
+    return await work(normalized);
+  } finally {
+    journal?.close();
   }
 }
 
@@ -1513,23 +1726,24 @@ export async function uploadCheckpointAssets(
   options: WorkspaceBlobClientOptions,
   assets: readonly WorkspaceBlobAsset[],
 ): Promise<void> {
-  const normalized = normalizeClientOptions(options);
-  const manifest = normalizeAssets(assets);
-  const sources = new Map<string, string>();
-  for (const asset of manifest)
-    sources.set(asset.id, assertLocalFile(normalized.assetsDirectory, asset));
-  const missing: WorkspaceBlobAsset[] = [];
-  for (const asset of manifest) {
-    if (!(await serverHas(normalized, asset))) missing.push(asset);
-  }
-  // Admission is a preflight over all writes. A refusal happens before any
-  // request body is sent, so retrying after freeing space starts cleanly.
-  if (missing.length)
-    normalized.admitBytes?.(
-      missing.reduce((total, asset) => total + asset.bytes, 0),
-    );
-  for (const asset of missing)
-    await uploadOne(normalized, asset, sources.get(asset.id)!);
+  return withClientTransfer(options, "upload", async (normalized) => {
+    const manifest = normalizeAssets(assets);
+    const sources = new Map<string, string>();
+    for (const asset of manifest)
+      sources.set(asset.id, assertLocalFile(normalized.assetsDirectory, asset));
+    const missing: WorkspaceBlobAsset[] = [];
+    for (const asset of manifest) {
+      if (!(await serverHas(normalized, asset))) missing.push(asset);
+    }
+    // Admission is a preflight over all writes. A refusal happens before any
+    // request body is sent, so retrying after freeing space starts cleanly.
+    if (missing.length)
+      normalized.admitBytes?.(
+        missing.reduce((total, asset) => total + asset.bytes, 0),
+      );
+    for (const asset of missing)
+      await uploadOne(normalized, asset, sources.get(asset.id)!);
+  });
 }
 
 /**
@@ -1541,19 +1755,43 @@ export async function stageCheckpointAssets(
   options: WorkspaceBlobClientOptions,
   assets: readonly WorkspaceBlobAsset[],
 ): Promise<void> {
-  const normalized = normalizeClientOptions(options);
-  const manifest = normalizeAssets(assets);
-  const missing: WorkspaceBlobAsset[] = [];
-  for (const asset of manifest) {
-    if (!assertStagedTarget(normalized.assetsDirectory, asset))
-      missing.push(asset);
-  }
-  if (missing.length)
-    normalized.admitBytes?.(
-      missing.reduce((total, asset) => total + asset.bytes, 0),
-    );
-  for (const asset of missing)
-    await downloadOne(normalized, asset, normalized.assetsDirectory);
+  return withClientTransfer(options, "download", async (normalized) => {
+    const manifest = normalizeAssets(assets);
+    const missing: WorkspaceBlobAsset[] = [];
+    for (const asset of manifest) {
+      if (!assertStagedTarget(normalized.assetsDirectory, asset))
+        missing.push(asset);
+      else if (normalized.transferJournal) {
+        const journal = normalized.transferJournal;
+        const record = journal
+          .inventory()
+          .find(
+            (entry) =>
+              entry.direction === "download" &&
+              entry.assetId === asset.id &&
+              entry.sha256 === asset.sha256 &&
+              entry.bytes === asset.bytes,
+          );
+        if (record) {
+          reconcilePublishedPartial(
+            journal.directory,
+            record,
+            targetPath(normalized.assetsDirectory, asset),
+          );
+          journal.complete(record.key);
+        }
+      }
+    }
+    if (missing.length)
+      normalized.admitBytes?.(
+        missing.reduce((total, asset) => total + asset.bytes, 0),
+      );
+    for (const asset of missing) {
+      await downloadOne(normalized, asset, normalized.assetsDirectory);
+      normalized.transferJournal?.compactCompleted();
+    }
+    normalized.transferJournal?.compactCompleted();
+  });
 }
 
 /** Revalidate all attachment bytes immediately before the SQLite apply step. */
@@ -1588,17 +1826,32 @@ export function publishCheckpointAssetsFromStaging(
     assertLocalFile(staging, asset);
     if (!assertStagedTarget(active, asset)) missing.push(asset);
   }
-  if (missing.length) admitBytes?.(missing.reduce((total, asset) => total + asset.bytes, 0));
+  if (missing.length)
+    admitBytes?.(missing.reduce((total, asset) => total + asset.bytes, 0));
   for (const asset of missing) {
-    const source = openVerified(targetPath(staging, asset), asset.sha256, asset.bytes);
+    const source = openVerified(
+      targetPath(staging, asset),
+      asset.sha256,
+      asset.bytes,
+    );
     if (!source) throw new SyncError("asset-changed", 409);
-    const temporary = join(active, `.folio-blob-${randomBytes(16).toString("hex")}.part`);
+    const temporary = join(
+      active,
+      `.folio-blob-${randomBytes(16).toString("hex")}.part`,
+    );
     let output: number | undefined;
     try {
       output = openSync(temporary, WRITE_FLAGS | fsConstants.O_EXCL, 0o600);
       for (let position = 0; position < asset.bytes;) {
-        const size = Math.min(WORKSPACE_BLOB_CHUNK_BYTES, asset.bytes - position);
-        writeAll(output, readChunk(source.descriptor, position, size), position);
+        const size = Math.min(
+          WORKSPACE_BLOB_CHUNK_BYTES,
+          asset.bytes - position,
+        );
+        writeAll(
+          output,
+          readChunk(source.descriptor, position, size),
+          position,
+        );
         position += size;
       }
       fsyncFile(output);
