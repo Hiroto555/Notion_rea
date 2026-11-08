@@ -98,10 +98,10 @@ const ROWS = Object.entries(EXPECTED) as [RequestType, StorageAction][];
 
 describe("request storage policy", () => {
   it("classifies every Request type exactly once", () => {
-    expect(ROWS).toHaveLength(80);
+    expect(ROWS).toHaveLength(89);
     expect(new Set(ROWS.map(([type]) => type)).size).toBe(ROWS.length);
     expect(ROWS.filter(([, action]) => action === "write")).toHaveLength(28);
-    expect(ROWS.filter(([, action]) => action === "checkpoint")).toHaveLength(6);
+    expect(ROWS.filter(([, action]) => action === "checkpoint")).toHaveLength(9);
     for (const [type, action] of ROWS)
       expect(storageActionForRequest(type)).toBe(action);
   });

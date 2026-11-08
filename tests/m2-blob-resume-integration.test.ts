@@ -502,7 +502,7 @@ it("a complete server partial is finalized by re-sending only its final slice", 
     sha256: asset.sha256,
   };
   const workspace = join(config.directory, hash("workspace"));
-  mkdirSync(workspace, { recursive: true });
+  mkdirSync(workspace, { recursive: true, mode: 0o700 });
   writeFileSync(join(workspace, ".partial-" + asset.sha256), bytes);
   const server = child(serverScript, "FOLIO_TEST_SERVER", config);
   const port = (await waitMessage(server, (message) => message.port)).port;

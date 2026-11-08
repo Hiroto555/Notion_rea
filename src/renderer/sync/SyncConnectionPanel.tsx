@@ -399,11 +399,13 @@ export function SyncConnectionPanel({
           >
             <option value="" disabled>モードを選択してください</option>
             <option value="publish">新しく公開して同期を開始</option>
-            <option value="join">既存のワークスペースに参加</option>
+            <option value="join">既存のワークスペースに参加（空の保存先専用）</option>
             <option value="recover">以前の接続を復旧</option>
           </select>
           <p id="sync-mode-help">
-            publish は新しく公開、join は既存ワークスペースへの参加、recover は以前の接続の復旧です。モードは明示的に選択してください。
+            publish は現在の内容を新しい同期先へ公開します。join は空の新規保存先から参加します。
+            recover は通常のバックアップ復元後などに、新しく発行された端末 ID で接続を復旧します。
+            既存の内容を自動で結合する操作ではありません。復旧用コピーからの同期は保留されます。
           </p>
         </fieldset>
         <p className="sync-connection-note">

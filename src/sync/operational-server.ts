@@ -12,6 +12,8 @@ import { inspectVerifiedServerFile } from "./server-verified-file";
 import { WorkspaceBlobStore } from "./workspace-blobs";
 import { validateWorkspaceCheckpoint } from "./workspace-checkpoint";
 import { requireCondition, identifier, SyncError } from "./protocol";
+import { inspectSyncRetention } from "./sync-retention";
+import { inspectServerBlobRetention } from "./server-blob-retention";
 import { syncPath, writeNewFileDurably } from "../persistence/durable-file";
 
 function optional(path: string) {try {return lstatSync(path);} catch (e) {if ((e as NodeJS.ErrnoException).code === "ENOENT") return null; throw e;}}
@@ -98,4 +100,22 @@ export async function issueOperationalCredential(options: {directory: string; cl
 export function safeServerOpsError(error: unknown): string {
   if (error instanceof SyncError && /^[a-z][a-z0-9-]{1,80}$/.test(error.code)) return error.code;
   return "server-operation-held";
+}
+
+/** Offline bounded diagnostics; no token hashes, receipts or payloads escape. */
+export function inspectOperationalServer(directory: string) {
+  const lease = acquireServerDirectoryLease(directory);
+  try {
+    const {root} = existing(directory), path = join(root.path, "server.sqlite");
+    const db = new DatabaseSync(path, {readOnly: true});
+    let history, devices;
+    try {
+      history = inspectSyncRetention(db, "server");
+      devices = Number(db.prepare("SELECT COUNT(*) AS n FROM checkpoint_devices").get()!.n);
+    } finally {db.close();}
+    let blobs = null, held: string | null = null;
+    try {blobs = inspectServerBlobRetention(join(root.path, "blobs"));} catch {held = "server-blob-retention-unknown";}
+    lease.assertOwned();
+    return {history, devices, maxDevices: 512, blobs, held};
+  } finally {lease.close();}
 }

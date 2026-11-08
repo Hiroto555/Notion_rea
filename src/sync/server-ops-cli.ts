@@ -2,6 +2,7 @@ import { basename } from "node:path";
 import {
   administerOperationalServer,
   initializeOperationalServer,
+  inspectOperationalServer,
   issueOperationalCredential,
   safeServerOpsError,
   startOperationalServer,
@@ -23,7 +24,8 @@ type Command =
   | "revoke"
   | "backup"
   | "inspect"
-  | "restore";
+  | "restore"
+  | "status";
 
 type Spec = {
   required: readonly string[];
@@ -31,6 +33,7 @@ type Spec = {
 };
 
 const SPECS: Record<Command, Spec> = {
+  status: {required: ["directory"], optional: []},
   init: { required: ["directory", "workspace", "owner", "port"], optional: [] },
   serve: { required: ["directory"], optional: [] },
   issue: {
@@ -117,6 +120,10 @@ function waitForSignal(): Promise<void> {
 
 async function execute(parsed: Parsed, io: ServerOpsIo): Promise<number> {
   switch (parsed.command) {
+    case "status": {
+      emit(io, {ok: true, ...inspectOperationalServer(value(parsed, "directory"))});
+      return 0;
+    }
     case "init": {
       const config: ServerOpsConfig = {
         format: "folio-server-config/v1",

@@ -41,7 +41,11 @@ try {
       "--method", "org.freedesktop.DBus.NameHasOwner", "org.freedesktop.secrets"], {env, shell: false, stdio: ["ignore", "pipe", "ignore"]});
     let output = "";
     probe.stdout.on("data", bytes => {if (output.length < 64) output += bytes.toString();});
-    const code = await new Promise(resolve => {probe.once("error", () => resolve(-1)); probe.once("exit", resolve);});
+    const code = await new Promise(resolve => {
+      const timer = setTimeout(() => {probe.kill(); resolve(-1);}, 1000);
+      const done = value => {clearTimeout(timer); resolve(value);};
+      probe.once("error", () => done(-1)); probe.once("exit", done);
+    });
     ready = code === 0 && output.trim() === "(true,)";
     if (!ready) await delay(100);
   }
