@@ -12,6 +12,7 @@ import { pinReleaseFile, trashReleaseFile, unlinkReleaseTrash } from "../sync/ca
 import { inspectVerifiedServerFile } from "../sync/server-verified-file";
 import { withBlobUploadLock } from "../sync/blob-upload-resume";
 import { syncPath } from "../persistence/durable-file";
+import { inspectWorkspaceTransferBudget } from "../sync/blob-transfer-budget";
 
 const ID = /^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/;
 const HASH = /^[a-f0-9]{64}$/;
@@ -124,7 +125,7 @@ export class TransferMaintenanceService {
   }
   async view(cursor?: string): Promise<TransferMaintenanceView> {
     if (!optional(this.root)) return {entries: [], nextCursor: null, usedBytes: 0, overLimit: false, held: null};
-    return this.locked(db => {
+    const view = await this.locked(db => {
       const view = inspectTransferCacheCatalog(this.workspace, this.currentScope(), cursor);
       for (const row of db.entries("release:", 1000)) {
         const op = this.parse(row.value);
@@ -136,6 +137,14 @@ export class TransferMaintenanceService {
       }
       return view;
     });
+    // A diagnostic snapshot after our ledger AND mutex have closed. SQLite's
+    // first mutex COMMIT may grow its file. Admission/plan/delete checks still
+    // run separately under the common mutex; this number authorizes no writes.
+    try {
+      const budget = inspectWorkspaceTransferBudget(this.workspace);
+      view.usedBytes = budget.bytes; view.overLimit = budget.overLimit;
+    } catch {view.held = "unsafe-cache-entry";}
+    return view;
   }
   async plan(entryId: string): Promise<TransferReleasePlanView> {
     const loc = locator(entryId);

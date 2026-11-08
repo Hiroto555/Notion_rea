@@ -1,9 +1,9 @@
 import { _electron as electron, expect, test, type ElectronApplication, type Page } from "@playwright/test";
-import { mkdirSync, rmSync } from "node:fs";
-import { join } from "node:path";
+import { mkdirSync, rmSync, writeFileSync } from "node:fs";
+import { join, resolve } from "node:path";
 import { createServer } from "node:net";
 import { fixtureElectronOptions, fixtureRoot } from "../fixture-isolation";
-import { killFixture } from "../recovery-ci-runtime";
+import { killFixture, ownFixture } from "../recovery-ci-runtime";
 
 export async function freeLoopbackPort(): Promise<number> {
   const server = createServer();
@@ -24,8 +24,15 @@ export class M3GuiFixture {
   async start(extra: Record<string, string> = {}, passwordStore?: "basic" | "gnome-libsecret") {
     const options = fixtureElectronOptions(this.directory);
     let args = options.args;
-    if (passwordStore) args = [...args.slice(0,-1).filter(arg => !arg.startsWith("--password-store=")), "--password-store=" + passwordStore, args.at(-1)!];
-    this.app = await electron.launch({args, env: {...options.env, FOLIO_CREDENTIAL_DIR: this.vaultDirectory, ...extra}});
+    if (process.env.FOLIO_LINUX_GUI_CI === "1") {
+      // Playwright's loader appends --password-store=basic after launch args.
+      // This fixture-only entry restores the requested real backend before
+      // loading product code. Production never gets a test storage override.
+      const entry = join(this.root, "electron-entry.cjs");
+      writeFileSync(entry, `require("electron").app.commandLine.appendSwitch("password-store", ${JSON.stringify(passwordStore ?? "gnome-libsecret")});\nrequire(${JSON.stringify(resolve("dist/main.cjs"))});\n`, {mode: 0o600});
+      args = [...args.slice(0, -1), entry];
+    }
+    this.app = ownFixture(await electron.launch({args, env: {...options.env, FOLIO_CREDENTIAL_DIR: this.vaultDirectory, ...extra}}));
     this.sequence++;
     await this.app.context().tracing.start({screenshots: true, snapshots: true, sources: true});
     this.window = await this.app.firstWindow();

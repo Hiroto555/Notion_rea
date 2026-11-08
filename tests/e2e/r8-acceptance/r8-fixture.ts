@@ -317,10 +317,11 @@ export async function openBackupSurface(window: Page) {
     .click();
 }
 
-/** Reopen the page menu only when the named W2 action is not already shown. */
+/** The modal may still be rendering the result of its real IPC operation. */
 export async function backupAction(window: Page, name: string) {
   const action = window.getByRole("button", { name, exact: true });
-  if ((await action.filter({ visible: true }).count()) === 0)
+  const dialog = window.getByRole("dialog", {name: "バックアップと復元", exact: true});
+  if (!(await dialog.isVisible()))
     await openBackupSurface(window);
   await expect(action).toBeVisible();
   return action;

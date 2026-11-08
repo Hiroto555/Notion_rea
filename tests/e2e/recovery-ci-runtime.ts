@@ -4,13 +4,20 @@ import {
   type ElectronApplication,
 } from "@playwright/test";
 import { writeFileSync } from "node:fs";
+import type { ChildProcess } from "node:child_process";
 import { fixtureElectronOptions } from "./fixture-isolation";
 
 let serial = 0;
 const evidence = new WeakMap<ElectronApplication, () => Promise<void>>();
+const children = new WeakMap<ElectronApplication, ChildProcess>();
+
+export function ownFixture(app: ElectronApplication) {
+  children.set(app, app.process());
+  return app;
+}
 
 export async function launchFixture(directory: string) {
-  const app = await electron.launch(fixtureElectronOptions(directory));
+  const app = ownFixture(await electron.launch(fixtureElectronOptions(directory)));
   if (process.env.FOLIO_LINUX_GUI_CI !== "1") return app;
   const info = test.info(),
     name = `electron-${++serial}`;
@@ -89,8 +96,10 @@ export async function captureFixture(app?: ElectronApplication) {
 
 export async function killFixture(app?: ElectronApplication) {
   if (!app) return;
+  // Playwright disposes its application handle when the final window closes.
+  // Keep ownership of the original child across that disposal.
+  const child = children.get(app) ?? app.process();
   await captureFixture(app);
-  const child = app.process();
   if (child.exitCode === null && child.signalCode === null)
     await new Promise<void>((done, reject) => {
       child.once("exit", () => done());

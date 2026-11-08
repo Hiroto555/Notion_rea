@@ -7,6 +7,53 @@ import {
 import { compareConflictPages } from "./conflict-page-comparison";
 import { compareConflictRecords } from "./conflict-record-comparison";
 
+/** A refresh is only needed when the conflict identity itself changes. Keeping
+ * this as a primitive avoids re-querying on unrelated parent renders. */
+export function conflictDecisionRefreshKey(
+  conflict: WorkspaceConflictInspection | null,
+): string | null {
+  if (!conflict) return null;
+  return [
+    conflict.operationId,
+    conflict.local.checkpointHash,
+    conflict.remote.revision,
+    conflict.remote.checkpointHash ?? "",
+    conflict.status.generation,
+  ].join("\u0000");
+}
+
+/** Serializes status refreshes so an older reply cannot land after a newer one.
+ * A request made while another is in flight collapses into one follow-up. */
+export function createRefreshCoordinator(refresh: () => Promise<void>) {
+  let inFlight = false;
+  let queued = false;
+  let disposed = false;
+  const request = () => {
+    if (disposed) return;
+    if (inFlight) {
+      queued = true;
+      return;
+    }
+    inFlight = true;
+    void refresh()
+      .catch(() => {})
+      .finally(() => {
+        inFlight = false;
+        if (!disposed && queued) {
+          queued = false;
+          request();
+        }
+      });
+  };
+  return {
+    request,
+    dispose: () => {
+      disposed = true;
+      queued = false;
+    },
+  };
+}
+
 export function WorkspaceConflictDecisionControls({
   conflict,
   inputReady,
@@ -28,14 +75,25 @@ export function WorkspaceConflictDecisionControls({
         setState,
       ),
   );
+  const refresher = useRef<ReturnType<typeof createRefreshCoordinator> | null>(
+    null,
+  );
   useEffect(() => {
-    void model.refresh();
-    const timer = window.setInterval(() => void model.refresh(), 10_000);
+    const coordinator = createRefreshCoordinator(() => model.refresh());
+    refresher.current = coordinator;
+    coordinator.request();
+    const timer = window.setInterval(() => coordinator.request(), 10_000);
     return () => {
+      refresher.current = null;
+      coordinator.dispose();
       window.clearInterval(timer);
       model.invalidate();
     };
   }, [model]);
+  const conflictKey = conflictDecisionRefreshKey(conflict);
+  useEffect(() => {
+    if (conflictKey !== null) refresher.current?.request();
+  }, [conflictKey]);
   useEffect(() => {
     if (state.preview) reviewRegion.current?.focus();
   }, [state.preview?.id]);
@@ -130,7 +188,7 @@ export function WorkspaceConflictDecisionControls({
         <button
           type="button"
           disabled={state.busy}
-          onClick={() => void model.refresh()}
+          onClick={() => refresher.current?.request()}
         >
           選択状態を確認
         </button>

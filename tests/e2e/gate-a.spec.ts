@@ -81,7 +81,7 @@ test.afterEach(async ({}, info) => {
       } catch {}
     }
     try { await app.evaluate(() => (globalThis as any).releaseLoad?.()); } catch {}
-    try {
+    if (process.env.FOLIO_LINUX_GUI_CI !== "1") try {
       await app.evaluate(({ BrowserWindow }) => {
         for (const w of BrowserWindow.getAllWindows()) w.destroy();
       });

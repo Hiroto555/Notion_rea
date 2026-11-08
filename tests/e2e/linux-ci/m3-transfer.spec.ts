@@ -196,10 +196,10 @@ test("actual journal bytes and old scope survive preview and cancel unchanged", 
     const record = seedRecord(fixture, "asset-preview", "row-bytes", 20);
     const id = entryId(fixture, record);
     const part = join(fixture.path, record.partialName);
+    fixture.journal.close();
     const beforeFiles = readdirSync(fixture.path).sort();
     const beforeStat = lstatSync(part);
     const beforeBytes = readFileSync(part);
-    fixture.journal.close();
 
     await session.start();
     const dialog = await session.openSettings();

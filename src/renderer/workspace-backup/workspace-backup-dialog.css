@@ -2,6 +2,7 @@
   box-sizing: border-box;
   width: min(680px, calc(100vw - 48px));
   max-height: calc(100vh - 48px);
+  margin: auto;
   padding: 24px;
   overflow: auto;
 }

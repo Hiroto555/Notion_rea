@@ -12,7 +12,7 @@ import {
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { DatabaseSync } from "node:sqlite";
-import { afterEach, expect, it } from "vitest";
+import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { runStartupWorkspaceSyncDetailed } from "../src/main/workspace-sync-startup";
 import { attachFile } from "../src/persistence/assets";
 import { commitDatabaseOperation } from "../src/persistence/database-operations";
@@ -61,7 +61,19 @@ const roots: string[] = [];
 const stores: Store[] = [];
 const servers: RunningServer[] = [];
 
+beforeEach(() => {
+  const request = globalThis.fetch;
+  // Server/process restarts must not reuse Undici's pooled socket from the
+  // previous server at the same address. Keep real HTTP, without retries.
+  vi.spyOn(globalThis, "fetch").mockImplementation((input, init) => {
+    const headers = new Headers(init?.headers);
+    headers.set("Connection", "close");
+    return request(input, {...init, headers});
+  });
+});
+
 afterEach(async () => {
+  vi.restoreAllMocks();
   for (const server of servers.splice(0)) {
     try {
       await server.close();
