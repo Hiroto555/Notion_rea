@@ -1,6 +1,8 @@
-# Lv4 実装状況（M1非GUI完了・停止）
+# Lv4 実装状況（M2第1区切り）
 
-> **Linux GUI追加受入**：GitHub Actionsの仮想画面で69/69件PASS（retry/skip/flaky 0）。[全範囲](GUI-LINUX-CI.ja.md)、[保存・復旧24件の追加受入](GUI-RECOVERY-CI.ja.md)、[ページツリー3件の証拠](GUI-PAGE-TREE-CI.ja.md)を参照。非GUIは182ファイル/1,681件・型検査・build PASS。このMacのGUIは起動せず、製品srcはM1と同一。Mac/OS固有・実機2台・残りの未移植GUIはNOT_RUN、Lv3維持、A3未着手。以下のM1完了当時のGUI未実施記録と区別する。
+> **2026-11-08 M2第1区切り**：利用者の「できるだけ進めて」を受け、A3の添付転送再開・保持上限・検証付きcache回復・確定適用後の限定的なstaging解放を追加した。Flashの実装/独立試験をCodexが統合し、Devin CLIのOpus 5.5へ方針・契約・差分を相談した。[現在地・終了条件・残件](M2-CHECKPOINT-1.ja.md)、[使用量](M2-USAGE.ja.md)を最初に読む。コード候補`522589d`は型検査・191ファイル/1,760テスト・build PASS。[ログ](validation/m2-checkpoint-1-quiet.txt)。A3全体/A4〜A7/M2は未完、Lv3維持。今回srcのGUI/実機受入はNOT_RUN。master・実データは変更していない。
+
+> **M2追加前のLinux GUI受入**：GitHub Actionsの仮想画面で69/69件PASS（retry/skip/flaky 0）。[全範囲](GUI-LINUX-CI.ja.md)、[保存・復旧24件の追加受入](GUI-RECOVERY-CI.ja.md)、[ページツリー3件の証拠](GUI-PAGE-TREE-CI.ja.md)を参照。非GUIは182ファイル/1,681件・型検査・build PASS。このMacのGUIは起動せず、製品srcはM1と同一。Mac/OS固有・実機2台・残りの未移植GUIはNOT_RUN、Lv3維持、A3未着手。これは`3aac7e9`までの証拠であり、今回変更したsrcへの合格には流用しない。以下のM1完了当時のGUI未実施記録とも区別する。
 
 > **2026-11-08 M1完了**：利用者の明示指示でA0〜A2を実施し、A3へ進まず停止した。通常予約をUUID/CASのSQLite journalへ移し、保全archiveの一覧・JSON/添付付き書出し・新規v4 DBへのコピー復元を接続した。結果不明とIPC応答喪失は同じ操作IDで照会するまで新効果を止める。最終候補`d509edf`は型検査・**180ファイル／1,673テスト**・build PASS、Sol XHigh最終レビューで未解決P0/P1なし。[M1完了記録](M1-COMPLETION.ja.md)、[手順書](m1/RECOVERY-RUNBOOK.ja.md)、[最終ログ](validation/m1-quiet.txt)を参照。
 

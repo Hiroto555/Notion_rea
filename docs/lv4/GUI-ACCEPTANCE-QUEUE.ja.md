@@ -1,10 +1,19 @@
 # Lv4 GUI・実機の受入待ち
 
+> **M2第1区切り追加後**：[添付再開・保持・限定解放](M2-CHECKPOINT-1.ja.md)のsrc変更は非GUI検証のみ。以下のLinux69件は`3aac7e9`までの証拠。今回候補のLinux GUI再受入、Mac/OS、物理2台はいずれも **NOT_RUN**。
+
 > **実行先の分離（2026-11-08）**：GitHub Actions＋Linux仮想画面の69件がPASSした（実Electron/実IPC41件、代替応答のElectron表示2件、Chromium表示26件）。[ページツリー3件](GUI-PAGE-TREE-CI.ja.md)と[保存・復旧24件](GUI-RECOVERY-CI.ja.md)を追加受入した。[CI対象と結果](GUI-LINUX-CI.ja.md)を最新の実行記録とする。[Mac/OS固有](GUI-MAC-ACCEPTANCE.ja.md)は別枠でNOT_RUN。このMacではGUIを起動しない。以下は従来の待ち項目であり、Linuxの確認範囲とMacの未確認範囲を混同しない。
 
-M1は非GUIで完了しA3前で停止した。[候補・証拠](M1-COMPLETION.ja.md)を参照。以下の実行許可や合格を得た意味ではない。
+M1は当時、非GUIで完了しA3前で停止した。その後の指示で上記M2第1区切りへ進んだ。[候補・証拠](M1-COMPLETION.ja.md)を参照。以下の実行許可や合格を得た意味ではない。
 
 Mac・実機の状態: **NOT_RUN**。この候補をLv4完成として扱わない。GUIは利用者の明示指示後、今回の候補をビルドし、専用の一時 `FOLIO_DATA_DIR` で `npm run test:e2e:batch` を入口に実施する。実機2台と実トンネルは別の受入として記録する。
+
+## M2第1区切りで追加した受入待ち
+
+- 転送中断→アプリ再起動→送受信再開と、適用前のhash照合を実Electron/IPCと隔離データで確認する。
+- 容量/所有異常時に保全停止し、raw errorや秘密を表示しないこと。現状は固定codeの表示で、診断・明示解放UIは未追加。
+- 共有添付の複数受信revisionを終了/起動にまたいで適用し、cleanup後も後続が正常に進むこと。
+- 実機2台・トンネル・スリープ・回線切替はLinux仮想画面と別枠。Macでの実行は新たな明示指示まで開始しない。
 
 ## M1で追加した導線のGUI受入待ち
 

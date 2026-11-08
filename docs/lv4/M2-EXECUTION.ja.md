@@ -32,3 +32,9 @@ Flashの初回read-only調査2本はpermission path不一致で未読。relative
 Opusの助言は親が実コードと照合して採否を判断する。既に存在するworkspace分離/fsyncを不足とする指摘は採用しない。上限超過時に従来の無記録転送へ戻す提案も採用しない。新たなGUI実行や削除承認が必要という一般的な提案を、利用者の実装範囲へ勝手に適用しない。
 
 各workerへは担当ファイル・小さい契約・対象試験コマンドだけを渡す。全履歴・共通長文の重複送信、同じ機能の重複実装、workerごとの全suite実行を避ける。最大4本、対象Vitest maxWorkers=1、個別cache。追加課金・利用枠・グローバル設定は変更しない。usageは取得できたproviderフィールドを別々に集計し、課金や総量の断定に使わない。
+
+## 第1区切りの結果
+
+[現在地・終了条件・残り](M2-CHECKPOINT-1.ja.md)、[Opusレビューの採否](reviews/OPUS-M2-CHECKPOINT-1.ja.md)、[実行数/使用量](M2-USAGE.ja.md)、[統合quietログ](validation/m2-checkpoint-1-quiet.txt)へ集約した。上のJ1/J2分担は初期割当であり、実際にはCodexが実装し、Flash J5/J6が独立試験を担当した。Flash J3/J4/J7の製品部品とJ10の製品経路試験も受け入れた。
+
+最終コード候補 `522589d` は型検査・191ファイル/1,760テスト・build PASS。A3全体/M2は未完。次は保全停止から安全に戻す診断・明示解放の契約を優先する。A4/A5は実ソースの読取調査までで、製品実装は進めていない。GUI/Electron/実データ/master mergeは未実施。

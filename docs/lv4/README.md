@@ -1,11 +1,13 @@
 # Folio Lv4 の現在地
 
-2026-11-08 JST。**M1（A0〜A2）を完了し、ページツリーの実dragと保存・復旧24件を含むLinux仮想画面のGUI 69件も受入した。A3未着手、確認済みLevelはLv3。** [CIの範囲と結果](GUI-LINUX-CI.ja.md)、[保存・復旧の証拠](GUI-RECOVERY-CI.ja.md)を参照。Mac固有・実機2台・残りの未移植GUI suiteはNOT_RUN。Lv4全体は未完成。
+2026-11-08 JST。**M1完了・Linux GUI69件の受入後、M2第1区切りとしてA3の添付再開・保持上限・限定解放まで進めた。A3全体/M2/Lv4は未完、確認済みLevelはLv3。** [現在地・終了条件・次の担当カード](M2-CHECKPOINT-1.ja.md)、[外部モデルの使用量](M2-USAGE.ja.md)を最初に読む。コード候補`522589d`の型検査・191ファイル/1,760テスト・build PASS。今回srcのGUI/Mac/実機2台はNOT_RUN。以前のLinux69件は`3aac7e9`までの証拠。
 
 利用者のM1実行指示に従い、Codexが管理・統合、DeepSeekが最大4本で並列実装・独立試験、Sol XHighが安全性レビューを担当した。最終候補は`d509edf`、型検査・**180ファイル／1,673テスト**・build PASS、未解決P0/P1なし。[M1完了記録](M1-COMPLETION.ja.md)と[回収手順書](m1/RECOVERY-RUNBOOK.ja.md)を最初に読む。
 
 | 確認したいこと | 読む資料 |
 |---|---|
+| M2第1区切り・実装結果・残り・次の優先 | [M2第1区切り](M2-CHECKPOINT-1.ja.md) |
+| Flash/Opusの実行数・失敗を含む使用量 | [M2使用量](M2-USAGE.ja.md) |
 | M1の終了条件・実績・制約・停止地点 | [M1完了記録](M1-COMPLETION.ja.md) |
 | M1のGitHub保存・PRの依存・マージ判断 | [M1保存記録](M1-PUBLICATION.ja.md) |
 | 操作中のMacを使わないGUI試験 | [Linux GUI CI](GUI-LINUX-CI.ja.md) |
@@ -26,7 +28,7 @@
 | 並列実装の当初の会話案 | [並列実装案](PARALLEL-IMPLEMENTATION-PROPOSAL.ja.md) |
 | 保存範囲・検証・公開前検査 | [GitHub保存記録](PUBLICATION-CHECKPOINT.ja.md) |
 
-今の区切りは **M1：通常予約の安全性残件、保全一覧→JSON/添付付き書出し→新規v4 DBへのコピー復元を非GUIで受入したところ**。原本を変更せず、添付欠損や結果不明は保留する。旧sidecarの解除、同期保留markerの解除、A3以降には進んでいない。利用者の後続指示により`codex/folio-m1-20261108`を別Draft PRでGitHubへ保存する。masterへはマージしない。[保存方針](M1-PUBLICATION.ja.md)を参照。
+M1当時の区切りは **M1：通常予約の安全性残件、保全一覧→JSON/添付付き書出し→新規v4 DBへのコピー復元を非GUIで受入したところ**。原本を変更せず、添付欠損や結果不明は保留する。旧sidecarの解除と同期保留markerの解除は未対応。A3は上記M2第1区切りで着手済み。利用者の後続指示により`codex/folio-m1-20261108`を別Draft PRでGitHubへ保存する。masterへはマージしない。[保存方針](M1-PUBLICATION.ja.md)を参照。
 
 M1最終の `npm run verify:quiet` は、型検査・180ファイル／1,673テスト・ビルドの全3段階PASS。[M1実行ログ](validation/m1-quiet.txt)。以前のGitHub保存候補は166ファイル／1,509テストだった。[過去ログ](validation/publication-quiet.txt)。どちらも実画面・実終了イベント・IME・実端末同期の成功を意味しない。
 
