@@ -1,3 +1,4 @@
+import { sqliteHeader } from "./sqlite-header";
 import { DatabaseSync } from "node:sqlite";
 import { randomUUID } from "node:crypto";
 import {
@@ -74,6 +75,13 @@ export function assertConnectionState(connection: DatabaseSync): void {
   )
     throw new Error(
       "SQLite connection and transaction state APIs are required",
+    );
+}
+
+export function assertPrivateApplicationId(connection: DatabaseSync): void {
+  if (connection.prepare("PRAGMA application_id").get()?.application_id !== 0)
+    throw new Error(
+      "This workspace requires a newer Folio version. Foreign application id.",
     );
 }
 
@@ -175,11 +183,18 @@ export function inspectWritableStartup(
     );
   assertSafeSource(main, sidecars);
   if (!main) return { version: 0, additionalBytes: 0 };
+  const header = sqliteHeader(databasePath);
+  if (
+    header &&
+    (header.version > supportedVersion || header.applicationId !== 0)
+  )
+    throw new Error("This workspace requires a newer Folio version.");
 
   const connection = new DatabaseSync(databasePath, { readOnly: true });
   let plan: WritableStartupPlan;
   try {
     connection.exec("PRAGMA query_only=ON; PRAGMA busy_timeout=5000");
+    assertPrivateApplicationId(connection);
     const version = readUserVersion(connection);
     if (version > supportedVersion)
       throw new Error("This workspace requires a newer Folio version.");
@@ -220,10 +235,20 @@ export function openReadOnlyStore(
   databasePath: string,
   supportedVersion: number,
 ): DatabaseSync {
-  assertSafeSource(lstatOptional(databasePath), DATABASE_SIDECARS.map(suffix => lstatOptional(databasePath + suffix)));
+  assertSafeSource(
+    lstatOptional(databasePath),
+    DATABASE_SIDECARS.map((suffix) => lstatOptional(databasePath + suffix)),
+  );
+  const header = sqliteHeader(databasePath);
+  if (
+    header &&
+    (header.version > supportedVersion || header.applicationId !== 0)
+  )
+    throw new Error("This workspace requires a newer Folio version.");
   const connection = new DatabaseSync(databasePath, { readOnly: true });
   try {
     connection.exec("PRAGMA query_only=ON; PRAGMA busy_timeout=5000");
+    assertPrivateApplicationId(connection);
     const version = readUserVersion(connection);
     if (version > supportedVersion)
       throw new Error("This workspace requires a newer Folio version.");

@@ -1,0 +1,98 @@
+{
+  "initialPacketCount": 24,
+  "checkedSourceCopies": 6072,
+  "sourceMismatches": [],
+  "writeOwnershipViolations": [
+    {
+      "id": "pilot-client-tests",
+      "path": "text-authority.mjs",
+      "tool": "write"
+    },
+    {
+      "id": "pilot-client-tests",
+      "path": "text-authority.mjs",
+      "tool": "edit"
+    },
+    {
+      "id": "pilot-client-tests",
+      "path": "text-authority.mjs",
+      "tool": "edit"
+    },
+    {
+      "id": "pilot-client-tests",
+      "path": "text-authority.mjs",
+      "tool": "edit"
+    },
+    {
+      "id": "pilot-client-tests",
+      "path": "text-authority.mjs",
+      "tool": "edit"
+    },
+    {
+      "id": "pilot-client-tests",
+      "path": "text-authority.mjs",
+      "tool": "edit"
+    },
+    {
+      "id": "pilot-client-tests",
+      "path": "text-authority.mjs",
+      "tool": "edit"
+    },
+    {
+      "id": "pilot-client-tests",
+      "path": "text-client.mjs",
+      "tool": "write"
+    },
+    {
+      "id": "pilot-client-tests",
+      "path": "tests/text-pilot.test.mjs",
+      "tool": "write"
+    },
+    {
+      "id": "pilot-client-tests",
+      "path": "tests/text-pilot.test.mjs",
+      "tool": "edit"
+    },
+    {
+      "id": "pilot-client-tests",
+      "path": "tests/text-pilot.test.mjs",
+      "tool": "edit"
+    },
+    {
+      "id": "pilot-client-tests",
+      "path": "tests/text-pilot.test.mjs",
+      "tool": "edit"
+    },
+    {
+      "id": "pilot-client-tests",
+      "path": "tests/text-pilot.test.mjs",
+      "tool": "edit"
+    },
+    {
+      "id": "pilot-client-tests",
+      "path": "tests/text-pilot.test.mjs",
+      "tool": "edit"
+    },
+    {
+      "id": "pilot-client-tests",
+      "path": "tests/text-pilot.test.mjs",
+      "tool": "edit"
+    },
+    {
+      "id": "pilot-client-tests",
+      "path": "tests/text-pilot.test.mjs",
+      "tool": "edit"
+    },
+    {
+      "id": "pilot-client-tests",
+      "path": "tests/text-pilot.test.mjs",
+      "tool": "edit"
+    },
+    {
+      "id": "pilot-client-tests",
+      "path": "text-authority.mjs",
+      "tool": "edit"
+    }
+  ],
+  "scope": "original source helpers and logged successful write/edit operations; not a universal OS sandbox proof"
+}

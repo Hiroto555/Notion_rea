@@ -1,0 +1,23 @@
+{
+  "scope": "C_TEXT_ONLY_MAIN_PREPARATION_CONNECTION",
+  "authentication": "TRUSTED_HARNESS_ONLY",
+  "gui": "NOT_RUN",
+  "concurrent": true,
+  "ownUndo": true,
+  "ownRedo": true,
+  "ackLoss": {
+    "unknown": true,
+    "receiptFirstNoDuplicate": true,
+    "version": 1
+  },
+  "serverVersion": 4,
+  "mainRawRecords": 8,
+  "localIntentRecords": 4,
+  "durability": {
+    "authority": "SQLITE_LOG_HEAD_RECEIPT_ATOMIC",
+    "mainRaw": "LOCAL_DURABLE",
+    "clientReceiptMapping": "NOT_IMPLEMENTED",
+    "automaticClientRestart": "NOT_IMPLEMENTED"
+  },
+  "productionActivation": false
+}

@@ -1,0 +1,323 @@
+{
+  "scope": "ACTUAL_SCHEMA_RESTRICTED_COMPARISON",
+  "mechanism": "B=ySync/yUndo; C=collab/history; same richStructureGuard; no random ID repair",
+  "schema": {
+    "nodes": [
+      "paragraph",
+      "callout",
+      "table",
+      "tableRow",
+      "tableCell",
+      "tableHeader",
+      "bulletList",
+      "codeBlock",
+      "doc",
+      "hardBreak",
+      "horizontalRule",
+      "listItem",
+      "orderedList",
+      "text",
+      "heading",
+      "taskList",
+      "taskItem",
+      "blockquote",
+      "details",
+      "detailsContent",
+      "detailsSummary",
+      "image"
+    ],
+    "marks": [
+      "link",
+      "bold",
+      "code",
+      "italic",
+      "strike",
+      "underline"
+    ]
+  },
+  "schedule": "fixed seed Y client1; replicas1000+i; C client1+i; local0,local1 before bounded sync in index order",
+  "B": {
+    "ordinary": [
+      {
+        "clients": 2,
+        "converged": true,
+        "valid": true,
+        "preserved": true
+      },
+      {
+        "clients": 5,
+        "converged": true,
+        "valid": true,
+        "preserved": true
+      }
+    ],
+    "move": {
+      "converged": true,
+      "preserved": false,
+      "p1": [
+        "abc",
+        "abc"
+      ],
+      "p2": [
+        "KEEPxyz",
+        "KEEPxyz"
+      ],
+      "diagnostics": {
+        "engine": "B",
+        "runtime": "y-prosemirror",
+        "dom": "jsdom",
+        "gui": "none",
+        "hiddenGui": false,
+        "nativeGui": false,
+        "browser": false,
+        "closed": false,
+        "clients": 2,
+        "replicas": 2,
+        "globalsBound": [
+          "window",
+          "document",
+          "navigator",
+          "location",
+          "history",
+          "Node",
+          "Element",
+          "HTMLElement",
+          "HTMLDivElement",
+          "HTMLDocument",
+          "Text",
+          "Comment",
+          "Document",
+          "DocumentFragment",
+          "ShadowRoot",
+          "Attr",
+          "Range",
+          "Selection",
+          "DOMRect",
+          "DOMRectReadOnly",
+          "DOMParser",
+          "XMLSerializer",
+          "MutationObserver",
+          "getSelection",
+          "getComputedStyle",
+          "Event",
+          "UIEvent",
+          "CustomEvent",
+          "KeyboardEvent",
+          "MouseEvent",
+          "InputEvent",
+          "CompositionEvent",
+          "FocusEvent",
+          "WheelEvent",
+          "NodeFilter",
+          "NodeList",
+          "HTMLCollection"
+        ],
+        "globalBindingCount": 37,
+        "sync": {
+          "calls": 1,
+          "rounds": 2,
+          "updates": 4,
+          "cap": 64,
+          "converged": true
+        },
+        "syncCap": 64,
+        "undoManager": "yUndoPlugin",
+        "blockIdentityRepair": false,
+        "volatile": true,
+        "schemaVersions": [
+          1,
+          1
+        ],
+        "cleanupErrors": []
+      }
+    },
+    "table": {
+      "converged": false,
+      "valid": [
+        true,
+        true
+      ],
+      "diagnostics": {
+        "engine": "B",
+        "runtime": "y-prosemirror",
+        "dom": "jsdom",
+        "gui": "none",
+        "hiddenGui": false,
+        "nativeGui": false,
+        "browser": false,
+        "closed": false,
+        "clients": 2,
+        "replicas": 2,
+        "globalsBound": [
+          "window",
+          "document",
+          "navigator",
+          "location",
+          "history",
+          "Node",
+          "Element",
+          "HTMLElement",
+          "HTMLDivElement",
+          "HTMLDocument",
+          "Text",
+          "Comment",
+          "Document",
+          "DocumentFragment",
+          "ShadowRoot",
+          "Attr",
+          "Range",
+          "Selection",
+          "DOMRect",
+          "DOMRectReadOnly",
+          "DOMParser",
+          "XMLSerializer",
+          "MutationObserver",
+          "getSelection",
+          "getComputedStyle",
+          "Event",
+          "UIEvent",
+          "CustomEvent",
+          "KeyboardEvent",
+          "MouseEvent",
+          "InputEvent",
+          "CompositionEvent",
+          "FocusEvent",
+          "WheelEvent",
+          "NodeFilter",
+          "NodeList",
+          "HTMLCollection"
+        ],
+        "globalBindingCount": 37,
+        "sync": {
+          "calls": 1,
+          "rounds": 2,
+          "updates": 4,
+          "cap": 64,
+          "converged": false
+        },
+        "syncCap": 64,
+        "undoManager": "yUndoPlugin",
+        "blockIdentityRepair": false,
+        "volatile": true,
+        "schemaVersions": [
+          2,
+          2
+        ],
+        "cleanupErrors": []
+      }
+    }
+  },
+  "C": {
+    "ordinary": [
+      {
+        "clients": 2,
+        "converged": true,
+        "valid": true,
+        "preserved": true
+      },
+      {
+        "clients": 5,
+        "converged": true,
+        "valid": true,
+        "preserved": true
+      }
+    ],
+    "move": {
+      "converged": true,
+      "preserved": false,
+      "p1": [
+        "abc",
+        "abc"
+      ],
+      "p2": [
+        "xyz",
+        "xyz"
+      ],
+      "diagnostics": {
+        "engine": "C",
+        "mechanism": "prosemirror-collab+history",
+        "clients": 2,
+        "clientIDs": [
+          1,
+          2
+        ],
+        "syncCalls": 1,
+        "syncRounds": 2,
+        "acceptedSteps": 2,
+        "serverVersion": 2,
+        "serverStepCount": 2,
+        "rejections": [],
+        "truncated": false,
+        "closed": false,
+        "converged": true,
+        "pending": [
+          {
+            "index": 0,
+            "version": 2,
+            "steps": 0
+          },
+          {
+            "index": 1,
+            "version": 2,
+            "steps": 0
+          }
+        ]
+      }
+    },
+    "table": {
+      "converged": false,
+      "valid": [
+        true,
+        true
+      ],
+      "diagnostics": {
+        "engine": "C",
+        "mechanism": "prosemirror-collab+history",
+        "clients": 2,
+        "clientIDs": [
+          1,
+          2
+        ],
+        "syncCalls": 1,
+        "syncRounds": 10000,
+        "acceptedSteps": 1,
+        "serverVersion": 1,
+        "serverStepCount": 1,
+        "rejections": [],
+        "truncated": true,
+        "closed": false,
+        "converged": false,
+        "pending": [
+          {
+            "index": 0,
+            "version": 1,
+            "steps": 0
+          },
+          {
+            "index": 1,
+            "version": 0,
+            "steps": 2
+          }
+        ]
+      }
+    }
+  },
+  "decision": {
+    "fullAdoption": "NO_GO",
+    "reason": [
+      "R02 move intent not retained",
+      "R03 row-column merge does not converge with actual guard"
+    ],
+    "limitedPilot": "C_TEXT_ONLY_SELECTED_RESTRICTED"
+  },
+  "notRun": [
+    "GUI",
+    "native IME",
+    "native clipboard",
+    "physical multi-Mac",
+    "production auth",
+    "production network",
+    "compaction",
+    "power-loss durability"
+  ]
+}

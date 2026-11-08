@@ -1,0 +1,153 @@
+{
+  "scope": "parent integration review plus scoped DeepSeek reviews; not full Lv5 acceptance",
+  "decisions": {
+    "fullEngineAdoption": "NO_GO",
+    "restrictedPilot": "C_TEXT_ONLY",
+    "productActivation": false
+  },
+  "fixedFindings": [
+    {
+      "source": "review-schema",
+      "finding": "prototype-named attrs were treated as declared",
+      "fix": "Object.hasOwn in owning validator",
+      "evidence": "identity.test.mjs direct validDocument regression"
+    },
+    {
+      "source": "review-new-store",
+      "finding": "stageable escaped raw exceeded decoder bound",
+      "fix": "consistent byte bound derived from maximum raw escape expansion",
+      "evidence": "2M-character escaped raw survives reopen"
+    },
+    {
+      "source": "review-new-store",
+      "finding": "dangling main link and unsafe/orphan sidecars",
+      "fix": "lstat safety and exclusive new-file creation",
+      "evidence": "main/sidecar/orphan refusal before creation"
+    },
+    {
+      "source": "review-new-port",
+      "finding": "nested projection cleared suppression and regressed sequence",
+      "fix": "reentrant projection refusal and explicit REMOTE origin for deferred callbacks",
+      "evidence": "reentrant/async regression tests"
+    },
+    {
+      "source": "review-new-port",
+      "finding": "durable raw unreadable after transient session change; service rearmed after close",
+      "fix": "stable owner/scope read/list and terminal close",
+      "evidence": "reconnect list/read and closed bind tests"
+    },
+    {
+      "source": "review-new-input",
+      "finding": "empty containers and explicit schemaVersion2 falsely rejected",
+      "fix": "semantic empty-container handling and authored metadata retention",
+      "evidence": "main input and both-engine seed tests"
+    },
+    {
+      "source": "parent + review-new-tests",
+      "finding": "read-only SQLite created sidecars on foreign header rejection",
+      "fix": "coarse raw header rejection before SQLite open",
+      "evidence": "entire directory unchanged regression"
+    },
+    {
+      "source": "review-header-final",
+      "finding": "WAL-only foreign application id bypassed main header check",
+      "fix": "WAL-aware application_id check in preflight/read-only/writable Store",
+      "evidence": "live WAL-only appid rejection before beforeOpen, unchanged WAL/catalog"
+    },
+    {
+      "source": "parent",
+      "finding": "comparison build borrowed prosemirror-collab from ancestor directory",
+      "fix": "explicit local collab resolver and owning-directory/single-implementation build assertions",
+      "evidence": "runtime-modules.json"
+    },
+    {
+      "source": "parent",
+      "finding": "missing operation receipt could leave apparently valid step log",
+      "fix": "receipt coverage of every sequence, read transactions",
+      "evidence": "deleted receipt rejected as corruption"
+    },
+    {
+      "source": "review-text-authority-final",
+      "finding": "unknown fields in stored receipts passed validation",
+      "fix": "exact receipt keys and canonical stored representation",
+      "evidence": "canonical extra-field receipt corruption regression"
+    }
+  ],
+  "retainedLimitations": [
+    "R02/R03 direct structural merge failures block full adoption",
+    "text pilot LOCAL_INTENT is retained history/quarantine, distinct from exact wire attempt; no automatic replay or durable intent/receipt mapping",
+    "missing/uncertain receipt blocks; definite rejection recovery not implemented",
+    "full auth/role/revocation/restore/compaction/provider/GUI/physical-Mac acceptance are not certified",
+    "exclusive owner of temporary store directory is assumed; hostile same-UID path swapping is not proven safe"
+  ],
+  "workerAdoption": {
+    "adoptedAndIntegrated": [
+      "B/C comparison adapters with parent fixes",
+      "full-schema fixture",
+      "concurrency/move/table/undo/identity tests with parent fixes",
+      "authority tests with corrected PM API and epoch contract"
+    ],
+    "notAdopted": [
+      "raw-parser alternative duplicate implementation",
+      "pilot-authority worker implementation (parent kept reviewed smaller implementation)",
+      "pilot-client implementation (state method shadowing, undo API and receipt contract issues)",
+      "pilot-client-tests packet (out-of-ownership implementations and wrong test path)"
+    ],
+    "note": "CLI exit0 or a test/probe PASS does not establish acceptance; failed/timed-out packets never certify code"
+  },
+  "finalDeepSeekPrototypeReviews": {
+    "review-text-authority-final": {
+      "state": "finished",
+      "timedOut": false,
+      "reportDelivered": true,
+      "reportSha256": "fc0ca88e665b43f9616b6a997f430b8aaa806abb000f39736f543a5a30ca4163"
+    },
+    "review-text-client-final": {
+      "state": "finished",
+      "timedOut": true,
+      "reportDelivered": false,
+      "reportSha256": null
+    }
+  },
+  "rejectedReviewClaims": [
+    {
+      "source": "review-text-authority-final",
+      "claim": "IDs must use the earlier lab 80-character pattern",
+      "reason": "owning src/collaboration/contract.ts uses ASCII letters/digits/underscore/hyphen, length1..128; pilot matches the main contract, not old lab isId"
+    },
+    {
+      "source": "review-text-authority-final",
+      "claim": "empty slice content crashes PM",
+      "reason": "actual installed PM Fragment.fromJSON accepts absent content; runtime probes and regression cover all3 empty forms"
+    },
+    {
+      "source": "review-text-authority-final",
+      "claim": "over2MiB document is admitted",
+      "reason": "real document helper calls inspectSharedDocument whose raw parser caps2000000 UTF8 bytes; a2100000-character seed is refused in an executable regression"
+    }
+  ],
+  "reviewLimits": [
+    "final general-boundary and client-specific DeepSeek review attempts timed out; no independent all-clear is claimed",
+    "parent completed integration review and all final non-GUI checks; full adoption remains NO_GO"
+  ],
+  "localFinalReview": {
+    "reviewedAt": "2026-11-08T16:41:49.920758+00:00",
+    "reviewer": "Codex parent review",
+    "result": "NO_BLOCKING_FINDINGS_WITHIN_RESTRICTED_SCOPE",
+    "codeChangesSinceImplementation": false,
+    "documentationChanges": [
+      "replace mixed v1/v2 text-pilot dispatch wording with the final v2 API and exact byte limits",
+      "clarify comparison root metadata retention",
+      "add both measured report commands and final review provenance"
+    ],
+    "freshChecks": {
+      "rootRelatedTests": 55,
+      "comparisonAndPilotTests": 48,
+      "typecheck": "PASS",
+      "build": "PASS",
+      "measuredReports": "PASS"
+    },
+    "fullAdoption": "NO_GO",
+    "independentReviewTimeoutsRemainDisclosed": true
+  }
+}

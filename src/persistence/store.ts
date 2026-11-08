@@ -32,6 +32,7 @@ import { validateRecordStoreVersion } from "./record-version";
 import { pageSearchBody, registerWorkspaceWriteGuard } from "../sync/workspace-checkpoint";
 import {
   assertConnectionState,
+  assertPrivateApplicationId,
   inspectWritableStartup,
   openReadOnlyStore,
   publishSchemaSnapshot,
@@ -94,6 +95,7 @@ export class Store {
     this.connection = new DatabaseSync(path);
     try {
       assertConnectionState(this.connection);
+      assertPrivateApplicationId(this.connection);
       const originalVersion = readUserVersion(this.connection);
       if (originalVersion > STORE_VERSION)
         throw new Error("This workspace requires a newer Folio version.");
