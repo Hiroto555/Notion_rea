@@ -62,6 +62,10 @@ function syncFile(path: string) {
   try {const stat = fstatSync(fd); requireCondition(stat.isFile() && stat.nlink === 1, "server-full-invalid", 422); fsyncSync(fd);}
   finally {closeSync(fd);}
 }
+function syncAssetDirectories(destination: string, assets: readonly {path: string}[]) {
+  for (const directory of new Set(assets.map(asset => dirname(join(destination, asset.path))))) syncPath(directory);
+  syncPath(join(destination, "blobs")); syncPath(destination);
+}
 function normalize(error: unknown): never {
   if (error instanceof SyncError) throw error;
   if ((error as NodeJS.ErrnoException)?.code === "ENOSPC" || /disk is full/.test(String((error as Error)?.message)))
@@ -82,6 +86,7 @@ export function createServerFullBackup(options: {sourceDirectory: string; destin
     for (const suffix of ["-wal", "-shm", "-journal"]) {
       const stat = optional(databasePath + suffix);
       requireCondition(!stat || (stat.isFile() && !stat.isSymbolicLink() && stat.nlink === 1 && stat.uid === source.uid && stat.size <= MAX_DB), "server-full-invalid", 422);
+      requireCondition(suffix !== "-journal" || !stat || stat.size === 0, "server-recovery-required", 409);
     }
     database = new DatabaseSync(databasePath, {readOnly: true});
     const before = inspectServerHistory(database);
@@ -109,6 +114,7 @@ export function createServerFullBackup(options: {sourceDirectory: string; destin
       copyVerifiedServerFile(join(source.path, relativePath), join(destination, relativePath), asset);
       assets.push({...asset, path: relativePath});
     }
+    syncAssetDirectories(destination, assets);
     requireCondition(canonicalJson(inspectServerHistory(database), 8 * 1024 * 1024) === canonicalJson(before, 8 * 1024 * 1024), "server-full-changed", 409);
     const {serverEpoch, workspaces, changes, operations, devices, activeDevices, revokedDevices} = inventory;
     const manifest: ServerFullBackupManifest = {format: "folio-server-full/v1", createdAt: new Date().toISOString(), serverEpoch,
@@ -144,6 +150,7 @@ export function restoreServerFullBackup(options: {backupDirectory: string; desti
       mkdirSync(dirname(join(destination, asset.path)), {recursive: true, mode: 0o700});
       copyVerifiedServerFile(join(source.path, asset.path), join(destination, asset.path), asset);
     }
+    syncAssetDirectories(destination, manifest.assets);
     guard = new SyncSqliteGuard(new DatabaseSync(databasePath));
     guard.db.exec("PRAGMA trusted_schema=OFF; PRAGMA journal_mode=DELETE; PRAGMA synchronous=FULL;");
     let serverEpoch = randomUUID(); while (serverEpoch === manifest.serverEpoch) serverEpoch = randomUUID();

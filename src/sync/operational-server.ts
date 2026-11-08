@@ -1,4 +1,4 @@
-import { randomBytes } from "node:crypto";
+import { randomBytes, createHash } from "node:crypto";
 import { constants, closeSync, fsyncSync, lstatSync, mkdirSync, openSync, realpathSync, unlinkSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { DatabaseSync } from "node:sqlite";
@@ -17,17 +17,30 @@ import { inspectServerBlobRetention } from "./server-blob-retention";
 import { syncPath, writeNewFileDurably } from "../persistence/durable-file";
 
 function optional(path: string) {try {return lstatSync(path);} catch (e) {if ((e as NodeJS.ErrnoException).code === "ENOENT") return null; throw e;}}
-function existing(directory: string) {
+function existing(directory: string, recover = false) {
   const root = pinPrivateRoot(directory);
   requireCondition(!optional(join(root.path, SERVER_FULL_MARKER)), "server-full-incomplete", 409);
   const config = readServerOpsConfig(root.path), path = join(root.path, "server.sqlite");
   inspectVerifiedServerFile(path, undefined, 256 * 1024 * 1024);
   assertSqliteSidecars(path, root.uid);
+  const before = lstatSync(path), journal = optional(path + "-journal");
+  if (recover) {
+    // Under the product directory lease, let SQLite recover its own validated
+    // sidecars before read-only history inspection. Never unlink sidecars.
+    const recovery = new DatabaseSync(path);
+    try {recovery.exec("PRAGMA trusted_schema=OFF; PRAGMA synchronous=FULL;"); recovery.prepare("SELECT COUNT(*) FROM sqlite_master").get();}
+    finally {recovery.close();}
+    const after = lstatSync(path);
+    requireCondition(before.dev === after.dev && before.ino === after.ino, "server-maintenance-unsafe", 409);
+    assertPrivateRoot(root); assertSqliteSidecars(path, root.uid);
+  } else requireCondition(!journal || journal.size === 0, "server-recovery-required", 409);
   const db = new DatabaseSync(path, {readOnly: true});
   try {
     const inventory = inspectServerHistory(db);
     requireCondition(inventory.workspaces.length === 1 && inventory.workspaces[0].workspaceId === config.workspaceId &&
       inventory.workspaces[0].ownerId === config.ownerId, "server-config-invalid", 409);
+    for (const asset of inventory.assets)
+      inspectVerifiedServerFile(join(root.path, "blobs", createHash("sha256").update(asset.workspaceId).digest("hex"), asset.sha256), asset);
   } finally {db.close();}
   assertPrivateRoot(root); return {root, config};
 }
@@ -66,7 +79,7 @@ export async function initializeOperationalServer(directory: string, config: Ser
 export async function startOperationalServer(directory: string): Promise<CheckpointServerHandle> {
   const lease = acquireServerDirectoryLease(directory);
   try {
-    const {root, config} = existing(directory), server = await raw(root.path, config, config.port);
+    const {root, config} = existing(directory, true), server = await raw(root.path, config, config.port);
     lease.assertOwned();
     return {...server, close: async () => {try {await server.close();} finally {lease.close();}}};
   } catch (error) {lease.close(); throw error;}
@@ -77,7 +90,7 @@ export async function administerOperationalServer<T>(directory: string,
   const lease = acquireServerDirectoryLease(directory);
   let server: CheckpointServerHandle | undefined;
   try {
-    const {root, config} = existing(directory); server = await raw(root.path, config, 0);
+    const {root, config} = existing(directory, true); server = await raw(root.path, config, 0);
     const result = await work(server, config, lease); lease.assertOwned(); return result;
   } finally {try {await server?.close();} finally {lease.close();}}
 }
@@ -90,6 +103,14 @@ export async function issueOperationalCredential(options: {directory: string; cl
         token: randomBytes(32).toString("base64url")};
     requireCondition(credential.baseUrl === baseUrl && credential.workspaceId === config.workspaceId && credential.clientId === options.clientId,
       "server-credential-mismatch", 409);
+    const db = new DatabaseSync(join(realpathSync(options.directory), "server.sqlite"), {readOnly: true});
+    try {
+      const prior = db.prepare("SELECT revoked,token_hash FROM checkpoint_devices WHERE workspace_id=? AND client_id=?").get(config.workspaceId, options.clientId);
+      requireCondition(!prior || prior.revoked === 0, "device-revoked", 409);
+      // Reconcile a lost issue acknowledgement, never roll a later rotation
+      // back to an older handoff file's secret.
+      if (options.reuse && prior) requireCondition(prior.token_hash === createHash("sha256").update(credential.token).digest("hex"), "server-credential-stale", 409);
+    } finally {db.close();}
     // Durable private handoff precedes registration, so a response loss can be
     // reconciled with --reuse-credential without issuing a second secret.
     if (!options.reuse) writeIssuedSyncCredential(options.credentialFile, credential, [realpathSync(options.directory)]);
