@@ -80,9 +80,17 @@ function prefix(fd: number, bytes: number) {
 function assertPin(part: BlobTransferPartial, allowTail = true) {
   const pin = pins.get(part);
   requireCondition(pin, "blob-transfer-partial-closed", 409);
-  const stat = fstatSync(part.descriptor),
-    path = lstatSync(part.path),
-    root = lstatSync(part.directory);
+  const [stat, path, root] = (() => {
+    try {
+      return [
+        fstatSync(part.descriptor),
+        lstatSync(part.path),
+        lstatSync(part.directory),
+      ];
+    } catch {
+      throw new SyncError("blob-transfer-partial-changed", 409);
+    }
+  })();
   requireCondition(
     root.isDirectory() &&
       !root.isSymbolicLink() &&
@@ -120,8 +128,12 @@ export function openBlobTransferPartial(
         constants.O_RDWR | constants.O_NOFOLLOW | constants.O_NONBLOCK,
       );
     } catch (error) {
-      if ((error as NodeJS.ErrnoException).code !== "ENOENT")
-        throw new SyncError("unsafe-blob-transfer-partial", 409);
+      const code = (error as NodeJS.ErrnoException).code;
+      if (code !== "ENOENT") {
+        if (["ELOOP", "ENXIO", "EISDIR", "ENOTDIR"].includes(code ?? ""))
+          throw new SyncError("unsafe-blob-transfer-partial", 409);
+        throw new SyncError("blob-transfer-open-failed", 503);
+      }
       requireCondition(
         record.offset === 0,
         "blob-transfer-partial-missing",
@@ -204,7 +216,11 @@ export function closeBlobTransferPartial(part: BlobTransferPartial) {
   closeSync(part.descriptor);
 }
 
-function verifiedFile(path: string, record: BlobTransferRecord) {
+function verifiedFile(
+  path: string,
+  record: BlobTransferRecord,
+  partial = false,
+) {
   const descriptor = openSync(
     path,
     constants.O_RDONLY | constants.O_NOFOLLOW | constants.O_NONBLOCK,
@@ -214,7 +230,9 @@ function verifiedFile(path: string, record: BlobTransferRecord) {
       listed = lstatSync(path);
     requireCondition(
       stat.isFile() &&
-        stat.size === record.bytes &&
+        (partial
+          ? stat.size >= record.offset && stat.size <= record.bytes
+          : stat.size === record.bytes) &&
         !listed.isSymbolicLink() &&
         listed.isFile() &&
         listed.dev === stat.dev &&
@@ -223,7 +241,8 @@ function verifiedFile(path: string, record: BlobTransferRecord) {
       409,
     );
     requireCondition(
-      prefix(descriptor, stat.size) === record.sha256,
+      prefix(descriptor, partial ? record.offset : stat.size) ===
+        (partial ? record.prefixHash : record.sha256),
       "blob-transfer-publication-hash-mismatch",
       409,
     );
@@ -249,7 +268,7 @@ export function reconcilePublishedPartial(
   let part: ReturnType<typeof verifiedFile> | undefined;
   try {
     try {
-      part = verifiedFile(path, record);
+      part = verifiedFile(path, record, true);
     } catch (error) {
       if ((error as NodeJS.ErrnoException).code === "ENOENT") return;
       throw error;

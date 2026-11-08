@@ -179,6 +179,7 @@ export class BlobTransferJournal {
       stat.isFile() &&
         !stat.isSymbolicLink() &&
         stat.nlink === 1 &&
+        (stat.mode & 0o022) === 0 &&
         stat.size <= 16 * 1024 * 1024,
       "unsafe-blob-transfer-journal",
       409,

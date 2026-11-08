@@ -59,7 +59,12 @@ import { isAbsolute, join, relative, resolve, sep } from "node:path";
 import { pipeline } from "node:stream/promises";
 import { parseAssetURL } from "../shared/assets";
 import { syncPath } from "../persistence/durable-file";
-import { requireCondition, sha256 as hashText, SyncError } from "./protocol";
+import {
+  canonicalJson,
+  requireCondition,
+  sha256 as hashText,
+  SyncError,
+} from "./protocol";
 import { BlobTransferJournal } from "./blob-transfer-journal";
 import {
   openBlobTransferPartial,
@@ -73,6 +78,7 @@ import {
 } from "./blob-upload-resume";
 import type { BlobTransferScope } from "./blob-transfer-types";
 import { inspectBlobTransferInventory } from "./blob-transfer-inventory";
+import { inspectWorkspaceTransferBudget } from "./blob-transfer-budget";
 
 /** Attachment limit already enforced by `attachFile` in the base application. */
 export const WORKSPACE_BLOB_MAX_BYTES = 20_000_000;
@@ -110,7 +116,11 @@ export type WorkspaceBlobClientOptions = {
   timeoutMs?: number;
   admitBytes?: (bytes: number) => void;
   /** Private transfer cache, never a workspace content DB or credential file. */
-  transfer?: { directory: string; scope: BlobTransferScope };
+  transfer?: {
+    directory: string;
+    scope: BlobTransferScope;
+    workspaceDirectory?: string;
+  };
 };
 
 type NormalizedOptions = {
@@ -121,6 +131,7 @@ type NormalizedOptions = {
   timeoutMs: number;
   admitBytes?: (bytes: number) => void;
   transferJournal?: BlobTransferJournal;
+  assertTransferBudget?: (additionalBytes: number) => void;
 };
 
 type FileState =
@@ -1311,6 +1322,13 @@ async function uploadOne(
           409,
         );
         offset = received;
+        // A crash may leave a full, verified-prefix partial before publish.
+        // Re-send only the final slice so the server performs its normal
+        // full-hash verification and exclusive publication.
+        if (offset === asset.bytes && !(await serverHas(options, asset)))
+          offset =
+            Math.floor((asset.bytes - 1) / WORKSPACE_BLOB_CHUNK_BYTES) *
+            WORKSPACE_BLOB_CHUNK_BYTES;
       } else if ([200, 404, 405, 501].includes(status)) {
         response.resume(); // Older servers may not implement the resume probe.
       } else throw await responseError(response, status);
@@ -1488,6 +1506,12 @@ async function downloadOne(
       throw new SyncError("asset-staging-failed", 500);
     }
 
+    // The pinned owned partial already counts in the workspace budget. Only
+    // its remaining bytes are additional; publication uses the same inode.
+    options.assertTransferBudget?.(
+      asset.bytes - (record?.offset ?? 0) + 8 * 1024 * 1024,
+    );
+
     if (asset.bytes === 0) {
       const response = await requestBlob(options, asset, "GET", {});
       const status = response.statusCode ?? 0;
@@ -1644,7 +1668,9 @@ async function downloadOne(
     else if (
       record &&
       error instanceof SyncError &&
-      /unsafe|hash-mismatch|state-conflict|changed/.test(error.code)
+      /unsafe|hash-mismatch|prefix-mismatch|partial-missing|state-conflict|changed/.test(
+        error.code,
+      )
     ) {
       try {
         journal.block(record.key, error.code);
@@ -1662,6 +1688,53 @@ async function withClientTransfer<T>(
   work: (normalized: NormalizedOptions) => Promise<T>,
 ): Promise<T> {
   const normalized = normalizeClientOptions(options);
+  if (options.transfer?.workspaceDirectory) {
+    const workspaceDirectory = realpathSync(
+      assertAssetsDirectory(options.transfer.workspaceDirectory),
+    );
+    const cacheRoot = ensureDirectory(
+      join(workspaceDirectory, ".folio-sync-transfers"),
+      true,
+    );
+    const transfer = options.transfer;
+    const scopeName = hashText(canonicalJson(transfer.scope));
+    const directory = join(cacheRoot, scopeName);
+    requireCondition(
+      resolve(transfer.directory) === directory ||
+        resolve(transfer.directory) ===
+          join(
+            resolve(transfer.workspaceDirectory!),
+            ".folio-sync-transfers",
+            scopeName,
+          ),
+      "blob-transfer-scope-mismatch",
+      409,
+    );
+    return withBlobUploadLock(cacheRoot, () =>
+      withClientTransfer(
+        {
+          ...options,
+          transfer: { directory, scope: transfer.scope },
+        },
+        direction,
+        (n) => {
+          n.assertTransferBudget = (additionalBytes) => {
+            const budget = inspectWorkspaceTransferBudget(workspaceDirectory);
+            requireCondition(
+              !budget.overLimit &&
+                Number.isSafeInteger(additionalBytes) &&
+                additionalBytes >= 0 &&
+                budget.bytes + additionalBytes <= 128 * 1024 * 1024,
+              "blob-transfer-budget-held",
+              409,
+            );
+          };
+          n.assertTransferBudget(0);
+          return work(n);
+        },
+      ),
+    );
+  }
   let journal: BlobTransferJournal | undefined;
   try {
     if (options.transfer) {
@@ -1683,6 +1756,7 @@ async function withClientTransfer<T>(
       // the read-only inventory. Only full, verified destination bytes count.
       if (direction === "download") {
         for (const record of journal.inventory()) {
+          if (record.state === "blocked") continue;
           const asset = validateAsset({
             id: record.assetId,
             sha256: record.sha256,
@@ -1761,26 +1835,6 @@ export async function stageCheckpointAssets(
     for (const asset of manifest) {
       if (!assertStagedTarget(normalized.assetsDirectory, asset))
         missing.push(asset);
-      else if (normalized.transferJournal) {
-        const journal = normalized.transferJournal;
-        const record = journal
-          .inventory()
-          .find(
-            (entry) =>
-              entry.direction === "download" &&
-              entry.assetId === asset.id &&
-              entry.sha256 === asset.sha256 &&
-              entry.bytes === asset.bytes,
-          );
-        if (record) {
-          reconcilePublishedPartial(
-            journal.directory,
-            record,
-            targetPath(normalized.assetsDirectory, asset),
-          );
-          journal.complete(record.key);
-        }
-      }
     }
     if (missing.length)
       normalized.admitBytes?.(
@@ -1823,8 +1877,11 @@ export function publishCheckpointAssetsFromStaging(
   requireCondition(staging !== active, "asset-staging-directory-conflict", 409);
   const missing: WorkspaceBlobAsset[] = [];
   for (const asset of manifest) {
+    // Earlier applied revisions may have released this shared staging copy.
+    // Reuse only a fully verified active target; conflicting bytes still fail.
+    if (assertStagedTarget(active, asset)) continue;
     assertLocalFile(staging, asset);
-    if (!assertStagedTarget(active, asset)) missing.push(asset);
+    missing.push(asset);
   }
   if (missing.length)
     admitBytes?.(missing.reduce((total, asset) => total + asset.bytes, 0));
@@ -1868,4 +1925,72 @@ export function publishCheckpointAssetsFromStaging(
     }
   }
   assertWorkspaceAssets(active, manifest);
+}
+
+/** After a confirmed apply only. Release recorded staging bytes only when an
+ * independent verified active copy exists. Unknown files are never swept. */
+export function reclaimAppliedStaging(
+  stagingDirectory: string,
+  assetsDirectory: string,
+  assets: readonly WorkspaceBlobAsset[],
+): { removed: number; held: number } {
+  const result = { removed: 0, held: 0 };
+  let staging: string, active: string;
+  try {
+    staging = assertAssetsDirectory(stagingDirectory);
+    active = assertAssetsDirectory(assetsDirectory);
+    requireCondition(
+      staging !== active,
+      "asset-staging-directory-conflict",
+      409,
+    );
+  } catch {
+    return { removed: 0, held: assets.length };
+  }
+  const rootPin = lstatSync(staging);
+  for (const asset of normalizeAssets(assets)) {
+    let source: ReturnType<typeof openVerified> = null,
+      destination: ReturnType<typeof openVerified> = null;
+    try {
+      const path = targetPath(staging, asset),
+        current = localFileState(path);
+      if (current.kind === "missing") continue;
+      destination = openVerified(
+        targetPath(active, asset),
+        asset.sha256,
+        asset.bytes,
+      );
+      source = openVerified(path, asset.sha256, asset.bytes);
+      requireCondition(source && destination, "asset-changed", 409);
+      const sourcePin = fstatSync(source.descriptor),
+        destinationPin = fstatSync(destination.descriptor),
+        listed = lstatSync(path),
+        root = lstatSync(staging);
+      requireCondition(
+        sourcePin.nlink === 1 &&
+          !listed.isSymbolicLink() &&
+          listed.isFile() &&
+          listed.nlink === 1 &&
+          listed.dev === sourcePin.dev &&
+          listed.ino === sourcePin.ino &&
+          (destinationPin.dev !== sourcePin.dev ||
+            destinationPin.ino !== sourcePin.ino) &&
+          root.isDirectory() &&
+          !root.isSymbolicLink() &&
+          root.dev === rootPin.dev &&
+          root.ino === rootPin.ino,
+        "asset-changed",
+        409,
+      );
+      unlinkSync(path);
+      syncPath(staging);
+      result.removed++;
+    } catch {
+      result.held++;
+    } finally {
+      closeQuietly(source?.descriptor);
+      closeQuietly(destination?.descriptor);
+    }
+  }
+  return result;
 }

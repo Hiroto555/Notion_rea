@@ -24,6 +24,7 @@ import {
 import {
   assertWorkspaceAssets,
   publishCheckpointAssetsFromStaging,
+  reclaimAppliedStaging,
   stageCheckpointAssets,
   uploadCheckpointAssets,
 } from "./workspace-blobs";
@@ -469,6 +470,10 @@ export class WorkspaceSync {
         requireCondition(this.options.canApply() === true, "edit-session-busy", 409);
       }});
     else this.local.applyNext(change, assertAssets, reservation);
+    // Cleanup follows a confirmed content COMMIT; it must not change its result.
+    try {
+      reclaimAppliedStaging(this.stagingDirectory(), this.assetsDirectory, change.checkpoint.assets);
+    } catch { /* Preserve uncertain cache evidence and the confirmed apply result. */ }
     return true;
   }
 
@@ -502,7 +507,7 @@ export class WorkspaceSync {
       workspaceId,
       timeoutMs,
       assetsDirectory: this.assetsDirectory,
-      transfer: { scope, directory: join(this.directory, ".folio-sync-transfers", sha256(canonicalJson(scope))) },
+      transfer: { scope, directory: join(this.directory, ".folio-sync-transfers", sha256(canonicalJson(scope))), workspaceDirectory: this.directory },
     };
   }
 }

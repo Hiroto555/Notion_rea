@@ -4,12 +4,16 @@ import { once } from "node:events";
 import { createServer, type Server } from "node:http";
 import {
   existsSync,
+  linkSync,
+  lstatSync,
   mkdirSync,
   mkdtempSync,
   readdirSync,
   readFileSync,
   realpathSync,
   rmSync,
+  symlinkSync,
+  truncateSync,
   writeFileSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
@@ -17,6 +21,7 @@ import { join, resolve } from "node:path";
 import { buildSync } from "esbuild";
 import { afterAll, afterEach, beforeAll, expect, it, vi } from "vitest";
 import { BlobTransferJournal } from "../src/sync/blob-transfer-journal";
+import { canonicalJson } from "../src/sync/protocol";
 import {
   WORKSPACE_BLOB_CHUNK_BYTES as CHUNK,
   uploadCheckpointAssets,
@@ -298,7 +303,9 @@ it("an upload prefix mismatch cannot send a PUT or replace local bytes", async (
     code: "blob-resume-mismatch",
   });
   expect(puts).toBe(0);
-  expect(readFileSync(join(opts.assetsDirectory, asset.id))).toEqual(bytes);
+  expect(readFileSync(join(opts.assetsDirectory, asset.id)).equals(bytes)).toBe(
+    true,
+  );
 });
 
 it("exhausted durable quota refuses before GET instead of falling back to unrecorded transfer", async () => {
@@ -329,4 +336,185 @@ it("exhausted durable quota refuses before GET instead of falling back to unreco
   await expect(stageCheckpointAssets(opts, [asset])).rejects.toBeDefined();
   expect(gets).toBe(0);
   expect(existsSync(join(opts.assetsDirectory, asset.id))).toBe(false);
+});
+
+it("old scopes count toward the workspace budget and cannot trigger an unrecorded download", async () => {
+  const path = root();
+  let requests = 0;
+  const url = await listen(
+    createServer((_request, response) => {
+      requests++;
+      response.writeHead(500);
+      response.end();
+    }),
+  );
+  const opts = options(path, url, "download");
+  const cache = join(path, ".folio-sync-transfers");
+  const legacy = join(cache, "old-epoch");
+  mkdirSync(legacy, { recursive: true, mode: 0o700 });
+  const retained = join(legacy, "unknown.part");
+  writeFileSync(retained, "evidence");
+  // Logical sparse bytes exercise the real default without writing 128MiB.
+  truncateSync(retained, 128 * 1024 * 1024 + 1);
+  const transfer = {
+    ...opts.transfer,
+    workspaceDirectory: path,
+    directory: join(cache, hash(canonicalJson(opts.transfer.scope))),
+  };
+  const asset = { id: randomUUID() + ".bin", sha256: hash("x"), bytes: 1 };
+  await expect(
+    stageCheckpointAssets({ ...opts, transfer }, [asset]),
+  ).rejects.toMatchObject({ code: "blob-transfer-budget-held" });
+  expect(requests).toBe(0);
+  expect(lstatSync(retained).size).toBe(128 * 1024 * 1024 + 1);
+  expect(existsSync(join(opts.assetsDirectory, asset.id))).toBe(false);
+});
+
+it("admits remaining download bytes without double reserving retained cache bytes", async () => {
+  const path = root(),
+    bytes = randomBytes(20_000_000);
+  const url = await listen(
+    createServer((request, response) => {
+      const match = /^bytes=(\d+)-(\d+)$/.exec(String(request.headers.range))!;
+      const start = Number(match[1]),
+        end = Number(match[2]);
+      response.writeHead(206, {
+        "Content-Length": end - start + 1,
+        "Content-Range": `bytes ${start}-${end}/${bytes.length}`,
+      });
+      response.end(bytes.subarray(start, end + 1));
+    }),
+  );
+  const opts = options(path, url, "download");
+  const cache = join(path, ".folio-sync-transfers"),
+    oldScope = join(cache, "old-epoch");
+  mkdirSync(oldScope, { recursive: true, mode: 0o700 });
+  const retained = join(oldScope, "unknown.part");
+  writeFileSync(retained, "evidence");
+  truncateSync(retained, 92 * 1024 * 1024);
+  const transfer = {
+    ...opts.transfer,
+    workspaceDirectory: path,
+    directory: join(cache, hash(canonicalJson(opts.transfer.scope))),
+  };
+  const asset = {
+    id: randomUUID() + ".bin",
+    sha256: hash(bytes),
+    bytes: bytes.length,
+  };
+  await stageCheckpointAssets({ ...opts, transfer }, [asset]);
+  expect(readFileSync(join(opts.assetsDirectory, asset.id)).equals(bytes)).toBe(
+    true,
+  );
+  expect(lstatSync(retained).size).toBe(92 * 1024 * 1024);
+});
+
+it("canonicalizes a workspace reached through an ancestor alias without scope drift", async () => {
+  const path = root(),
+    workspace = join(path, "workspace");
+  mkdirSync(workspace);
+  const alias = join(path, "alias");
+  symlinkSync(path, alias);
+  const aliasedWorkspace = join(alias, "workspace");
+  const opts = options(workspace, "http://127.0.0.1:1", "download");
+  const scope = opts.transfer.scope;
+  const transfer = {
+    scope,
+    workspaceDirectory: aliasedWorkspace,
+    directory: join(
+      aliasedWorkspace,
+      ".folio-sync-transfers",
+      hash(canonicalJson(scope)),
+    ),
+  };
+  await expect(
+    stageCheckpointAssets({ ...opts, transfer }, []),
+  ).resolves.toBeUndefined();
+  expect(
+    existsSync(
+      join(workspace, ".folio-sync-transfers", hash(canonicalJson(scope))),
+    ),
+  ).toBe(true);
+});
+
+for (const linked of [false, true])
+  it(`recovers verified publication before cache inventory; linked=${linked}`, async () => {
+    const path = root(),
+      bytes = randomBytes(127);
+    let requests = 0;
+    const url = await listen(
+      createServer((_request, response) => {
+        requests++;
+        response.writeHead(500);
+        response.end();
+      }),
+    );
+    const opts = options(path, url, "download");
+    const directory = join(
+      opts.transfer.directory,
+      "download-" + hash(opts.assetsDirectory),
+    );
+    const asset = {
+      id: randomUUID() + ".bin",
+      sha256: hash(bytes),
+      bytes: bytes.length,
+    };
+    const target = join(opts.assetsDirectory, asset.id);
+    writeFileSync(target, bytes);
+    const journal = new BlobTransferJournal(directory, opts.transfer.scope);
+    const record = journal.begin({
+      direction: "download",
+      assetId: asset.id,
+      sha256: asset.sha256,
+      bytes: asset.bytes,
+    });
+    const offset = linked ? bytes.length : 59;
+    journal.checkpoint(record.key, offset, hash(bytes.subarray(0, offset)));
+    journal.close();
+    const partial = join(directory, record.partialName);
+    if (linked) linkSync(target, partial);
+    else writeFileSync(partial, bytes.subarray(0, offset + 13));
+    const pin = lstatSync(target);
+    await stageCheckpointAssets(opts, [asset]);
+    expect(requests).toBe(0);
+    expect(readFileSync(target)).toEqual(bytes);
+    expect(lstatSync(target).ino).toBe(pin.ino);
+    expect(lstatSync(target).nlink).toBe(1);
+    expect(existsSync(partial)).toBe(false);
+    const reopened = new BlobTransferJournal(directory, opts.transfer.scope);
+    expect(reopened.inventory()).toEqual([]);
+    reopened.close();
+  });
+
+// Reproduce a server crash after all bytes are durable but before publication.
+it("a complete server partial is finalized by re-sending only its final slice", async () => {
+  const path = root(),
+    bytes = randomBytes(CHUNK + 71);
+  const asset = {
+    id: randomUUID() + ".bin",
+    sha256: hash(bytes),
+    bytes: bytes.length,
+  };
+  const config = {
+    directory: join(path, "blobs"),
+    workspaceId: "workspace",
+    token: randomBytes(32).toString("hex"),
+    sha256: asset.sha256,
+  };
+  const workspace = join(config.directory, hash("workspace"));
+  mkdirSync(workspace, { recursive: true });
+  writeFileSync(join(workspace, ".partial-" + asset.sha256), bytes);
+  const server = child(serverScript, "FOLIO_TEST_SERVER", config);
+  const port = (await waitMessage(server, (message) => message.port)).port;
+  const opts = {
+    ...options(path, `http://127.0.0.1:${port}`, "upload"),
+    token: config.token,
+  };
+  writeFileSync(join(opts.assetsDirectory, asset.id), bytes);
+  await uploadCheckpointAssets(opts, [asset]);
+  expect(
+    server.messages.filter((message) => message.putStart !== undefined)[0]
+      ?.putStart,
+  ).toBe(CHUNK);
+  expect(readFileSync(join(workspace, asset.sha256))).toEqual(bytes);
 });
