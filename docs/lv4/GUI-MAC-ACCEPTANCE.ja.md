@@ -2,6 +2,8 @@
 
 2026-11-08。**すべてNOT_RUN。今回の指示はGitHub ActionsのLinux仮想画面だけで、このMacでのGUI実行は含まない。** Linuxの共通GUI試験は[CI実行範囲](GUI-LINUX-CI.ja.md)に分離した。Lv3確認済み、Lv4未認定、masterへはマージしない。A0〜A7とLinux共通GUIは[M3候補](M3-ACCEPTANCE.ja.md)で受入済み。
 
+[このMacの操作を奪わない最終受入計画](MAC-QUIET-ACCEPTANCE-PLAN.ja.md)に、GitHub-hosted macOS・別Mac A/B・サーバーSの担当、必要な準備、実行前の区切りを整理した。**計画だけで、Mac workflow/GUI/実機試験はまだ開始していない。**
+
 | 優先 | Mac/OSで確認するもの | 終了条件 |
 |---|---|---|
 | 1 | Cmd+Q・赤ボタン・終了取消し・再表示 | 未保存入力/保存中/IME中は終了と予約確定を保留。正常終了後だけ予約を確定し、次回起動で一度だけ適用。Dockからの復帰も確認 |

@@ -1,0 +1,37 @@
+{
+  "date": "2026-11-08",
+  "scope": "Planning only; no tests/workflows/GUI/provisioning",
+  "cliVersion": "devin 3000.12.28 (91c3aec41579)",
+  "consultations": [
+    {
+      "purpose": "architecture",
+      "model": "claude-opus-5-5-high",
+      "exit": 0,
+      "seconds": 146.23,
+      "repositoryHead": "bd65b73",
+      "reportedMetrics": {
+        "total_prompt_tokens": 27312,
+        "total_completion_tokens": 13979,
+        "total_cached_tokens": 12704,
+        "total_steps": 10
+      }
+    },
+    {
+      "purpose": "counter-review",
+      "model": "claude-opus-5-5-high",
+      "exit": 0,
+      "seconds": 57.98,
+      "reportedMetrics": {
+        "total_prompt_tokens": 30335,
+        "total_completion_tokens": 5601,
+        "total_cached_tokens": 21833,
+        "total_steps": 10
+      }
+    }
+  ],
+  "notes": [
+    "Provider export counters retained as reported; not billed usage or a savings calculation.",
+    "Screenshot quota/reset values are a historical snapshot, not live quota verification.",
+    "No billing/global configuration changes; no raw conversations or secrets committed."
+  ]
+}
