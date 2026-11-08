@@ -1,6 +1,6 @@
 # GUI検証枠と過去の確認待ち項目
 
-> **2026-11-08 Linux CI**：統合ツリーの並び順修復3件・M1等にページツリー3件を加え、[45件がPASS](lv4/GUI-LINUX-CI.ja.md)。[実drag・移動中編集・再起動の証拠](lv4/GUI-PAGE-TREE-CI.ja.md)を参照。Macの実操作・実IME・物理2台はNOT_RUN。以下は各記録時点の状態で、ページツリーの過去の未実行記録を今回のLinux結果で更新した。
+> **2026-11-08 Linux CI**：統合ツリーの並び順修復・M1・ページツリーに保存/復旧24件を加え、[69件がPASS](lv4/GUI-LINUX-CI.ja.md)。[ページツリーの証拠](lv4/GUI-PAGE-TREE-CI.ja.md)、[保存・復旧の証拠](lv4/GUI-RECOVERY-CI.ja.md)を参照。Macの実操作・実IME・物理2台はNOT_RUN。以下は各記録時点の状態で、該当する過去の未実行記録を今回のLinux結果で更新した。
 
 ## 2026-11-07 ページツリーと並び順修復の追加差分
 

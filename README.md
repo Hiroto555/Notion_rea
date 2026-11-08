@@ -7,7 +7,7 @@ Notionのコード・ロゴ・イラストを使用していません。Notion�
 
 2026-11-05の保存・復旧・容量管理・起動保護の統合内容は [Local-first checkpoint](docs/LOCAL-FIRST-CHECKPOINT.ja.md) に記録しています。通常の検証入口は `npm run verify:quiet`、起動できないワークスペースの救出入口は `npm run folio:rescue -- --help` です。GUIの実行待ちは [GUI検証一覧](docs/GUI-VALIDATION-QUEUE.ja.md) に記録しています。
 
-2026-11-08の **Lv4実装途中の保存版** は [Lv4の現在地](docs/lv4/README.md) から確認できます。M1（A0〜A2）の通常予約保護・保全一覧・添付付き書出し・新規コピー復元までを受入し、型検査・1,673テスト・ビルドが非GUIでPASS。認定はLv3のまま。ページツリーの実drag等を含むLinux仮想画面GUI 45件もPASS、Mac固有・実機2台はNOT_RUNです。M1専用Draft PRと追加CIのDraft PRへ保存し、masterへはマージせず、A3前で停止しています。
+2026-11-08の **Lv4実装途中の保存版** は [Lv4の現在地](docs/lv4/README.md) から確認できます。M1（A0〜A2）の通常予約保護・保全一覧・添付付き書出し・新規コピー復元までを受入し、型検査・1,673テスト・ビルドが非GUIでPASS。認定はLv3のまま。ページツリーの実dragと保存・復旧24件を含むLinux仮想画面GUI 69件もPASS、Mac固有・実機2台はNOT_RUNです。M1専用Draft PRと追加CIのDraft PRへ保存し、masterへはマージせず、A3前で停止しています。
 
 外部レビューは [レビューガイド](docs/REVIEW-GUIDE.md) から始めてください。[既知の問題](docs/KNOWN-ISSUES.md)、[共有前検査](docs/SHARING-AUDIT.md)、[画面一覧](docs/screenshots/README.md) も用意しています。
 

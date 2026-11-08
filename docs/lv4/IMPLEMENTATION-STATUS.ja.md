@@ -1,6 +1,6 @@
 # Lv4 実装状況（M1非GUI完了・停止）
 
-> **Linux GUI追加受入**：GitHub Actionsの仮想画面で45/45件PASS（retry/skip 0）。[全範囲](GUI-LINUX-CI.ja.md)、[ページツリーの実drag・移動中編集・再起動3件の証拠](GUI-PAGE-TREE-CI.ja.md)を参照。このMacのGUIは起動せず、製品srcはM1と同一。Mac/OS固有・実機2台・残りの未移植GUIはNOT_RUN、Lv3維持、A3未着手。以下のM1完了当時のGUI未実施記録と区別する。
+> **Linux GUI追加受入**：GitHub Actionsの仮想画面で69/69件PASS（retry/skip/flaky 0）。[全範囲](GUI-LINUX-CI.ja.md)、[保存・復旧24件の追加受入](GUI-RECOVERY-CI.ja.md)、[ページツリー3件の証拠](GUI-PAGE-TREE-CI.ja.md)を参照。非GUIは182ファイル/1,681件・型検査・build PASS。このMacのGUIは起動せず、製品srcはM1と同一。Mac/OS固有・実機2台・残りの未移植GUIはNOT_RUN、Lv3維持、A3未着手。以下のM1完了当時のGUI未実施記録と区別する。
 
 > **2026-11-08 M1完了**：利用者の明示指示でA0〜A2を実施し、A3へ進まず停止した。通常予約をUUID/CASのSQLite journalへ移し、保全archiveの一覧・JSON/添付付き書出し・新規v4 DBへのコピー復元を接続した。結果不明とIPC応答喪失は同じ操作IDで照会するまで新効果を止める。最終候補`d509edf`は型検査・**180ファイル／1,673テスト**・build PASS、Sol XHigh最終レビューで未解決P0/P1なし。[M1完了記録](M1-COMPLETION.ja.md)、[手順書](m1/RECOVERY-RUNBOOK.ja.md)、[最終ログ](validation/m1-quiet.txt)を参照。
 

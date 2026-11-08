@@ -2,7 +2,7 @@
 
 2026-11-08。利用者の指示により、GUI試験の実行先をGitHub-hosted Linuxの仮想画面へ分ける。このMacではElectron/ブラウザ/OS clipboard/native dialogを起動しない。統合ツリーと合成一時データを使用し、masterへマージせず、A3以降の製品実装は開始しない。
 
-**現在：Linux GUI 45件すべてPASS（skip 0、retry 0、1 worker）。** ページツリーの追加3件を含む候補`aa81a9e`の[GUI run #5](https://github.com/Hiroto555/Notion_rea/actions/runs/42437077556)と[quiet-checks](https://github.com/Hiroto555/Notion_rea/actions/runs/42437077487)が合格した。非GUIは181ファイル／1,678テスト・型検査・build PASS。[ページツリーの範囲・初回失敗・証拠](GUI-PAGE-TREE-CI.ja.md)、[今回の抜粋ログ](validation/page-tree-gui-linux-20261108.txt)を参照。Mac固有・残りの未移植suiteは未確認のまま残す。
+**現在：Linux GUI 69件すべてPASS（skip/retry/flaky 0、1 worker）。** 保存・復旧24件を追加した候補`6b07806`の[GUI run #7](https://github.com/Hiroto555/Notion_rea/actions/runs/42447102289)と[quiet-checks](https://github.com/Hiroto555/Notion_rea/actions/runs/42447101864)が合格した。非GUIは182ファイル／1,681テスト・型検査・build PASS。[今回の範囲・証拠](GUI-RECOVERY-CI.ja.md)、[抜粋ログ](validation/recovery-gui-linux-20261108.txt)、[以前のページツリー受入](GUI-PAGE-TREE-CI.ja.md)を参照。Mac固有・残りの未移植suiteはNOT_RUN。
 
 ## 実行の境界
 
@@ -27,7 +27,7 @@ launcherはLinux/GitHub Actions/CI/専用DISPLAYを検査してから、一時`R
 
 M1の10件は、未接続の一覧・破損行・pagination/Escape、JSONのみ、添付付きbundle、新規v4復元と回収先再起動後の同期保留、picker取消し、添付欠損の未完了保持、原本内出力の拒否、picker待ちの対象変化、host成功後のIPC応答喪失と同ID再照会、通常保存後のElectron再起動を確認する。OS dialogの見た目や実入力機器を通す試験ではない。
 
-allowlistで範囲を固定する。初回42件の後、`page-move.spec.ts`の3件を実Electron/実IPCへ追加し、現在は実IPC17件＋代替応答Electron表示2件＋Chromium表示26件の計45件・8ファイル。ページツリーの実dragと移動中編集・再起動はLinuxでPASSした。残りの未移植suiteをMac専用とは判定せず、45件の合格を全GUI suiteの合格とは呼ばない。初回42件の[実行記録](validation/gui-linux-20261108.txt)は履歴として保持する。
+allowlistで範囲を固定する。初回42件の後、`page-move.spec.ts`の3件を実Electron/実IPCへ追加し、続いて保存・復旧24件を追加し、現在は実IPC41件＋代替応答Electron表示2件＋Chromium表示26件の計69件・17ファイル。ページツリーの実dragと移動中編集・再起動はLinuxでPASSした。残りの未移植suiteをMac専用とは判定せず、69件の合格を全GUI suiteの合格とは呼ばない。初回42件の[実行記録](validation/gui-linux-20261108.txt)は履歴として保持する。
 
 ## Mac固有・実機の別枠
 
@@ -49,7 +49,7 @@ npm run test:e2e -- --list --config playwright.linux-ci.config.ts
 
 GUIの本実行はGitHub上のPRのChecksを参照する。`gui-linux-xvfb`の成功、件数、skip/retryの有無、対象headを確認する。失敗はassertion・fixture・環境導入に分けて調べ、未実行をPASSにしたり、失敗を自動skipへ変更したりしない。
 
-HTML/JSONレポートと失敗時trace、合成データのスクリーンショットは`output/playwright-linux/`だけをartifactへ保存し、保持は7日。workspace DBやprofileをまとめてuploadしない。通常のMacでreportを自動で開かない。今回の実行結果は[Draft PR #10](https://github.com/Hiroto555/Notion_rea/pull/10)のChecksでも確認できる（baseは初回CIのPR #9、masterへはマージしない）。
+HTML/JSONレポートと失敗時trace、合成データのスクリーンショットは`output/playwright-linux/`だけをartifactへ保存し、保持は7日。workspace DBやprofileをまとめてuploadしない。通常のMacでreportを自動で開かない。今回の実行結果は[Draft PR #11](https://github.com/Hiroto555/Notion_rea/pull/11)のChecksでも確認できる（baseはページツリーCIのPR #10、masterへはマージしない）。
 
 公式根拠：[ElectronのXvfb試験](https://www.electronjs.org/docs/latest/tutorial/testing-on-headless-ci)、[Playwright CI](https://playwright.dev/docs/ci)。この構成は試験実行先の変更であり、Lv4完成やMac GUI合格の宣言ではない。
 
