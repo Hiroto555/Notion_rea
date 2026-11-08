@@ -689,7 +689,7 @@ describe("WorkspaceBlobStore", () => {
   it("keeps an existing mismatched final file and rejects a wrong hash", async () => {
     const root = tempRoot("folio-workspace-blobs-immutable-");
     const directory = join(root, "blobs", hashText("workspace"));
-    mkdirSync(directory, { recursive: true });
+    mkdirSync(directory, { recursive: true, mode: 0o700 });
     const store = new WorkspaceBlobStore(join(root, "blobs"));
     const a = token();
     const server = await startBlobServer(store, { workspace: a });

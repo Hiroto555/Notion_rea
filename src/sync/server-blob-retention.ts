@@ -344,12 +344,13 @@ export function assertServerBlobAdmission(
   directory: string,
   additionalBytes: number,
   limits?: ServerBlobRetentionLimits,
+  additionalEntries = 1,
 ): void {
   const resolved = resolveLimits(limits);
   if (
     typeof additionalBytes !== "number" ||
     !Number.isSafeInteger(additionalBytes) ||
-    additionalBytes < 0
+    additionalBytes < 0 || !Number.isSafeInteger(additionalEntries) || additionalEntries < 0 || additionalEntries > 1
   )
     unknown();
   const inspection = inspectWithLimits(directory, resolved);
@@ -357,7 +358,7 @@ export function assertServerBlobAdmission(
   if (
     inspection.held ||
     projected > resolved.maxBytes ||
-    inspection.entries + 1 > resolved.maxEntries
+    inspection.entries + additionalEntries > resolved.maxEntries
   )
     held();
 }

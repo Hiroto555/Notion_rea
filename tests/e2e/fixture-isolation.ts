@@ -42,11 +42,12 @@ export function fixtureElectronOptions(
       [
         "FOLIO_DATA_DIR",
         "FOLIO_DEV_URL",
-        "FOLIO_TEST_FORCE_READY_FAILURE",
+        "FOLIO_TEST_FORCE_READY_FAILURE", "FOLIO_CREDENTIAL_DIR", "FOLIO_EMPTY_WORKSPACE",
       ].includes(key)
     )
       delete child[key];
   child.FOLIO_DATA_DIR = directory;
+  child.FOLIO_CREDENTIAL_DIR = directory + "-credentials";
   return {
     args: [...(base ? ["--no-sandbox"] : []), resolve("dist/main.cjs")],
     env: child,

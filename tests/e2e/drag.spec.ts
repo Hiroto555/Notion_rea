@@ -1,11 +1,17 @@
 import { test, expect, saved } from "./next-round-fixture";
 import { observeDrag, dragEvidence, editorDoc } from "./drag-observer";
 import { realDrag, beginRealDrag } from "./real-drag";
+const primary = (key: string) =>
+  process.platform === "darwin"
+    ? `Meta+${key}`
+    : key === "ArrowLeft"
+      ? "Home"
+      : `Control+${key}`;
 test("R2 short original regression: checkbox edit then real handle drag", async ({
   folio: s,
 }, info) => {
   const w = s.window;
-  await w.keyboard.press("Meta+n");
+  await w.keyboard.press(primary("n"));
   await w.getByLabel("ページタイトル", { exact: true }).fill("Drag regression");
   await w.locator(".folio-editor").click();
   await w.keyboard.type("/heading");

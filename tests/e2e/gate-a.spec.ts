@@ -6,7 +6,6 @@ import {
   type Page,
 } from "@playwright/test";
 import {
-  mkdtempSync,
   mkdirSync,
   rmSync,
   readFileSync,
@@ -16,28 +15,39 @@ import {
 import { join, resolve } from "node:path";
 import { observeDrag, dragEvidence } from "./drag-observer";
 import { beginRealDrag } from "./real-drag";
+import { fixtureElectronOptions, fixtureRoot } from "./fixture-isolation";
+import { killFixture, launchFixture } from "./recovery-ci-runtime";
 let traceEnabled = false,
   dragObserved = false;
 const dragSession = () => ({ app, window, folder, restart: async () => {} });
+const primary = (key: string) =>
+  process.platform === "darwin"
+    ? `Meta+${key}`
+    : key === "ArrowLeft"
+      ? "Home"
+      : `Control+${key}`;
 let app: ElectronApplication, window: Page, folder: string, root: string, exportsDir: string, inputsDir: string;
-async function launch() {
-  app = await electron.launch({
-    args: [resolve("dist/main.cjs")],
-    env: { ...process.env, FOLIO_DATA_DIR: folder },
-  });
+async function launch(waitForTitle = true) {
+  app = await launchFixture(folder);
   window = await app.firstWindow();
-  await window.waitForSelector(".page-title");
-  if (traceEnabled)
+  if (waitForTitle) await window.waitForSelector(".page-title");
+  // recovery-ci-runtime owns tracing on validated Linux CI; keep the
+  // macOS-only diagnostic tracing that these acceptance cases already used.
+  if (traceEnabled && process.env.FOLIO_LINUX_GUI_CI !== "1")
     await app
       .context()
       .tracing.start({ screenshots: true, snapshots: true, sources: true });
+}
+async function stop() {
+  if (process.env.FOLIO_LINUX_GUI_CI === "1") await killFixture(app);
+  else await app.close();
 }
 test.beforeEach(async ({}, info) => {
   traceEnabled =
     info.title.startsWith("F11 editing") ||
     info.title.startsWith("F02 full-text");
   dragObserved = false;
-  root = mkdtempSync(resolve("output/gate-a-e2e-"));
+  root = fixtureRoot("gate-a-e2e-");
   folder = join(root, "workspace");
   exportsDir = join(root, "exports");
   inputsDir = join(root, "inputs");
@@ -76,7 +86,7 @@ test.afterEach(async ({}, info) => {
         for (const w of BrowserWindow.getAllWindows()) w.destroy();
       });
     } catch {}
-    await app.close();
+    await stop();
   }
   rmSync(root, { recursive: true, force: true });
 });
@@ -100,7 +110,7 @@ async function saved() {
   await expect(window.locator(".save-state")).toHaveText("保存済み");
 }
 test("F01 same-page sidebar/search reselection keeps editor, attachment, link and exports", async () => {
-  await window.keyboard.press("Meta+n");
+  await window.keyboard.press(primary("n"));
   await window
     .getByLabel("ページタイトル", { exact: true })
     .fill("Gate A original");
@@ -114,7 +124,7 @@ test("F01 same-page sidebar/search reselection keeps editor, attachment, link an
       .locator(".page-tree-label")
       .filter({ hasText: "Gate A original" })
       .click();
-  await window.keyboard.press("Meta+p");
+  await window.keyboard.press(primary("p"));
   await window.getByLabel("検索キーワード").fill("Gate A original");
   await window.locator(".search-results button").first().click();
   const md = join(exportsDir, "export.md");
@@ -181,7 +191,7 @@ for (const name of [
   });
 test("F06 synthetic composing Enter does not navigate search or link (not physical IME)", async () => {
   for (const mode of ["search", "link"]) {
-    if (mode === "search") await window.keyboard.press("Meta+p");
+    if (mode === "search") await window.keyboard.press(primary("p"));
     else await window.getByTitle("ページへのリンク", { exact: true }).click();
     await window.getByLabel("検索キーワード").fill("アイデアノート");
     await expect(window.locator(".search-results button")).toHaveCount(1);
@@ -210,14 +220,14 @@ test("F06 synthetic composing Enter does not navigate search or link (not physic
   }
 });
 test("F11 editing during move and delayed load keeps local patch and durable revision", async ({}, info) => {
-  await window.keyboard.press("Meta+n");
+  await window.keyboard.press(primary("n"));
   await window
     .getByLabel("ページタイトル", { exact: true })
     .fill("Before move");
   await window.locator(".folio-editor").click();
-  await window.keyboard.press("Meta+b");
+  await window.keyboard.press(primary("b"));
   await window.keyboard.insertText("Formatted move body");
-  await window.keyboard.press("Meta+b");
+  await window.keyboard.press(primary("b"));
   await saved();
   const initial = await window.evaluate(async () => {
     const state = await globalThis.window.folio.request<any>({ type: "load" });
@@ -312,7 +322,7 @@ test("F11 editing during move and delayed load keeps local patch and durable rev
   await app
     .context()
     .tracing.stop({ path: info.outputPath("before-restart.zip") });
-  await app.close();
+  await stop();
   await launch();
   await expect(
     window.getByLabel("ページタイトル", { exact: true }),
@@ -380,12 +390,12 @@ test("F02 full-text search, preview, count and in-page selection cross inline ma
       .locator("+ dd"),
   ).toHaveText("12");
   for (const word of ["不動産", "software"]) {
-    await window.keyboard.press("Meta+p");
+    await window.keyboard.press(primary("p"));
     await window.getByLabel("検索キーワード").fill(word);
     await expect(window.locator(".search-results button")).toHaveCount(1);
     await expect(window.locator(".search-results small")).toContainText(word);
     await window.keyboard.press("Enter");
-    await window.keyboard.press("Meta+f");
+    await window.keyboard.press(primary("f"));
     await window.getByLabel("ページ内検索").fill(word);
     await expect(window.locator(".page-find")).toContainText("1 件");
     await window.getByRole("button", { name: "表示", exact: true }).click();
@@ -426,7 +436,7 @@ test("F04 DB delete Undo, restart history restore and property history retain ID
     .getByLabel("削除 ワークスペースを整える", { exact: true })
     .click();
   await saved();
-  await app.close();
+  await stop();
   await launch();
   await expect(window.locator("tbody tr")).toHaveCount(2);
   await window
@@ -470,16 +480,16 @@ test("F04 DB delete Undo, restart history restore and property history retain ID
     .click();
   await expect(window.locator("thead")).not.toContainText("追加列");
   await saved();
-  await app.close();
+  await stop();
   await launch();
   await expect(window.locator("thead")).not.toContainText("追加列");
 });
 test("F06 editor selection Cmd+K sets page link without replacing text; modal and prevented keys win", async () => {
-  await window.keyboard.press("Meta+n");
+  await window.keyboard.press(primary("n"));
   await window.locator(".folio-editor").fill("Keep selected text");
   await window.locator(".folio-editor").click();
-  await window.keyboard.press("Meta+a");
-  await window.keyboard.press("Meta+k");
+  await window.keyboard.press(primary("a"));
+  await window.keyboard.press(primary("k"));
   await expect(
     window.getByRole("dialog", { name: "ページリンク", exact: true }),
   ).toBeVisible();
@@ -489,23 +499,24 @@ test("F06 editor selection Cmd+K sets page link without replacing text; modal an
     "Keep selected text",
   );
   await saved();
-  await window.evaluate(() => {
+  await window.evaluate((isMac) => {
     document.addEventListener("keydown", (e) => e.preventDefault(), {
       once: true,
     });
     document.body.dispatchEvent(
       new KeyboardEvent("keydown", {
         key: "p",
-        metaKey: true,
+        metaKey: isMac,
+        ctrlKey: !isMac,
         bubbles: true,
         cancelable: true,
       }),
     );
-  });
+  }, process.platform === "darwin");
   await expect(window.getByRole("dialog")).toHaveCount(0);
-  await window.keyboard.press("Meta+p");
+  await window.keyboard.press(primary("p"));
   const before = await window.locator(".page-tree-label").count();
-  await window.keyboard.press("Meta+n");
+  await window.keyboard.press(primary("n"));
   await expect(
     window.getByRole("dialog", { name: "ワークスペース検索", exact: true }),
   ).toBeVisible();
@@ -603,7 +614,7 @@ test("F11 failed write exports pending patch and persisted state, then recovers 
   expect(state.pages.find((p: any) => p.id === original.id).title).toBe(
     "Stored competing title",
   );
-  await app.close();
+  await stop();
   await launch();
   await expect(window.locator(".folio-editor")).toContainText(
     "Local unsaved body",
@@ -622,8 +633,9 @@ test("F03 default userData path and pre-ready directory failure are observable w
     `const {dialog}=require('electron'); dialog.showErrorBox=(title,message)=>require('node:fs').writeFileSync(${JSON.stringify(report)},JSON.stringify({title,message})); require(${JSON.stringify(resolve("dist/main.cjs"))});`,
   );
   const exit = await new Promise<number | null>((resolveExit, reject) => {
-    const child = spawn(executable as unknown as string, [bootstrap], {
-      env: { ...process.env, FOLIO_DATA_DIR: join(blocker, "workspace") },
+    const launch = fixtureElectronOptions(folder);
+    const child = spawn(executable as unknown as string, [...launch.args.slice(0, -1), bootstrap], {
+      env: { ...launch.env, FOLIO_DATA_DIR: join(blocker, "workspace") },
       stdio: "ignore",
     });
     const timer = setTimeout(() => {
@@ -647,13 +659,9 @@ test("F03 default userData path and pre-ready directory failure are observable w
     defaultBootstrap,
     `const {app}=require('electron'); require('node:fs').mkdirSync(${JSON.stringify(appData)},{recursive:true});app.setPath('appData',${JSON.stringify(appData)});require(${JSON.stringify(resolve("dist/main.cjs"))});`,
   );
-  const env = Object.fromEntries(
-    Object.entries(process.env).filter(
-      (entry): entry is [string, string] => typeof entry[1] === "string",
-    ),
-  );
-  delete env.FOLIO_DATA_DIR;
-  const other = await electron.launch({ args: [defaultBootstrap], env });
+  const options = fixtureElectronOptions(folder);
+  delete (options.env as Record<string, string | undefined>).FOLIO_DATA_DIR;
+  const other = await electron.launch({...options, args: [...options.args.slice(0, -1), defaultBootstrap]});
   try {
     const view = await other.firstWindow();
     await view.waitForSelector(".page-title");
@@ -664,7 +672,7 @@ test("F03 default userData path and pre-ready directory failure are observable w
       existsSync(join(appData, "Folio", "workspace", "workspace.sqlite")),
     ).toBe(true);
   } finally {
-    await other.close();
+    await killFixture(other);
   }
 });
 test("F07 malformed JSON stays read-only with raw export while healthy pages remain accessible", async () => {
@@ -686,11 +694,8 @@ test("F07 malformed JSON stays read-only with raw export while healthy pages rem
     original.id,
   );
   db.close();
-  await app.close();
-  app = await electron.launch({
-    args: [resolve("dist/main.cjs")],
-    env: { ...process.env, FOLIO_DATA_DIR: folder },
-  });
+  await stop();
+  app = await launchFixture(folder);
   window = await app.firstWindow();
   await expect(window.getByRole("alert")).toContainText("壊れたJSON");
   await expect(window.locator(".folio-editor")).toHaveCount(0);

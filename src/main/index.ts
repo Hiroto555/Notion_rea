@@ -299,6 +299,7 @@ if (startupError) {
         });
         if (req.type === "sync:status") return syncControl.status();
         if (req.type === "sync:connectionStatus") return management.status();
+        if (req.type === "sync:retentionStatus") return management.retention();
         if (req.type === "sync:connectionConfigure") return management.configure(req.input);
         if (req.type === "sync:connectionDisable") return management.disable(req.requestId, req.expectedRevision);
         if (req.type === "sync:connectionResolve") return management.resolve(req.requestId);

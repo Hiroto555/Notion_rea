@@ -208,7 +208,7 @@ test("R3 fidelity responsive: 1440/1024/960, inspector footprint, popovers and t
   // Slash menu at 960: it opens at the paragraph start, inside the reduced
   // editing column, and adds no horizontal overflow to the scroll container.
   await resize(s, sizes[2]);
-  await w.keyboard.press("Meta+n");
+  await w.keyboard.press(process.platform === "darwin" ? "Meta+n" : "Control+n");
   await expect(w.locator(".page-title")).toHaveValue("無題");
   await w.locator(".folio-editor").click();
   await w.keyboard.type("/heading");
@@ -451,7 +451,7 @@ test("R3 fidelity keyboard contract: search/link/record and older dialogs share 
   await focusWindow(s);
 
   // Search: initial focus, arrow selection, Escape, documented focus return.
-  await w.keyboard.press("Meta+p");
+  await w.keyboard.press(process.platform === "darwin" ? "Meta+p" : "Control+p");
   const search = w.getByRole("dialog", {
     name: "ワークスペース検索",
     exact: true,
@@ -470,16 +470,16 @@ test("R3 fidelity keyboard contract: search/link/record and older dialogs share 
   await expect(w.getByLabel("ページタイトル", { exact: true })).toBeFocused();
 
   // Link: Escape restores the exact editor selection and focus.
-  await w.keyboard.press("Meta+n");
+  await w.keyboard.press(process.platform === "darwin" ? "Meta+n" : "Control+n");
   await expect(w.getByLabel("ページタイトル", { exact: true })).toHaveValue(
     "無題",
   );
   await w.locator(".folio-editor").click();
   await w.keyboard.type("リンク対象");
-  await w.keyboard.press("Meta+ArrowLeft");
+  await w.keyboard.press(process.platform === "darwin" ? "Meta+ArrowLeft" : "Home");
   for (let i = 0; i < 5; i++) await w.keyboard.press("Shift+ArrowRight");
   expect(await w.evaluate(() => getSelection()?.toString())).toBe("リンク対象");
-  await w.keyboard.press("Meta+k");
+  await w.keyboard.press(process.platform === "darwin" ? "Meta+k" : "Control+k");
   const link = w.getByRole("dialog", { name: "ページリンク", exact: true });
   await expect(link).toBeVisible();
   await expect(w.getByLabel("検索キーワード")).toBeFocused();
@@ -492,7 +492,7 @@ test("R3 fidelity keyboard contract: search/link/record and older dialogs share 
   expect(selectionAfterCancel).toBe("リンク対象");
 
   // Synthetic composition only: Escape is ignored during composition.
-  await w.keyboard.press("Meta+p");
+  await w.keyboard.press(process.platform === "darwin" ? "Meta+p" : "Control+p");
   const compositionInput = w.getByLabel("検索キーワード");
   await compositionInput.focus();
   await compositionInput.evaluate((el) =>
@@ -606,7 +606,7 @@ test("R3 fidelity keyboard contract: search/link/record and older dialogs share 
   expect(afterHistoryDismiss.pages).toEqual(beforeHistoryDismiss.pages);
 
   // Older DialogFrame: trash. Trash the current page, then open the list.
-  await w.keyboard.press("Meta+n");
+  await w.keyboard.press(process.platform === "darwin" ? "Meta+n" : "Control+n");
   await expect(w.getByLabel("ページタイトル", { exact: true })).toHaveValue(
     "無題",
   );

@@ -21,7 +21,8 @@
     "review:scan": "node scripts/review-hygiene.mjs",
     "review:test": "node --test tests/review-hygiene.test.mjs",
     "review:export": "node scripts/export-review.mjs",
-    "folio:rescue": "node scripts/raw-rescue.mjs"
+    "folio:rescue": "node scripts/raw-rescue.mjs",
+    "folio:sync-server": "node dist/server-ops.cjs"
   },
   "dependencies": {
     "@tiptap/extension-details": "^3.0.0",

@@ -79,6 +79,7 @@ import {
 import type { BlobTransferScope } from "./blob-transfer-types";
 import { inspectBlobTransferInventory } from "./blob-transfer-inventory";
 import { inspectWorkspaceTransferBudget } from "./blob-transfer-budget";
+import { assertServerBlobAdmission, type ServerBlobRetentionLimits } from "./server-blob-retention";
 
 /** Attachment limit already enforced by `attachFile` in the base application. */
 export const WORKSPACE_BLOB_MAX_BYTES = 20_000_000;
@@ -529,7 +530,7 @@ export class WorkspaceBlobStore {
   private readonly root: string;
   private readonly activeUploads = new Set<string>();
 
-  constructor(root: string) {
+  constructor(root: string, private readonly retentionLimits?: ServerBlobRetentionLimits) {
     requireCondition(
       typeof root === "string" && root.length > 0,
       "invalid-root",
@@ -633,9 +634,11 @@ export class WorkspaceBlobStore {
       this.activeUploads.add(key);
       try {
         const directory = this.workspacePath(workspaceId, true);
-        await withBlobUploadLock(directory, () =>
+        // A root lease serializes quota admission across ALL workspaces;
+        // per-workspace upload ownership also covers resumable HEAD probes.
+        await withBlobUploadLock(this.root, () => withBlobUploadLock(directory, () =>
           this.put(request, response, workspaceId, sha256, context),
-        );
+        ));
       } finally {
         this.activeUploads.delete(key);
       }
@@ -728,6 +731,14 @@ export class WorkspaceBlobStore {
 
     let descriptor: number | undefined;
     let discardPartial = false;
+    let partial;
+    try {partial = lstatSync(partialPath);} catch (error) {if (errorCode(error) !== "ENOENT") throw error;}
+    requireCondition(!partial || (partial.isFile() && !partial.isSymbolicLink() && partial.nlink === 1 &&
+      typeof process.getuid === "function" && partial.uid === process.getuid()), "unsafe-blob-path", 409);
+    // Reserve only the new bytes for this bounded slice. A retry may truncate
+    // its own partial, but cannot reclaim someone else's data to pass a cap.
+    const projectedSize = range ? range.end + 1 : declared ?? WORKSPACE_BLOB_MAX_BYTES;
+    assertServerBlobAdmission(this.root, Math.max(0, projectedSize - (partial?.size ?? 0)), this.retentionLimits, partial ? 0 : 1);
     try {
       try {
         descriptor = openSync(partialPath, WRITE_FLAGS, 0o600);

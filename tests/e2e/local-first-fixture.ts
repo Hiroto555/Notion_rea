@@ -5,8 +5,9 @@ import {
   type ElectronApplication,
   type Page,
 } from "@playwright/test";
-import { mkdtempSync, mkdirSync, writeFileSync, readFileSync } from "node:fs";
+import { mkdirSync, writeFileSync, readFileSync } from "node:fs";
 import { join, resolve } from "node:path";
+import { fixtureElectronOptions, fixtureRoot } from "./fixture-isolation";
 
 export type LocalSession = {
   root: string;
@@ -25,7 +26,7 @@ export type LocalSession = {
  * change the host network or fill the disk. The compiled production app is used. */
 export const test = base.extend<{ local: LocalSession }>({
   local: async ({}, use, info) => {
-    const root = mkdtempSync(resolve("output/local-first-"));
+    const root = fixtureRoot("local-first-");
     const directory = join(root, "workspace"),
       external = join(root, "external");
     mkdirSync(directory);
@@ -80,14 +81,14 @@ require(${JSON.stringify(resolve("dist/main.cjs"))});
       readOnly?: boolean;
       recovery?: boolean;
     }) => {
-      const env: Record<string, string> = Object.fromEntries(
-        Object.entries(process.env).filter(
-          (entry): entry is [string, string] => typeof entry[1] === "string",
-        ),
-      );
-      env.FOLIO_DATA_DIR = directory;
-      delete env.FOLIO_DEV_URL;
-      app = await electron.launch({ args: [bootstrap], env });
+      const electronOptions = fixtureElectronOptions(directory);
+      app = await electron.launch({
+        args: [
+          ...electronOptions.args.slice(0, -1),
+          bootstrap,
+        ],
+        env: electronOptions.env,
+      });
       window = await app.firstWindow();
       // Also expose offline state to navigator.onLine in the automation
       // context; the session-level denial above already covers initial load.

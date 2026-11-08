@@ -1,12 +1,14 @@
-import { test, expect, _electron as electron } from "@playwright/test";
-import { mkdtempSync, mkdirSync, rmSync } from "node:fs";
+import { test, expect } from "@playwright/test";
+import { mkdirSync, rmSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { Store } from "../../src/persistence/store";
 import { RecordRepository } from "../../src/persistence/record-repository";
 import { markRecordStoreVersion } from "../../src/persistence/record-version";
+import { fixtureRoot } from "./fixture-isolation";
+import { killFixture, launchFixture } from "./recovery-ci-runtime";
 
 test("R4 fixed viewport synthetic Page, database and record captures", async () => {
-  const root = mkdtempSync(resolve("output/r4-visual-workspace-"));
+  const root = fixtureRoot("r4-visual-");
   const store = new Store(join(root, "workspace.sqlite"));
   const page = store.create(null, "page", "週次プロジェクトノート");
   store.update(page.id, page.revision, { doc: { type: "doc", content: [
@@ -19,7 +21,7 @@ test("R4 fixed viewport synthetic Page, database and record captures", async () 
   repository.create(db.id, "募集資料を確認する", {});
   repository.create(db.id, "週次レビューをまとめる", {});
   store.close();
-  const app = await electron.launch({ args: [resolve("dist/main.cjs")], env: { ...process.env, FOLIO_DATA_DIR: root } });
+  const app = await launchFixture(root);
   try {
     const window = await app.firstWindow();
     await window.setViewportSize({ width: 1440, height: 900 });
@@ -34,5 +36,5 @@ test("R4 fixed viewport synthetic Page, database and record captures", async () 
     await window.getByRole("button", { name: "開く 募集資料を確認する", exact: true }).click();
     await expect(window.locator(".r3-record-page, .record-body-preview")).toBeVisible();
     await window.screenshot({ path: join(dir, "record.png") });
-  } finally { await app.close(); rmSync(root, { recursive: true, force: true }); }
+  } finally { await killFixture(app); rmSync(root, { recursive: true, force: true }); }
 });

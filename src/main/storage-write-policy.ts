@@ -43,6 +43,7 @@ const REQUEST_STORAGE_ACTIONS = {
   "startup:status": "read",
   "sync:status": "read",
   "sync:connectionStatus": "read", "sync:connectionConfigure": "checkpoint",
+  "sync:retentionStatus": "read",
   "sync:connectionDisable": "checkpoint", "sync:connectionResolve": "read",
   "sync:transferInventory": "read", "sync:transferPlan": "checkpoint",
   "sync:transferRelease": "maintenance", "sync:transferResolve": "read",

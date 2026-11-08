@@ -10,6 +10,7 @@ import {
   pageWidthState,
   r8Data,
   r8Database,
+  r8Mod,
   r8PageWidth,
   r8Saved,
   setPageWidth,
@@ -53,7 +54,7 @@ test("ordinary page width changes from 標準 to ワイド, keeps one Editor and
 
     await editor.click();
     await window.keyboard.press("End");
-    await window.keyboard.press("Meta+z");
+    await window.keyboard.press(`${r8Mod}+z`);
     await expect(editor).not.toContainText("幅切替の一時入力");
     await r8Saved(window);
 
@@ -103,7 +104,7 @@ test("record/database width change preserves raw numeric input and canonical val
     await window.keyboard.type("幅切替の記録本文");
     await recordEditor.click();
     await window.keyboard.press("End");
-    await window.keyboard.press("Meta+z");
+    await window.keyboard.press(`${r8Mod}+z`);
     await expect(recordEditor).not.toContainText("幅切替の記録本文");
     // The incomplete numeric draft is deliberately still present.
     await expect(numeric).toHaveValue("-");

@@ -1,11 +1,12 @@
 import {
   expect,
-  _electron as electron,
   type ElectronApplication,
   type Page,
 } from "@playwright/test";
-import { mkdirSync, mkdtempSync, rmSync } from "node:fs";
-import { join, resolve } from "node:path";
+import { mkdirSync, rmSync } from "node:fs";
+import { join } from "node:path";
+import { fixtureRoot } from "../fixture-isolation";
+import { killFixture, launchFixture } from "../recovery-ci-runtime";
 import { Store } from "../../../src/persistence/store";
 import { RecordRepository } from "../../../src/persistence/record-repository";
 import { markRecordStoreVersion } from "../../../src/persistence/record-version";
@@ -63,9 +64,11 @@ const emptyFilter = (id: string) => ({
   conditions: [],
 });
 
+/** Platform-aware primary modifier for the real Electron keyboard. */
+export const r7Mod = process.platform === "darwin" ? "Meta" : "Control";
+
 export function r7Data() {
-  mkdirSync(resolve("output"), { recursive: true });
-  const root = mkdtempSync(resolve("output/r7-acceptance-"));
+  const root = fixtureRoot("r7-acceptance-");
   const dataDir = join(root, "workspace");
   mkdirSync(dataDir);
   const exportsDir = join(root, "exports");
@@ -177,21 +180,23 @@ export function r7Data() {
 export type R7Data = ReturnType<typeof r7Data>;
 
 export async function launchR7(data: R7Data) {
-  const app = await electron.launch({
-    args: [resolve("dist/main.cjs")],
-    env: { ...process.env, FOLIO_DATA_DIR: data.dataDir },
-  });
-  const window = await app.firstWindow();
-  await expect(window.locator(".page-title")).toBeVisible();
-  // Let Editor setup/normalization reach App before asserting a saved baseline.
-  await window.evaluate(
-    () =>
-      new Promise<void>((done) =>
-        requestAnimationFrame(() => requestAnimationFrame(() => done())),
-      ),
-  );
-  await r7Saved(window);
-  return { app, window };
+  const app = await launchFixture(data.dataDir);
+  try {
+    const window = await app.firstWindow();
+    await expect(window.locator(".page-title")).toBeVisible();
+    // Let Editor setup/normalization reach App before asserting a saved baseline.
+    await window.evaluate(
+      () =>
+        new Promise<void>((done) =>
+          requestAnimationFrame(() => requestAnimationFrame(() => done())),
+        ),
+    );
+    await r7Saved(window);
+    return { app, window };
+  } catch (error) {
+    await killFixture(app);
+    throw error;
+  }
 }
 
 export async function r7Saved(window: Page) {
@@ -267,11 +272,6 @@ export async function mockOpenDialog(
 }
 
 export async function disposeR7(data: R7Data, app?: ElectronApplication) {
-  const child = app?.process();
-  if (child && child.exitCode === null && child.signalCode === null)
-    await new Promise<void>((done) => {
-      child.once("exit", () => done());
-      child.kill("SIGKILL");
-    });
+  await killFixture(app);
   rmSync(data.root, { recursive: true, force: true });
 }

@@ -384,6 +384,7 @@ export const requestSchema = z.discriminatedUnion("type", [
   z.object({type:z.literal("recovery:restore"),operationId:z.string().uuid(),target:archiveTargetSchema}).strict(),
   z.object({type: z.literal("sync:status")}).strict(),
   z.object({type: z.literal("sync:connectionStatus")}).strict(),
+  z.object({type: z.literal("sync:retentionStatus")}).strict(),
   z.object({type: z.literal("sync:connectionConfigure"), input: syncConnectionInputSchema}).strict(),
   z.object({type: z.literal("sync:connectionDisable"), requestId: z.string().uuid(), expectedRevision: z.string().uuid().nullable()}).strict(),
   z.object({type: z.literal("sync:connectionResolve"), requestId: z.string().uuid()}).strict(),

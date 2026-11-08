@@ -16,6 +16,9 @@ import {
 import { join } from "node:path";
 import { DatabaseSync } from "node:sqlite";
 
+const shortcut = (key: string) =>
+  `${process.platform === "darwin" ? "Meta" : "Control"}+${key}`;
+
 test("offline compiled desktop creates, edits, searches, exports and reopens persisted text", async ({
   local: s,
 }) => {
@@ -39,7 +42,7 @@ test("offline compiled desktop creates, edits, searches, exports and reopens per
     .locator(".folio-editor")
     .fill("ローカル検索固有語 local-first saved body");
   await saved(s);
-  await w.keyboard.press("Meta+k");
+  await w.keyboard.press(shortcut("k"));
   await w.getByLabel("検索キーワード").fill("ローカル検索固有語");
   await expect(w.locator(".search-results")).toContainText(
     "Offline 日本語ノート",
@@ -458,7 +461,7 @@ test("rich import keeps initial content in the atomic operation, checkpoint and 
   await expect(s.window.locator(".folio-editor strong")).toHaveText(
     "Bold persisted",
   );
-  await s.window.keyboard.press("Meta+k");
+  await s.window.keyboard.press(shortcut("k"));
   await s.window.getByLabel("検索キーワード").fill("AtomicImportUnique");
   await expect(s.window.locator(".search-results")).toContainText(
     "rich-import",

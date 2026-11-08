@@ -1,6 +1,5 @@
 import {
   expect,
-  _electron as electron,
   type ElectronApplication,
   type Locator,
   type Page,
@@ -9,7 +8,6 @@ import { createHash } from "node:crypto";
 import {
   existsSync,
   mkdirSync,
-  mkdtempSync,
   readFileSync,
   readdirSync,
   rmSync,
@@ -17,6 +15,8 @@ import {
 } from "node:fs";
 import { dirname, join, relative, resolve, sep } from "node:path";
 import { DatabaseSync } from "node:sqlite";
+import { fixtureRoot } from "../fixture-isolation";
+import { killFixture, launchFixture } from "../recovery-ci-runtime";
 import { Store } from "../../../src/persistence/store";
 import { RecordRepository } from "../../../src/persistence/record-repository";
 import { markRecordStoreVersion } from "../../../src/persistence/record-version";
@@ -84,9 +84,11 @@ function seedWidth(store: Store, id: string, width: "standard" | "wide") {
     .run(JSON.stringify({ ...page, width }), id);
 }
 
+/** Platform-aware primary modifier for the real Electron keyboard. */
+export const r8Mod = process.platform === "darwin" ? "Meta" : "Control";
+
 export function r8Data() {
-  mkdirSync(resolve("output"), { recursive: true });
-  const root = mkdtempSync(resolve("output/r8-acceptance-"));
+  const root = fixtureRoot("r8-acceptance-");
   const dataDir = join(root, "workspace");
   mkdirSync(dataDir);
   const assetsDir = join(dataDir, "assets");
@@ -212,22 +214,24 @@ export function r8Data() {
 export type R8Data = ReturnType<typeof r8Data>;
 
 export async function launchR8(data: R8Data) {
-  const app = await electron.launch({
-    args: [resolve("dist/main.cjs")],
-    env: { ...process.env, FOLIO_DATA_DIR: data.dataDir },
-  });
-  const window = await app.firstWindow();
-  await expect(window.locator(".page-title")).toBeVisible();
-  // Let Editor setup, recovery checkpoints and any launch-time normalization
-  // settle before capturing a baseline or injecting test hooks.
-  await window.evaluate(
-    () =>
-      new Promise<void>((done) =>
-        requestAnimationFrame(() => requestAnimationFrame(() => done())),
-      ),
-  );
-  await r8Saved(window);
-  return { app, window };
+  const app = await launchFixture(data.dataDir);
+  try {
+    const window = await app.firstWindow();
+    await expect(window.locator(".page-title")).toBeVisible();
+    // Let Editor setup, recovery checkpoints and any launch-time normalization
+    // settle before capturing a baseline or injecting test hooks.
+    await window.evaluate(
+      () =>
+        new Promise<void>((done) =>
+          requestAnimationFrame(() => requestAnimationFrame(() => done())),
+        ),
+    );
+    await r8Saved(window);
+    return { app, window };
+  } catch (error) {
+    await killFixture(app);
+    throw error;
+  }
 }
 
 export async function r8Saved(window: Page) {
@@ -807,11 +811,6 @@ export async function disposeR8(
   data: R8Data,
   app?: ElectronApplication,
 ) {
-  const child = app?.process();
-  if (child && child.exitCode === null && child.signalCode === null)
-    await new Promise<void>((done) => {
-      child.once("exit", () => done());
-      child.kill("SIGKILL");
-    });
+  await killFixture(app);
   rmSync(data.root, { recursive: true, force: true });
 }

@@ -2,6 +2,9 @@ import { writeFileSync } from "node:fs";
 import type { Locator } from "@playwright/test";
 import { test, expect, type Session } from "./next-round-fixture";
 
+const shortcut = (key: string) =>
+  `${process.platform === "darwin" ? "Meta" : "Control"}+${key}`;
+
 // UI 2.0 evidence suite. Everything here observes the display layer through
 // real Electron: geometry, computed tokens, hover/focus affordances, menu
 // bounds and contrast. Product behaviour (save, move, recovery) is exercised
@@ -578,7 +581,7 @@ test("UI 2.0 keyboard: focus visibility, shortcuts and menu Escape", async ({
   expect(parseFloat(focus!.outlineWidth)).toBeGreaterThanOrEqual(2);
 
   // Existing shortcut still opens the shared search dialog; Escape closes it.
-  await w.keyboard.press("Meta+p");
+  await w.keyboard.press(shortcut("p"));
   const dialog = w.getByRole("dialog", {
     name: "ワークスペース検索",
     exact: true,
@@ -611,7 +614,7 @@ test("UI 2.0 keyboard: focus visibility, shortcuts and menu Escape", async ({
   ).toBe("ページメニュー");
 
   // Arrow keys still navigate the search result list.
-  await w.keyboard.press("Meta+p");
+  await w.keyboard.press(shortcut("p"));
   const results = w.locator(".search-results button");
   await expect(results.first()).toBeVisible();
   const count = await results.count();

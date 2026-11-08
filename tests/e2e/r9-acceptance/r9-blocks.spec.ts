@@ -15,6 +15,8 @@ import {
 
 requireIntegratedBuild();
 
+const UNDO_KEY = process.platform === "darwin" ? "Meta+z" : "Control+z";
+
 test("W3 acceptance: slash コールアウト creates an editable default-note callout and stores it", async () => {
   const data = r9Data();
   let app: ElectronApplication | undefined;
@@ -116,7 +118,7 @@ test("W3 acceptance: callout tone change preserves the body and is undone as one
       }),
     ).toBe(true);
 
-    await window.keyboard.press("Meta+z");
+    await window.keyboard.press(UNDO_KEY);
     await expect(callout).toHaveAttribute("data-tone", "note");
     await expect(callout).toContainText("本文を保持したコールアウト");
 
@@ -198,7 +200,7 @@ test("W3 acceptance: table Tab moves cells, row/column controls work, and the fi
     const extraRowDelete = await richControl(window, TABLE_CONTROLS.deleteRow);
     await extraRowDelete.click();
     await expect(table).toHaveCount(0);
-    await window.keyboard.press("Meta+z");
+    await window.keyboard.press(UNDO_KEY);
     await expect(rows).toHaveCount(1);
 
     while ((await firstRow.locator("th,td").count()) > 1) {
@@ -214,7 +216,7 @@ test("W3 acceptance: table Tab moves cells, row/column controls work, and the fi
     );
     await extraColumnDelete.click();
     await expect(table).toHaveCount(0);
-    await window.keyboard.press("Meta+z");
+    await window.keyboard.press(UNDO_KEY);
     await expect(firstRow.locator("th,td")).toHaveCount(1);
 
     await expect

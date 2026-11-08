@@ -1,11 +1,12 @@
 import { expect, test, chromium } from "@playwright/test";
 import { createServer as createHttpServer } from "node:http";
-import { existsSync, readdirSync } from "node:fs";
+import { existsSync, mkdirSync, readdirSync } from "node:fs";
 import { homedir } from "node:os";
 import { join, resolve } from "node:path";
 import type { ViteDevServer } from "vite";
 import { createServer as createViteServer } from "vite";
 import react from "@vitejs/plugin-react";
+import { assertLinuxGuiCi } from "../../scripts/linux-gui-ci-policy.mjs";
 
 // Presentation + real Editor tests. No Electron, IPC or persistence claim.
 function findChromium(): string | undefined {
@@ -15,7 +16,12 @@ function findChromium(): string | undefined {
   if (configured && existsSync(configured)) return configured;
   const cache =
     process.env.PLAYWRIGHT_BROWSERS_PATH ||
-    join(homedir(), "Library/Caches/ms-playwright");
+    join(
+      homedir(),
+      process.platform === "darwin"
+        ? "Library/Caches/ms-playwright"
+        : ".cache/ms-playwright",
+    );
   if (!existsSync(cache)) return undefined;
   const candidates = readdirSync(cache)
     .filter((entry) => /^chromium-\d+$/.test(entry))
@@ -35,7 +41,22 @@ function findChromium(): string | undefined {
   return undefined;
 }
 
-test.use({ launchOptions: { executablePath: findChromium() } });
+function sandboxArgs() {
+  if (process.env.FOLIO_LINUX_GUI_CI !== "1") return [];
+  assertLinuxGuiCi();
+  return ["--no-sandbox"];
+}
+
+function viteCacheDir() {
+  if (process.env.FOLIO_VITE_CACHE_DIR)
+    return join(process.env.FOLIO_VITE_CACHE_DIR, "record-page-harness");
+  const root = process.env.FOLIO_GUI_CI_DATA_ROOT ?? process.env.RUNNER_TEMP;
+  return root ? join(root, "record-page-vite-cache") : undefined;
+}
+
+test.use({
+  launchOptions: { executablePath: findChromium(), args: sandboxArgs() },
+});
 
 let server: ViteDevServer;
 let base = "";
@@ -54,12 +75,12 @@ async function freePort(): Promise<number> {
 
 test.beforeAll(async () => {
   const port = await freePort();
+  const cacheDir = viteCacheDir();
+  if (cacheDir) mkdirSync(cacheDir, { recursive: true });
   server = await createViteServer({
     root: resolve("."),
     configFile: false,
-    cacheDir: process.env.FOLIO_VITE_CACHE_DIR
-      ? join(process.env.FOLIO_VITE_CACHE_DIR, "record-page-harness")
-      : undefined,
+    cacheDir,
     plugins: [react()],
     logLevel: "error",
     server: { host: "127.0.0.1", port, strictPort: true },

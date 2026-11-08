@@ -1,4 +1,5 @@
 import { assertRecoverySyncAllowed } from "../persistence/recovery-origin";
+import { assertClientSyncGrowth } from "./sync-retention";
 import { legacyApplyIntentPresent } from "./legacy-apply-intent";
 import { dirname } from "node:path";
 import { assertPendingNormalApply, completeNormalApply, normalApplyBlocks, type NormalApplyRecord } from "./normal-apply-journal";
@@ -443,6 +444,10 @@ export class WorkspaceSyncStore {
       const fingerprint = fingerprintCommit(commit);
       const encoded = canonicalJson(commit);
       beforeEnqueue?.(Buffer.byteLength(encoded));
+      assertClientSyncGrowth(this.store.db, {
+        rows: 1,
+        bytes: Buffer.byteLength(encoded),
+      }, true);
       this.store.db
         .prepare(
           "INSERT INTO workspace_sync_outbox(operation_id,fingerprint,generation,commit_json,result_json) VALUES(?,?,?,?,NULL)",
@@ -497,6 +502,10 @@ export class WorkspaceSyncStore {
           ),
           "invalid-applied-checkpoint",
         );
+        assertClientSyncGrowth(this.store.db, {
+          rows: 0,
+          bytes: Buffer.byteLength(encoded),
+        }, false);
         this.store.db
           .prepare(
             "UPDATE workspace_sync_outbox SET result_json=? WHERE operation_id=?",
@@ -519,6 +528,14 @@ export class WorkspaceSyncStore {
         !this.hasUnresolvedConflict(),
         "sync-conflict-already-open",
       );
+      const operationJson = canonicalJson(operation),
+        checkpointJson = canonicalJson(operation.checkpoint);
+      assertClientSyncGrowth(this.store.db, {
+        rows: 1,
+        bytes: Buffer.byteLength(encoded) * 2 +
+          Buffer.byteLength(operationJson) +
+          Buffer.byteLength(checkpointJson),
+      }, false);
       this.store.db
         .prepare(
           "UPDATE workspace_sync_outbox SET result_json=? WHERE operation_id=?",
@@ -530,10 +547,10 @@ export class WorkspaceSyncStore {
         )
         .run(
           operation.operationId,
-          canonicalJson(operation),
+          operationJson,
           encoded,
           row!.generation,
-          canonicalJson(operation.checkpoint),
+          checkpointJson,
         );
     });
   }
@@ -586,6 +603,10 @@ export class WorkspaceSyncStore {
           );
           skipApply = true;
         }
+        assertClientSyncGrowth(this.store.db, {
+          rows: 1,
+          bytes: Buffer.byteLength(encoded),
+        });
         this.store.db
           .prepare(
             "INSERT INTO workspace_sync_inbox(revision,change_json,skip_apply) VALUES(?,?,?)",
@@ -643,11 +664,16 @@ export class WorkspaceSyncStore {
           revision,
           checkpointHash: change.checkpointHash,
         };
+        const encoded = canonicalJson(result);
+        assertClientSyncGrowth(this.store.db, {
+          rows: 0,
+          bytes: Buffer.byteLength(encoded),
+        }, false);
         this.store.db
           .prepare(
             "UPDATE workspace_sync_outbox SET result_json=? WHERE operation_id=?",
           )
-          .run(canonicalJson(result), change.operationId);
+          .run(encoded, change.operationId);
         this.store.db
           .prepare(
             "UPDATE workspace_sync_state SET applied_revision=?,clean_generation=? WHERE singleton=1",
@@ -896,6 +922,11 @@ export class WorkspaceSyncStore {
       const encodedCommit = canonicalJson(commit);
       options.admitBytes?.(Buffer.byteLength(encodedCommit) +
         archives.reduce((sum, [, json]) => sum + Buffer.byteLength(json) + 4096, 4096));
+      assertClientSyncGrowth(this.store.db, {
+        rows: 1 + archives.length,
+        bytes: Buffer.byteLength(encodedCommit) +
+          archives.reduce((sum, [, json]) => sum + Buffer.byteLength(json), 0),
+      }, true);
       if (options.target) this.assertConflictResolutionTarget(options.target);
       this.assertDecision(options);
       this.store.db
@@ -973,14 +1004,20 @@ export class WorkspaceSyncStore {
         this.checkpointAtRevision(state.applied_revision)), "invalid-local-workspace-checkpoint");
       const latestJson = canonicalJson(latest);
       const remoteJson = canonicalJson(expected.checkpoint);
+      const localJson = canonicalJson(validated.localCheckpoint);
+      const includeLatest = hashCheckpoint(latest) !== validated.localCheckpointHash;
       // Both candidates, latest local content, applied checkpoint, replacement
       // rows/search index allowance, plus per-record SQLite metadata allowance.
-      options.admitBytes?.(Buffer.byteLength(canonicalJson(validated.localCheckpoint)) +
+      options.admitBytes?.(Buffer.byteLength(localJson) +
         Buffer.byteLength(latestJson) + 4 * Buffer.byteLength(remoteJson) + 6 * 4096);
       if (options.target) this.assertConflictResolutionTarget(options.target);
       this.assertDecision(options);
-      const now = Date.now(),
-        localCheckpoint = validated.localCheckpoint;
+      assertClientSyncGrowth(this.store.db, {
+        rows: includeLatest ? 3 : 2,
+        bytes: Buffer.byteLength(localJson) + Buffer.byteLength(remoteJson) +
+          (includeLatest ? Buffer.byteLength(latestJson) : 0),
+      }, false);
+      const now = Date.now();
       this.store.db
         .prepare(
           "INSERT INTO workspace_sync_archives(operation_id,kind,checkpoint_json,created_at) VALUES(?,?,?,?)",
@@ -988,7 +1025,7 @@ export class WorkspaceSyncStore {
         .run(
           validated.operation.operationId,
           "conflict-local",
-          canonicalJson(localCheckpoint),
+          localJson,
           now,
         );
       this.store.db
@@ -998,10 +1035,10 @@ export class WorkspaceSyncStore {
         .run(
           validated.operation.operationId,
           "conflict-remote",
-          canonicalJson(expected.checkpoint),
+          remoteJson,
           now,
         );
-      if (hashCheckpoint(latest) !== validated.localCheckpointHash) {
+      if (includeLatest) {
         this.store.db
           .prepare(
             "INSERT INTO workspace_sync_archives(operation_id,kind,checkpoint_json,created_at) VALUES(?,?,?,?)",

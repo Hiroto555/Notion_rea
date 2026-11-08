@@ -34,3 +34,12 @@ await build({
   format: "cjs",
   external: ["node:sqlite"],
 });
+
+await build({
+  entryPoints: ["src/sync/server-ops-cli.ts"],
+  outfile: "dist/server-ops.cjs",
+  bundle: true,
+  platform: "node",
+  format: "cjs",
+  external: ["node:sqlite"],
+});

@@ -7,6 +7,10 @@ import {
 import { DatabaseSync } from "node:sqlite";
 import { SyncSqliteGuard, SyncStorageUnavailable } from "./sqlite-guard";
 import {
+  assertSyncRetentionAdmission,
+  type SyncRetentionLimits,
+} from "./sync-retention";
+import {
   createCheckpointServerBackup,
   type CheckpointServerBackup,
 } from "./server-backup";
@@ -82,6 +86,11 @@ export type CheckpointServerOptions = {
   validateCheckpoint: CheckpointValidator;
   /** Optional attachment transport owned by the host/asset lane. */
   blobs?: CheckpointBlobAdapter;
+  /**
+   * Optional lower retention caps for this server. The shared admission helper
+   * rejects values above the server defaults (1024 rows, 64 MiB).
+   */
+  retentionLimits?: SyncRetentionLimits;
   host?: "127.0.0.1";
   port?: number;
 };
@@ -433,6 +442,8 @@ export async function startCheckpointServer(
         .prepare("SELECT 1 FROM checkpoint_devices WHERE token_hash=?")
         .get(digest);
       requireCondition(collision === undefined, "token-in-use", 409);
+      const deviceCount = Number(storage.db.prepare("SELECT COUNT(*) AS n FROM checkpoint_devices").get()!.n);
+      requireCondition(Number.isSafeInteger(deviceCount) && deviceCount < 512, "server-device-retention-held", 409);
       storage.db
         .prepare(
           "INSERT INTO checkpoint_devices(workspace_id,client_id,owner_id,token_hash,revoked) VALUES(?,?,?,?,0)",
@@ -526,45 +537,82 @@ export async function startCheckpointServer(
         serverEpoch,
         fingerprint,
       };
-      let result: CommitResult;
+      const commitJson = canonicalJson(operation);
       if (!baseIsHead) {
-        result = { ...identity, status: "conflict", head };
-      } else {
-        requireCondition(
-          head.revision < Number.MAX_SAFE_INTEGER,
-          "revision-exhausted",
-          409,
+        const result: CommitResult = { ...identity, status: "conflict", head };
+        const resultJson = canonicalJson(result);
+        assertSyncRetentionAdmission(
+          storage.db,
+          "server",
+          {
+            rows: 1,
+            bytes:
+              Buffer.byteLength(commitJson) + Buffer.byteLength(resultJson),
+          },
+          options.retentionLimits,
         );
-        const revision = head.revision + 1;
-        const change = {
-          revision,
-          clientId: operation.clientId,
-          operationId: operation.operationId,
-          fingerprint,
-          checkpointHash: operation.checkpointHash,
-          checkpoint: operation.checkpoint,
-        };
+        // The losing operation and the competing head remain in the same durable receipt.
         storage.db
-          .prepare(
-            "UPDATE checkpoint_heads SET revision=?,checkpoint_hash=?,checkpoint_json=? WHERE workspace_id=?",
-          )
+          .prepare("INSERT INTO checkpoint_operations VALUES(?,?,?,?,?,?)")
           .run(
-            revision,
-            operation.checkpointHash,
-            canonicalJson(operation.checkpoint),
             operation.workspaceId,
+            operation.clientId,
+            operation.operationId,
+            fingerprint,
+            commitJson,
+            resultJson,
           );
-        storage.db
-          .prepare("INSERT INTO checkpoint_changes VALUES(?,?,?)")
-          .run(operation.workspaceId, revision, canonicalJson(change));
-        result = {
-          ...identity,
-          status: "applied",
-          revision,
-          checkpointHash: operation.checkpointHash,
-        };
+        return result;
       }
-      // The losing operation and the competing head remain in the same durable receipt.
+      requireCondition(
+        head.revision < Number.MAX_SAFE_INTEGER,
+        "revision-exhausted",
+        409,
+      );
+      const revision = head.revision + 1;
+      const change = {
+        revision,
+        clientId: operation.clientId,
+        operationId: operation.operationId,
+        fingerprint,
+        checkpointHash: operation.checkpointHash,
+        checkpoint: operation.checkpoint,
+      };
+      const changeJson = canonicalJson(change);
+      const result: CommitResult = {
+        ...identity,
+        status: "applied",
+        revision,
+        checkpointHash: operation.checkpointHash,
+      };
+      const resultJson = canonicalJson(result);
+      // Admit the change row and the operation receipt together before the head
+      // update; a held transaction leaves no partial revision behind.
+      assertSyncRetentionAdmission(
+        storage.db,
+        "server",
+        {
+          rows: 2,
+          bytes:
+            Buffer.byteLength(changeJson) +
+            Buffer.byteLength(commitJson) +
+            Buffer.byteLength(resultJson),
+        },
+        options.retentionLimits,
+      );
+      storage.db
+        .prepare(
+          "UPDATE checkpoint_heads SET revision=?,checkpoint_hash=?,checkpoint_json=? WHERE workspace_id=?",
+        )
+        .run(
+          revision,
+          operation.checkpointHash,
+          canonicalJson(operation.checkpoint),
+          operation.workspaceId,
+        );
+      storage.db
+        .prepare("INSERT INTO checkpoint_changes VALUES(?,?,?)")
+        .run(operation.workspaceId, revision, changeJson);
       storage.db
         .prepare("INSERT INTO checkpoint_operations VALUES(?,?,?,?,?,?)")
         .run(
@@ -572,8 +620,8 @@ export async function startCheckpointServer(
           operation.clientId,
           operation.operationId,
           fingerprint,
-          canonicalJson(operation),
-          canonicalJson(result),
+          commitJson,
+          resultJson,
         );
       return result;
     });

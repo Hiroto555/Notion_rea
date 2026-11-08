@@ -79,13 +79,42 @@ export class TransferMaintenanceService {
   private parse(value: string): CacheReleaseOperation {
     const op = JSON.parse(value) as CacheReleaseOperation;
     requireCondition(op && ID.test(op.id) && HASH.test(op.scopeHash) && JOURNAL.test(op.journalName) &&
-      ["partial", "empty-journal"].includes(op.kind) && ["planned", "releasing", "trashed", "unlinked", "completed"].includes(op.phase) &&
+      ["partial", "empty-journal"].includes(op.kind) && ["planned", "marking", "releasing", "trashed", "unlinked", "completed"].includes(op.phase) &&
       Number.isSafeInteger(op.expiresAt) && Number.isSafeInteger(op.releasedBytes) && op.releasedBytes >= 0 &&
       [op.rootDev, op.rootIno, op.dbDev, op.dbIno].every(Number.isSafeInteger), "cache-release-stale", 409);
     return op;
   }
   private write(db: PrivateLedger, op: CacheReleaseOperation) {
     db.transaction(() => db.write("release:" + op.id, canonicalJson(op, 32 * 1024)));
+  }
+  private prunePlans(db: PrivateLedger) {
+    const rows = db.entries("release:", 1000).map(row => {
+      const op = this.parse(row.value); requireCondition(row.key === "release:" + op.id, "cache-release-stale", 409); return {...row, op};
+    });
+    const completed = rows.filter(row => row.op.phase === "completed").sort((a,b) => b.op.expiresAt - a.op.expiresAt);
+    const remove = completed.slice(256).map(row => row.key);
+    // An expired plan is discardable only after proving its journal has no
+    // matching release marker. Never prune an uncertain or started operation.
+    const checked = new Map<string, Map<string, {state: string; reason: string | null}>>();
+    for (const row of rows) {
+      const op = row.op;
+      if (op.phase !== "planned" || op.expiresAt >= Date.now()) continue;
+      const path = join(this.root, op.scopeHash, op.journalName);
+      try {
+        if (!checked.has(path)) {
+          if (checked.size >= 32) continue;
+          const root = pinPrivateRoot(path), main = lstatSync(join(path, "state.sqlite"));
+          requireCondition(root.dev === op.rootDev && root.ino === op.rootIno && main.isFile() && !main.isSymbolicLink() &&
+            main.nlink === 1 && main.size > 0 && main.dev === op.dbDev && main.ino === op.dbIno, "cache-release-stale", 409);
+          const journal = new BlobTransferJournal(path, {scopeHash: op.scopeHash});
+          try {checked.set(path, new Map(journal.inventory().map(record => [record.key, record])));} finally {journal.close();}
+        }
+        const record = op.record ? checked.get(path)!.get(op.record.key) : undefined;
+        if (record?.state === "releasing" && record.reason === op.id) continue;
+        remove.push(row.key);
+      } catch { /* Preserve plans whose ownership cannot be checked. */ }
+    }
+    if (remove.length) db.transaction(() => {for (const key of remove) db.write(key, null);});
   }
   private entry(op: CacheReleaseOperation): TransferMaintenanceEntry {
     return {entryId: `${op.scopeHash}/${op.journalName}/${op.record?.key ?? "!"}`, scopeHash: op.scopeHash,
@@ -111,6 +140,7 @@ export class TransferMaintenanceService {
   async plan(entryId: string): Promise<TransferReleasePlanView> {
     const loc = locator(entryId);
     return this.locked(db => {
+      this.prunePlans(db);
       const path = join(this.root, loc.scopeHash, loc.journalName), root = pinPrivateRoot(path);
       pinPrivateRoot(join(this.root, loc.scopeHash));
       const database = lstatSync(join(path, "state.sqlite"));
@@ -163,7 +193,7 @@ export class TransferMaintenanceService {
       const path = join(this.root, op.scopeHash, op.journalName);
       const advance = (phase: CacheReleaseOperation["phase"]) => {op.phase = phase; this.write(db, op); this.afterPhase?.(phase, op.id);};
       try {
-        if (op.phase === "planned") requireCondition(Date.now() <= op.expiresAt, "cache-release-expired", 409);
+        if (op.phase === "planned" && op.kind === "empty-journal") requireCondition(Date.now() <= op.expiresAt, "cache-release-expired", 409);
         if (op.phase !== "unlinked") {
           const root = pinPrivateRoot(path);
           requireCondition(root.dev === op.rootDev && root.ino === op.rootIno, "cache-release-stale", 409);
@@ -175,7 +205,21 @@ export class TransferMaintenanceService {
           const journal = new BlobTransferJournal(path, {scopeHash: op.scopeHash});
           try {
             if (op.phase === "planned") {
-              requireCondition(samePin(pinReleaseFile(path, op.record.partialName), op.file), "cache-release-stale", 409);
+              const current = journal.get(op.record.key);
+              const alreadyMarked = current?.state === "releasing" && current.reason === op.id;
+              if (!alreadyMarked) {
+                requireCondition(Date.now() <= op.expiresAt, "cache-release-expired", 409);
+                requireCondition(current && canonicalJson(current) === canonicalJson(op.record), "cache-release-stale", 409);
+                requireCondition(samePin(pinReleaseFile(path, op.record.partialName), op.file), "cache-release-stale", 409);
+              }
+              // Durable intent BEFORE the separate journal COMMIT. A kill or
+              // unknown COMMIT can never strand a marked record behind expiry.
+              advance("marking");
+            }
+            if (op.phase === "marking") {
+              const current = journal.get(op.record.key);
+              if (current?.state !== "releasing" || current.reason !== op.id)
+                requireCondition(samePin(pinReleaseFile(path, op.record.partialName), op.file), "cache-release-stale", 409);
               journal.markRelease(op.record, op.id); advance("releasing");
             }
             if (op.phase === "releasing") {

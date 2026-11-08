@@ -93,14 +93,14 @@ describe("TransferMaintenancePanel SSR", () => {
   it("shows retained bytes, over-limit state, held reason and refresh", () => {
     const html = render();
 
-    expect(html).toContain("Retained bytes");
-    expect(html).toContain("6656 bytes (6.5 KiB)");
-    expect(html).toContain("Over limit");
-    expect(html).toContain(">Yes<");
+    expect(html).toContain("保持バイト数");
+    expect(html).toContain("6656 バイト（6.5 KiB）");
+    expect(html).toContain("上限超過");
+    expect(html).toContain(">はい<");
     expect(html).toContain("maintenance held by another process");
-    expect(html).toContain("Refresh is available while maintenance is held");
+    expect(html).toContain("保留中でも更新できます");
     expect(html).toContain('data-cursor="cursor-2"');
-    expect(html).toContain(">Refresh</button>");
+    expect(html).toContain(">更新</button>");
   });
 
   it("shows every given entry with scope, state and reason", () => {
@@ -108,30 +108,32 @@ describe("TransferMaintenancePanel SSR", () => {
 
     expect(html).toContain("entry-active");
     expect(html).toContain("asset-1");
-    expect(html).toContain("Current scope");
-    expect(html).toContain("Old scope");
-    expect(html).toContain(">active<");
-    expect(html).toContain(">blocked<");
-    expect(html).toContain(">completed<");
-    expect(html).toContain(">unknown<");
+    expect(html).toContain("現在のスコープ");
+    expect(html).toContain("古いスコープ");
+    expect(html).toContain(">転送中<");
+    expect(html).toContain(">ブロック中<");
+    expect(html).toContain(">完了<");
+    expect(html).toContain(">不明<");
     expect(html).toContain("blocked by sync");
     expect(html).toContain("unreleasable");
     expect(html).toContain("scope-current");
     expect(html).toContain("scope-old-2");
-    expect(html).toContain("No reason supplied");
+    expect(html).toContain("理由なし");
   });
 
   it("offers a dry-run preview only for releasable entries", () => {
     const html = render();
 
-    expect((html.match(/>Preview release</g) ?? []).length).toBe(2);
-    expect(html).toContain("Preview release for entry-active");
-    expect(html).toContain("Preview release for entry-completed");
-    expect(html).not.toContain("Preview release for entry-blocked");
-    expect(html).not.toContain("Preview release for entry-unknown");
-    expect(html).toContain("Keep this entry. Release is unavailable.");
+    expect((html.match(/>解放内容を確認</g) ?? []).length).toBe(2);
+    for (const entry of entries) {
+      const start = html.indexOf(`data-entry-id="${entry.entryId}"`);
+      const row = html.slice(start, html.indexOf("</tr>", start));
+      if (entry.canRelease) expect(row).toContain(">解放内容を確認</button>");
+      else expect(row).not.toContain("<button");
+    }
+    expect(html).toContain("このエントリは保持されます。解放できません。");
     expect(html).not.toContain("<input");
-    expect(html).not.toContain("Confirm release");
+    expect(html).not.toContain("解放を実行");
   });
 
   it("does not call any action while server rendering", () => {
@@ -151,17 +153,17 @@ describe("TransferMaintenancePanel SSR", () => {
       false,
     );
 
-    expect(html).toContain("No transfer entries.");
-    expect(html).toContain(">No<");
-    expect(html).not.toContain("Load more");
-    expect(html).not.toContain("Refresh is available while maintenance is held");
+    expect(html).toContain("転送エントリはありません。");
+    expect(html).toContain(">いいえ<");
+    expect(html).not.toContain("さらに読み込む");
+    expect(html).not.toContain("保留中でも更新できます");
   });
 
   it("marks the panel busy and disables actions", () => {
     const html = render(view, true);
 
     expect(html).toContain('aria-busy="true"');
-    expect(html).toContain("Working...");
+    expect(html).toContain("処理中…");
     expect((html.match(/disabled=""/g) ?? []).length).toBeGreaterThan(0);
   });
 });
@@ -174,18 +176,18 @@ describe("transfer release model", () => {
     expect(confirm.assetId).toBe("asset-1");
     expect(confirm.scopeHash).toBe("scope-current");
     expect(confirm.currentScope).toBe(true);
-    expect(confirm.scopeLabel).toBe("Current scope");
+    expect(confirm.scopeLabel).toBe("現在のスコープ");
     expect(confirm.bytes).toBe(2048);
-    expect(confirm.bytesLabel).toBe("2048 bytes (2.0 KiB)");
-    expect(confirm.cacheNotice).toContain("Incomplete cache will be re-downloaded");
+    expect(confirm.bytesLabel).toBe("2048 バイト（2.0 KiB）");
+    expect(confirm.cacheNotice).toContain("不完全なキャッシュは再ダウンロードされます");
   });
 
   it("shows an explicit missing asset and old scope", () => {
     const confirm = transferReleaseConfirmation(entries[1]);
 
-    expect(confirm.assetId).toBe("None");
-    expect(confirm.scopeLabel).toBe("Old scope");
-    expect(confirm.bytesLabel).toBe("0 bytes (0 B)");
+    expect(confirm.assetId).toBe("なし");
+    expect(confirm.scopeLabel).toBe("古いスコープ");
+    expect(confirm.bytesLabel).toBe("0 バイト（0 B）");
   });
 
   it("formats bytes deterministically", () => {

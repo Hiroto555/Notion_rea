@@ -20,6 +20,11 @@ export type SyncConnectionView = {
   hasCredential: boolean; reason: SyncConnectionReason | null;
 };
 export type SyncConnectionAction = { outcome: "saved" | "disabled" | "held" | "outcome-unknown"; view: SyncConnectionView };
+export type SyncRetentionView = {
+  queue: {rows: number; bytes: number; maxRows: number; maxBytes: number; held: boolean} | null;
+  backups: {generations: number; bytes: number; held: boolean} | null;
+  held: string | null;
+};
 
 export type TransferMaintenanceEntry = {
   entryId: string; scopeHash: string; assetId: string | null; bytes: number; offset: number;

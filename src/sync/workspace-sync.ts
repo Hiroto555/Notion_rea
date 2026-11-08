@@ -5,6 +5,7 @@ import { mkdirSync, realpathSync } from "node:fs";
 import { basename, dirname, join } from "node:path";
 import { estimateBackupBytes } from "../main/bulk-storage-budget";
 import { WorkspaceStoragePressure } from "../main/storage-pressure";
+import { assertBackupRetention } from "./backup-retention";
 import { readSyncSuccess, writeSyncSuccess } from "../main/workspace-sync-history";
 import { createFullBackup } from "../persistence/full-backup-create";
 import { readUserVersion } from "../persistence/schema-startup";
@@ -487,7 +488,9 @@ export class WorkspaceSync {
     reason: "before-enable" | "before-apply" | "before-rebind",
   ): void {
     const { store } = this.options;
-    this.admitBytes(estimateBackupBytes(store.db, this.directory), "backup");
+    const estimatedBytes = estimateBackupBytes(store.db, this.directory);
+    this.admitBytes(estimatedBytes, "backup");
+    assertBackupRetention(this.directory, estimatedBytes);
     const root = join(this.directory, "backups");
     mkdirSync(root, { recursive: true, mode: 0o700 });
     createFullBackup(

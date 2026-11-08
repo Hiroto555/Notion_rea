@@ -5,17 +5,19 @@ import {
   type ElectronApplication,
   type Page,
 } from "@playwright/test";
-import { mkdtempSync, mkdirSync, rmSync } from "node:fs";
-import { join, resolve } from "node:path";
+import { mkdirSync, rmSync } from "node:fs";
+import { join } from "node:path";
 import { realDrag } from "./real-drag";
 import { observeDrag, dragEvidence } from "./drag-observer";
+import { fixtureElectronOptions, fixtureRoot } from "./fixture-isolation";
 let dragObserved = false;
 const dragSession = () => ({ app, window, folder, restart: async () => {} });
+const shortcut = (key: string) =>
+  `${process.platform === "darwin" ? "Meta" : "Control"}+${key}`;
 let app: ElectronApplication, window: Page, folder: string, root: string, exportsDir: string, inputsDir: string;
 async function launch() {
   app = await electron.launch({
-    args: [resolve("dist/main.cjs")],
-    env: { ...process.env, FOLIO_DATA_DIR: folder },
+    ...fixtureElectronOptions(folder),
     timeout: 30000,
   });
   window = await app.firstWindow();
@@ -26,7 +28,7 @@ async function launch() {
 }
 test.beforeEach(async () => {
   dragObserved = false;
-  root = mkdtempSync(resolve("output/e2e-"));
+  root = fixtureRoot("e2e-");
   folder = join(root, "workspace");
   exportsDir = join(root, "exports");
   inputsDir = join(root, "inputs");
@@ -51,7 +53,7 @@ test("real Electron: page edit, slash, undo, blocks, search, clone, trash and re
     window.getByLabel("ページタイトル", { exact: true }),
   ).toHaveValue("ようこそ、Folioへ");
   await window.screenshot({ path: info.outputPath("folio-light.png") });
-  await window.keyboard.press("Meta+n");
+  await window.keyboard.press(shortcut("n"));
   await expect(
     window.getByLabel("ページタイトル", { exact: true }),
   ).toHaveValue("無題");
@@ -99,7 +101,7 @@ test("real Electron: page edit, slash, undo, blocks, search, clone, trash and re
   await window.getByLabel("やり直す", { exact: true }).click();
   await expect(window.locator(".folio-editor h1")).toHaveCount(2);
   await expect(window.locator(".save-state")).toHaveText("保存済み");
-  await window.keyboard.press("Meta+k");
+  await window.keyboard.press(shortcut("k"));
   await window.getByLabel("検索キーワード").fill("日本語とEnglish");
   await expect(window.locator(".search-results")).toContainText(
     "検証ノート English",
@@ -120,7 +122,7 @@ test("real Electron: page edit, slash, undo, blocks, search, clone, trash and re
   );
   await window.getByRole("button", { name: "復元", exact: true }).click();
   await window.getByRole("button", { name: "閉じる", exact: true }).click();
-  await window.keyboard.press("Meta+k");
+  await window.keyboard.press(shortcut("k"));
   await window.getByLabel("検索キーワード").fill("検証ノート English");
   await window.locator(".search-results button").first().click();
   await expect(window.locator(".save-state")).toHaveText("保存済み");
@@ -241,7 +243,7 @@ test("security boundary, page hierarchy, cycle error and versions", async () => 
   await window.locator(".folio-editor").click();
   await window.keyboard.insertText("Version one");
   await expect(window.locator(".save-state")).toHaveText("保存済み");
-  await window.keyboard.press("Meta+a");
+  await window.keyboard.press(shortcut("a"));
   await window.keyboard.insertText("Version two");
   await expect(window.locator(".save-state")).toHaveText("保存済み");
   await window.getByRole("button", { name: "変更履歴を見る" }).click();
@@ -254,7 +256,7 @@ test("security boundary, page hierarchy, cycle error and versions", async () => 
   await expect(window.locator(".folio-editor")).toHaveText("Version one");
 });
 test("native rich HTML paste, Markdown shortcuts, toggle, links and block drag", async () => {
-  await window.keyboard.press("Meta+n");
+  await window.keyboard.press(shortcut("n"));
   await window
     .getByLabel("ページタイトル", { exact: true })
     .fill("貼り付けテスト");
@@ -290,7 +292,7 @@ test("native rich HTML paste, Markdown shortcuts, toggle, links and block drag",
   });
   try {
     await window.locator(".folio-editor").click();
-    await window.keyboard.press("Meta+v");
+    await window.keyboard.press(shortcut("v"));
     await expect(window.locator(".folio-editor strong")).toHaveText(
       "太字の日本語",
     );
@@ -305,7 +307,7 @@ test("native rich HTML paste, Markdown shortcuts, toggle, links and block drag",
       else clipboard.clear();
     });
   }
-  await window.keyboard.press("Meta+End");
+  await window.keyboard.press(shortcut("End"));
   await window.keyboard.press("ArrowDown");
   await window.keyboard.press("Enter");
   await window.keyboard.type("> ");

@@ -5,7 +5,7 @@ export type CacheReleaseOperation = {
   scopeHash: string; journalName: string; rootDev: number; rootIno: number;
   dbDev: number; dbIno: number; record: BlobTransferRecord | null;
   file: ReleaseFilePin | null; expiresAt: number;
-  phase: "planned" | "releasing" | "trashed" | "unlinked" | "completed";
+  phase: "planned" | "marking" | "releasing" | "trashed" | "unlinked" | "completed";
   releasedBytes: number;
   metadata?: {name: string; pin: ReleaseFilePin}[];
 };

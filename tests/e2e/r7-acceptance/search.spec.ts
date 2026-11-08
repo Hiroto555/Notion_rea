@@ -1,8 +1,8 @@
 import { expect, test, type ElectronApplication } from "@playwright/test";
-import { disposeR7, launchR7, r7Data } from "./r7-fixture";
+import { disposeR7, launchR7, r7Data, r7Mod } from "./r7-fixture";
 
 async function openSearch(window: Awaited<ReturnType<typeof launchR7>>["window"]) {
-  await window.keyboard.press("Meta+p");
+  await window.keyboard.press(`${r7Mod}+p`);
   const dialog = window.getByRole("dialog", {
     name: "ワークスペース検索",
     exact: true,

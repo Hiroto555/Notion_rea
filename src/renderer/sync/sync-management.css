@@ -1,0 +1,21 @@
+.sync-management-dialog {
+  width: min(880px, calc(100vw - 48px)); max-height: calc(100vh - 64px);
+  overflow: auto; padding: 24px; border: 1px solid var(--border, #ddd);
+  border-radius: 12px; color: var(--text, #202020); background: var(--bg, #fff);
+}
+.sync-management-dialog::backdrop { background: #0006; }
+.sync-management-heading { display: flex; justify-content: space-between; align-items: center; gap: 20px; }
+.sync-management-heading h2 { margin-top: 0; }
+.sync-management-dialog section { margin: 20px 0; }
+.sync-management-dialog fieldset { border: 1px solid #aaa6; padding: 16px; border-radius: 8px; }
+.sync-management-dialog fieldset > div { margin: 12px 0; }
+.sync-management-dialog label { display: block; margin-bottom: 5px; font-weight: 600; }
+.sync-management-dialog input, .sync-management-dialog select { box-sizing: border-box; width: 100%; padding: 8px; }
+.sync-management-dialog p { line-height: 1.6; }
+.sync-management-dialog button { margin: 4px; padding: 6px 10px; }
+.sync-management-dialog code, .sync-management-dialog dd { overflow-wrap: anywhere; }
+.sync-management-dialog [role="alert"] { border-inline-start: 3px solid #b76222; padding: 8px 12px; }
+.sync-management-dialog dl > div { display: flex; flex-wrap: wrap; gap: 8px; margin: 6px 0; }
+.sync-management-dialog dt { font-weight: 600; }
+.sync-management-dialog dd { margin: 0; }
+.sync-management-dialog li { margin: 12px 0; }

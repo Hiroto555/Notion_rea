@@ -7,6 +7,7 @@ import { verifyFullBackup } from "../persistence/full-backup-verify";
 import { restoreFullBackup } from "../persistence/full-backup-restore";
 import type { BackupPreview, BackupRestored, VerifiedWorkspaceBackup } from "../shared/workspace-backup";
 import { estimateBackupBytes, estimateRestoreBytes } from "./bulk-storage-budget";
+import { assertBackupRetention } from "../sync/backup-retention";
 
 /** Paths originate only in the main process/native chooser. Renderer tickets
  * pin the exact verified manifest and never grant arbitrary filesystem access. */
@@ -25,12 +26,13 @@ export class WorkspaceBackupService {
   }
   create(prefix = "workspace"): BackupPreview {
     // Covers automatic rich-document/layout backups as well as manual ones.
-    // The estimate runs before the destination directory or files exist.
+    // The estimate runs once before the destination directory or files exist.
+    const estimatedBytes = estimateBackupBytes(this.db, this.directory);
     const beforeCreate = this.admission.beforeCreate;
-    if (beforeCreate)
-      beforeCreate(estimateBackupBytes(this.db, this.directory));
+    if (beforeCreate) beforeCreate(estimatedBytes);
+    assertBackupRetention(this.directory, estimatedBytes);
     const root = join(this.directory, "backups");
-    mkdirSync(root, {recursive: true});
+    mkdirSync(root, {recursive: true, mode: 0o700});
     return this.preview(createFullBackup(this.db, this.directory, join(root, `${prefix}-${Date.now()}-${randomUUID()}`)));
   }
   createAutomatic(prefix: string): void {

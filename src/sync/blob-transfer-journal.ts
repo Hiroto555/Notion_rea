@@ -398,7 +398,7 @@ export class BlobTransferJournal {
   }
   /** Caller owns the global cache mutex and a durable release operation. */
   markRelease(expected: BlobTransferRecord, operationId: string) {
-    requireCondition(/^[a-f0-9-]{36}$/.test(operationId), "invalid-cache-release-id");
+    requireCondition(/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/.test(operationId), "invalid-cache-release-id");
     return this.change(expected.key, old => {
       if (old.state === "releasing" && old.reason === operationId) return old;
       requireCondition(old.state !== "releasing" && canonicalJson(old) === canonicalJson(expected), "cache-release-stale", 409);

@@ -9,6 +9,7 @@ import { queryBacklinks } from "../persistence/backlinks-query";
 import { BacklinksPanel } from "./BacklinksPanel";
 import { WorkspaceMaintenancePanel } from "./WorkspaceMaintenancePanel";
 import { WorkspaceSyncIndicator } from "./WorkspaceSyncIndicator";
+import { SyncManagementButton } from "./sync/SyncManagementDialog";
 import { inputReadyToClose } from "./input-close-guard";
 import { PageOrderRepairDialog } from "./PageOrderRepairDialog";
 import { sendPageOrderRepair } from "./reliable-page-order-repair";
@@ -1791,6 +1792,7 @@ export function App({ syncMessage }: { syncMessage?: string } = {}) {
             inert={creatingPage || !!recordView || undefined}
           >
             <WorkspaceSyncIndicator startupMessage={syncMessage} inputReady={syncDecisionInputReady} />
+            <SyncManagementButton />
             <details className="conflict-recovery-details" onKeyDown={event => {if(event.key === "Escape") {event.preventDefault();event.stopPropagation();event.currentTarget.open=false;event.currentTarget.querySelector("summary")?.focus();}}}><summary>保全した競合データを取り出す</summary><WorkspaceConflictRecoveryPanel port={conflictRecoveryPort} /></details>
             <span
               className={"save-state " + (error ? "error" : "")}

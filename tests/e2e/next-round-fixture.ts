@@ -4,6 +4,7 @@ import {
 } from "@playwright/test";
 import { mkdtempSync, mkdirSync, writeFileSync } from "node:fs";
 import { resolve, join } from "node:path";
+import { fixtureElectronOptions, fixtureRoot } from "./fixture-isolation";
 export type Session = {
   app: ElectronApplication;
   window: Page;
@@ -14,9 +15,7 @@ export type Session = {
 };
 export const test = base.extend<{ folio: Session }>({
   folio: async ({}, use, info) => {
-    const root = mkdtempSync(process.env.FOLIO_GUI_CI_DATA_ROOT
-      ? join(process.env.FOLIO_GUI_CI_DATA_ROOT, "next-round-")
-      : resolve("output/next-round-e2e-"));
+    const root = fixtureRoot("next-round-");
     const folder = join(root, "workspace"), exportsDir = join(root, "exports"), inputsDir = join(root, "inputs");
     mkdirSync(folder); mkdirSync(exportsDir); mkdirSync(inputsDir);
     let app: ElectronApplication | undefined, window: Page | undefined, tracing = false;
@@ -24,11 +23,7 @@ export const test = base.extend<{ folio: Session }>({
     const record = (stage: string, detail?: unknown) => diagnostics.push({ stage, time: new Date().toISOString(), detail });
     const start = async () => {
       record("launch-start", { url: process.env.FOLIO_DEV_URL || "production" });
-      const env: Record<string,string> = Object.fromEntries(Object.entries(process.env).filter((entry):entry is [string,string]=>typeof entry[1]==="string"));
-      env.FOLIO_DATA_DIR=folder;
-      delete env.FOLIO_DEV_URL;
-      for (const key of Object.keys(env)) if (key.startsWith("FOLIO_SYNC_")) delete (env as Record<string,string|undefined>)[key];
-      app = await electron.launch({ args: [...(process.env.FOLIO_LINUX_GUI_CI === "1" ? ["--no-sandbox"] : []),resolve("dist/main.cjs")], env });
+      app = await electron.launch(fixtureElectronOptions(folder));
       const child = app.process();
       record("launch-complete", { pid: child.pid });
       await app.evaluate(({ app, BrowserWindow }) => {

@@ -1,8 +1,12 @@
 import { existsSync, mkdirSync } from "node:fs";
+import { dirname } from "node:path";
 import type { Store } from "../persistence/store";
 import { assertRecoverySyncAllowed } from "../persistence/recovery-origin";
 import { hasCrashRecoveryInput, type CrashRecoveryRead } from "../shared/crash-recovery";
-import type { SyncConnectionAction, SyncConnectionInput, SyncConnectionView } from "../shared/sync-management";
+import type { SyncConnectionAction, SyncConnectionInput, SyncConnectionView, SyncRetentionView } from "../shared/sync-management";
+import { inspectSyncRetention } from "../sync/sync-retention";
+import { inspectBackupRetention } from "../sync/backup-retention";
+import { readUserVersion } from "../persistence/schema-startup";
 import { requireCondition } from "../sync/protocol";
 import { SyncConnectionVault } from "./sync-connection-vault";
 import type { WorkspaceSyncService } from "./workspace-sync-service";
@@ -72,7 +76,7 @@ export class SyncManagementControl {
   }
   inventory(cursor?: string) {
     this.allowed();
-    return this.options.gate.write(() => {this.quiet(); return this.options.maintenance.view(cursor);});
+    return this.options.gate.write(() => {this.allowed(); return this.options.maintenance.view(cursor);});
   }
   plan(entryId: string) {
     this.quiet();
@@ -85,5 +89,14 @@ export class SyncManagementControl {
   resolveRelease(operationId: string) {
     this.allowed();
     return this.options.gate.write(() => this.options.maintenance.resolve(operationId));
+  }
+  retention(): SyncRetentionView {
+    this.allowed();
+    let held: string | null = null, queue: SyncRetentionView["queue"] = null, backups: SyncRetentionView["backups"] = null;
+    try {if (readUserVersion(this.options.store.db) === 5) queue = inspectSyncRetention(this.options.store.db, "client");}
+    catch {held = "sync-retention-unknown";}
+    try {backups = inspectBackupRetention(dirname(this.options.store.path));}
+    catch {held = "sync-backup-retention-unknown";}
+    return {queue, backups, held};
   }
 }
