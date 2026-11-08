@@ -13,4 +13,4 @@
 
 候補環境は専用の仮想Macまたは別Mac。共有clipboard・共有フォルダ・認証情報の持込みを避け、試験用プロフィールと一時`FOLIO_DATA_DIR`を使う。環境構築・Mac GUI実行の開始は今回行わない。
 
-ページツリーの実dragなど**OS共通で未移植の試験**は、このMac固有表とは別の未実行バックログである。Linux CIの初回42件に含まれないからといってMac専用と判定しない。残件は[従来の受入待ち](GUI-ACCEPTANCE-QUEUE.ja.md)、[ページツリー等の記録](../GUI-VALIDATION-QUEUE.ja.md)を参照する。
+ページツリーの実drag・移動中編集・再起動の3件は[Linuxで追加受入済み](GUI-PAGE-TREE-CI.ja.md)。このMacでのドラッグや物理入力の合格は意味しない。ほかのOS共通で未移植の試験も、このMac固有表とは別の未実行バックログとして扱う。残件は[従来の受入待ち](GUI-ACCEPTANCE-QUEUE.ja.md)、[GUIの履歴](../GUI-VALIDATION-QUEUE.ja.md)を参照する。

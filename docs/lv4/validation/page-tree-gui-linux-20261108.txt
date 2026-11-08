@@ -1,0 +1,41 @@
+Folio page-tree Linux GUI acceptance — 2026-11-08 JST
+Candidate: aa81a9e121d0f834cd95177cd59edab57d03267a
+GUI: https://github.com/Hiroto555/Notion_rea/actions/runs/42437077556
+Quiet: https://github.com/Hiroto555/Notion_rea/actions/runs/42437077487
+Artifact: 13599833779 (7-day retention)
+Artifact SHA256: 23160c485856f834e6682ba274d54a13adb1295a73ce41b29ae3ecac26558220
+Result: 45 PASS / 0 FAIL / 0 SKIP / retry 0 / 1 worker / 8 files
+Scope: 17 product Electron+IPC, 2 mocked Electron presentation, 26 mocked Chromium presentation.
+Page-tree: 2 real-pointer tests + 1 move-menu/delayed-load/edit/restart test.
+Environment: Ubuntu 24.04 GitHub-hosted x64 / Xvfb / Openbox / Electron 45.0.0 / Chromium 156.0.8078.48.
+Renderer: 1438x933 / DPR 1 / en-US / light.
+Product src tree: 378c75ce5f86f7d2feb5ec462bac1d84ee622a94 (unchanged from M1)
+Tests tree: c80c02d3c3c4ab4d48bdf104e6f49cc40aef8ebd
+Scripts tree: dacc55ea5e9661cf205b61ab46d0cb252e687c5e
+Workflow tree: 0d2d8521d6c33d759bdeb8e95f20caad43bd2df2
+
+Extracts from completed GUI job:
+2026-11-08T02:07:41.8179005Z   ✓  12 [electron-linux-real-ipc] › tests/e2e/page-move.spec.ts:25:1 › S2 tree input: edited source becomes target child with stable identity (2.1s)
+2026-11-08T02:07:44.1546872Z   ✓  13 [electron-linux-real-ipc] › tests/e2e/page-move.spec.ts:44:1 › S2 menu F11: delayed load preserves local edit and page hierarchy through restart (2.3s)
+2026-11-08T02:07:47.3591595Z   ✓  14 [electron-linux-real-ipc] › tests/e2e/page-move.spec.ts:163:1 › S2 tree order, root, cancellation and cycle rejection (3.2s)
+2026-11-08T02:08:45.4176134Z   45 passed (1.4m)
+
+Extracts from completed quiet job:
+2026-11-08T02:06:39.4104869Z [quiet] PASS stage=typecheck in 10.4s
+2026-11-08T02:08:01.4874789Z  Test Files  181 passed (181)
+2026-11-08T02:08:01.4878967Z       Tests  1678 passed (1678)
+2026-11-08T02:08:01.6304657Z [quiet] PASS stage=test in 82.2s
+2026-11-08T02:08:15.6591675Z [quiet] PASS stage=build in 14.0s
+2026-11-08T02:08:15.6592147Z [quiet] PASS all 3 stages in 106.6s
+2026-11-08T02:08:15.7027848Z {"status":"PASS","files":3,"scope":"HTML script/style references and CSS dependencies are local build files"}
+
+Artifact text inspection:
+- Pointer attempts: 6 trusted dragstarts, 5 trusted drops with application/x-folio-page and matching source page IDs.
+- Successful real move ACKs from pointer operations: 5.
+- Escape cancellation: trusted dragstart + dragend, no drop.
+- F11: held load => trusted title input => load release => save:commit revision 2->3 => saved display => real load => restart and same title/document/hierarchy/order.
+- First candidate 7701a8c: 44 PASS / 1 FAIL; no title input/save request was delivered during F11. Test preconditions fixed; no product src change, skip or automatic retry.
+
+Local Mac: GUI NOT_RUN; only typecheck, 50 targeted Node tests and list-only enumeration.
+Original master unchanged: e269137f191081cabc0f05aa03ec68339ce413c2.
+No master merge, no A3 implementation, no user-data access.

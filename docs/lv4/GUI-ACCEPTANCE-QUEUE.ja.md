@@ -1,6 +1,6 @@
 # Lv4 GUI・実機の受入待ち
 
-> **実行先の分離（2026-11-08）**：利用者の指示によりGitHub Actions＋Linux仮想画面の42件がPASSした（実Electron/実IPC14件、代替応答のElectron表示2件、Chromium表示26件）。[CI対象42件と結果](GUI-LINUX-CI.ja.md)を最新の実行記録とする。[Mac/OS固有](GUI-MAC-ACCEPTANCE.ja.md)は別枠でNOT_RUN。このMacではGUIを起動しない。以下は従来の待ち項目であり、Linuxの確認範囲とMacの未確認範囲を混同しない。
+> **実行先の分離（2026-11-08）**：GitHub Actions＋Linux仮想画面の45件がPASSした（実Electron/実IPC17件、代替応答のElectron表示2件、Chromium表示26件）。ページツリーの実drag・移動中編集・再起動の3件を追加した。[CI対象と結果](GUI-LINUX-CI.ja.md)、[ページツリーの証拠](GUI-PAGE-TREE-CI.ja.md)を最新の実行記録とする。[Mac/OS固有](GUI-MAC-ACCEPTANCE.ja.md)は別枠でNOT_RUN。このMacではGUIを起動しない。以下は従来の待ち項目であり、Linuxの確認範囲とMacの未確認範囲を混同しない。
 
 M1は非GUIで完了しA3前で停止した。[候補・証拠](M1-COMPLETION.ja.md)を参照。以下の実行許可や合格を得た意味ではない。
 

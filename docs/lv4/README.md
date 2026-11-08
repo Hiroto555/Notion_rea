@@ -1,6 +1,6 @@
 # Folio Lv4 の現在地
 
-2026-11-08 JST。**M1（A0〜A2）を完了し、Linux仮想画面のGUI 42件も受入した。A3未着手、確認済みLevelはLv3。** [CIの範囲と結果](GUI-LINUX-CI.ja.md)を参照。Mac固有・実機2台・未移植GUI suiteはNOT_RUN。Lv4全体は未完成。
+2026-11-08 JST。**M1（A0〜A2）を完了し、ページツリーの実drag等を含むLinux仮想画面のGUI 45件も受入した。A3未着手、確認済みLevelはLv3。** [CIの範囲と結果](GUI-LINUX-CI.ja.md)を参照。Mac固有・実機2台・残りの未移植GUI suiteはNOT_RUN。Lv4全体は未完成。
 
 利用者のM1実行指示に従い、Codexが管理・統合、DeepSeekが最大4本で並列実装・独立試験、Sol XHighが安全性レビューを担当した。最終候補は`d509edf`、型検査・**180ファイル／1,673テスト**・build PASS、未解決P0/P1なし。[M1完了記録](M1-COMPLETION.ja.md)と[回収手順書](m1/RECOVERY-RUNBOOK.ja.md)を最初に読む。
 
@@ -9,6 +9,7 @@
 | M1の終了条件・実績・制約・停止地点 | [M1完了記録](M1-COMPLETION.ja.md) |
 | M1のGitHub保存・PRの依存・マージ判断 | [M1保存記録](M1-PUBLICATION.ja.md) |
 | 操作中のMacを使わないGUI試験 | [Linux GUI CI](GUI-LINUX-CI.ja.md) |
+| ページツリーの実drag・移動中編集・再起動の追加受入 | [ページツリーCI結果](GUI-PAGE-TREE-CI.ja.md) |
 | Mac/OS固有の別枠 | [Mac受入待ち](GUI-MAC-ACCEPTANCE.ja.md) |
 | 保全データの回収・コピー復元・失敗時の手順 | [回収手順書](m1/RECOVERY-RUNBOOK.ja.md) |
 | 残作業の優先順・終了条件・概算工数・区切り | [残作業計画](REMAINING-WORK-PLAN.ja.md) |
