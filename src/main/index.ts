@@ -1,4 +1,9 @@
-import { readRecoveryOrigin } from "../persistence/recovery-origin";
+import { readRecoveryOrigin, assertRecoverySyncAllowed } from "../persistence/recovery-origin";
+import { SyncConnectionVault } from "./sync-connection-vault";
+import { savedConnectionEnvironment } from "./sync-connection-startup";
+import { SyncManagementControl } from "./sync-management-control";
+import { TransferMaintenanceService } from "./transfer-maintenance-service";
+import { canonicalJson, sha256, requireCondition } from "../sync/protocol";
 import { ConflictRecoveryService } from "./conflict-recovery-service";
 import { createRichDocumentProtection } from "./rich-document-protection";
 import { openWorkspaceAtStartup, admitStartupStorage } from "./workspace-startup";
@@ -26,6 +31,7 @@ import {
   session,
   Menu,
   shell,
+  safeStorage,
 } from "electron";
 import { join, resolve, basename, extname, dirname } from "node:path";
 import {
@@ -144,8 +150,16 @@ if (startupError) {
       const opened = openWorkspaceAtStartup(dataDir);
       store = opened.store;
       const readOnly = opened.status.mode === "readOnly";
-      if (!readOnly && readRecoveryOrigin(store.db) === "absent" && !startupSyncRequested(process.env) && readUserVersion(store.db) < 5) seed(store);
-      const crashRecovery = readOnly ? undefined : new CrashRecoveryFile(join(dataDir, "crash-recovery.json"), crashRecoveryWorkspaceId(store));
+      const recoveryIdentity = readOnly ? undefined : crashRecoveryWorkspaceId(store);
+      const vaultDirectory = resolve(process.env.FOLIO_CREDENTIAL_DIR ?? join(app.getPath("appData"), "Folio Sync Credentials"));
+      const vault = new SyncConnectionVault({directory: vaultDirectory, forbiddenRoots: [dirname(realpathSync(store.path))], safeStorage,
+        assertWorkspaceAllowed: path => {requireCondition(!readOnly && path === store.path, "read-only", 409); assertRecoverySyncAllowed(store.db);},
+        workspaceIdentity: () => recoveryIdentity ?? ""});
+      const savedConnection: ReturnType<typeof savedConnectionEnvironment> = readOnly ? {env: {...process.env, FOLIO_SYNC_ENABLED: "0"}} :
+        savedConnectionEnvironment(vault, vaultDirectory, store.path, process.env);
+      if (!readOnly && readRecoveryOrigin(store.db) === "absent" && !startupSyncRequested(savedConnection.env) &&
+          process.env.FOLIO_EMPTY_WORKSPACE !== "1" && readUserVersion(store.db) < 5) seed(store);
+      const crashRecovery = readOnly ? undefined : new CrashRecoveryFile(join(dataDir, "crash-recovery.json"), recoveryIdentity!);
       const assets = join(dataDir, "assets");
       if (!readOnly) mkdirSync(assets, { recursive: true });
       const storage = new WorkspaceStorageService(dataDir, store.db, process.env, async (title, create = false, file = false) => {
@@ -157,8 +171,10 @@ if (startupError) {
       const syncGate = new WorkspaceSyncGate();
       const conflictRecovery = new ConflictRecoveryService(store,dirname(realpathSync(store.path)));
       const startupSync: WorkspaceSyncStartupResult = crashRecovery
-        ? await runStartupWorkspaceSyncDetailed(store, () => crashRecovery.read(), process.env,
-            (bytes, purpose) => storage.admitSyncWrite(bytes, purpose))
+        ? await runStartupWorkspaceSyncDetailed(store, () => crashRecovery.read(), savedConnection.env,
+            (bytes, purpose) => storage.admitSyncWrite(bytes, purpose), () => {
+              if (savedConnection.saved) vault.markActivated(store.path, savedConnection.saved.revision);
+            })
         : {};
       const syncService: WorkspaceSyncService<WorkspaceSyncStatus> | undefined = startupSync.opened
         ? new WorkspaceSyncService<WorkspaceSyncStatus>(startupSync.opened)
@@ -205,7 +221,23 @@ if (startupError) {
             (!view.available || (view.state === "idle" && !view.scheduled));
         },
       } : undefined, readOnly, (bytes) => storage.admitSyncWrite(bytes, "content"));
-      const syncMessage = startupSync.message;
+      const activeScope = () => {
+        const status = syncService?.status().workspace;
+        const baseUrl = savedConnection.env.FOLIO_SYNC_URL;
+        if (!status || !baseUrl) return null;
+        const row = store.db.prepare("SELECT workspace_id,client_id,binding_id,server_epoch FROM workspace_sync_state WHERE singleton=1").get();
+        return row ? sha256(canonicalJson({baseUrlHash: sha256(new URL(baseUrl).origin), workspaceId: row.workspace_id,
+          clientId: row.client_id, bindingId: row.binding_id, serverEpoch: row.server_epoch})) : null;
+      };
+      const management = new SyncManagementControl({store, readOnly, vaultDirectory, vault, gate: syncGate, service: syncService,
+        recovery: () => crashRecovery?.read() ?? {status: "blocked", generation: 0},
+        intentClear: () => {
+          const view = restartControl!.status();
+          return new WorkspaceSyncIntentJournal(dirname(realpathSync(store.path)),store).read().status === "empty" &&
+            (!view.available || (view.state === "idle" && !view.scheduled)) && !conflictDecisionControl!.hasReservation();
+        },
+        maintenance: new TransferMaintenanceService(dirname(realpathSync(store.path)), activeScope)});
+      const syncMessage = savedConnection.held ? "保存した接続の資格情報を確認できず同期を保留しています。同期設定から確認してください。" : startupSync.message;
       const startupStatus = syncMessage ? { ...opened.status, syncMessage } : opened.status;
       const workspaceBackups = storage.backups;
       let layoutBackupDone = false;
@@ -266,6 +298,14 @@ if (startupError) {
           },isAuthorized,req.operationId);
         });
         if (req.type === "sync:status") return syncControl.status();
+        if (req.type === "sync:connectionStatus") return management.status();
+        if (req.type === "sync:connectionConfigure") return management.configure(req.input);
+        if (req.type === "sync:connectionDisable") return management.disable(req.requestId, req.expectedRevision);
+        if (req.type === "sync:connectionResolve") return management.resolve(req.requestId);
+        if (req.type === "sync:transferInventory") return management.inventory(req.cursor);
+        if (req.type === "sync:transferPlan") return management.plan(req.entryId);
+        if (req.type === "sync:transferRelease") return management.release(req.operationId);
+        if (req.type === "sync:transferResolve") return management.resolveRelease(req.operationId);
         if (req.type === "sync:restartStatus") return restartControl!.status();
         if (req.type === "sync:restartRequest") return restartControl!.request();
         if (req.type === "sync:restartCancel") return restartControl!.cancel(req.reservationId);

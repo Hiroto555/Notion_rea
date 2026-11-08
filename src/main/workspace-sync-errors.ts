@@ -3,6 +3,7 @@ import { SyncError } from "../sync/protocol";
 // A peer controls its error code. Only known, non-secret values cross into UI
 // state; raw exceptions and arbitrary peer text may contain credentials.
 const EXPOSED_ERRORS = new Set([
+  "sync-disabled", "sync-retention-held", "sync-retention-unknown", "backup-retention-held", "backup-retention-unknown", "server-blob-retention-held", "server-blob-retention-unknown",
   "server-head-regressed", "server-epoch-mismatch", "workspace-binding-mismatch",
   "workspace-binding-missing", "sync-conflict-open", "insufficient-storage",
   "payload-too-large", "invalid-local-workspace-checkpoint", "sync-already-running",

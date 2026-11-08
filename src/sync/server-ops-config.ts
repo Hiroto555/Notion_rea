@@ -56,6 +56,17 @@ const CREDENTIAL_KEYS = [
 const TOKEN = /^[A-Za-z0-9_-]{32,512}$/;
 const FILE_MODE = 0o600;
 const MAX_FILE_BYTES = 4_096;
+function assertHandoffAncestors(path: string): void {
+  let parent = dirname(resolve(path));
+  for (let depth = 0; depth < 128; depth++) {
+    for (const name of ["workspace.sqlite", "server.sqlite", "full-manifest.json", "manifest.json", ".folio-sync-transfers"]) {
+      try {lstatSync(join(parent, name)); fail(UNSAFE);}
+      catch (error) {if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;}
+    }
+    const next = dirname(parent); if (next === parent) return; parent = next;
+  }
+  fail(UNSAFE);
+}
 const O_NOFOLLOW = constants.O_NOFOLLOW || 0;
 const O_NONBLOCK = constants.O_NONBLOCK || 0;
 const READ_FLAGS =
@@ -361,6 +372,7 @@ export function writeServerOpsConfig(
 export function readIssuedSyncCredential(
   path: string,
 ): IssuedSyncCredential {
+  assertHandoffAncestors(path);
   const absolute = resolve(path), root = pin(dirname(absolute));
   const text = readSecureFile(join(root.path, basename(absolute)));
   assertPrivateRoot(root);
@@ -378,6 +390,7 @@ export function writeIssuedSyncCredential(
   value: IssuedSyncCredential,
   forbiddenRoots: readonly string[],
 ): void {
+  assertHandoffAncestors(path);
   const credential = parseCredential(value);
   if (!Array.isArray(forbiddenRoots) || forbiddenRoots.length === 0)
     fail(INVALID);

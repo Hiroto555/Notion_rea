@@ -1,6 +1,7 @@
 import { archiveTargetSchema, archiveCursorSchema } from "./conflict-recovery";
 import type { PageWidth } from "./page-layout";
 import { z } from "zod";
+import { syncConnectionInputSchema } from "./sync-management";
 import { crashRecoverySnapshotSchema } from "./crash-recovery";
 import { migrationPreviewRequestSchema, migrationCommitRequestSchema, migrationResolveRequestSchema } from "./legacy-migration-operation";
 import { propertyPreviewRequestSchema, propertyCommitRequestSchema, propertyResolveRequestSchema } from "./property-operation";
@@ -382,6 +383,14 @@ export const requestSchema = z.discriminatedUnion("type", [
   z.object({type:z.literal("recovery:export"),operationId:z.string().uuid(),target:archiveTargetSchema,mode:z.enum(["metadata-only","complete-bundle"])}).strict(),
   z.object({type:z.literal("recovery:restore"),operationId:z.string().uuid(),target:archiveTargetSchema}).strict(),
   z.object({type: z.literal("sync:status")}).strict(),
+  z.object({type: z.literal("sync:connectionStatus")}).strict(),
+  z.object({type: z.literal("sync:connectionConfigure"), input: syncConnectionInputSchema}).strict(),
+  z.object({type: z.literal("sync:connectionDisable"), requestId: z.string().uuid(), expectedRevision: z.string().uuid().nullable()}).strict(),
+  z.object({type: z.literal("sync:connectionResolve"), requestId: z.string().uuid()}).strict(),
+  z.object({type: z.literal("sync:transferInventory"), cursor: z.string().max(400).optional()}).strict(),
+  z.object({type: z.literal("sync:transferPlan"), entryId: z.string().min(1).max(300)}).strict(),
+  z.object({type: z.literal("sync:transferRelease"), operationId: z.string().uuid()}).strict(),
+  z.object({type: z.literal("sync:transferResolve"), operationId: z.string().uuid()}).strict(),
   z.object({type: z.literal("sync:run")}).strict(),
   z.object({type: z.literal("sync:restartStatus")}).strict(),
   z.object({type: z.literal("sync:restartRequest")}).strict(),

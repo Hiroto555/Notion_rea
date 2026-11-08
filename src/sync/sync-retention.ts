@@ -1,5 +1,5 @@
 import type { DatabaseSync } from "node:sqlite";
-import { SyncError } from "./protocol";
+import { SyncError, MAX_WIRE_BYTES, MAX_CHECKPOINT_BYTES } from "./protocol";
 
 export type SyncRetentionLimits = {
   maxRows: number;
@@ -224,4 +224,21 @@ export function assertSyncRetentionAdmission(
   if (projectedRows > inspection.maxRows || projectedBytes > inspection.maxBytes) {
     throw new SyncError("sync-retention-held", 409);
   }
+}
+
+/** Reserve the largest bounded ACK/conflict evidence before sending a new
+ * operation. Inbox/archive growth cannot consume this reservation. There is
+ * at most one pending outbox operation in WorkspaceSyncStore. */
+export function assertClientSyncGrowth(db: DatabaseSync, additional: RetentionAdditional,
+  pendingAfter?: boolean, limits?: SyncRetentionLimits): void {
+  let pending: boolean;
+  try {
+    const row = db.prepare("SELECT COUNT(*) AS n FROM workspace_sync_outbox WHERE result_json IS NULL").get()!;
+    const count = checkedNumber(row.n);
+    if (count > 1) unknown();
+    pending = pendingAfter ?? count === 1;
+  } catch (error) {if (error instanceof SyncError) throw error; return unknown();}
+  const addition = resolveAdditional(additional);
+  assertSyncRetentionAdmission(db, "client", {rows: addition.rows + (pending ? 1 : 0),
+    bytes: addition.bytes + (pending ? 3 * MAX_WIRE_BYTES + MAX_CHECKPOINT_BYTES : 0)}, limits);
 }

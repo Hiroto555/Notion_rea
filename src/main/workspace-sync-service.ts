@@ -55,6 +55,7 @@ export class WorkspaceSyncService<Status> {
   private connecting: Promise<WorkspaceSyncTransport<Status>> | undefined;
   private lastSuccessAt: string | null = null;
   private lastError: string | null = null;
+  private suspended = false;
 
   constructor(
     transport: WorkspaceSyncTransport<Status> | undefined,
@@ -86,14 +87,20 @@ export class WorkspaceSyncService<Status> {
   conflictInspection() { return this.transport?.conflictInspection?.(); }
   conflictArchives() { return this.transport?.conflictArchives?.(20); }
   conflictCandidate(target: WorkspaceConflictCandidateTarget) { return this.transport?.conflictCandidate?.(target); }
-  restartTarget() { return this.transport?.restartTarget?.() ?? null; }
-  stagedChange() { return this.transport?.stagedChange?.() ?? null; }
+  /** Local disable stops new network work. An already sent POST may settle;
+   * its durable outbox/receipt is retained for later reconciliation. */
+  suspend(): void { this.suspended = true; this.lastError = "sync-disabled"; }
+  isSuspended(): boolean { return this.suspended; }
+  restartTarget() { return this.suspended ? null : this.transport?.restartTarget?.() ?? null; }
+  stagedChange() { return this.suspended ? null : this.transport?.stagedChange?.() ?? null; }
   conflictResolutionPreview(choice: "local" | "remote") {
+    if (this.suspended) throw new SyncError("sync-disabled", 409);
     const preview = this.transport?.conflictResolutionPreview?.(choice);
     if (!preview) throw new Error("sync-not-connected");
     return preview;
   }
   assertConflictResolutionTarget(target: WorkspaceConflictResolutionTarget) {
+    if (this.suspended) throw new SyncError("sync-disabled", 409);
     if (!this.transport?.assertConflictResolutionTarget) throw new Error("sync-not-connected");
     this.transport.assertConflictResolutionTarget(target);
   }
@@ -103,9 +110,13 @@ export class WorkspaceSyncService<Status> {
     // Yield once so inFlight is set even if a transport throws synchronously.
     const run = Promise.resolve().then(async () => {
       try {
+        this.assertActive();
         const transport = await this.transportForPass();
+        this.assertActive();
         await transport.sendPending();
+        this.assertActive();
         await transport.receiveAndStage();
+        this.assertActive();
         if (transport.shouldRecordSuccess?.() !== false) {
           this.lastSuccessAt = this.now().toISOString();
           // The transfer already succeeded. A local history write failure must
@@ -127,11 +138,16 @@ export class WorkspaceSyncService<Status> {
   }
 
   private connectionState(): WorkspaceSyncConnectionState {
+    if (this.suspended) return "disconnected";
     if (this.transport) return "connected";
     // A pending manual pass is reported as connecting even before its first
     // microtask starts the connector.
     if (this.connecting || (this.inFlight && this.connector)) return "connecting";
     return "disconnected";
+  }
+
+  private assertActive(): void {
+    if (this.suspended) throw new SyncError("sync-disabled", 409);
   }
 
   private restoreLastSuccess(transport: WorkspaceSyncTransport<Status>): void {
