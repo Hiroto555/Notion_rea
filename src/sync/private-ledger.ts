@@ -4,7 +4,7 @@ import { DatabaseSync } from "node:sqlite";
 import { syncPath } from "../persistence/durable-file";
 import { SyncSqliteGuard } from "./sqlite-guard";
 import { requireCondition, SyncError } from "./protocol";
-import { assertPrivateRoot, pinPrivateRoot, type PrivateRootPin } from "./m3-private-root";
+import { assertPrivateRoot, assertSqliteSidecars, pinPrivateRoot, type PrivateRootPin } from "./m3-private-root";
 
 const MAX_BYTES = 8 * 1024 * 1024;
 const MAX_ROWS = 4096;
@@ -25,6 +25,7 @@ export class PrivateLedger {
       syncPath(this.root.path);
     } catch (e) { if ((e as NodeJS.ErrnoException).code !== "EEXIST") throw new SyncError("private-ledger-unavailable", 503); }
     this.pin = this.fileState();
+    assertSqliteSidecars(this.path, this.root.uid);
     const db = new DatabaseSync(this.path);
     this.guard = new SyncSqliteGuard(db);
     try {

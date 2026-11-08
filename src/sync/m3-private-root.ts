@@ -162,3 +162,19 @@ export function assertPrivateRoot(pin: PrivateRootPin): void {
     fail();
   }
 }
+
+/** SQLite may open these before application-level schema validation. */
+export function assertSqliteSidecars(databasePath: string, uid: number): void {
+  for (const suffix of ["-journal", "-wal", "-shm"]) {
+    try {
+      const stat = lstatSync(databasePath + suffix);
+      if (!stat.isFile() || stat.isSymbolicLink() || stat.nlink !== 1 || stat.uid !== uid ||
+          (stat.mode & 0o022) !== 0 || stat.size > 32 * 1024 * 1024) fail();
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code !== "ENOENT") {
+        if (error instanceof SyncError) throw error;
+        fail();
+      }
+    }
+  }
+}

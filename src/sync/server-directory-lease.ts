@@ -17,6 +17,7 @@ const LOCK_NAME = ".folio-server-lock.sqlite";
 const MAX_LOCK_BYTES = 1024 * 1024;
 
 export type ServerDirectoryLease = {
+  readonly directory: string;
   close(): void;
   assertOwned(): void;
 };
@@ -273,6 +274,7 @@ function createLease(
 ): ServerDirectoryLease {
   let closed = false;
   return {
+    directory: pin.root.path,
     assertOwned(): void {
       if (closed) unsafe();
       assertRoot(pin.root);

@@ -13,6 +13,7 @@ import { DatabaseSync } from "node:sqlite";
 import { syncPath } from "../persistence/durable-file";
 import { canonicalJson, requireCondition, SyncError } from "./protocol";
 import { SyncSqliteGuard } from "./sqlite-guard";
+import { assertSqliteSidecars } from "./m3-private-root";
 import type {
   BlobTransferDescriptor,
   BlobTransferLimits,
@@ -122,6 +123,7 @@ export class BlobTransferJournal {
       if ((error as NodeJS.ErrnoException).code !== "EEXIST") throw error;
     }
     this.databasePin = this.checkDatabase();
+    assertSqliteSidecars(this.databasePath, stat.uid);
     const db = new DatabaseSync(this.databasePath);
     this.guard = new SyncSqliteGuard(db);
     try {

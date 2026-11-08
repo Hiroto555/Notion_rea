@@ -7,4 +7,5 @@ export type CacheReleaseOperation = {
   file: ReleaseFilePin | null; expiresAt: number;
   phase: "planned" | "releasing" | "trashed" | "unlinked" | "completed";
   releasedBytes: number;
+  metadata?: {name: string; pin: ReleaseFilePin}[];
 };

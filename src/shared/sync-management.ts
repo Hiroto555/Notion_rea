@@ -25,6 +25,7 @@ export type TransferMaintenanceEntry = {
   entryId: string; scopeHash: string; assetId: string | null; bytes: number; offset: number;
   state: "active" | "blocked" | "completed" | "releasing" | "empty-scope" | "unknown";
   currentScope: boolean; canRelease: boolean; reason: string | null;
+  operationId?: string;
 };
 export type TransferMaintenanceView = {
   entries: TransferMaintenanceEntry[]; nextCursor: string | null;
