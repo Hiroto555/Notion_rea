@@ -1668,9 +1668,17 @@ async function downloadOne(
     else if (
       record &&
       error instanceof SyncError &&
-      /unsafe|hash-mismatch|prefix-mismatch|partial-missing|state-conflict|changed/.test(
-        error.code,
-      )
+      [
+        "unsafe-blob-transfer-root",
+        "unsafe-blob-transfer-partial",
+        "blob-transfer-partial-changed",
+        "blob-transfer-partial-missing",
+        "blob-transfer-prefix-mismatch",
+        "blob-transfer-state-conflict",
+        "blob-hash-mismatch",
+        "asset-hash-mismatch",
+        "asset-changed",
+      ].includes(error.code)
     ) {
       try {
         journal.block(record.key, error.code);

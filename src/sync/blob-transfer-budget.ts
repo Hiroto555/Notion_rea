@@ -29,7 +29,7 @@ export type WorkspaceTransferBudgetLimits = {
 type DirectoryPin = { path: string; device: number; inode: number };
 
 function unsafe(): never {
-  throw new SyncError(UNSAFE);
+  throw new SyncError(UNSAFE, 409);
 }
 
 function lstatOptional(path: string): Stats | null {
@@ -55,7 +55,7 @@ function pinDirectory(path: string): DirectoryPin {
   try {
     canonical = realpathSync(path);
   } catch {
-    throw new SyncError(UNSAFE);
+    throw new SyncError(UNSAFE, 409);
   }
   if (canonical !== path) unsafe();
   const current = requireDirectory(canonical);
@@ -82,7 +82,7 @@ function pinRoot(directory: string): DirectoryPin {
   try {
     canonical = realpathSync(requested);
   } catch {
-    throw new SyncError(UNSAFE);
+    throw new SyncError(UNSAFE, 409);
   }
   const current = requireDirectory(canonical);
   if (current.dev !== before.dev || current.ino !== before.ino) unsafe();
@@ -158,7 +158,7 @@ export function inspectWorkspaceTransferBudget(
     try {
       handle = opendirSync(pin.path);
     } catch {
-      throw new SyncError(UNSAFE);
+      throw new SyncError(UNSAFE, 409);
     }
     try {
       const opened = requireDirectory(pin.path);
@@ -169,7 +169,7 @@ export function inspectWorkspaceTransferBudget(
         try {
           entry = handle.readSync();
         } catch {
-          throw new SyncError(UNSAFE);
+          throw new SyncError(UNSAFE, 409);
         }
         if (entry === null) break;
         const childDepth = depth + 1;
