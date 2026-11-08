@@ -10,6 +10,7 @@
 | M1のGitHub保存・PRの依存・マージ判断 | [M1保存記録](M1-PUBLICATION.ja.md) |
 | 操作中のMacを使わないGUI試験 | [Linux GUI CI](GUI-LINUX-CI.ja.md) |
 | ページツリーの実drag・移動中編集・再起動の追加受入 | [ページツリーCI結果](GUI-PAGE-TREE-CI.ja.md) |
+| GUIの残件分類と次の一区切りの提案（まだ未実行） | [GUI受入の次の区切り](GUI-NEXT-CHECKPOINT.ja.md) |
 | Mac/OS固有の別枠 | [Mac受入待ち](GUI-MAC-ACCEPTANCE.ja.md) |
 | 保全データの回収・コピー復元・失敗時の手順 | [回収手順書](m1/RECOVERY-RUNBOOK.ja.md) |
 | 残作業の優先順・終了条件・概算工数・区切り | [残作業計画](REMAINING-WORK-PLAN.ja.md) |

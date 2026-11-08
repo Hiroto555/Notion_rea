@@ -1,3 +1,4 @@
+import { captureFixture } from "../recovery-ci-runtime";
 import { expect, test, type ElectronApplication } from "@playwright/test";
 import {
   addR5Record,
@@ -99,6 +100,7 @@ test("R7 normal restart retains the Japanese record body and saved view settings
     await window
       .getByRole("button", { name: "レコードを閉じる", exact: true })
       .click();
+    await captureFixture(app);
     await app.close();
     app = undefined;
 

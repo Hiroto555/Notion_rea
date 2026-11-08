@@ -1,15 +1,17 @@
-import { test, expect, _electron as electron, type ElectronApplication } from "@playwright/test";
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
-import { join, resolve } from "node:path";
+import { fixtureRoot } from "./fixture-isolation";
+import { launchFixture, killFixture } from "./recovery-ci-runtime";
+import { test, expect, type ElectronApplication } from "@playwright/test";
+import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { join } from "node:path";
 
 test("manual unsaved journal preserves later input and never overwrites an existing file", async () => {
-  const root = mkdtempSync(resolve("output/pending-journal-e2e-"));
+  const root = fixtureRoot("pending-journal-e2e-");
   const workspace = join(root, "workspace"), exports = join(root, "exports");
   mkdirSync(workspace); mkdirSync(exports);
   const destination = join(exports, "unsaved.json");
   let app: ElectronApplication | undefined;
   try {
-    app = await electron.launch({ args: [resolve("dist/main.cjs")], env: { ...process.env, FOLIO_DATA_DIR: workspace } });
+    app = await launchFixture(workspace);
     const window = await app.firstWindow();
     const title = window.getByLabel("ページタイトル", { exact: true });
     await expect(title).toBeVisible();
@@ -67,24 +69,19 @@ test("manual unsaved journal preserves later input and never overwrites an exist
     expect(readFileSync(destination, "utf8")).toBe(bytes);
     await expect(title).toHaveValue("Later unsaved title");
   } finally {
-    if (app) {
-      const child = app.process();
-      if (child && child.exitCode === null && child.signalCode === null) {
-        await new Promise<void>((done) => { child.once("exit", () => done()); child.kill("SIGKILL"); });
-      }
-    }
+    await killFixture(app);
     rmSync(root, { recursive: true, force: true });
   }
 });
 
 test("cancelling a manual journal leaves the original and pending input unchanged", async () => {
-  const root = mkdtempSync(resolve("output/pending-journal-cancel-"));
+  const root = fixtureRoot("pending-journal-cancel-");
   const workspace = join(root, "workspace"), exports = join(root, "exports");
   mkdirSync(workspace); mkdirSync(exports);
   const sentinel = join(exports, "untouched.json"); writeFileSync(sentinel, "original");
   let app: ElectronApplication | undefined;
   try {
-    app = await electron.launch({ args: [resolve("dist/main.cjs")], env: { ...process.env, FOLIO_DATA_DIR: workspace } });
+    app = await launchFixture(workspace);
     const window = await app.firstWindow(), title = window.getByLabel("ページタイトル", { exact: true });
     await expect(title).toBeVisible();
     await window.evaluate(async () => {
@@ -100,12 +97,7 @@ test("cancelling a manual journal leaves the original and pending input unchange
     await expect(window.getByRole("alert")).toBeVisible();
     expect(readFileSync(sentinel, "utf8")).toBe("original");
   } finally {
-    if (app) {
-      const child = app.process();
-      if (child && child.exitCode === null && child.signalCode === null) {
-        await new Promise<void>((done) => { child.once("exit", () => done()); child.kill("SIGKILL"); });
-      }
-    }
+    await killFixture(app);
     rmSync(root, { recursive: true, force: true });
   }
 });

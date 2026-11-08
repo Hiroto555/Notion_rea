@@ -1,11 +1,8 @@
-import {
-  expect,
-  _electron as electron,
-  type ElectronApplication,
-  type Page,
-} from "@playwright/test";
-import { mkdirSync, mkdtempSync, rmSync } from "node:fs";
-import { join, resolve } from "node:path";
+import { fixtureRoot } from "./fixture-isolation";
+import { launchFixture, killFixture } from "./recovery-ci-runtime";
+import { expect, type ElectronApplication, type Page } from "@playwright/test";
+import { rmSync } from "node:fs";
+import { join } from "node:path";
 import { DatabaseSync } from "node:sqlite";
 import { Store } from "../../src/persistence/store";
 import {
@@ -16,8 +13,7 @@ import {
 
 /** The first registered database must be created by the UI under test. */
 export function r5Data() {
-  mkdirSync(resolve("output"), { recursive: true });
-  const root = mkdtempSync(resolve("output/r5-app-"));
+  const root = fixtureRoot("r5-app-");
   const store = new Store(join(root, "workspace.sqlite"));
   const home = store.create(null, "page", "R5 Home");
   store.update(home.id, home.revision, {
@@ -60,29 +56,33 @@ export function r5Data() {
 export type R5Data = ReturnType<typeof r5Data>;
 
 export async function launchR5(data: R5Data) {
-  const app = await electron.launch({
-    args: [resolve("dist/main.cjs")],
-    env: { ...process.env, FOLIO_DATA_DIR: data.root },
-  });
-  const window = await app.firstWindow();
-  await expect(window.locator(".page-title")).toBeVisible();
-  expect(await app.evaluate(({ app }) => app.getPath("userData"))).toBe(
-    data.root,
-  );
-  expect(await app.evaluate(({ app }) => app.getPath("sessionData"))).toBe(
-    join(data.root, "session"),
-  );
-  await window.evaluate(
-    () =>
-      new Promise<void>((done) =>
-        requestAnimationFrame(() => requestAnimationFrame(() => done())),
-      ),
-  );
-  await r5Saved(window);
-  return { app, window };
+  const app = await launchFixture(data.root);
+  try {
+    const window = await app.firstWindow();
+    await expect(window.locator(".page-title")).toBeVisible();
+    expect(await app.evaluate(({ app }) => app.getPath("userData"))).toBe(
+      data.root,
+    );
+    expect(await app.evaluate(({ app }) => app.getPath("sessionData"))).toBe(
+      join(data.root, "session"),
+    );
+    await window.evaluate(
+      () =>
+        new Promise<void>((done) =>
+          requestAnimationFrame(() => requestAnimationFrame(() => done())),
+        ),
+    );
+    await r5Saved(window);
+    return { app, window };
+  } catch (error) {
+    await killFixture(app);
+    throw error;
+  }
 }
 export async function r5Saved(window: Page) {
-  await expect(window.locator(".save-state")).toHaveText("保存済み");
+  await expect(window.locator(".save-state[data-state]")).toHaveText(
+    "保存済み",
+  );
 }
 export const r5Settings = (window: Page) =>
   window.getByRole("region", { name: "データベースの表示設定", exact: true });
@@ -194,12 +194,7 @@ export function assertR5LegacyUnchanged(data: R5Data) {
   }
 }
 export async function disposeR5(data: R5Data, app?: ElectronApplication) {
-  const child = app?.process();
-  if (child && child.exitCode === null && child.signalCode === null)
-    await new Promise<void>((done) => {
-      child.once("exit", () => done());
-      child.kill("SIGKILL");
-    });
+  await killFixture(app);
   rmSync(data.root, { recursive: true, force: true });
 }
 
@@ -257,7 +252,13 @@ export async function r5Gate(app: ElectronApplication) {
 }
 
 /** Open the contextual R7 control surface before exercising retained R5/R6 behavior. */
-export async function openR7Settings(window: Page, menu: 'view-options' | 'filter' | 'sort') {
-  const trigger = r5Settings(window).locator(`[data-settings-menu-trigger="${menu}"]`);
-  if (await trigger.getAttribute('aria-expanded') !== 'true') await trigger.click();
+export async function openR7Settings(
+  window: Page,
+  menu: "view-options" | "filter" | "sort",
+) {
+  const trigger = r5Settings(window).locator(
+    `[data-settings-menu-trigger="${menu}"]`,
+  );
+  if ((await trigger.getAttribute("aria-expanded")) !== "true")
+    await trigger.click();
 }

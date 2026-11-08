@@ -1,13 +1,13 @@
+import { launchFixture, captureFixture } from "./recovery-ci-runtime";
 import { openR7Settings } from "./r5-fixture";
 import {
   expect,
   test,
-  _electron as electron,
   type ElectronApplication,
   type Page,
 } from "@playwright/test";
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
-import { join, resolve } from "node:path";
+import { join } from "node:path";
 import { Store } from "../../src/persistence/store";
 import type { CrashRecoverySnapshot } from "../../src/shared/crash-recovery";
 import {
@@ -48,6 +48,7 @@ const noInput = (snapshot: CrashRecoverySnapshot) =>
 
 /** Kill only the child created by this test, after its durable checkpoint ACK. */
 async function killOwned(app: ElectronApplication) {
+  await captureFixture(app);
   const child = app.process();
   expect(child.exitCode).toBeNull();
   expect(child.signalCode).toBeNull();
@@ -61,10 +62,7 @@ async function killOwned(app: ElectronApplication) {
 
 /** Startup recovery deliberately renders no page-title until the user chooses. */
 async function launchRecovery(data: R5Data, pending = false) {
-  const app = await electron.launch({
-    args: [resolve("dist/main.cjs")],
-    env: { ...process.env, FOLIO_DATA_DIR: data.root },
-  });
+  const app = await launchFixture(data.root);
   try {
     const window = await app.firstWindow();
     expect(await app.evaluate(({ app }) => app.getPath("userData"))).toBe(
