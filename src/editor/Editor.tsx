@@ -1,3 +1,5 @@
+import { projectSharedDocument } from "./shared-projection";
+import {sharedImage,type SharedImageResolver} from "./shared-image";
 import { RichBlockControls } from "./RichBlockControls";
 import "./rich-blocks.css";
 import { RichStructureGuard } from "./rich-structure-guard";
@@ -126,9 +128,11 @@ export function Editor({
   onLink,
   onError,
   editable = true,
+  shared,
 }: {
   documentId: string;
   editable?: boolean;
+  shared?:{revision:string;onUndo:()=>void;onRedo:()=>void;isComposing?:()=>boolean;resolveImage?:SharedImageResolver};
   doc: Doc;
   onChange: (d: Doc) => void;
   onReady: (e: TiptapEditor) => void;
@@ -212,7 +216,7 @@ export function Editor({
     setSlash(null);
   }
   const editor = useEditor({
-    extensions: [...extensions(), RichStructureGuard.configure({onRejected: () => onError("この操作では表の形を保てません。内容を保持しています。")})],
+    extensions: [...(shared?.resolveImage?[...extensions({sharedHistory:true}).filter(extension=>extension.name!=="image"),sharedImage(shared.resolveImage)]:extensions({sharedHistory:!!shared})), RichStructureGuard.configure({onRejected: () => onError("この操作では表の形を保てません。内容を保持しています。")})],
     content: doc,
     editable,
     enableContentCheck: true,
@@ -237,6 +241,7 @@ export function Editor({
       },
       handleKeyDown: (view, event) => {
         if (event.defaultPrevented || composing(event)) return false;
+        if(shared&&(event.metaKey||event.ctrlKey)&&event.key.toLowerCase()==="z"){event.preventDefault();if(event.shiftKey)shared.onRedo();else shared.onUndo();return true;}
         const s = slashRef.current;
         if (!s) return false;
         const list = matchingCommands(s.query);
@@ -263,8 +268,8 @@ export function Editor({
         return false;
       },
     },
-    onUpdate: ({ editor: e }) => {
-      if (!invalid.current)
+    onUpdate: ({ editor: e, transaction }) => {
+      if (!invalid.current && !transaction.getMeta("folio.shared.projection"))
         changeRef.current(versionDocument(e.getJSON() as Doc));
     },
     onSelectionUpdate: () => {
@@ -272,6 +277,19 @@ export function Editor({
       setNestedSelected(null);
     },
   });
+  useEffect(() => {
+    if (!editor || !shared || invalid.current || shared.isComposing?.()) return;
+    try {
+      const target = editor.schema.nodeFromJSON(doc);
+      const projection = projectSharedDocument(editor.state.doc, target);
+      if (projection.steps.length) {
+        const transaction = editor.state.tr;
+        for (const step of projection.steps) transaction.step(step);
+        transaction.setMeta("folio.shared.projection", true).setMeta("addToHistory", false).setMeta("preventUpdate", true);
+        editor.view.dispatch(transaction);
+      }
+    } catch (error) { invalid.current = true; editor.setEditable(false, false); onError(error); }
+  }, [editor, shared?.revision]);
   useEffect(() => {
     if (editor && !invalid.current && editor.isEditable !== editable) editor.setEditable(editable, false);
     if (!editable) {
@@ -717,7 +735,7 @@ export function Editor({
           aria-label="元に戻す"
           onClick={() =>
             runEditable(() => {
-              editor.chain().focus().undo().run();
+              if(shared)shared.onUndo();else editor.chain().focus().undo().run();
             })
           }
         >
@@ -728,7 +746,7 @@ export function Editor({
           aria-label="やり直す"
           onClick={() =>
             runEditable(() => {
-              editor.chain().focus().redo().run();
+              if(shared)shared.onRedo();else editor.chain().focus().redo().run();
             })
           }
         >

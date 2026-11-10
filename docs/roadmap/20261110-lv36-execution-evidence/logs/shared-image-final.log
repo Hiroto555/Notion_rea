@@ -1,0 +1,12 @@
+✔ shared image resolves scoped bytes without changing JSON or touching the private protocol (30.463083ms)
+✔ shared image refuses private UUID and external URLs without resolving them (4.114041ms)
+✔ shared image discards late bytes after its reference changes or its view is destroyed (3.375625ms)
+✔ shared image refuses executable or unsupported media (5.663208ms)
+ℹ tests 4
+ℹ suites 0
+ℹ pass 4
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 303.137333

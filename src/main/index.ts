@@ -1,3 +1,8 @@
+import { createWindowsAppPrivate } from "../platform/windows/app-private";
+import { createWindowsRecoveryProof } from "../platform/windows/recovery-proof";
+import {readPrivateCopySources, readPrivateCopyCatalog} from "./shared-copy-source";
+import {SharedRuntimeService} from "./shared-runtime-service";
+import {CredentialProvider} from "../platform/credential-provider";
 import { readRecoveryOrigin, assertRecoverySyncAllowed } from "../persistence/recovery-origin";
 import { SyncConnectionVault } from "./sync-connection-vault";
 import { savedConnectionEnvironment } from "./sync-connection-startup";
@@ -152,7 +157,12 @@ if (startupError) {
       const readOnly = opened.status.mode === "readOnly";
       const recoveryIdentity = readOnly ? undefined : crashRecoveryWorkspaceId(store);
       const vaultDirectory = resolve(process.env.FOLIO_CREDENTIAL_DIR ?? join(app.getPath("appData"), "Folio Sync Credentials"));
+      const nativeConfig = process.platform === "win32" && process.env.FOLIO_WINDOWS_NATIVE_ROOT && process.env.FOLIO_WINDOWS_NATIVE_PROBE && process.env.FOLIO_WINDOWS_NATIVE_SHA256
+        ? {root: process.env.FOLIO_WINDOWS_NATIVE_ROOT, probeExecutable: process.env.FOLIO_WINDOWS_NATIVE_PROBE, expectedHash: process.env.FOLIO_WINDOWS_NATIVE_SHA256, systemRoot: process.env.SystemRoot ?? "C:\\Windows"} : undefined;
+      const windowsPrivate = nativeConfig ? createWindowsAppPrivate(nativeConfig) : undefined;
+      const windowsRecovery = nativeConfig ? createWindowsRecoveryProof(nativeConfig) : undefined;
       const vault = new SyncConnectionVault({directory: vaultDirectory, forbiddenRoots: [dirname(realpathSync(store.path))], safeStorage,
+        ...(windowsPrivate ? {privatePlatformFactory: windowsPrivate.ledgerPlatform, workspaceNativeIdentity: windowsPrivate.workspaceIdentity} : {}),
         assertWorkspaceAllowed: path => {requireCondition(!readOnly && path === store.path, "read-only", 409); assertRecoverySyncAllowed(store.db);},
         workspaceIdentity: () => recoveryIdentity ?? ""});
       const savedConnection: ReturnType<typeof savedConnectionEnvironment> = readOnly ? {env: {...process.env, FOLIO_SYNC_ENABLED: "0"}} :
@@ -267,6 +277,18 @@ if (startupError) {
         process.env.FOLIO_DEV_URL ||
           pathToFileURL(join(__dirname, "renderer/index.html")).toString(),
       ).href;
+      const sharedRuntime = new SharedRuntimeService(dataDir+"-shared-runtime", new CredentialProvider({
+        isAsyncEncryptionAvailable:()=>safeStorage.isAsyncEncryptionAvailable(),
+        encryptStringAsync:(text)=>safeStorage.encryptStringAsync(text),
+        decryptStringAsync:async(bytes)=>(await safeStorage.decryptStringAsync(Buffer.from(bytes))).result,
+        ...(process.platform==="linux"?{getSelectedStorageBackend:()=>safeStorage.getSelectedStorageBackend()}:{})
+      },process.platform),{copySources:ids=>readPrivateCopySources(store!,assets,ids,windowsPrivate?{file:windowsPrivate.privateFileIdentity,directory:windowsPrivate.assertPrivateDirectory}:undefined),copyCatalog:()=>readPrivateCopyCatalog(store!),...(windowsPrivate?{runtimeStoreOptions:(directory:string)=>({platformAdapter:windowsPrivate.runtimePlatform(directory)}),recoveryFilesystemProof:windowsRecovery}:{}),forbiddenRoots:[dataDir,userData],pickBackup:async()=>{if(!win||win.isDestroyed())throw new Error('UNAUTHORIZED_IPC_SENDER');const picked=await dialog.showSaveDialog(win,{title:'共有領域のバックアップを書き出す',defaultPath:'folio-shared-'+Date.now()+'.json',filters:[{name:'Folio shared backup',extensions:['json']}]});return picked.canceled?null:picked.filePath??null;}});
+      app.on("will-quit",()=>sharedRuntime.close());
+      ipcMain.handle("folio:shared",async(event,input:unknown)=>{
+        const requestWindow=win;
+        const authorized=()=>!!requestWindow&&!requestWindow.isDestroyed()&&win===requestWindow&&event.sender===requestWindow.webContents&&event.senderFrame===requestWindow.webContents.mainFrame&&event.senderFrame.url===url;
+        return sharedRuntime.handle(input,authorized);
+      });
       ipcMain.handle("folio:request", async (event, input: unknown) => {
         if (
           !win ||

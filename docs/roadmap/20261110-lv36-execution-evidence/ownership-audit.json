@@ -1,0 +1,942 @@
+{
+  "copies": 77,
+  "foreignCopies": 0,
+  "note": "Union of explicitly extended ownership for continued sessions; owned source was only adopted by guarded parent staging. Reports at audit may be later continuations.",
+  "records": [
+    {
+      "workerCopy": "D01-block",
+      "dispatchIds": [
+        "D01-block",
+        "D01-block-R1"
+      ],
+      "foreignFilesAtAudit": [],
+      "parentSuppliedReadonlyInputs": [
+        {
+          "path": "docs/QUIET-IMPLEMENTATION.ja.md",
+          "sha256": "27c456df0809369929c1dda1817645717559f7db7c8b977f018674793287f256",
+          "verifiedAgainst": "522665c28747d91bb5f23f007b4037375933b893:docs/QUIET-IMPLEMENTATION.ja.md"
+        },
+        {
+          "path": "docs/QUIET-TESTING.ja.md",
+          "sha256": "92dcc6681180404b500f3a40255cac7c840058866d791808472d153b0f5d170f",
+          "verifiedAgainst": "522665c28747d91bb5f23f007b4037375933b893:docs/QUIET-TESTING.ja.md"
+        }
+      ]
+    },
+    {
+      "workerCopy": "D02-table",
+      "dispatchIds": [
+        "D02-table",
+        "D02-table-R1"
+      ],
+      "foreignFilesAtAudit": [],
+      "parentSuppliedReadonlyInputs": [
+        {
+          "path": "docs/QUIET-IMPLEMENTATION.ja.md",
+          "sha256": "27c456df0809369929c1dda1817645717559f7db7c8b977f018674793287f256",
+          "verifiedAgainst": "522665c28747d91bb5f23f007b4037375933b893:docs/QUIET-IMPLEMENTATION.ja.md"
+        },
+        {
+          "path": "docs/QUIET-TESTING.ja.md",
+          "sha256": "92dcc6681180404b500f3a40255cac7c840058866d791808472d153b0f5d170f",
+          "verifiedAgainst": "522665c28747d91bb5f23f007b4037375933b893:docs/QUIET-TESTING.ja.md"
+        }
+      ]
+    },
+    {
+      "workerCopy": "D03-text",
+      "dispatchIds": [
+        "D03-text",
+        "D03-text-R1"
+      ],
+      "foreignFilesAtAudit": [],
+      "parentSuppliedReadonlyInputs": [
+        {
+          "path": "docs/QUIET-IMPLEMENTATION.ja.md",
+          "sha256": "27c456df0809369929c1dda1817645717559f7db7c8b977f018674793287f256",
+          "verifiedAgainst": "522665c28747d91bb5f23f007b4037375933b893:docs/QUIET-IMPLEMENTATION.ja.md"
+        },
+        {
+          "path": "docs/QUIET-TESTING.ja.md",
+          "sha256": "92dcc6681180404b500f3a40255cac7c840058866d791808472d153b0f5d170f",
+          "verifiedAgainst": "522665c28747d91bb5f23f007b4037375933b893:docs/QUIET-TESTING.ja.md"
+        }
+      ]
+    },
+    {
+      "workerCopy": "D25-path",
+      "dispatchIds": [
+        "D25-path",
+        "D25-path-R1"
+      ],
+      "foreignFilesAtAudit": [],
+      "parentSuppliedReadonlyInputs": [
+        {
+          "path": "docs/QUIET-IMPLEMENTATION.ja.md",
+          "sha256": "27c456df0809369929c1dda1817645717559f7db7c8b977f018674793287f256",
+          "verifiedAgainst": "522665c28747d91bb5f23f007b4037375933b893:docs/QUIET-IMPLEMENTATION.ja.md"
+        },
+        {
+          "path": "docs/QUIET-TESTING.ja.md",
+          "sha256": "92dcc6681180404b500f3a40255cac7c840058866d791808472d153b0f5d170f",
+          "verifiedAgainst": "522665c28747d91bb5f23f007b4037375933b893:docs/QUIET-TESTING.ja.md"
+        }
+      ]
+    },
+    {
+      "workerCopy": "F09-windows-probe",
+      "dispatchIds": [
+        "F09-windows-probe"
+      ],
+      "foreignFilesAtAudit": [],
+      "parentSuppliedReadonlyInputs": []
+    },
+    {
+      "workerCopy": "F10-windows-job",
+      "dispatchIds": [
+        "F10-windows-job"
+      ],
+      "foreignFilesAtAudit": [],
+      "parentSuppliedReadonlyInputs": []
+    },
+    {
+      "workerCopy": "F11-history",
+      "dispatchIds": [
+        "F11-history"
+      ],
+      "foreignFilesAtAudit": [],
+      "parentSuppliedReadonlyInputs": []
+    },
+    {
+      "workerCopy": "R11-resources",
+      "dispatchIds": [
+        "R11-resources"
+      ],
+      "foreignFilesAtAudit": [],
+      "parentSuppliedReadonlyInputs": []
+    },
+    {
+      "workerCopy": "F12-binding-b",
+      "dispatchIds": [
+        "F12-binding-b"
+      ],
+      "foreignFilesAtAudit": [],
+      "parentSuppliedReadonlyInputs": []
+    },
+    {
+      "workerCopy": "F12-binding-c",
+      "dispatchIds": [
+        "F12-binding-c"
+      ],
+      "foreignFilesAtAudit": [],
+      "parentSuppliedReadonlyInputs": []
+    },
+    {
+      "workerCopy": "D32-administration",
+      "dispatchIds": [
+        "D32-administration"
+      ],
+      "foreignFilesAtAudit": [],
+      "parentSuppliedReadonlyInputs": []
+    },
+    {
+      "workerCopy": "D33-asset-transport",
+      "dispatchIds": [
+        "D33-asset-transport"
+      ],
+      "foreignFilesAtAudit": [],
+      "parentSuppliedReadonlyInputs": []
+    },
+    {
+      "workerCopy": "D34-admin-ui",
+      "dispatchIds": [
+        "D34-admin-ui"
+      ],
+      "foreignFilesAtAudit": [],
+      "parentSuppliedReadonlyInputs": []
+    },
+    {
+      "workerCopy": "R12-frontend-main-review",
+      "dispatchIds": [
+        "R12-frontend-main-review"
+      ],
+      "foreignFilesAtAudit": [],
+      "parentSuppliedReadonlyInputs": []
+    },
+    {
+      "workerCopy": "D35-table-restore",
+      "dispatchIds": [
+        "D35-table-restore"
+      ],
+      "foreignFilesAtAudit": [],
+      "parentSuppliedReadonlyInputs": []
+    },
+    {
+      "workerCopy": "D36-windows-sqlite",
+      "dispatchIds": [
+        "D36-windows-sqlite"
+      ],
+      "foreignFilesAtAudit": [],
+      "parentSuppliedReadonlyInputs": []
+    },
+    {
+      "workerCopy": "D37-windows-root-setup",
+      "dispatchIds": [
+        "D37-windows-root-setup"
+      ],
+      "foreignFilesAtAudit": [],
+      "parentSuppliedReadonlyInputs": []
+    },
+    {
+      "workerCopy": "R13-undo-proof",
+      "dispatchIds": [
+        "R13-undo-proof"
+      ],
+      "foreignFilesAtAudit": [],
+      "parentSuppliedReadonlyInputs": []
+    },
+    {
+      "workerCopy": "R14-native-followup",
+      "dispatchIds": [
+        "R14-native-followup"
+      ],
+      "foreignFilesAtAudit": [],
+      "parentSuppliedReadonlyInputs": []
+    },
+    {
+      "workerCopy": "F13-retention-live",
+      "dispatchIds": [
+        "F13-retention-live"
+      ],
+      "foreignFilesAtAudit": [],
+      "parentSuppliedReadonlyInputs": []
+    },
+    {
+      "workerCopy": "R15-native-root-review",
+      "dispatchIds": [
+        "R15-native-root-review"
+      ],
+      "foreignFilesAtAudit": [],
+      "parentSuppliedReadonlyInputs": []
+    },
+    {
+      "workerCopy": "F14-identity-handoff",
+      "dispatchIds": [
+        "F14-identity-handoff"
+      ],
+      "foreignFilesAtAudit": [],
+      "parentSuppliedReadonlyInputs": []
+    },
+    {
+      "workerCopy": "D08-store",
+      "dispatchIds": [
+        "D08-store"
+      ],
+      "foreignFilesAtAudit": [],
+      "parentSuppliedReadonlyInputs": [
+        {
+          "path": "docs/QUIET-IMPLEMENTATION.ja.md",
+          "sha256": "27c456df0809369929c1dda1817645717559f7db7c8b977f018674793287f256",
+          "verifiedAgainst": "522665c28747d91bb5f23f007b4037375933b893:docs/QUIET-IMPLEMENTATION.ja.md"
+        },
+        {
+          "path": "docs/QUIET-TESTING.ja.md",
+          "sha256": "92dcc6681180404b500f3a40255cac7c840058866d791808472d153b0f5d170f",
+          "verifiedAgainst": "522665c28747d91bb5f23f007b4037375933b893:docs/QUIET-TESTING.ja.md"
+        }
+      ]
+    },
+    {
+      "workerCopy": "D07-queue",
+      "dispatchIds": [
+        "D07-queue"
+      ],
+      "foreignFilesAtAudit": [],
+      "parentSuppliedReadonlyInputs": [
+        {
+          "path": "docs/QUIET-IMPLEMENTATION.ja.md",
+          "sha256": "27c456df0809369929c1dda1817645717559f7db7c8b977f018674793287f256",
+          "verifiedAgainst": "522665c28747d91bb5f23f007b4037375933b893:docs/QUIET-IMPLEMENTATION.ja.md"
+        },
+        {
+          "path": "docs/QUIET-TESTING.ja.md",
+          "sha256": "92dcc6681180404b500f3a40255cac7c840058866d791808472d153b0f5d170f",
+          "verifiedAgainst": "522665c28747d91bb5f23f007b4037375933b893:docs/QUIET-TESTING.ja.md"
+        }
+      ]
+    },
+    {
+      "workerCopy": "D09-identity",
+      "dispatchIds": [
+        "D09-identity"
+      ],
+      "foreignFilesAtAudit": [],
+      "parentSuppliedReadonlyInputs": [
+        {
+          "path": "docs/QUIET-IMPLEMENTATION.ja.md",
+          "sha256": "27c456df0809369929c1dda1817645717559f7db7c8b977f018674793287f256",
+          "verifiedAgainst": "522665c28747d91bb5f23f007b4037375933b893:docs/QUIET-IMPLEMENTATION.ja.md"
+        },
+        {
+          "path": "docs/QUIET-TESTING.ja.md",
+          "sha256": "92dcc6681180404b500f3a40255cac7c840058866d791808472d153b0f5d170f",
+          "verifiedAgainst": "522665c28747d91bb5f23f007b4037375933b893:docs/QUIET-TESTING.ja.md"
+        }
+      ]
+    },
+    {
+      "workerCopy": "D10-policy",
+      "dispatchIds": [
+        "D10-policy"
+      ],
+      "foreignFilesAtAudit": [],
+      "parentSuppliedReadonlyInputs": [
+        {
+          "path": "docs/QUIET-IMPLEMENTATION.ja.md",
+          "sha256": "27c456df0809369929c1dda1817645717559f7db7c8b977f018674793287f256",
+          "verifiedAgainst": "522665c28747d91bb5f23f007b4037375933b893:docs/QUIET-IMPLEMENTATION.ja.md"
+        },
+        {
+          "path": "docs/QUIET-TESTING.ja.md",
+          "sha256": "92dcc6681180404b500f3a40255cac7c840058866d791808472d153b0f5d170f",
+          "verifiedAgainst": "522665c28747d91bb5f23f007b4037375933b893:docs/QUIET-TESTING.ja.md"
+        }
+      ]
+    },
+    {
+      "workerCopy": "D14-assets",
+      "dispatchIds": [
+        "D14-assets"
+      ],
+      "foreignFilesAtAudit": [],
+      "parentSuppliedReadonlyInputs": [
+        {
+          "path": "docs/QUIET-IMPLEMENTATION.ja.md",
+          "sha256": "27c456df0809369929c1dda1817645717559f7db7c8b977f018674793287f256",
+          "verifiedAgainst": "522665c28747d91bb5f23f007b4037375933b893:docs/QUIET-IMPLEMENTATION.ja.md"
+        },
+        {
+          "path": "docs/QUIET-TESTING.ja.md",
+          "sha256": "92dcc6681180404b500f3a40255cac7c840058866d791808472d153b0f5d170f",
+          "verifiedAgainst": "522665c28747d91bb5f23f007b4037375933b893:docs/QUIET-TESTING.ja.md"
+        }
+      ]
+    },
+    {
+      "workerCopy": "D13-records",
+      "dispatchIds": [
+        "D13-records"
+      ],
+      "foreignFilesAtAudit": [],
+      "parentSuppliedReadonlyInputs": [
+        {
+          "path": "docs/QUIET-IMPLEMENTATION.ja.md",
+          "sha256": "27c456df0809369929c1dda1817645717559f7db7c8b977f018674793287f256",
+          "verifiedAgainst": "522665c28747d91bb5f23f007b4037375933b893:docs/QUIET-IMPLEMENTATION.ja.md"
+        },
+        {
+          "path": "docs/QUIET-TESTING.ja.md",
+          "sha256": "92dcc6681180404b500f3a40255cac7c840058866d791808472d153b0f5d170f",
+          "verifiedAgainst": "522665c28747d91bb5f23f007b4037375933b893:docs/QUIET-TESTING.ja.md"
+        }
+      ]
+    },
+    {
+      "workerCopy": "D26-credential",
+      "dispatchIds": [
+        "D26-credential"
+      ],
+      "foreignFilesAtAudit": [],
+      "parentSuppliedReadonlyInputs": [
+        {
+          "path": "docs/QUIET-IMPLEMENTATION.ja.md",
+          "sha256": "27c456df0809369929c1dda1817645717559f7db7c8b977f018674793287f256",
+          "verifiedAgainst": "522665c28747d91bb5f23f007b4037375933b893:docs/QUIET-IMPLEMENTATION.ja.md"
+        },
+        {
+          "path": "docs/QUIET-TESTING.ja.md",
+          "sha256": "92dcc6681180404b500f3a40255cac7c840058866d791808472d153b0f5d170f",
+          "verifiedAgainst": "522665c28747d91bb5f23f007b4037375933b893:docs/QUIET-TESTING.ja.md"
+        }
+      ]
+    },
+    {
+      "workerCopy": "D29-audit",
+      "dispatchIds": [
+        "D29-audit"
+      ],
+      "foreignFilesAtAudit": [],
+      "parentSuppliedReadonlyInputs": [
+        {
+          "path": "docs/QUIET-IMPLEMENTATION.ja.md",
+          "sha256": "27c456df0809369929c1dda1817645717559f7db7c8b977f018674793287f256",
+          "verifiedAgainst": "522665c28747d91bb5f23f007b4037375933b893:docs/QUIET-IMPLEMENTATION.ja.md"
+        },
+        {
+          "path": "docs/QUIET-TESTING.ja.md",
+          "sha256": "92dcc6681180404b500f3a40255cac7c840058866d791808472d153b0f5d170f",
+          "verifiedAgainst": "522665c28747d91bb5f23f007b4037375933b893:docs/QUIET-TESTING.ja.md"
+        },
+        {
+          "path": "docs/LEVEL3-STATUS.json",
+          "sha256": "555c868fe2cc2edfb8f5fdf5e57c60892a25d165f11ceab2fec822bc160cbde5",
+          "verifiedAgainst": "522665c28747d91bb5f23f007b4037375933b893:docs/LEVEL3-STATUS.json"
+        }
+      ]
+    },
+    {
+      "workerCopy": "D40-state-root",
+      "dispatchIds": [
+        "D40-state-root"
+      ],
+      "foreignFilesAtAudit": [],
+      "parentSuppliedReadonlyInputs": []
+    },
+    {
+      "workerCopy": "D41-backup-http",
+      "dispatchIds": [
+        "D41-backup-http"
+      ],
+      "foreignFilesAtAudit": [],
+      "parentSuppliedReadonlyInputs": []
+    },
+    {
+      "workerCopy": "D42-backup-export",
+      "dispatchIds": [
+        "D42-backup-export"
+      ],
+      "foreignFilesAtAudit": [],
+      "parentSuppliedReadonlyInputs": []
+    },
+    {
+      "workerCopy": "D43-resource-client",
+      "dispatchIds": [
+        "D43-resource-client"
+      ],
+      "foreignFilesAtAudit": [],
+      "parentSuppliedReadonlyInputs": []
+    },
+    {
+      "workerCopy": "D44-shared-db-ui",
+      "dispatchIds": [
+        "D44-shared-db-ui"
+      ],
+      "foreignFilesAtAudit": [],
+      "parentSuppliedReadonlyInputs": []
+    },
+    {
+      "workerCopy": "D45-root-integration",
+      "dispatchIds": [
+        "D45-root-integration",
+        "D45-root-integration-r1"
+      ],
+      "foreignFilesAtAudit": [],
+      "parentSuppliedReadonlyInputs": []
+    },
+    {
+      "workerCopy": "D46-windows-final",
+      "dispatchIds": [
+        "D46-windows-final"
+      ],
+      "foreignFilesAtAudit": [],
+      "parentSuppliedReadonlyInputs": []
+    },
+    {
+      "workerCopy": "D47-admin-rekey",
+      "dispatchIds": [
+        "D47-admin-rekey"
+      ],
+      "foreignFilesAtAudit": [],
+      "parentSuppliedReadonlyInputs": []
+    },
+    {
+      "workerCopy": "R16-final-review",
+      "dispatchIds": [
+        "R16-final-review"
+      ],
+      "foreignFilesAtAudit": [],
+      "parentSuppliedReadonlyInputs": []
+    },
+    {
+      "workerCopy": "D48-main-actual",
+      "dispatchIds": [
+        "D48-main-actual"
+      ],
+      "foreignFilesAtAudit": [],
+      "parentSuppliedReadonlyInputs": []
+    },
+    {
+      "workerCopy": "D49-copy-connection",
+      "dispatchIds": [
+        "D49-copy-connection"
+      ],
+      "foreignFilesAtAudit": [],
+      "parentSuppliedReadonlyInputs": []
+    },
+    {
+      "workerCopy": "D52-server-entry",
+      "dispatchIds": [
+        "D52-server-entry"
+      ],
+      "foreignFilesAtAudit": [],
+      "parentSuppliedReadonlyInputs": []
+    },
+    {
+      "workerCopy": "R17-connected-final",
+      "dispatchIds": [
+        "R17-connected-final"
+      ],
+      "foreignFilesAtAudit": [],
+      "parentSuppliedReadonlyInputs": []
+    },
+    {
+      "workerCopy": "D54-restore-operator",
+      "dispatchIds": [
+        "D54-restore-operator"
+      ],
+      "foreignFilesAtAudit": [],
+      "parentSuppliedReadonlyInputs": []
+    },
+    {
+      "workerCopy": "R01-structure",
+      "dispatchIds": [
+        "R01-structure"
+      ],
+      "foreignFilesAtAudit": [],
+      "parentSuppliedReadonlyInputs": [
+        {
+          "path": "docs/QUIET-IMPLEMENTATION.ja.md",
+          "sha256": "27c456df0809369929c1dda1817645717559f7db7c8b977f018674793287f256",
+          "verifiedAgainst": "522665c28747d91bb5f23f007b4037375933b893:docs/QUIET-IMPLEMENTATION.ja.md"
+        },
+        {
+          "path": "docs/QUIET-TESTING.ja.md",
+          "sha256": "92dcc6681180404b500f3a40255cac7c840058866d791808472d153b0f5d170f",
+          "verifiedAgainst": "522665c28747d91bb5f23f007b4037375933b893:docs/QUIET-TESTING.ja.md"
+        }
+      ]
+    },
+    {
+      "workerCopy": "R03-text",
+      "dispatchIds": [
+        "R03-text"
+      ],
+      "foreignFilesAtAudit": [],
+      "parentSuppliedReadonlyInputs": [
+        {
+          "path": "docs/QUIET-IMPLEMENTATION.ja.md",
+          "sha256": "27c456df0809369929c1dda1817645717559f7db7c8b977f018674793287f256",
+          "verifiedAgainst": "522665c28747d91bb5f23f007b4037375933b893:docs/QUIET-IMPLEMENTATION.ja.md"
+        },
+        {
+          "path": "docs/QUIET-TESTING.ja.md",
+          "sha256": "92dcc6681180404b500f3a40255cac7c840058866d791808472d153b0f5d170f",
+          "verifiedAgainst": "522665c28747d91bb5f23f007b4037375933b893:docs/QUIET-TESTING.ja.md"
+        }
+      ]
+    },
+    {
+      "workerCopy": "D04-history",
+      "dispatchIds": [
+        "D04-history"
+      ],
+      "foreignFilesAtAudit": [],
+      "parentSuppliedReadonlyInputs": [
+        {
+          "path": "docs/QUIET-IMPLEMENTATION.ja.md",
+          "sha256": "27c456df0809369929c1dda1817645717559f7db7c8b977f018674793287f256",
+          "verifiedAgainst": "522665c28747d91bb5f23f007b4037375933b893:docs/QUIET-IMPLEMENTATION.ja.md"
+        },
+        {
+          "path": "docs/QUIET-TESTING.ja.md",
+          "sha256": "92dcc6681180404b500f3a40255cac7c840058866d791808472d153b0f5d170f",
+          "verifiedAgainst": "522665c28747d91bb5f23f007b4037375933b893:docs/QUIET-TESTING.ja.md"
+        }
+      ]
+    },
+    {
+      "workerCopy": "D24-ui",
+      "dispatchIds": [
+        "D24-ui"
+      ],
+      "foreignFilesAtAudit": [],
+      "parentSuppliedReadonlyInputs": [
+        {
+          "path": "docs/QUIET-IMPLEMENTATION.ja.md",
+          "sha256": "27c456df0809369929c1dda1817645717559f7db7c8b977f018674793287f256",
+          "verifiedAgainst": "522665c28747d91bb5f23f007b4037375933b893:docs/QUIET-IMPLEMENTATION.ja.md"
+        },
+        {
+          "path": "docs/QUIET-TESTING.ja.md",
+          "sha256": "92dcc6681180404b500f3a40255cac7c840058866d791808472d153b0f5d170f",
+          "verifiedAgainst": "522665c28747d91bb5f23f007b4037375933b893:docs/QUIET-TESTING.ja.md"
+        }
+      ]
+    },
+    {
+      "workerCopy": "D25-native",
+      "dispatchIds": [
+        "D25-native"
+      ],
+      "foreignFilesAtAudit": [],
+      "parentSuppliedReadonlyInputs": [
+        {
+          "path": "docs/QUIET-IMPLEMENTATION.ja.md",
+          "sha256": "27c456df0809369929c1dda1817645717559f7db7c8b977f018674793287f256",
+          "verifiedAgainst": "522665c28747d91bb5f23f007b4037375933b893:docs/QUIET-IMPLEMENTATION.ja.md"
+        },
+        {
+          "path": "docs/QUIET-TESTING.ja.md",
+          "sha256": "92dcc6681180404b500f3a40255cac7c840058866d791808472d153b0f5d170f",
+          "verifiedAgainst": "522665c28747d91bb5f23f007b4037375933b893:docs/QUIET-TESTING.ja.md"
+        }
+      ]
+    },
+    {
+      "workerCopy": "D27-owned",
+      "dispatchIds": [
+        "D27-owned"
+      ],
+      "foreignFilesAtAudit": [],
+      "parentSuppliedReadonlyInputs": [
+        {
+          "path": "docs/QUIET-IMPLEMENTATION.ja.md",
+          "sha256": "27c456df0809369929c1dda1817645717559f7db7c8b977f018674793287f256",
+          "verifiedAgainst": "522665c28747d91bb5f23f007b4037375933b893:docs/QUIET-IMPLEMENTATION.ja.md"
+        },
+        {
+          "path": "docs/QUIET-TESTING.ja.md",
+          "sha256": "92dcc6681180404b500f3a40255cac7c840058866d791808472d153b0f5d170f",
+          "verifiedAgainst": "522665c28747d91bb5f23f007b4037375933b893:docs/QUIET-TESTING.ja.md"
+        }
+      ]
+    },
+    {
+      "workerCopy": "D27-package",
+      "dispatchIds": [
+        "D27-package"
+      ],
+      "foreignFilesAtAudit": [],
+      "parentSuppliedReadonlyInputs": [
+        {
+          "path": "docs/QUIET-IMPLEMENTATION.ja.md",
+          "sha256": "27c456df0809369929c1dda1817645717559f7db7c8b977f018674793287f256",
+          "verifiedAgainst": "522665c28747d91bb5f23f007b4037375933b893:docs/QUIET-IMPLEMENTATION.ja.md"
+        },
+        {
+          "path": "docs/QUIET-TESTING.ja.md",
+          "sha256": "92dcc6681180404b500f3a40255cac7c840058866d791808472d153b0f5d170f",
+          "verifiedAgainst": "522665c28747d91bb5f23f007b4037375933b893:docs/QUIET-TESTING.ja.md"
+        }
+      ]
+    },
+    {
+      "workerCopy": "D28-common",
+      "dispatchIds": [
+        "D28-common"
+      ],
+      "foreignFilesAtAudit": [],
+      "parentSuppliedReadonlyInputs": [
+        {
+          "path": "docs/QUIET-IMPLEMENTATION.ja.md",
+          "sha256": "27c456df0809369929c1dda1817645717559f7db7c8b977f018674793287f256",
+          "verifiedAgainst": "522665c28747d91bb5f23f007b4037375933b893:docs/QUIET-IMPLEMENTATION.ja.md"
+        },
+        {
+          "path": "docs/QUIET-TESTING.ja.md",
+          "sha256": "92dcc6681180404b500f3a40255cac7c840058866d791808472d153b0f5d170f",
+          "verifiedAgainst": "522665c28747d91bb5f23f007b4037375933b893:docs/QUIET-TESTING.ja.md"
+        }
+      ]
+    },
+    {
+      "workerCopy": "D18-backup",
+      "dispatchIds": [
+        "D18-backup"
+      ],
+      "foreignFilesAtAudit": [],
+      "parentSuppliedReadonlyInputs": [
+        {
+          "path": "docs/QUIET-IMPLEMENTATION.ja.md",
+          "sha256": "27c456df0809369929c1dda1817645717559f7db7c8b977f018674793287f256",
+          "verifiedAgainst": "522665c28747d91bb5f23f007b4037375933b893:docs/QUIET-IMPLEMENTATION.ja.md"
+        },
+        {
+          "path": "docs/QUIET-TESTING.ja.md",
+          "sha256": "92dcc6681180404b500f3a40255cac7c840058866d791808472d153b0f5d170f",
+          "verifiedAgainst": "522665c28747d91bb5f23f007b4037375933b893:docs/QUIET-TESTING.ja.md"
+        }
+      ]
+    },
+    {
+      "workerCopy": "D16-projection",
+      "dispatchIds": [
+        "D16-projection"
+      ],
+      "foreignFilesAtAudit": [],
+      "parentSuppliedReadonlyInputs": [
+        {
+          "path": "docs/QUIET-IMPLEMENTATION.ja.md",
+          "sha256": "27c456df0809369929c1dda1817645717559f7db7c8b977f018674793287f256",
+          "verifiedAgainst": "522665c28747d91bb5f23f007b4037375933b893:docs/QUIET-IMPLEMENTATION.ja.md"
+        },
+        {
+          "path": "docs/QUIET-TESTING.ja.md",
+          "sha256": "92dcc6681180404b500f3a40255cac7c840058866d791808472d153b0f5d170f",
+          "verifiedAgainst": "522665c28747d91bb5f23f007b4037375933b893:docs/QUIET-TESTING.ja.md"
+        }
+      ]
+    },
+    {
+      "workerCopy": "D20-org",
+      "dispatchIds": [
+        "D20-org"
+      ],
+      "foreignFilesAtAudit": [],
+      "parentSuppliedReadonlyInputs": [
+        {
+          "path": "docs/QUIET-IMPLEMENTATION.ja.md",
+          "sha256": "27c456df0809369929c1dda1817645717559f7db7c8b977f018674793287f256",
+          "verifiedAgainst": "522665c28747d91bb5f23f007b4037375933b893:docs/QUIET-IMPLEMENTATION.ja.md"
+        },
+        {
+          "path": "docs/QUIET-TESTING.ja.md",
+          "sha256": "92dcc6681180404b500f3a40255cac7c840058866d791808472d153b0f5d170f",
+          "verifiedAgainst": "522665c28747d91bb5f23f007b4037375933b893:docs/QUIET-TESTING.ja.md"
+        }
+      ]
+    },
+    {
+      "workerCopy": "D22-operations",
+      "dispatchIds": [
+        "D22-operations"
+      ],
+      "foreignFilesAtAudit": [],
+      "parentSuppliedReadonlyInputs": [
+        {
+          "path": "docs/QUIET-IMPLEMENTATION.ja.md",
+          "sha256": "27c456df0809369929c1dda1817645717559f7db7c8b977f018674793287f256",
+          "verifiedAgainst": "522665c28747d91bb5f23f007b4037375933b893:docs/QUIET-IMPLEMENTATION.ja.md"
+        },
+        {
+          "path": "docs/QUIET-TESTING.ja.md",
+          "sha256": "92dcc6681180404b500f3a40255cac7c840058866d791808472d153b0f5d170f",
+          "verifiedAgainst": "522665c28747d91bb5f23f007b4037375933b893:docs/QUIET-TESTING.ja.md"
+        }
+      ]
+    },
+    {
+      "workerCopy": "R06-isolation",
+      "dispatchIds": [
+        "R06-isolation"
+      ],
+      "foreignFilesAtAudit": [],
+      "parentSuppliedReadonlyInputs": [
+        {
+          "path": "docs/QUIET-IMPLEMENTATION.ja.md",
+          "sha256": "27c456df0809369929c1dda1817645717559f7db7c8b977f018674793287f256",
+          "verifiedAgainst": "522665c28747d91bb5f23f007b4037375933b893:docs/QUIET-IMPLEMENTATION.ja.md"
+        },
+        {
+          "path": "docs/QUIET-TESTING.ja.md",
+          "sha256": "92dcc6681180404b500f3a40255cac7c840058866d791808472d153b0f5d170f",
+          "verifiedAgainst": "522665c28747d91bb5f23f007b4037375933b893:docs/QUIET-TESTING.ja.md"
+        }
+      ]
+    },
+    {
+      "workerCopy": "D17-lifecycle",
+      "dispatchIds": [
+        "D17-lifecycle"
+      ],
+      "foreignFilesAtAudit": [],
+      "parentSuppliedReadonlyInputs": [
+        {
+          "path": "docs/QUIET-IMPLEMENTATION.ja.md",
+          "sha256": "27c456df0809369929c1dda1817645717559f7db7c8b977f018674793287f256",
+          "verifiedAgainst": "522665c28747d91bb5f23f007b4037375933b893:docs/QUIET-IMPLEMENTATION.ja.md"
+        },
+        {
+          "path": "docs/QUIET-TESTING.ja.md",
+          "sha256": "92dcc6681180404b500f3a40255cac7c840058866d791808472d153b0f5d170f",
+          "verifiedAgainst": "522665c28747d91bb5f23f007b4037375933b893:docs/QUIET-TESTING.ja.md"
+        }
+      ]
+    },
+    {
+      "workerCopy": "D15-copy",
+      "dispatchIds": [
+        "D15-copy"
+      ],
+      "foreignFilesAtAudit": [],
+      "parentSuppliedReadonlyInputs": [
+        {
+          "path": "docs/QUIET-IMPLEMENTATION.ja.md",
+          "sha256": "27c456df0809369929c1dda1817645717559f7db7c8b977f018674793287f256",
+          "verifiedAgainst": "522665c28747d91bb5f23f007b4037375933b893:docs/QUIET-IMPLEMENTATION.ja.md"
+        },
+        {
+          "path": "docs/QUIET-TESTING.ja.md",
+          "sha256": "92dcc6681180404b500f3a40255cac7c840058866d791808472d153b0f5d170f",
+          "verifiedAgainst": "522665c28747d91bb5f23f007b4037375933b893:docs/QUIET-TESTING.ja.md"
+        }
+      ]
+    },
+    {
+      "workerCopy": "D19-retention",
+      "dispatchIds": [
+        "D19-retention"
+      ],
+      "foreignFilesAtAudit": [],
+      "parentSuppliedReadonlyInputs": [
+        {
+          "path": "docs/QUIET-IMPLEMENTATION.ja.md",
+          "sha256": "27c456df0809369929c1dda1817645717559f7db7c8b977f018674793287f256",
+          "verifiedAgainst": "522665c28747d91bb5f23f007b4037375933b893:docs/QUIET-IMPLEMENTATION.ja.md"
+        },
+        {
+          "path": "docs/QUIET-TESTING.ja.md",
+          "sha256": "92dcc6681180404b500f3a40255cac7c840058866d791808472d153b0f5d170f",
+          "verifiedAgainst": "522665c28747d91bb5f23f007b4037375933b893:docs/QUIET-TESTING.ja.md"
+        }
+      ]
+    },
+    {
+      "workerCopy": "F01-structure",
+      "dispatchIds": [
+        "F01-structure"
+      ],
+      "foreignFilesAtAudit": [],
+      "parentSuppliedReadonlyInputs": []
+    },
+    {
+      "workerCopy": "F02-queue",
+      "dispatchIds": [
+        "F02-queue"
+      ],
+      "foreignFilesAtAudit": [],
+      "parentSuppliedReadonlyInputs": []
+    },
+    {
+      "workerCopy": "F03-assets-projection",
+      "dispatchIds": [
+        "F03-assets-projection"
+      ],
+      "foreignFilesAtAudit": [],
+      "parentSuppliedReadonlyInputs": []
+    },
+    {
+      "workerCopy": "F04-text-oracle",
+      "dispatchIds": [
+        "F04-text-oracle"
+      ],
+      "foreignFilesAtAudit": [],
+      "parentSuppliedReadonlyInputs": []
+    },
+    {
+      "workerCopy": "D11-http",
+      "dispatchIds": [
+        "D11-http"
+      ],
+      "foreignFilesAtAudit": [],
+      "parentSuppliedReadonlyInputs": []
+    },
+    {
+      "workerCopy": "R07-authority",
+      "dispatchIds": [
+        "R07-authority"
+      ],
+      "foreignFilesAtAudit": [],
+      "parentSuppliedReadonlyInputs": []
+    },
+    {
+      "workerCopy": "F05-retention",
+      "dispatchIds": [
+        "F05-retention"
+      ],
+      "foreignFilesAtAudit": [],
+      "parentSuppliedReadonlyInputs": []
+    },
+    {
+      "workerCopy": "D29-review-r1",
+      "dispatchIds": [
+        "D29-review-r1"
+      ],
+      "foreignFilesAtAudit": [],
+      "parentSuppliedReadonlyInputs": []
+    },
+    {
+      "workerCopy": "D05-binding",
+      "dispatchIds": [
+        "D05-binding"
+      ],
+      "foreignFilesAtAudit": [],
+      "parentSuppliedReadonlyInputs": []
+    },
+    {
+      "workerCopy": "D06-binding",
+      "dispatchIds": [
+        "D06-binding"
+      ],
+      "foreignFilesAtAudit": [],
+      "parentSuppliedReadonlyInputs": []
+    },
+    {
+      "workerCopy": "F06-operations",
+      "dispatchIds": [
+        "F06-operations"
+      ],
+      "foreignFilesAtAudit": [],
+      "parentSuppliedReadonlyInputs": []
+    },
+    {
+      "workerCopy": "F07-copy",
+      "dispatchIds": [
+        "F07-copy"
+      ],
+      "foreignFilesAtAudit": [],
+      "parentSuppliedReadonlyInputs": []
+    },
+    {
+      "workerCopy": "R08-client-service",
+      "dispatchIds": [
+        "R08-client-service"
+      ],
+      "foreignFilesAtAudit": [],
+      "parentSuppliedReadonlyInputs": []
+    },
+    {
+      "workerCopy": "R09-native-review",
+      "dispatchIds": [
+        "R09-native-review"
+      ],
+      "foreignFilesAtAudit": [],
+      "parentSuppliedReadonlyInputs": []
+    },
+    {
+      "workerCopy": "D30-common-real",
+      "dispatchIds": [
+        "D30-common-real"
+      ],
+      "foreignFilesAtAudit": [],
+      "parentSuppliedReadonlyInputs": []
+    },
+    {
+      "workerCopy": "R10-binding-gates",
+      "dispatchIds": [
+        "R10-binding-gates"
+      ],
+      "foreignFilesAtAudit": [],
+      "parentSuppliedReadonlyInputs": []
+    },
+    {
+      "workerCopy": "D31-tls",
+      "dispatchIds": [
+        "D31-tls"
+      ],
+      "foreignFilesAtAudit": [],
+      "parentSuppliedReadonlyInputs": []
+    }
+  ],
+  "baselineGap": "Early input maps preceded the parent copy of quiet-testing/implementation/status docs. Exact bytes were verified against the original committed owning source; these are parent-supplied readonly inputs, not adopted worker edits."
+}

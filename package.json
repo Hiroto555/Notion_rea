@@ -22,7 +22,8 @@
     "review:test": "node --test tests/review-hygiene.test.mjs",
     "review:export": "node scripts/export-review.mjs",
     "folio:rescue": "node scripts/raw-rescue.mjs",
-    "folio:sync-server": "node dist/server-ops.cjs"
+    "folio:sync-server": "node dist/server-ops.cjs",
+    "folio:shared-server": "node dist/shared-server.cjs"
   },
   "dependencies": {
     "@tiptap/extension-details": "^3.0.0",

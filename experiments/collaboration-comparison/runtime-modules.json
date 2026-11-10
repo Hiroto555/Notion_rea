@@ -1,40 +1,40 @@
 {
   "prosemirrorInputs": {
     "prosemirror-model": [
-      "../../node_modules/prosemirror-model/dist/index.cjs"
+      "node_modules/prosemirror-model/dist/index.cjs"
     ],
     "prosemirror-transform": [
-      "../../node_modules/prosemirror-transform/dist/index.cjs"
+      "node_modules/prosemirror-transform/dist/index.cjs"
     ],
     "prosemirror-state": [
-      "../../node_modules/prosemirror-state/dist/index.cjs"
+      "node_modules/prosemirror-state/dist/index.cjs"
     ],
     "prosemirror-commands": [
-      "../../node_modules/prosemirror-commands/dist/index.cjs"
+      "node_modules/prosemirror-commands/dist/index.cjs"
     ],
     "prosemirror-schema-list": [
-      "../../node_modules/prosemirror-schema-list/dist/index.cjs"
+      "node_modules/prosemirror-schema-list/dist/index.cjs"
     ],
     "prosemirror-view": [
-      "../../node_modules/prosemirror-view/dist/index.cjs"
+      "node_modules/prosemirror-view/dist/index.cjs"
     ],
     "prosemirror-keymap": [
-      "../../node_modules/prosemirror-keymap/dist/index.cjs"
+      "node_modules/prosemirror-keymap/dist/index.cjs"
     ],
     "prosemirror-history": [
-      "../../node_modules/prosemirror-history/dist/index.cjs"
+      "node_modules/prosemirror-history/dist/index.cjs"
     ],
     "prosemirror-tables": [
-      "../../node_modules/prosemirror-tables/dist/index.cjs"
+      "node_modules/prosemirror-tables/dist/index.cjs"
     ],
     "prosemirror-dropcursor": [
-      "../../node_modules/prosemirror-dropcursor/dist/index.cjs"
+      "node_modules/prosemirror-dropcursor/dist/index.cjs"
     ],
     "prosemirror-gapcursor": [
-      "../../node_modules/prosemirror-gapcursor/dist/index.cjs"
+      "node_modules/prosemirror-gapcursor/dist/index.cjs"
     ],
     "prosemirror-collab": [
-      "node_modules/prosemirror-collab/dist/index.cjs"
+      "experiments/collaboration-comparison/node_modules/prosemirror-collab/dist/index.cjs"
     ]
   },
   "nodeOnly": true

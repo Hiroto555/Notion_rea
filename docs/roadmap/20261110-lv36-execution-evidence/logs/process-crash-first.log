@@ -1,0 +1,12 @@
+
+ RUN  v3.2.7 <LOCAL_HOME>/Documents/ChatGPT/Folio-lv4-implementation-20261107.3qXBLqRk/integration
+
+ ✓ tests/shared-runtime-process-crash.test.ts (2 tests) 1320ms
+   ✓ actual owned Node authority crash > retains UNKNOWN and resolves a before-commit process death without resend  608ms
+   ✓ actual owned Node authority crash > retains UNKNOWN and resolves a after-commit process death without resend  552ms
+
+ Test Files  1 passed (1)
+      Tests  2 passed (2)
+   Start at  19:39:16
+   Duration  2.52s (transform 488ms, setup 0ms, collect 1.02s, tests 1.32s, environment 0ms, prepare 54ms)
+

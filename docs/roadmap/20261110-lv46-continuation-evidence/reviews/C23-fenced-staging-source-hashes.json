@@ -1,0 +1,7 @@
+{
+  "src/collaboration/runtime/staging-maintenance.ts": "9b64e8ea981a176acd5ae700a34465069167522512e2caa1bfe4fd20bb883ebd",
+  "src/collaboration/runtime/authority.ts": "04c19fe7f359e6141b2e56c7ec38a65ca02d758c9a3dc5b5ecd29dddea7a7dc8",
+  "src/collaboration/runtime/admin.ts": "540022fa3afd98bd93bcf4c59d6ee57848a9423d3516d9101e0519708935e65c",
+  "src/collaboration/runtime/maintenance-operator.ts": "7f464f5c444f2eea055069cd9ebd6695730309d044c8125eeb61b0e5c52aa4ee",
+  "tests/shared-staging-maintenance.test.ts": "b7c784fb849a81712e8fd64639556d5bf136799a20d0d18151dba8d3560017f9"
+}

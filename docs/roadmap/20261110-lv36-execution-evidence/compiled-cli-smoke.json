@@ -1,0 +1,13 @@
+{
+  "state": "PASS",
+  "kind": "OWNED_NODE_LOOPBACK_ONLY",
+  "compiledCli": true,
+  "bootstrap": true,
+  "serve": true,
+  "backup": true,
+  "restore": true,
+  "reopen": true,
+  "freshTokenAccepted": true,
+  "oldTokenRejected": true,
+  "gui": "NOT_RUN"
+}

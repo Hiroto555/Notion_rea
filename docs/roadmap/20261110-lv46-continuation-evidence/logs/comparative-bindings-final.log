@@ -1,0 +1,28 @@
+✔ R02 move and concurrent insert preserve KEEP, marks, IDs and p2 (62.107833ms)
+✔ R02 adversarial move onto itself is rejected without mutating either peer (8.251583ms)
+✔ legal block insert and delete use the semantic server and actual binding (11.7635ms)
+✔ R03 concurrent row and column inserts both succeed as a 3x3 table (23.274417ms)
+✔ R03 adversarial duplicate table ID is rejected without changing the table (7.815708ms)
+✔ R04 each peer undo removes only its own insert and keeps the remote KEEP (13.185583ms)
+✔ repeated delivery and order replay are idempotent (14.427042ms)
+✔ pending concurrent text intents are rebased and both survive (9.328458ms)
+✔ rich table fixture is a 2x2 baseline for the structure probes (22.557333ms)
+✔ R02 move after p2 with concurrent pending KEEP keeps text, marks and IDs (9.421875ms)
+✔ R02 replay: move delivered before the pending KEEP still converges (3.90675ms)
+✔ R03 row and column inserts both succeed and preserve old 2x2 cells (5.672125ms)
+✔ R03 replay with column intent first also produces the same 3x3 table (4.312125ms)
+✔ R04 local undo removes only the local insert and preserves remote KEEP (2.688125ms)
+✔ pending concurrent text inserts converge once, then repeated sync is inert (2.243583ms)
+✔ replayed edits in opposite client order reach the same document (1.145042ms)
+✔ rejected structure intent retains the original input and does not corrupt state (0.67ms)
+✔ duplicate table row id is rejected while a later legal column insert succeeds (1.983875ms)
+✔ invalid text ranges and raw structural transactions fail without mutation (0.906791ms)
+✔ text-only local() transactions remain supported (0.533542ms)
+ℹ tests 20
+ℹ suites 0
+ℹ pass 20
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 652.020667

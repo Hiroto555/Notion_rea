@@ -620,6 +620,7 @@ export const requestSchema = z.discriminatedUnion("type", [
 ]);
 export type Request = z.infer<typeof requestSchema>;
 export interface FolioAPI {
+  shared?:import("./shared-runtime-ipc").SharedRuntimeAPI;
   request<T = unknown>(request: Request): Promise<T>;
 }
 declare global {

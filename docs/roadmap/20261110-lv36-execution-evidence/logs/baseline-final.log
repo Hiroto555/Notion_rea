@@ -1,0 +1,62 @@
+✔ B: 2 clients concurrent Japanese/emoji inserts converge once with stable ids (142.08225ms)
+✔ B: 5 clients concurrent Japanese/emoji inserts converge once with stable ids (45.81275ms)
+✔ C: 2 clients concurrent Japanese/emoji inserts converge once with stable ids (2.099166ms)
+✔ C: 5 clients concurrent Japanese/emoji inserts converge once with stable ids (1.333875ms)
+✔ schema fixture covers every BLOCK_TYPE with deterministic unique nonempty IDs (11.136209ms)
+✔ ProseMirror nodeFromJSON silently drops unknown attrs if accepted blindly (0.166041ms)
+✔ validDocument rejects unknown attrs instead of trusting PM's lossy parse (0.185667ms)
+✔ validDocument rejects duplicate IDs while PM alone accepts them (0.617833ms)
+✔ validDocument permits a missing block ID privately, so shared seeds need a stricter check (1.236416ms)
+✔ prototype-named attributes are rejected by the owning validator itself (0.110041ms)
+✔ B: separate harnesses and reopen retain no old session (308.802584ms)
+✔ C: separate harnesses and reopen retain no old session (2.62575ms)
+✔ B virtual DOM globals are restored after every live harness closes (14.23ms)
+[move-probe:B] {"converged":true,"preserved":false,"idsUnique":true,"report":{"converged":true,"preserved":false,"idsUnique":true,"error":null,"expectedIds":["p1","p2"],"keepInP1":false,"originalIdsPresent":true,"ids":[["p2","p1"],["p2","p1"]],"texts":[{"p2":"KEEPxyz","p1":"abc"},{"p2":"KEEPxyz","p1":"abc"}]}}
+[move-baseline:B] {"ids":[["p1","p2"],["p1","p2"]],"texts":[{"p1":"abAAAc","p2":"xyBBBz"},{"p1":"abAAAc","p2":"xyBBBz"}]}
+[move-probe:C] {"converged":true,"preserved":false,"idsUnique":true,"report":{"converged":true,"preserved":false,"idsUnique":true,"error":null,"expectedIds":["p1","p2"],"keepInP1":false,"originalIdsPresent":true,"ids":[["p2","p1"],["p2","p1"]],"texts":[{"p2":"xyz","p1":"abc"},{"p2":"xyz","p1":"abc"}]}}
+[move-baseline:C] {"ids":[["p1","p2"],["p1","p2"]],"texts":[{"p1":"abAAAc","p2":"xyBBBz"},{"p1":"abAAAc","p2":"xyBBBz"}]}
+✔ R02 move-vs-edit probe (B) reports convergence and KEEP/ID retention (130.003333ms)
+✔ baseline concurrent text inserts remain separate and converge (B) (19.617083ms)
+✔ R02 move-vs-edit probe (C) reports convergence and KEEP/ID retention (2.906833ms)
+✔ baseline concurrent text inserts remain separate and converge (C) (1.018041ms)
+✔ full fixture includes every actual node and mark and retains authored fields (7.042084ms)
+✔ B simple: one seed and text edit retain full schema and IDs (182.884334ms)
+✔ B rich: one seed and text edit retain full schema and IDs (70.842791ms)
+✔ C simple: one seed and text edit retain full schema and IDs (4.196541ms)
+✔ C rich: one seed and text edit retain full schema and IDs (2.777833ms)
+✔ B: authored schemaVersion2 survives a plain document seed (9.641792ms)
+✔ C: authored schemaVersion2 survives a plain document seed (0.191625ms)
+✔ concurrent rich table cell text edits are mandatory and converge (256.147417ms)
+✔ concurrent table row and column edits are structural diagnostics (222.951333ms)
+ℹ B structure: convergence=false validDocument=true idsUnique=true expectedShape=false
+ℹ C structure: convergence=false validDocument=true idsUnique=true expectedShape=false
+✔ insert and delete preserve rich schema identity and project exact steps (76.896083ms)
+✔ duplicate operation id is idempotent and conflicting reuse is rejected (55.108291ms)
+✔ wrong actor, scope, and epoch are rejected before mutation (34.07975ms)
+✔ stale baseVersion is rejected as STALE_VERSION without rebasing (23.552459ms)
+✔ structural replace and move are refused before mutation (26.434333ms)
+✔ beforeCommit failure rolls back and the same operation can be retried (105.160958ms)
+✔ afterCommit failure surfaces UNKNOWN and the receipt survives reopen (28.25475ms)
+✔ reopen verifies stored scope, epoch, and actors (39.362625ms)
+✔ foreign and private database files are refused without changes (26.442125ms)
+✔ main draft service + two real PM clients + SQLite commit/rebase/own undo (287.385417ms)
+✔ lost ACK is resolved by the identical receipt, never a duplicate submit (108.217833ms)
+✔ missing receipt after uncertain failure preserves raw and blocks resend/new edits (54.389584ms)
+✔ snapshot rewrite and cross-epoch projection are refused without losing pending input (19.533459ms)
+✔ server refuses structural moves and UTF16 splits while ordinary text is accepted (50.167292ms)
+✔ deleted receipt is corruption and cannot become a missing receipt success (28.004875ms)
+✔ mismatched ACK identity stays UNKNOWN until the exact receipt is queried (22.860333ms)
+✔ unexpected stored receipt fields fail closed even in canonical JSON (22.400667ms)
+✔ empty slice deletion works and documents over the shared raw byte cap are refused (3.972708ms)
+✔ own Node server SIGKILL at beforeCommit yields atomic log/head/receipt (260.953291ms)
+✔ own Node server SIGKILL at afterCommit yields atomic log/head/receipt (251.491ms)
+✔ B: local undo/redo removes only the local insert and preserves the remote insert (49.176166ms)
+✔ C: local undo/redo removes only the local insert and preserves the remote insert (2.199708ms)
+ℹ tests 48
+ℹ suites 0
+ℹ pass 48
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1780.939459

@@ -1,5 +1,7 @@
 # 共同編集方式の判断と非GUI接続PoC（2026-11-09）
 
+2026-11-10追記：以下は旧候補の判断を保存した記録。継続実装後の現在地は[共有Editor候補の継続判断](20261110-shared-editor-candidate-decision.ja.md)と[最終非GUI結果](20261110-lv46-continuation-progress.ja.md)を参照。認定Lv3は維持している。
+
 ## 判断
 
 **本採用は保留（NO_GO）。次の限定PoCには C（サーバー順序付きProseMirror steps）を選ぶ。通常画面の共同編集は有効化しない。**

@@ -1,0 +1,34 @@
+[
+  {
+    "timestamp": "2026-11-10T13:00:38.818Z",
+    "run": "53a9b82c",
+    "sessionID": "ses_e3a7451d2ffeusXfisqperIUQ8",
+    "provider": "opencode-go",
+    "model": "deepseek-v4.1-flash",
+    "error": "Go usage limit exceeded"
+  },
+  {
+    "timestamp": "2026-11-10T13:00:42.247Z",
+    "run": "bd9f766c",
+    "sessionID": "ses_e3a7451c6ffeIgJ8IAa6mCyTP4",
+    "provider": "opencode-go",
+    "model": "deepseek-v4.1-flash",
+    "error": "Go usage limit exceeded"
+  },
+  {
+    "timestamp": "2026-11-10T13:08:03.610Z",
+    "run": "a2279163",
+    "sessionID": "ses_e3a6d64d1ffeOJIC63zbuvIYKg",
+    "provider": "opencode-go",
+    "model": "deepseek-v4.1-flash",
+    "error": "Go usage limit exceeded"
+  },
+  {
+    "timestamp": "2026-11-10T13:08:03.711Z",
+    "run": "c206f726",
+    "sessionID": "ses_e3a6d64e4ffen0d7DUQsEsBbSQ",
+    "provider": "opencode-go",
+    "model": "deepseek-v4.1-flash",
+    "error": "Go usage limit exceeded"
+  }
+]

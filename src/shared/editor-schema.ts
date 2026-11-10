@@ -80,7 +80,7 @@ const Toggle = Details.extend({
   },
 });
 import { getSchema } from "@tiptap/core";
-export const extensions = () => [
+export const extensions = (options:{sharedHistory?:boolean}={}) => [
   BlockIdentity,
   Callout,
   SimpleTable,
@@ -88,6 +88,7 @@ export const extensions = () => [
   SimpleTableCell,
   SimpleTableHeader,
   StarterKit.configure({
+    undoRedo:options.sharedHistory?false:{},
     blockquote: false,
     paragraph: false,
     heading: false,

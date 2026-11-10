@@ -1,3 +1,5 @@
+import {createPortal} from "react-dom";
+import {SharedWorkbench} from "./shared/SharedWorkbench";
 import { WorkspaceConflictRecoveryPanel } from "./WorkspaceConflictRecoveryPanel";
 import { conflictRecoveryPort } from "./conflict-recovery-port";
 import { Slice } from "@tiptap/pm/model";
@@ -113,6 +115,8 @@ const icons = [
 type Dialog =
   "search" | "templates" | "trash" | "move" | "history" | "link" | null;
 export function App({ syncMessage }: { syncMessage?: string } = {}) {
+  const [sharedOpen,setSharedOpen]=useState(false);
+  const sharedOpenRef=useRef(false);sharedOpenRef.current=sharedOpen;
   const [pages, setPages] = useState<Page[]>([]),
     [recordIds, setRecordIds] = useState<Set<string>>(new Set()),
     [activeId, setActiveId] = useState(""),
@@ -910,6 +914,7 @@ export function App({ syncMessage }: { syncMessage?: string } = {}) {
   }, [query, dialog, pages.length]);
   useEffect(() => {
     const key = (e: KeyboardEvent) => {
+      if(sharedOpenRef.current)return;
       if (e.defaultPrevented || composing(e, composition.current)) return;
       if (
         document.querySelector("dialog[open]") ||
@@ -1616,7 +1621,8 @@ export function App({ syncMessage }: { syncMessage?: string } = {}) {
       </main>
     );
   return (
-    <div className="app-shell">
+    <div className="app-shell" inert={sharedOpen}>
+      {sharedOpen&&createPortal(<SharedWorkbench privatePages={pages.filter(page=>page.deletedAt===null).map(page=>({id:page.id,title:page.title,kind:recordDatabaseIdsRef.current.has(page.id)?"database" as const:recordIds.has(page.id)?"record" as const:"page" as const}))} api={window.folio.shared} onClose={()=>setSharedOpen(false)} />,document.body)}
       <div className="r6-recovery-status" role="status" data-recovery-state={recoveryError ? "error" : recoveryStatus?.state ?? "saved"}>
         {recoveryError || recoveryStatus?.state === "error" ? <><span>復旧用保存に失敗: {recoveryError || recoveryStatus?.error}</span><button onClick={() => void recoveryQueue.current?.retry().then(() => {setRecoveryError(""); checkpointRef.current();}).catch((error) => setRecoveryError(String(error)))}>復旧用保存を再試行</button></> :
           recoveryStatus?.state === "saving" ? "復旧用保存中" : "復旧用保存済み"}
@@ -1632,6 +1638,7 @@ export function App({ syncMessage }: { syncMessage?: string } = {}) {
             <ChevronDown size={14} />
           </div>
           <nav className="sidebar-nav" aria-label="ワークスペース操作">
+            <button onClick={()=>setSharedOpen(true)}>共有ワークスペース</button>
             <button onClick={openSearch}>
               <Search size={17} />
               <span>検索</span>

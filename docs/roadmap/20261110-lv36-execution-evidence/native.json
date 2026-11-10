@@ -1,0 +1,71 @@
+{
+  "environment": "macOS arm64; temporary .NET10 SDK; Windows APIs never executed",
+  "sdk": {
+    "version": "10.0.403",
+    "rid": "osx-arm64",
+    "url": "https://builds.dotnet.microsoft.com/dotnet/Sdk/10.0.403/dotnet-sdk-10.0.403-osx-arm64.tar.gz",
+    "sha512": "5893c66b48ea3674c7da18501059d606e96f3672fabe4d5e41762e692c7c83df3ee0b2b9dc5a0786191da2dc413d7335158101c14c935ab217f31ac2529770f3",
+    "bytes": 230759804,
+    "installScope": "task temporary only; no global configuration"
+  },
+  "telemetryDisabled": true,
+  "aspNetCertificateGenerationDisabled": true,
+  "components": [
+    {
+      "component": "OwnedNodeJob",
+      "managedCompilation": "PASS",
+      "nativeWindowsExecution": "NOT_RUN",
+      "source": [
+        {
+          "path": "scripts/platform/windows/OwnedNodeJob.cs",
+          "sha256": "2a10c19668a4bb8dda6400b6c5f9f689ef7c94ca3c86cb6f410f28592ff82479"
+        },
+        {
+          "path": "scripts/platform/windows/native/OwnedNodeJob.csproj",
+          "sha256": "fffb62db26aae5de27ca0e43a02ea0476e3034c1e066ff9f615f71919dca8b9c"
+        }
+      ],
+      "managedBinarySha256": "84e2049bc40b4276a45252180cb02eefd37fe245011199aedf6df17102fe7833",
+      "log": "logs/native-owned-current.log"
+    },
+    {
+      "component": "PrivateRootProbe",
+      "managedCompilation": "PASS",
+      "nativeWindowsExecution": "NOT_RUN",
+      "source": [
+        {
+          "path": "scripts/platform/windows/probe-private-root.ps1",
+          "sha256": "2aa17109241d222c27bd5cd521f804e683704e97302a2c4abeb7babb4f636ad6"
+        },
+        {
+          "path": "scripts/platform/windows/PrivateRootProbeProgram.cs",
+          "sha256": "f7b63fe2e24aec75d401dbd1c044e8eba449058792a6bb455990ff2bf3a5fe48"
+        },
+        {
+          "path": "scripts/platform/windows/native/PrivateRootProbe.csproj",
+          "sha256": "9a2fe53fde831a2a9e3e0f4f20915a71ec8a458b967bf0412292e8fc36e4d79d"
+        }
+      ],
+      "managedBinarySha256": "12852ca8cb277862ef5b0b5023cabb14b5e61d2ab1cbc033c22060f7363a886d",
+      "log": "logs/native-probe-current.log"
+    },
+    {
+      "component": "CandidateRootSetup",
+      "managedCompilation": "PASS",
+      "nativeWindowsExecution": "NOT_RUN",
+      "source": [
+        {
+          "path": "scripts/platform/windows/create-candidate-root.ps1",
+          "sha256": "c8c3ab16ef719b3b67b0007f0a788caa25677d8aea748be1a81ef8b7a97f996d"
+        }
+      ],
+      "managedBinarySha256": "13b5736cc8b0e764b42b4e1f5e0e460016542e10d2dd333b08d6c72faa74dbf0",
+      "log": "logs/native-root-current.log"
+    }
+  ],
+  "packaging": "NOT_RUN",
+  "physicalWindows": "NOT_RUN",
+  "dpapi": "NOT_RUN",
+  "authenticode": "NOT_RUN",
+  "note": "Managed DLL compilation is not native execution, packaging, filesystem durability, or OS acceptance."
+}

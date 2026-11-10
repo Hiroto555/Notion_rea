@@ -1,0 +1,30 @@
+{
+  "integrationBranch": "codex/folio-lv5-collaboration-20261109",
+  "integrationHEAD": "522665c28747d91bb5f23f007b4037375933b893",
+  "originalBranch": "master",
+  "originalHEAD": "e269137f191081cabc0f05aa03ec68339ce413c2",
+  "originalTrackedChanges": false,
+  "originalPreexistingUntracked": [
+    "artifacts/",
+    "outputs/"
+  ],
+  "workflowChanges": false,
+  "sourceNativeBuildOutputDirsAbsent": true,
+  "actionsNotPerformed": [
+    "GUI/Electron/browser/E2E/clipboard/dialog",
+    "push",
+    "workflow create/change/run",
+    "master merge",
+    "deployment",
+    "real Folio data operations",
+    "billing/global settings changes"
+  ],
+  "evidenceScope": "Source/status and performed command review; not a claim to audit other user apps/processes",
+  "sourceManifestStillMatches": true,
+  "credentialPrefixScan": {
+    "state": "NO_MATCH",
+    "scope": "Candidate source files; limited prefix scan, not proof of absence of all secrets"
+  },
+  "dependencyLockDiff": "",
+  "noTaskOwnedOpenCodeWorkersRemaining": true
+}

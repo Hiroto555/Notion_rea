@@ -1,0 +1,67 @@
+[
+  {
+    "finding": "R04 dropped subtree remote edits",
+    "state": "FIXED",
+    "resolutionOrLimit": "Full-content deletion CAS skips only transported retained subtrees; deletion witness; tests/shared-frame-existing-shell.test.ts"
+  },
+  {
+    "finding": "R04 existing wrapper shell reparent",
+    "state": "FIXED",
+    "resolutionOrLimit": "Runtime/lowerer/PM frame closure, exact retained mapping; tests/shared-frame-existing-shell.test.ts"
+  },
+  {
+    "finding": "R04 duplicate retained-descendant template ids",
+    "state": "FIXED",
+    "resolutionOrLimit": "PM exact template/live/result id collision checks; tests/shared-frame-existing-shell.test.ts"
+  },
+  {
+    "finding": "R06 record/database selection order",
+    "state": "FIXED",
+    "resolutionOrLimit": "Two-pass selected metadata and source membership validation; tests/shared-copy-records.test.ts"
+  },
+  {
+    "finding": "R06 abandoned staging admission",
+    "state": "FIXED_WITH_BOUNDS",
+    "resolutionOrLimit": "8 active and32MiB aggregate reserved source; sameactor UI cancel and fencedwriter owner CLI; immutable history still retained"
+  },
+  {
+    "finding": "R07 accepted own history after read failure",
+    "state": "FIXED",
+    "resolutionOrLimit": "Pending history/write/undo guards and deferred truncation; tests/shared-snapshot-bounds.test.ts"
+  },
+  {
+    "finding": "R07 event receipt-cut coherence",
+    "state": "FIXED",
+    "resolutionOrLimit": "Hash, exactreceipt identity and known prefix binding; R07 review"
+  },
+  {
+    "finding": "R05 Windows forbidden credential roots",
+    "state": "FIXED",
+    "resolutionOrLimit": "Vault and generic ciphertext ledger reject canonical overlap; tests/windows-vault-final-review.test.ts, tests/windows-secret-ledger-final-review.test.ts"
+  },
+  {
+    "finding": "R05 Windows postCOMMIT outcome uncertainty",
+    "state": "FIXED",
+    "resolutionOrLimit": "Preserve typed503/UNKNOWN and original close error; real SQLite injected proof tests"
+  },
+  {
+    "finding": "Windows hashed EXE with external appDLL",
+    "state": "FIXED",
+    "resolutionOrLimit": "Single-file app assemblies; real PE/bundle tests and win-x64 crosspublish"
+  },
+  {
+    "finding": "Aggressive historical raw/asset purge",
+    "state": "INTENTIONALLY_NOT_IMPLEMENTED",
+    "resolutionOrLimit": "Do not delete UNKNOWN/undo/receipt roots for capacity; finite bounded failclosed profile"
+  },
+  {
+    "finding": "Windows private credential publication / all private journals",
+    "state": "UNIMPLEMENTED",
+    "resolutionOrLimit": "Recover/bootstrap/restore/private durable-file/monitoring need audited native publication and complete call-site migration; not an OS-only wait"
+  },
+  {
+    "finding": "R14 real IME and physical devices",
+    "state": "NOT_RUN",
+    "resolutionOrLimit": "Synthetic Node/jsdom is separate; explicit GUI permission remains absent"
+  }
+]

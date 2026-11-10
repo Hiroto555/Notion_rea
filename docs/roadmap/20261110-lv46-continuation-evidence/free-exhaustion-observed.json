@@ -1,0 +1,7 @@
+{
+  "observedAt": 1794319318.2564108,
+  "provider": "opencode",
+  "model": "deepseek-v4.1-flash-free",
+  "error": "Free usage limit reached",
+  "action": "Stopped own six blocked CLI workers. Continue inherited source with Codex agents; no billing/config changes."
+}

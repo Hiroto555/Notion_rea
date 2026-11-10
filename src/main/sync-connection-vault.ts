@@ -2,9 +2,11 @@ import { randomUUID } from "node:crypto";
 import { lstatSync, realpathSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { z } from "zod";
+import { asciiCaseFold, validateWindowsPath } from "../platform/windows/path-policy";
 import { syncConnectionInputSchema, type SyncConnectionAction, type SyncConnectionInput, type SyncConnectionReason, type SyncConnectionView } from "../shared/sync-management";
 import { canonicalJson, requireCondition, sha256, SyncError } from "../sync/protocol";
 import { PrivateLedger } from "../sync/private-ledger";
+import type { PrivatePlatform } from "../sync/private-platform";
 import { assertSecureStorageBackend, SecretStoreError, type SafeStoragePort } from "../sync/secret-store";
 import { openConnectionToken, sealConnectionToken } from "../sync/connection-credential-codec";
 import { verifyWorkspaceBinding } from "../sync/workspace-binding";
@@ -19,11 +21,18 @@ const receiptSchema = z.object({fingerprint: z.string().regex(/^[a-f0-9]{64}$/),
 type Profile = z.infer<typeof profileSchema>;
 export type LoadedSyncConnection = {revision: string; baseUrl: string; workspaceId: string; clientId: string;
   bindingId: string; token: string; mode?: "publish" | "join" | "recover"};
+export type WorkspaceNativeIdentity = Readonly<{
+  canonicalPath: string;
+  volumeId: string;
+  fileId: string;
+}>;
 export type SyncConnectionVaultOptions = {
   directory: string; forbiddenRoots: readonly string[]; safeStorage: SafeStoragePort; platform?: NodeJS.Platform;
   assertWorkspaceAllowed(databasePath: string): void;
   /** Existing crash-recovery workspace identity; main creates it before startup. */
   workspaceIdentity(databasePath: string): string;
+  privatePlatformFactory?: (directory: string, name: string) => PrivatePlatform;
+  workspaceNativeIdentity?: (databasePath: string) => WorkspaceNativeIdentity;
 };
 const emptyView = (): SyncConnectionView => ({state: "unconfigured", revision: null, target: null, hasCredential: false, reason: null});
 
@@ -33,8 +42,8 @@ export class SyncConnectionVault {
     requireCondition(Array.isArray(options.forbiddenRoots) && options.forbiddenRoots.length > 0 &&
       typeof options.assertWorkspaceAllowed === "function" && typeof options.workspaceIdentity === "function", "connection-vault-invalid");
   }
-  private binding(path: string) {
-    this.options.assertWorkspaceAllowed(path);
+  private platform(): NodeJS.Platform {return this.options.platform ?? process.platform;}
+  private posixBinding(path: string) {
     const requested = resolve(path), stat = lstatSync(requested, {bigint: true});
     requireCondition(stat.isFile() && !stat.isSymbolicLink() && stat.nlink === 1n &&
       typeof process.getuid === "function" && stat.uid === BigInt(process.getuid()), "connection-identity-changed", 409);
@@ -45,10 +54,110 @@ export class SyncConnectionVault {
     const hash = sha256(canonicalJson({path: canonical, dev: String(stat.dev), ino: String(stat.ino), birth: String(stat.birthtimeNs), identity}));
     return {key: "profile:" + hash, hash};
   }
-  private ledger<T>(path: string, work: (db: PrivateLedger, binding: ReturnType<SyncConnectionVault["binding"]>) => T) {
+  private windowsBinding(path: string) {
+    const native = this.options.workspaceNativeIdentity;
+    if (typeof native !== "function" || typeof this.options.privatePlatformFactory !== "function")
+      throw new SyncError("connection-identity-changed", 409);
+    let proven: WorkspaceNativeIdentity;
+    try { proven = native(path); }
+    catch {throw new SyncError("connection-identity-changed", 409);}
+    requireCondition(typeof proven === "object" && proven !== null, "connection-identity-changed", 409);
+    const canonical = proven.canonicalPath, volume = proven.volumeId, file = proven.fileId;
+    requireCondition(typeof canonical === "string" && /^[A-Za-z]:[\\/]/.test(canonical) &&
+      typeof volume === "string" && /^[0-9A-Fa-f]{16}$/.test(volume) &&
+      typeof file === "string" && /^[0-9A-Fa-f]{32}$/.test(file), "connection-identity-changed", 409);
+    const identity = this.options.workspaceIdentity(path);
+    requireCondition(typeof identity === "string" && /^[a-zA-Z0-9_-]{1,128}$/.test(identity), "connection-identity-changed", 409);
+    const hash = sha256(canonicalJson({path: canonical, volume, file, identity}));
+    return Object.freeze({key: "profile:" + hash, hash});
+  }
+  private binding(path: string) {
+    this.options.assertWorkspaceAllowed(path);
+    return this.platform() === "win32" ? this.windowsBinding(path) : this.posixBinding(path);
+  }
+  private assertVaultLocation(): void {
+    if (this.platform() !== "win32") return;
+    const canonical = (path: string): string => {
+      if (/^[A-Za-z]:[\\/]/.test(path)) {
+        const normalized = validateWindowsPath(
+          path,
+          `${path[0].toUpperCase()}:\\`,
+        ).canonical;
+        return asciiCaseFold(normalized);
+      }
+      // Existing injected Windows contract tests use real POSIX temp ledgers.
+      // Production Windows accepts only fully validated drive paths.
+      requireCondition(
+        process.platform !== "win32",
+        "connection-identity-changed",
+        409,
+      );
+      return realpathSync(resolve(path));
+    };
+    const directory = canonical(this.options.directory);
+    for (const raw of this.options.forbiddenRoots) {
+      const root = canonical(raw);
+      const separator = /^[a-z]:\\/.test(directory) ? "\\" : "/";
+      const contains = (parent: string, child: string) =>
+        parent === child ||
+        child.startsWith(
+          parent.endsWith(separator) ? parent : parent + separator,
+        );
+      requireCondition(
+        !contains(directory, root) && !contains(root, directory),
+        "connection-identity-changed",
+        409,
+      );
+    }
+  }
+  private commit<T>(db: PrivateLedger, work: () => T): T {
+    let callbackCompleted = false;
+    try {
+      return db.transaction(() => {
+        const result = work();
+        callbackCompleted = true;
+        return result;
+      });
+    } catch (error) {
+      // Once the full mutation reached SQLite, a failing post-COMMIT ownership
+      // check cannot license a fresh request or be represented as unapplied.
+      if (callbackCompleted)
+        throw new SyncError("connection-outcome-unknown", 503);
+      throw error;
+    }
+  }
+  private ledger<T>(
+    path: string,
+    work: (
+      db: PrivateLedger,
+      binding: ReturnType<SyncConnectionVault["binding"]>,
+    ) => T,
+  ) {
     const binding = this.binding(path); // before opening or referencing the vault
-    const db = new PrivateLedger(this.options.directory, "connections.sqlite", "connections", this.options.forbiddenRoots);
-    try { return work(db, binding); } finally {db.close();}
+    this.assertVaultLocation();
+    const factory = this.options.privatePlatformFactory;
+    requireCondition(
+      this.platform() !== "win32" || typeof factory === "function",
+      "connection-identity-changed",
+      409,
+    );
+    const platform = factory?.(this.options.directory, "connections.sqlite");
+    const db = new PrivateLedger(
+      this.options.directory,
+      "connections.sqlite",
+      "connections",
+      this.options.forbiddenRoots,
+      platform,
+    );
+    let result: T;
+    try { result = work(db, binding); }
+    catch (error) {
+      try { db.close(); } catch { /* Preserve the original uncertainty. */ }
+      throw error;
+    }
+    try { db.close(); }
+    catch { throw new SyncError("connection-outcome-unknown", 503); }
+    return result;
   }
   private profile(raw: string | null): Profile | null {
     if (raw === null) return null;
@@ -69,12 +178,30 @@ export class SyncConnectionVault {
     return view;
   }
   private reason(error: unknown): SyncConnectionReason {
-    if (error instanceof SecretStoreError || (error instanceof SyncError && error.code.startsWith("connection-secret-"))) return "secure-store-unavailable";
-    const code = (error as {code?: unknown})?.code;
-    if (code === "sync-storage-unavailable") return "outcome-unknown";
+    if (
+      error instanceof SecretStoreError ||
+      (error instanceof SyncError &&
+        error.code.startsWith("connection-secret-"))
+    )
+      return "secure-store-unavailable";
+    const code = (error as { code?: unknown })?.code;
+    if (
+      code === "sync-storage-unavailable" ||
+      code === "connection-outcome-unknown" ||
+      (error instanceof SyncError && error.status === 503) ||
+      (typeof code === "string" &&
+        /^(WINDOWS_PRIVATE_(CREATE_(UNKNOWN|RACE)|OPEN_UNKNOWN|DIRECTORY_UNKNOWN)|PROBE_(EXEC_FAILED|TIMEOUT|OUTPUT_LIMIT|SIGNAL|EXIT|FAILED))$/.test(
+          code,
+        ))
+    )
+      return "outcome-unknown";
     if (code === "connection-stale") return "conflict";
     if (code === "recovered-workspace-sync-held") return "recovery-copy-held";
-    if (code === "connection-identity-changed" || code === "workspace-binding-mismatch") return "identity-changed";
+    if (
+      code === "connection-identity-changed" ||
+      code === "workspace-binding-mismatch"
+    )
+      return "identity-changed";
     if (error instanceof z.ZodError) return "invalid-input";
     return "local-error";
   }
@@ -127,7 +254,7 @@ export class SyncConnectionVault {
         const ciphertext = sealConnectionToken(this.options.safeStorage, this.options.platform ?? process.platform,
           {profileKey: binding.hash, nonce, targetHash: sha256(canonicalJson(config))}, input.token);
         const next: Profile = {nonce, config, ciphertext, enabled: true, activated: false, revision: input.requestId};
-        db.transaction(() => {
+        this.commit(db, () => {
           requireCondition(this.binding(path).key === binding.key && db.read(binding.key) === oldRaw && db.read(requestKey) === null, "connection-stale", 409);
           this.assertExistingWorkspaceBinding(path, config);
           db.write(binding.key, canonicalJson(next));
@@ -153,7 +280,7 @@ export class SyncConnectionVault {
         requireCondition((prior?.revision ?? null) === expectedRevision, "connection-stale", 409);
         const next: Profile = {nonce: prior?.nonce ?? randomUUID(), config: prior?.config ?? null,
           revision: requestId, ciphertext: null, enabled: false, activated: false};
-        db.transaction(() => {
+        this.commit(db, () => {
           requireCondition(this.binding(path).key === binding.key && db.read(binding.key) === oldRaw && db.read(key) === null, "connection-stale", 409);
           db.write(binding.key, canonicalJson(next));
           db.write(key, canonicalJson({fingerprint, kind: "disable", outcome: "disabled", revision: requestId}));
@@ -182,7 +309,7 @@ export class SyncConnectionVault {
     });
   }
   markActivated(path: string, revision: string): void {
-    this.ledger(path, (db, binding) => db.transaction(() => {
+    this.ledger(path, (db, binding) => this.commit(db, () => {
       const profile = this.profile(db.read(binding.key));
       requireCondition(profile?.enabled && profile.revision === revision, "connection-stale", 409);
       verifyWorkspaceBinding(path, profile.config!, false);

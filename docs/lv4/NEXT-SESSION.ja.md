@@ -1,5 +1,7 @@
 # Folio：次のチャットへの引継ぎ
 
+2026-11-10：Lv4〜Lv6継続実装後の最新入口は[GitHub保存・引き継ぎ](../roadmap/20261110-HANDOFF-LV4-LV6.ja.md)。以下の2026-11-08時点の未実装・件数は履歴として読む。確認済みLevelはLv3、現在候補のGUI／物理機受入はNOT_RUN。
+
 2026-11-08。実装と計画の区切りでチャットを切り替えるための入口。**この文書は新しい実装・GUI実行・mergeの許可ではない。新チャットの最新ユーザー指示を優先する。**
 
 最新の非GUI追記：`codex/folio-lv4-quiet-residuals-20261108`（開始 `ab48aab`）で、DeepSeek最大10並列＋限定修正2件を統合した。終了予約の書込み前失敗後の取消しと、既存binding不一致の接続設定保存を修正し、外部監視・remote H1起動経路・artifact snapshot・Keychain/native観測判定・12条件台帳を実装した。**型検査・243ファイル/2,292 Nodeテスト・build PASS、今回の変更は追加GUIなしの最終レビュー後、この文書を含むローカルcommitへ保存する。** [実装・再現・境界](QUIET-RESIDUAL-EXECUTION.ja.md)と[最終レビューJSON](validation/lv4-quiet-residuals-final-review-20261108.json)を最優先する。製品srcが変わったため、以下のGUI240件は前候補の履歴。新候補のGUIはNOT_RUN、Lv3確認済み/Lv4未認定、追加GUI・push・workflow・master mergeなし。

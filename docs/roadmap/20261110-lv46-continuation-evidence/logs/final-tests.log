@@ -1,0 +1,5 @@
+
+> folio-desktop@0.1.0 test
+> vitest run --maxWorkers=2 --reporter=json --outputFile=/var/folders/fm/qk5fr3z11wq8hbphz6gk9llc0000gn/T/folio-lv46-cont-20261110-7w9r8g2j/full-suite-final.json
+
+JSON report written to /var/folders/fm/qk5fr3z11wq8hbphz6gk9llc0000gn/T/folio-lv46-cont-20261110-7w9r8g2j/full-suite-final.json
