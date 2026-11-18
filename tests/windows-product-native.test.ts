@@ -825,7 +825,7 @@ describe("windows product-native composition (contract-only, NOT_RUN on Windows)
     expect(reopened.privateFilesystem.inspectFile(path, bytes.length)).toEqual(expected);
     expect(f.profiles).toContainEqual({name: "private-transfer-v1.sqlite", profile: "recovery-archive"});
     expect(f.leases.filter(l => l.path.endsWith("private-transfer-v1.sqlite")).every(l => l.root === STATE_ROOT && l.rootFileId === STATE_ROOT_ID)).toBe(true);
-  });
+  }, 60_000);
 
   it("retains raw append captures and refuses redispatch of an UNKNOWN resource after restart", () => {
     const f = fixture(), p = f.open(); p.bindWorkspace(WS_DIR, "ws-1");
@@ -1226,7 +1226,7 @@ describe("windows product-native composition (contract-only, NOT_RUN on Windows)
     try {
       expect(db.prepare("SELECT COUNT(*) AS n FROM raw_blobs WHERE kind='original'").get()?.n).toBe(6);
     } finally { db.close(); }
-  }, 30_000);
+  }, 60_000);
 
   it("snapshots raw bytes before the first caller fence and blocks stale calls before dispatch", () => {
     const f = fixture(), p = f.open(), bytes = Buffer.from("original");

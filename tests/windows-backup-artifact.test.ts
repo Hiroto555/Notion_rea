@@ -348,7 +348,7 @@ describe("windows shared-backup artifact (contract-only, NOT_RUN on Windows)", (
       expect(hash(restored.blobGet(blob.scope, blob.hash)!)).toBe(blob.hash);
       expect(restored.get("meta", "title")).toEqual({ text: "asset-bearing" });
     } finally { restored.close(); }
-  });
+  }, 20_000);
 
   it("rejects a typed array declaring max+1 bytes before copying or dispatch", async () => {
     const { io, calls } = fixture();

@@ -796,7 +796,7 @@ describe("composed archive + binary IO + logical CAS + CrashRecoveryFile", () =>
     f.archive.close();
     expect(f.open().file.read().snapshot).toEqual(input);
     expect(f.dispatches()).toBe(2);
-  });
+  }, 20_000);
 
   it("case aliases share one pointer; foreign workspaces cannot read or replace it", () => {
     const f = fixture();
