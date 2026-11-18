@@ -2,7 +2,7 @@
 // files plus the launch-free surface of the host harness, and a real
 // canonical-binding round trip through the shared parser. Not copy tests:
 // each assertion binds the observation hook to the existing save/ACK code.
-import {beforeEach, expect, it, vi} from "vitest";
+import {afterEach, beforeEach, expect, it, vi} from "vitest";
 import * as ts from "typescript";
 import {createHash} from "node:crypto";
 import {
@@ -27,9 +27,19 @@ import {canonicalJson, parseCheckpointObservationBindingJson} from "../src/share
 
 vi.mock("../scripts/write-evidence-manifest.mjs", () => ({readEvidenceIntent: vi.fn()}));
 const readIntentMock = vi.mocked(readEvidenceIntent as unknown as (...args: unknown[]) => unknown);
+const platformDescriptor = Object.getOwnPropertyDescriptor(process, "platform")!;
+
+function setObservationTestPlatform(platform: "darwin" | "linux") {
+  Object.defineProperty(process, "platform", {...platformDescriptor, value: platform});
+}
 
 beforeEach(() => {
   readIntentMock.mockReset();
+});
+
+afterEach(() => {
+  Object.defineProperty(process, "platform", platformDescriptor);
+  vi.unstubAllGlobals();
 });
 
 const source = (path: string) =>
@@ -324,6 +334,9 @@ it("NODE_MOCK harness: correlates a canonical candidate with the verified packag
   const evidence = fakeEvidence(sourceRoot, tmp);
   const entries = universeEntries(sourceRoot);
   const candidatePath = writeCandidate(tmp, entries, additionalEntries(sourceRoot));
+  setObservationTestPlatform("linux");
+  expect(() => harness.verifyObservationCandidate(candidatePath, evidence)).toThrow(/^OBS_TARGET/);
+  setObservationTestPlatform("darwin");
   const verified = harness.verifyObservationCandidate(candidatePath, evidence);
   expect(verified.candidateSha256).toBe(sha256Text(canonicalJson(entries)));
   expect(verified.candidateFileSha256).toBe(sha256Text(readFileSync(candidatePath)));
@@ -350,8 +363,9 @@ it("NODE_MOCK harness: rejects candidate aggregate, membership, hash and unsafe 
     () => {const a = additional.map((x) => ({...x, sha256: "0".repeat(64)}));
            return writeCandidate(tmp, entries, a);},
   ];
+  setObservationTestPlatform("darwin");
   for (const build of cases)
-    expect(() => harness.verifyObservationCandidate(build(), evidence)).toThrow(/OBS_/);
+    expect(() => harness.verifyObservationCandidate(build(), evidence)).toThrow(/OBS_CANDIDATE/);
 });
 
 it("NODE_MOCK harness: enforces the existing owned gate, root binding and node pin", async () => {
@@ -409,8 +423,9 @@ it("NODE_MOCK harness: read-only capture pins a fake-page sample into owned evid
       status: {state: "saved", generation: 1, offeredSeq: 1, savedSeq: 1},
     },
   };
-  (globalThis as Record<string, unknown>).folioCheckpointObservation = {read: () => sample};
+  vi.stubGlobal("folioCheckpointObservation", {read: () => sample});
   const page = {evaluate: async (fn: () => unknown) => fn()} as unknown as Page;
+  setObservationTestPlatform("darwin");
   const capture = await harness.captureCheckpointObservationSample(
     {page, context: context as unknown as ObservationCaptureContext});
   expect(capture.validation.verdict).toBe("VALID");
@@ -419,7 +434,6 @@ it("NODE_MOCK harness: read-only capture pins a fake-page sample into owned evid
   await expect(harness.captureCheckpointObservationSample(
     {page, context: context as unknown as ObservationCaptureContext}))
     .rejects.toThrow(/EEXIST|OBS_/);
-  delete (globalThis as Record<string, unknown>).folioCheckpointObservation;
 });
 
 it("NODE_MOCK harness: refuses fixture-manifest drift, stale intent, binding mismatch and output escape", async () => {
@@ -430,7 +444,8 @@ it("NODE_MOCK harness: refuses fixture-manifest drift, stale intent, binding mis
   const context = fakeContext(sourceRoot, tmp);
   readIntentMock.mockReturnValue(evidence);
   const page = {evaluate: async (fn: () => unknown) => fn()} as unknown as Page;
-  (globalThis as Record<string, unknown>).folioCheckpointObservation = {read: () => null};
+  vi.stubGlobal("folioCheckpointObservation", {read: () => null});
+  setObservationTestPlatform("darwin");
   await expect(harness.captureCheckpointObservationSample(
     {page, context: context as unknown as ObservationCaptureContext, basename: "../escape"}))
     .rejects.toThrow(/OBS_OUTPUT/);
@@ -455,5 +470,4 @@ it("NODE_MOCK harness: refuses fixture-manifest drift, stale intent, binding mis
   await expect(harness.captureCheckpointObservationSample(
     {page, context: context as unknown as ObservationCaptureContext}))
     .rejects.toThrow(/EVIDENCE_INTENT/);
-  delete (globalThis as Record<string, unknown>).folioCheckpointObservation;
 });
