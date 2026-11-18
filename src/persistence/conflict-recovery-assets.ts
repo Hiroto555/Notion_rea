@@ -4,6 +4,7 @@ import { dirname } from "node:path";
 import type { AssetManifest } from "../sync/protocol";
 import { requireCondition } from "../sync/protocol";
 import { recoveryPath, syncRecoveryDirectory, withRecoveryRead, type RecoveryFault } from "./recovery-io";
+import { privatePersistencePort } from "../platform/private-persistence";
 
 const MAX_RECOVERY_ASSET_BYTES = 20_000_000;
 const CHUNK_BYTES = 65_536;
@@ -54,6 +55,23 @@ export function copyRecoveryAsset(
   assertAsset(asset);
   const sourceRelative = `${options.sourcePrefix ?? "assets"}/${asset.id}`;
   const destinationRelative = `${options.destinationPrefix ?? "assets"}/${asset.id}`;
+  const native = privatePersistencePort();
+  if (native) {
+    const source = recoveryPath(sourceRoot, sourceRelative);
+    const destination = recoveryPath(destinationRoot, destinationRelative);
+    const expected = native.inspectFile(source, MAX_RECOVERY_ASSET_BYTES);
+    requireCondition(expected.bytes === asset.bytes && expected.sha256 === asset.sha256,
+      "recovery-asset-hash-mismatch");
+    options.fault?.("before-file-sync");
+    const copied = native.copyNew(source, destination, expected, MAX_RECOVERY_ASSET_BYTES).identity;
+    options.fault?.("after-file-sync");
+    const actual = native.inspectFile(destination, MAX_RECOVERY_ASSET_BYTES);
+    requireCondition(copied.bytes === asset.bytes && copied.sha256 === asset.sha256 &&
+      actual.bytes === copied.bytes && actual.sha256 === copied.sha256 &&
+      actual.fileId === copied.fileId && actual.volumeId === copied.volumeId &&
+      actual.path === destination, "recovery-output-changed");
+    return; // The receipt is file proof, never a synthetic directory fsync.
+  }
   withRecoveryRead(sourceRoot, sourceRelative, MAX_RECOVERY_ASSET_BYTES, (fd, stat) => {
     requireCondition(stat.size === asset.bytes, "recovery-asset-size-mismatch");
     const outputPath = recoveryPath(destinationRoot, destinationRelative);

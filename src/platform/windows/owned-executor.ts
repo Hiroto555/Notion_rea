@@ -35,12 +35,14 @@ const ALLOWED_ENVIRONMENT_KEYS = [
 const FORBIDDEN_ENVIRONMENT_KEY =
   /FOLIO|TOKEN|SECRET|PASSWORD|PASSWD|CREDENTIAL|API[_-]?KEY|PRIVATE[_-]?KEY/i;
 
+export const WINDOWS_SHUTDOWN_MONITOR_MARKER = "--shutdown-monitor-stdin-v1";
+
 export type OwnedHelperSpawnOptions = Readonly<{
   shell: false;
   windowsHide: true;
   cwd: string;
   env: Record<string, string>;
-  stdio: ["ignore", "pipe", "pipe"];
+  stdio: ["ignore" | "pipe", "pipe", "pipe"];
 }>;
 
 export type OwnedHelperSpawn = (
@@ -114,8 +116,21 @@ function parseTimeout(argv: readonly string[]): number {
 
 function validateArgv(
   argv: readonly string[],
+  allowMonitorMarker = false,
 ): Readonly<{ timeoutMs: number; tempRoot: string; script: string }> {
-  if (!Array.isArray(argv) || argv.length !== 5) invalid("INVALID_ARGV");
+  if (
+    !Array.isArray(argv) ||
+    (allowMonitorMarker
+      ? argv.length !== 5 && argv.length !== 6
+      : argv.length !== 5)
+  )
+    invalid("INVALID_ARGV");
+  if (
+    allowMonitorMarker &&
+    argv.length === 6 &&
+    argv[5] !== WINDOWS_SHUTDOWN_MONITOR_MARKER
+  )
+    invalid("INVALID_ARGV_MARKER");
   const nodeExe = canonicalWindowsPath(argv[0], "NODE_EXE");
   const script = canonicalWindowsPath(argv[1], "OWNED_SCRIPT");
   const tempRoot = canonicalWindowsPath(argv[2], "TEMP_ROOT");
@@ -288,6 +303,31 @@ export class WindowsOwnedExecutor implements OwnedNodeExecutorPort {
         }
         finish(null, parsed);
       });
+    });
+  }
+
+  /**
+   * Launch the pinned helper in shutdown-monitor mode: the same fixed
+   * five-field argv plus the exact optional sixth marker
+   * "--shutdown-monitor-stdin-v1". The helper relays this process's stdin to
+   * the owned Node child's stdin until the parent pipe reaches EOF. The
+   * returned ChildProcess is owned by the caller, which may write to its
+   * stdin and must never attach to or kill unrelated PIDs; termination is
+   * limited to this handle after a bound. The legacy execute(argv) route is
+   * unchanged and still closes helper stdin immediately.
+   */
+  startShutdownMonitor(argv: readonly string[]): ChildProcess {
+    const validated = validateArgv(argv, true);
+    const environment = buildOwnedEnvironment(
+      process.env,
+      validated.tempRoot,
+    );
+    return this.#spawn(this.#helperPath, [...argv], {
+      shell: false,
+      windowsHide: true,
+      cwd: validated.tempRoot,
+      env: environment,
+      stdio: ["pipe", "pipe", "pipe"],
     });
   }
 }

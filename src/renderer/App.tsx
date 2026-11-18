@@ -9,18 +9,30 @@ import { validDocument } from "../shared/validation";
 import { versionDocument } from "../shared/rich-document";
 import { queryBacklinks } from "../persistence/backlinks-query";
 import { BacklinksPanel } from "./BacklinksPanel";
-import { WorkspaceMaintenancePanel } from "./WorkspaceMaintenancePanel";
+import { WorkspaceTools } from "./WorkspaceTools";
+import { SaveStateDetails } from "./SaveStateDetails";
+import { closeDetailsOnEscape } from "./details-keyboard";
+import { saveStateRows as buildSaveStateRows, saveStateAlerts, saveStateAlertLabels } from "./save-state-presentation";
+import "./ui-chrome.css";
 import { WorkspaceSyncIndicator } from "./WorkspaceSyncIndicator";
 import { SyncManagementButton } from "./sync/SyncManagementDialog";
 import { inputReadyToClose } from "./input-close-guard";
 import { PageOrderRepairDialog } from "./PageOrderRepairDialog";
 import { sendPageOrderRepair } from "./reliable-page-order-repair";
 import type { PageOrderRepairPreview, PageOrderRepairResult } from "../shared/page-order-repair";
-import { StoragePressurePanel } from "./StoragePressurePanel";
 import { PageLayoutControl } from "./page-layout";
 import { createPageTree, pageDropPosition, type PageDropPosition } from "./page-tree";
 import { effectivePageWidth } from "../shared/page-layout";
 import { WorkspaceBackupDialog } from "./workspace-backup/WorkspaceBackupDialog";
+import {
+  backupCloseReleaseAllowed,
+  backupLocalRefusal,
+  createBackupWriteEntry,
+  createBackupWriteHold,
+  type BackupWriteEntry,
+  type BackupWriteEntryDeps,
+  type BackupWriteHold,
+} from "./workspace-backup/backup-write-hold";
 import type { BackupPreview, BackupRestored } from "../shared/workspace-backup";
 import { SearchResults } from "./SearchPanel";
 import { exportMarkdown, importMarkdown } from "../document-io/markdown";
@@ -63,8 +75,9 @@ import { capturePendingJournal, serializePendingJournal } from "../shared/pendin
 import { PendingEdits } from "./pending-edits";
 import { LiveRecordDatabase } from "./LiveRecordDatabase";
 import { DatabaseSessionCoordinator } from "./database-session-coordinator";
-import { prepareDatabaseCreation, type DatabaseOperation, type DatabaseOperationResult } from "../shared/database-operation";
-import { sendDatabaseOperation, resolveDatabaseOperation } from "./reliable-database-operation";
+import { prepareDatabaseCreation, type DatabaseOperation } from "../shared/database-operation";
+import { sendDatabaseOperation, resolveDatabaseOperation, type DiagnosticDatabaseOperationResult } from "./reliable-database-operation";
+import { retainDatabaseCreationFailure, settleDatabaseCreation, type DatabaseCreationPending } from "./database-creation-state";
 import { PageOperationCoordinator, type PageOperationEntry } from "./page-operation-coordinator";
 import { retryUnconfirmedPageOperations } from "./page-operation-recovery";
 import { duplicateEditorPage } from "./duplicate-editor-page";
@@ -73,14 +86,21 @@ import { StructuralDatabaseDialog } from "./StructuralDatabaseDialog";
 import type { StructuralOperation } from "./structural-operation";
 import { CrashRecoveryDialog } from "./CrashRecoveryDialog";
 import { RecoveryCheckpoint, type RecoveryCheckpointStatus } from "./recovery-checkpoint";
+import { beginCheckpointObservation } from "./checkpoint-observation";
 import { prepareCrashRecovery } from "./prepare-crash-recovery";
+import { StorageFailureError } from "./private-request";
+import type { AppApi } from "../shared/app-api";
+import type { DesktopCompatibility } from "./desktop-api";
 import { emptyCrashRecoverySnapshot, hasCrashRecoveryInput, type CrashRecoveryRead, type CrashRecoverySnapshot } from "../shared/crash-recovery";
 import { filterConditions, operatorNeedsValue } from "../database/model";
 import { RecordPage } from "../database/RecordPage";
 import { parsePropertyNumberInput } from "../database/property-number-input";
 import { EditSessionCoordinator } from "./edit-session-coordinator";
-import { sendReliableSave, resolveReliableSave, retryReliableSave } from "./reliable-save";
-import type { SaveOperation, SaveResult } from "../shared/save-contract";
+import { createPurposeBridges, type PurposeBridges } from "./purpose-bridge";
+import { sendReliableSave, resolveReliableSave, retryReliableSave, type DiagnosticSaveResult } from "./reliable-save";
+import { retainOrdinaryPageFailure, settleOrdinaryPageSave } from "./ordinary-page-save-state";
+import type { SaveOperation } from "../shared/save-contract";
+import type { StorageFailureV1 } from "../shared/private-storage-failure";
 import { validateRecordReadSnapshot } from "./record-save-coordinator";
 import { composing } from "../shared/keyboard";
 import { findText } from "../editor/text-search";
@@ -90,13 +110,10 @@ import {
   emptyDatabase,
   type Page,
   type PagePatch,
-  type Snapshot,
   type Version,
   type Doc,
   type Request,
-  type RecordProjection,
 } from "../shared/types";
-const api = <T,>(r: Request) => window.folio.request<T>(r);
 const pageDragType = "application/x-folio-page";
 const icons = [
   "📄",
@@ -114,7 +131,16 @@ const icons = [
 ];
 type Dialog =
   "search" | "templates" | "trash" | "move" | "history" | "link" | null;
-export function App({ syncMessage }: { syncMessage?: string } = {}) {
+export function App({
+  api: appApi,
+  desktopCompatibility,
+  syncMessage,
+}: {
+  api: AppApi;
+  desktopCompatibility: DesktopCompatibility;
+  syncMessage?: string;
+}) {
+  const api = desktopCompatibility.request;
   const [sharedOpen,setSharedOpen]=useState(false);
   const sharedOpenRef=useRef(false);sharedOpenRef.current=sharedOpen;
   const [pages, setPages] = useState<Page[]>([]),
@@ -123,7 +149,7 @@ export function App({ syncMessage }: { syncMessage?: string } = {}) {
     [theme, setTheme] = useState("light"),
     [expanded, setExpanded] = useState<Set<string>>(new Set()),
     [sidebar, setSidebar] = useState(true),
-    [inspector, setInspector] = useState(true),
+    [inspector, setInspector] = useState(false),
     [dialog, setDialog] = useState<Dialog>(null),
     [query, setQuery] = useState(""),
     [results, setResults] = useState<Page[]>([]),
@@ -153,6 +179,31 @@ export function App({ syncMessage }: { syncMessage?: string } = {}) {
   } | null>(null);
   const pageDragSource = useRef<string | null>(null);
   const backupBusy = useRef(false);
+  // One backup write hold per bound workspace/renderer session (C04 §6.3):
+  // owned once here at the App root, external to the dialog and the entry
+  // controller, with no clear/reset. The entry deps are refreshed per render
+  // so a stale or direct callback still reaches the current prepare closure
+  // while guarding through the same root hold. prepareFailure lets the entry
+  // give a validated queue diagnostic priority over a local refusal without
+  // changing the shared prepare helper for other callers.
+  const backupWriteState = useRef<{
+    hold: BackupWriteHold;
+    deps: BackupWriteEntryDeps;
+    entry: BackupWriteEntry;
+  } | null>(null);
+  if (backupWriteState.current === null) {
+    const hold = createBackupWriteHold();
+    const deps: BackupWriteEntryDeps = {
+      send: api,
+      prepare: prepareWorkspaceBackup,
+      prepareFailure: () => latchedRecoveryError(),
+    };
+    backupWriteState.current = {hold, deps, entry: createBackupWriteEntry(hold, deps)};
+  }
+  const backupWriteHold = backupWriteState.current.hold;
+  const backupWriteEntry = backupWriteState.current.entry;
+  backupWriteState.current.deps.prepare = prepareWorkspaceBackup;
+  backupWriteState.current.deps.prepareFailure = latchedRecoveryError;
   const backlinkFocus = useRef<{pageId: string; blockId: string | null} | null>(null);
   const [startupRecovery, setStartupRecovery] = useState<CrashRecoveryRead | null>(null);
   const [recoveryBusy, setRecoveryBusy] = useState(false);
@@ -165,9 +216,17 @@ export function App({ syncMessage }: { syncMessage?: string } = {}) {
   const checkpointRef = useRef<() => void>(() => {});
   const recoveryBarrierRef = useRef<() => Promise<void>>(async () => {});
   const structuralOperation = useRef<StructuralOperation | undefined>(undefined);
-  const sessions = useRef(new EditSessionCoordinator(api, {beforeSend: () => recoveryBarrierRef.current()}));
-  const databases = useRef(new DatabaseSessionCoordinator(api, {beforeSend: () => recoveryBarrierRef.current()}));
-  const databaseCreation = useRef<{operation: DatabaseOperation; state: "saving" | "unknown" | "rejected"; selection: number; error?: string} | undefined>(undefined);
+  // The two App-owned edit coordinators and the standalone database
+  // create/resolve lane send through the purpose ports only. Ordinary Page
+  // saves, page operations and backup lanes keep the compat closure; the
+  // startup recovery DB subset uses the same ports behind the queue latch.
+  const purposeBridges = useRef<PurposeBridges | null>(null);
+  if (purposeBridges.current === null)
+    purposeBridges.current = createPurposeBridges(appApi);
+  const purpose = purposeBridges.current;
+  const sessions = useRef(new EditSessionCoordinator(purpose.save, {beforeSend: () => recoveryBarrierRef.current()}));
+  const databases = useRef(new DatabaseSessionCoordinator(purpose.database, {beforeSend: () => recoveryBarrierRef.current()}));
+  const databaseCreation = useRef<(DatabaseCreationPending & {selection: number}) | undefined>(undefined);
   const databaseCreating = useRef(false);
   // Ordinary Page create/duplicate keeps one operation until its durable
   // result is confirmed. Unresolved operations are added to crash recovery.
@@ -175,6 +234,9 @@ export function App({ syncMessage }: { syncMessage?: string } = {}) {
   if (!pageCreation.current)
     pageCreation.current = new PageOperationCoordinator(api, {
       persist: () => recoveryBarrierRef.current(),
+      // Retries recheck the checkpoint latch at the actual request boundary:
+      // a capture failure landing between persist and send still sends 0.
+      retrySend: recoveryGuardedRequest,
       onChange: () => {
         // Record both retention and resolution. In particular, a successful
         // duplicate may have no subsequent text edit to clear its checkpoint.
@@ -203,6 +265,10 @@ export function App({ syncMessage }: { syncMessage?: string } = {}) {
   }
   const pageSessions = useRef(new Map<string, { sessionId: string; page: Page }>());
   const pageOperations = useRef(new Map<string, SaveOperation>());
+  // Transient bounded diagnostics for the ordinary-Page operations above,
+  // keyed by operationId and only while the operation itself stays pending.
+  const pageStorageFailures = useRef(new Map<string, StorageFailureV1>());
+  const pageSaveState = () => ({operations: pageOperations.current, storageFailures: pageStorageFailures.current});
   const restoring = useRef(new Set<string>());
   const recordOrigin = useRef<{ element: HTMLElement | null; scroll: number } | null>(null);
   const recordViewRef = useRef(recordView);
@@ -322,21 +388,51 @@ export function App({ syncMessage }: { syncMessage?: string } = {}) {
   checkpointRef.current = () => {
     if (!recoveryEnabled.current || !recoveryQueue.current) return;
     try {recoveryQueue.current.offer(captureCrashRecovery()); captureError.current = "";}
-    catch (error) {captureError.current = String(error); setRecoveryError(String(error));}
+    catch (error) {
+      // A capture failure holds the queue itself, so the barrier and every
+      // retry path stop identically to a failed write; the App-side message
+      // comes from the bounded status, never the raw caught value.
+      recoveryQueue.current.captureFailure(error);
+      const status = recoveryQueue.current.getStatus();
+      captureError.current = status.error ?? String(error);
+      setRecoveryError(captureError.current);
+    }
   };
   recoveryBarrierRef.current = async () => {
-    if (!recoveryEnabled.current || !recoveryQueue.current) throw new Error("復旧用保存の準備ができていません。");
+    if (!recoveryEnabled.current || !recoveryQueue.current) throw backupLocalRefusal("復旧用保存の準備ができていません。");
     checkpointRef.current();
+    // The retained typed failure crosses the barrier to beforeSend; a raw
+    // string wrapper would drop its bounded diagnostic before U7 mapping.
+    const held = latchedRecoveryError();
+    if (held) throw held;
     if (captureError.current) throw new Error(captureError.current);
     await recoveryQueue.current.flush();
   };
   function enableRecovery(generation: number) {
-    recoveryQueue.current = new RecoveryCheckpoint(api, generation, setRecoveryStatus);
+    recoveryQueue.current = new RecoveryCheckpoint(api, generation, setRecoveryStatus,
+      {diagnostics: "v1", ...beginCheckpointObservation(() => recoveryQueue.current)});
     setRecoveryStatus(recoveryQueue.current.getStatus());
     recoveryEnabled.current = true;
   }
+  /** A latched v1 checkpoint failure means no retry action may send a new
+   * request. Fresh fixed-safe error each call; state stays retained. */
+  function latchedRecoveryError(): Error | null {
+    const status = recoveryQueue.current?.getStatus();
+    if (status?.state !== "error") return null;
+    if (status.storageFailure) return new StorageFailureError(status.storageFailure);
+    return new Error(status.error ?? "復旧用保存の結果を確認できません。入力を保持しています。");
+  }
+  /** Recheck the latch at the actual request boundary so a queue failure that
+   * lands between an entry guard and a send still sends nothing. */
+  async function recoveryGuardedRequest<T>(request: Request): Promise<T> {
+    const held = latchedRecoveryError();
+    if (held) throw held;
+    return api<T>(request);
+  }
   async function resumeCrashRecovery(copy = false, retryPages = false) {
     if (recoveryBusy || !startupRecovery?.snapshot || startupRecovery.status !== "ready") return;
+    const held = latchedRecoveryError();
+    if (held) {setRecoveryError(held.message); return;}
     setRecoveryBusy(true); setRecoveryError("");
     try {
       if (copy) {
@@ -350,7 +446,7 @@ export function App({ syncMessage }: { syncMessage?: string } = {}) {
         const body = first ? Object.assign({}, first.base, ...first.intents.map((intent) => "patch" in intent ? intent.patch : {})).doc : pageDoc;
         const title = !first && pageOperation?.command.kind === "createPage" && pageOperation.command.title
           ? pageOperation.command.title.slice(0, 480) + "（復旧入力）" : "復旧した入力";
-        await api<Page>({type: "recovery:copy", recoveryId: `checkpoint:${startupRecovery.generation}`,
+        await recoveryGuardedRequest<Page>({type: "recovery:copy", recoveryId: `checkpoint:${startupRecovery.generation}`,
           input: {title, payload: snapshot, ...(body ? {doc: body} : {}), ...(first ? {sourcePageId: first.base.id} : {})}});
         if (!recoveryQueue.current) enableRecovery(startupRecovery.generation);
         await recoveryQueue.current!.retry();
@@ -361,8 +457,34 @@ export function App({ syncMessage }: { syncMessage?: string } = {}) {
       // Only an explicit user action reaches this branch. It resolves every
       // retained page operation first and re-sends only unknown ones with the
       // exact same operation identity and payload.
-      if (retryPages) await retryUnconfirmedPageOperations(startupRecovery.snapshot, api);
-      const restored = installedRecovery.current ?? await prepareCrashRecovery(startupRecovery.snapshot, api);
+      if (retryPages) await retryUnconfirmedPageOperations(startupRecovery.snapshot, recoveryGuardedRequest);
+      const restored = installedRecovery.current ?? await prepareCrashRecovery(startupRecovery.snapshot, recoveryGuardedRequest, {
+        recordSend: (request) => {
+          const held = latchedRecoveryError();
+          if (held) throw held;
+          return purpose.save(request);
+        },
+        databaseSend: (request) => {
+          const held = latchedRecoveryError();
+          if (held) throw held;
+          return purpose.database(request);
+        },
+        structuralSend: (request) => {
+          const held = latchedRecoveryError();
+          if (held) throw held;
+          return purpose.structural(request);
+        },
+        readRecord: (pageId) => {
+          const held = latchedRecoveryError();
+          if (held) throw held;
+          return appApi.workspace.readRecord(pageId);
+        },
+        readDatabase: (databasePageId) => {
+          const held = latchedRecoveryError();
+          if (held) throw held;
+          return appApi.workspace.readDatabase(databasePageId);
+        },
+      });
       if (!installedRecovery.current) {
       // Validation of all lanes finishes before any editor session is installed.
       for (const entry of restored.records) sessions.current.restoreRecovery(entry, {page: entry.base, record: entry.record});
@@ -396,7 +518,7 @@ export function App({ syncMessage }: { syncMessage?: string } = {}) {
   }
   const refresh = async () => {
     const epoch = ++refreshEpoch.current;
-    const state = await api<Snapshot>({ type: "load" });
+    const state = await appApi.workspace.load();
     if (epoch !== refreshEpoch.current)
       throw new Error("古い読み込み結果を破棄しました。表示と未保存変更は保持しています。");
     const merged = edits.current.merge(state.pages.map((page) => {
@@ -539,7 +661,7 @@ export function App({ syncMessage }: { syncMessage?: string } = {}) {
       await current;
     } while (current !== queue.current);
     if (edits.current.size || sessions.current.hasUnsaved() || hasNumberDrafts() || hasDatabasePending() || restoring.current.size)
-      throw new Error(
+      throw backupLocalRefusal(
         "未保存の変更があります。保存の再試行または退避を先に実行してください。",
       );
   }
@@ -624,12 +746,13 @@ export function App({ syncMessage }: { syncMessage?: string } = {}) {
     checkpointRef.current();
     void enqueue(async () => {
       if (!edits.current.has(id, seq)) return;
+      let operation: SaveOperation | undefined;
       try {
         if (edits.current.failed.has(id) || pageOperations.current.has(id))
           throw new Error("先行する保存で競合または結果不明が発生しました。後続の変更を送信せず保持しています。");
         if (pageSessions.current.get(id) !== session)
           throw new Error("編集セッションが変わりました。未保存変更を保持しています。");
-        const operation: SaveOperation = {
+        operation = {
           operationId: crypto.randomUUID(), sessionId: session.sessionId, seq,
           pageId: id, databasePageId: null, revision: session.page.revision,
           patch: edits.current.patch(id, seq),
@@ -638,28 +761,37 @@ export function App({ syncMessage }: { syncMessage?: string } = {}) {
         await recoveryBarrierRef.current();
         const result = await sendReliableSave(operation, api);
         acknowledgePage(operation, result);
-      } catch (e) { edits.current.failed.add(id); throw e; }
+      } catch (e) {
+        // The checkpoint or the save itself failed for this exact retained
+        // operation; latch its bounded diagnostic before surfacing the error.
+        const retained = operation ? retainOrdinaryPageFailure(pageSaveState(), operation, e) : undefined;
+        edits.current.failed.add(id);
+        // A latched diagnostic surfaces only its fixed safe message, never a
+        // raw caught message, name or path.
+        if (retained) throw new StorageFailureError(retained);
+        throw e;
+      }
     }).catch(fail);
   }
-  function acknowledgePage(operation: SaveOperation, result: SaveResult, resume = false) {
-    if (pageOperations.current.get(operation.pageId) !== operation) return;
+  function acknowledgePage(operation: SaveOperation, result: DiagnosticSaveResult, resume = false) {
     const session = pageSessions.current.get(operation.pageId);
-    if (result.status !== "applied" || !result.page) {
-      if (result.status === "rejected") pageOperations.current.delete(operation.pageId);
-      throw new Error((result.message || (result.status === "unknown" ? "保存結果が不明です。結果を確認してください。" : "保存が競合しました。")) + " 未保存変更を保持しています。");
+    const settled = settleOrdinaryPageSave(pageSaveState(), operation, result, session);
+    if (settled.kind === "stale") return;
+    if (settled.kind === "retained") {
+      // Surface the local fixed-text error built from the latched diagnostic,
+      // never a raw transport, checkpoint or carrier message.
+      const local = settled.storageFailure ? new StorageFailureError(settled.storageFailure)
+        : new Error(settled.outcome === "mismatch" ? "保存結果の照合に失敗しました。"
+          : "保存結果が不明です。結果を確認してください。");
+      local.message = `${local.message} 画面内に未保存の入力を保持しています。新しい保存は確認できていません。`;
+      throw local;
     }
-    if (!session || session.sessionId !== operation.sessionId ||
-        result.operationId !== operation.operationId || result.sessionId !== operation.sessionId ||
-        result.seq !== operation.seq || result.pageId !== operation.pageId ||
-        result.page.id !== operation.pageId || result.page.revision !== operation.revision + 1 ||
-        session.page.revision !== operation.revision ||
-        Object.entries(operation.patch).some(([key, value]) => JSON.stringify((result.page as unknown as Record<string, unknown>)[key]) !== JSON.stringify(value)))
-      throw new Error("保存結果の照合に失敗しました。未保存変更を保持しています。");
-    session.page = result.page;
-    pageOperations.current.delete(operation.pageId);
+    if (settled.kind === "business-rejected")
+      throw new Error((settled.message || "保存が競合しました。") + " 未保存変更を保持しています。");
+    session!.page = settled.page;
     edits.current.ack(operation.pageId, operation.seq);
     edits.current.failed.delete(operation.pageId);
-    commit(edits.current.merge(pageRef.current.map((page) => page.id === operation.pageId ? result.page! : page)));
+    commit(edits.current.merge(pageRef.current.map((page) => page.id === operation.pageId ? settled.page : page)));
     checkpointRef.current();
     if (!edits.current.failed.size) setError("");
     // Later input was intentionally held while this operation was unknown.
@@ -673,11 +805,15 @@ export function App({ syncMessage }: { syncMessage?: string } = {}) {
     if (retry && composition.current) throw new Error("文字の変換を確定してから再試行してください。");
     await enqueue(async () => {
       if (retry) {
-        await recoveryQueue.current?.retry();
-        await recoveryBarrierRef.current();
+        // Confirmation/retry is resolve-only at this boundary: a latched
+        // checkpoint failure means this action sends no new request at all.
+        // A healthy queue is only queried — never checkpointed, retried or
+        // committed by this action.
+        const held = latchedRecoveryError();
+        if (held) throw held;
       }
       for (const operation of [...pageOperations.current.values()]) {
-        const result = await (retry ? retryReliableSave : resolveReliableSave)(operation, api);
+        const result = await (retry ? retryReliableSave : resolveReliableSave)(operation, retry ? recoveryGuardedRequest : api);
         acknowledgePage(operation, result, true);
       }
     });
@@ -691,7 +827,7 @@ export function App({ syncMessage }: { syncMessage?: string } = {}) {
     const origin = { element: document.activeElement as HTMLElement | null,
       scroll: document.querySelector(".document-scroll")?.scrollTop ?? 0 };
     try {
-      const read = await api<{ page: Page; record: RecordProjection }>({ type: "record:read", pageId });
+      const read = await appApi.workspace.readRecord(pageId);
       if (ticket !== recordOpenTicket.current || selection !== selectionVersion.current || creatingCount.current) return;
       const pair = validateRecordReadSnapshot(read, pageId, expectedOwner ?? read.record.databasePageId);
       sessions.current.attach(pair.page, pair.record);
@@ -757,24 +893,23 @@ export function App({ syncMessage }: { syncMessage?: string } = {}) {
     } catch (error) {fail(error);}
     finally {creatingRows.current.delete(ownerId); redrawSessions((n) => n + 1);}
   }
-  function acceptDatabaseCreation(result: DatabaseOperationResult) {
+  function acceptDatabaseCreation(result: DiagnosticDatabaseOperationResult) {
     const pending = databaseCreation.current;
-    if (!pending || result.operationId !== pending.operation.operationId) return;
-    if (result.status !== "applied" || !result.page || !result.database) {
-      pending.state = result.status === "rejected" ? "rejected" : "unknown";
-      pending.error = result.message || "作成結果を確認できません。入力を保持しています。";
+    const settled = settleDatabaseCreation(pending, result);
+    if (settled.kind === "stale") return;
+    if (settled.kind !== "applied") {
       redrawSessions((n) => n + 1);
       return;
     }
-    const created = result.page;
+    const created = settled.page;
     recordDatabaseIdsRef.current = new Set(recordDatabaseIdsRef.current).add(created.id);
     if (!pageRef.current.some((page) => page.id === created.id)) commit([...pageRef.current, created]);
-    databases.current.attach(created, result.database);
+    databases.current.attach(created, settled.database);
     databaseCreation.current = undefined;
     checkpointRef.current();
     setNewDatabaseOpen(false);
     setNewDatabaseTitle("新しいデータベース");
-    if (selectionVersion.current === pending.selection) select(created.id);
+    if (selectionVersion.current === pending!.selection) select(created.id);
     else setNotice("データベースを作成しました。サイドバーから開けます。");
   }
   async function createRegisteredDatabase() {
@@ -794,8 +929,15 @@ export function App({ syncMessage }: { syncMessage?: string } = {}) {
       const operation = prepareDatabaseCreation(newDatabaseTitle.trim(), null, settings);
       databaseCreation.current = {operation, selection: selected, state: "saving"};
       redrawSessions((n) => n + 1);
-      await recoveryBarrierRef.current();
-      acceptDatabaseCreation(await sendDatabaseOperation(operation, api));
+      try {
+        await recoveryBarrierRef.current();
+      } catch (error) {
+        // A checkpoint failure before dispatch keeps this exact operation
+        // pending as unknown with its bounded diagnostic.
+        retainDatabaseCreationFailure(databaseCreation.current, operation, error);
+        throw error;
+      }
+      acceptDatabaseCreation(await sendDatabaseOperation(operation, purpose.database));
     } catch (error) {fail(error);}
     finally {databaseCreating.current = false; redrawSessions((n) => n + 1);}
   }
@@ -804,7 +946,7 @@ export function App({ syncMessage }: { syncMessage?: string } = {}) {
     if (!pending || pending.state !== "unknown" || databaseCreating.current) return;
     databaseCreating.current = true;
     redrawSessions((n) => n + 1);
-    try {acceptDatabaseCreation(await resolveDatabaseOperation(pending.operation, api));}
+    try {acceptDatabaseCreation(await resolveDatabaseOperation(pending.operation, purpose.database));}
     catch (error) {fail(error);}
     finally {databaseCreating.current = false; redrawSessions((n) => n + 1);}
   }
@@ -1034,6 +1176,8 @@ export function App({ syncMessage }: { syncMessage?: string } = {}) {
     const priorMessage = pageCreation.current?.firstUncheckpointed()?.message;
     const selectionAtStart = selectionVersion.current;
     safe(() => mutate(async () => {
+      const held = latchedRecoveryError();
+      if (held) throw held;
       await recoveryQueue.current?.retry();
       const created = await pageCreation.current!.retryUncheckpointed();
       if (!created) return;
@@ -1073,7 +1217,11 @@ export function App({ syncMessage }: { syncMessage?: string } = {}) {
     const selectionAtStart = selectionVersion.current;
     safe(() =>
       mutate(async () => {
-        if (retry) await recoveryQueue.current?.retry();
+        if (retry) {
+          const held = latchedRecoveryError();
+          if (held) throw held;
+          await recoveryQueue.current?.retry();
+        }
         const result = await (retry ? pageCreation.current!.retryUnknown() : pageCreation.current!.resolveNext());
         if (!result) return;
         if (result.status === "applied" && result.page) {
@@ -1496,10 +1644,10 @@ export function App({ syncMessage }: { syncMessage?: string } = {}) {
     focusBacklink();
   }
   async function prepareWorkspaceBackup() {
-    if (composition.current || creatingCount.current || structuralOperation.current) throw new Error("入力や処理を完了してからバックアップしてください。");
+    if (composition.current || creatingCount.current || structuralOperation.current) throw backupLocalRefusal("入力や処理を完了してからバックアップしてください。");
     await ensureSaved();
     await recoveryBarrierRef.current();
-    if (captureError.current || recoveryQueue.current?.getStatus().state !== "saved") throw new Error("復旧記録の保存を確認してからバックアップしてください。");
+    if (captureError.current || recoveryQueue.current?.getStatus().state !== "saved") throw backupLocalRefusal("復旧記録の保存を確認してからバックアップしてください。");
   }
   function assertOrderRepairReady() {
     assertNoFailed();
@@ -1599,6 +1747,65 @@ export function App({ syncMessage }: { syncMessage?: string } = {}) {
       } as Doc,
     },
   ];
+  // Per-target detail rows for the save-state disclosure. Read-only: every row
+  // mirrors the original Page/DB operation maps, session lanes, input drafts
+  // and the recovery checkpoint status — no save, clear or send happens here.
+  const saveStateRows = buildSaveStateRows({
+    operations: pageOperations.current,
+    storageFailures: pageStorageFailures.current,
+    failedPageIds: edits.current.failed,
+    recordPageIds: recordIds,
+    // Classification uses every loaded database Page — deleted ones still
+    // own retained operations and held inputs — while clean presence counts
+    // live targets only.
+    databasePageIds: new Set([
+      ...recordDatabaseIdsRef.current,
+      ...pages
+        .filter((entry) => entry.kind === "database")
+        .map((entry) => entry.id),
+    ]),
+    liveDatabaseCount: new Set([
+      ...recordDatabaseIdsRef.current,
+      ...pages
+        .filter(
+          (entry) => entry.kind === "database" && entry.deletedAt === null,
+        )
+        .map((entry) => entry.id),
+    ]).size,
+    pendingInputCount: edits.current.size,
+    ordinaryPageCount: pages.filter((entry) => entry.kind === "page" && entry.deletedAt === null && !recordIds.has(entry.id)).length,
+    restoringCount: restoring.current.size,
+    recordLanes: sessions.current.views().map((view) => ({
+      id: view.handle.pageId,
+      label: view.record?.title || view.page.title || "レコード",
+      state: view.state,
+      error: view.error,
+    })),
+    creatingRecordCount: creatingRows.current.size,
+    hasNumberDrafts: hasNumberDrafts(),
+    databaseLanes: databases.current.views().map((view) => ({
+      id: view.handle.pageId,
+      label: view.page.title || "データベース",
+      state: view.state,
+      error: view.error,
+    })),
+    hasFilterDrafts: hasFilterDrafts(),
+    structuralPending: !!structuralOperation.current,
+    databaseCreation: databaseCreation.current && databaseCreation.current.state !== "rejected"
+      ? {state: databaseCreation.current.state, error: databaseCreation.current.error}
+      : undefined,
+    pageCreations: pageCreation.current?.entries() ?? [],
+    creatingPageCount: creatingCount.current,
+    pendingRequests: pending,
+    appError: error,
+    recoveryState: recoveryStatus?.state,
+    recoveryError: recoveryError || recoveryStatus?.error,
+    pageTitle: (pageId) => pageRef.current.find((entry) => entry.id === pageId)?.title,
+  });
+  // Concise per-target chips on the closed summary: an inactive lane's anomaly
+  // stays recognizable even after a successful ACK for another page cleared
+  // the global error line. Fixed labels only — no raw error text.
+  const saveStateAlertChips = saveStateAlerts(saveStateRows);
   if (startupRecovery) return <CrashRecoveryDialog read={startupRecovery} busy={recoveryBusy} error={recoveryError} onResume={() => void resumeCrashRecovery()} onCopy={() => void resumeCrashRecovery(true)} onRetryPageOperations={() => void resumeCrashRecovery(false, true)} />;
   if (!ready)
     return (
@@ -1611,20 +1818,20 @@ export function App({ syncMessage }: { syncMessage?: string } = {}) {
             onClick={() =>
               safe(async () => {
                 const path = await api<string>({ type: "backup" });
-                setError("バックアップ保存先: " + path);
+                setError("診断用の原本コピー保存先: " + path + "（完全バックアップの復元には使えません）");
               })
             }
           >
-            原本のバックアップを保存
+            診断用の原本コピーを保存
           </button>
         )}
       </main>
     );
   return (
     <div className="app-shell" inert={sharedOpen}>
-      {sharedOpen&&createPortal(<SharedWorkbench privatePages={pages.filter(page=>page.deletedAt===null).map(page=>({id:page.id,title:page.title,kind:recordDatabaseIdsRef.current.has(page.id)?"database" as const:recordIds.has(page.id)?"record" as const:"page" as const}))} api={window.folio.shared} onClose={()=>setSharedOpen(false)} />,document.body)}
+      {sharedOpen&&createPortal(<SharedWorkbench privatePages={pages.filter(page=>page.deletedAt===null).map(page=>({id:page.id,title:page.title,kind:recordDatabaseIdsRef.current.has(page.id)?"database" as const:recordIds.has(page.id)?"record" as const:"page" as const}))} api={appApi.shared} onClose={()=>setSharedOpen(false)} />,document.body)}
       <div className="r6-recovery-status" role="status" data-recovery-state={recoveryError ? "error" : recoveryStatus?.state ?? "saved"}>
-        {recoveryError || recoveryStatus?.state === "error" ? <><span>復旧用保存に失敗: {recoveryError || recoveryStatus?.error}</span><button onClick={() => void recoveryQueue.current?.retry().then(() => {setRecoveryError(""); checkpointRef.current();}).catch((error) => setRecoveryError(String(error)))}>復旧用保存を再試行</button></> :
+        {recoveryError || recoveryStatus?.state === "error" ? <><span>復旧用保存に失敗: {recoveryError || recoveryStatus?.error}</span><span>画面内に未保存入力を保持しています。新しい保存は確認できていません。入力の確認・救出を行ってください。</span></> :
           recoveryStatus?.state === "saving" ? "復旧用保存中" : "復旧用保存済み"}
       </div>
       {sidebar && (
@@ -1794,29 +2001,56 @@ export function App({ syncMessage }: { syncMessage?: string } = {}) {
             </span>
           </nav>
           <div className="spacer" />
+          <div className="topbar-group topbar-shell-tools">
+            <details className="save-state-menu" onKeyDown={closeDetailsOnEscape}>
+              <summary className="save-state-menu-summary">
+                <span
+                  className={"save-state " + (error ? "error" : "")}
+                  data-state={error ? "error" : pending || edits.current.size || sessions.current.hasUnsaved() || hasNumberDrafts() || hasDatabasePending() || recoveryStatus?.state !== "saved" || recoveryError ? "pending" : "saved"}
+                  aria-live="polite"
+                >
+                  {error ? (
+                    "保存エラー"
+                  ) : pending || edits.current.size || sessions.current.hasUnsaved() || hasNumberDrafts() || hasDatabasePending() || recoveryStatus?.state !== "saved" || recoveryError ? (
+                    "保存中…"
+                  ) : (
+                    <>
+                      <Check size={12} />
+                      保存済み
+                    </>
+                  )}
+                </span>
+                {saveStateAlertChips.map((alert) => (
+                  <span
+                    key={`${alert.target}:${alert.state}`}
+                    className="save-state-alert"
+                    data-target={alert.target}
+                    data-state={alert.state}
+                  >
+                    {alert.target} {saveStateAlertLabels[alert.state] ?? alert.state}
+                    {alert.count > 1 ? ` ×${alert.count}` : ""}
+                  </span>
+                ))}
+              </summary>
+              <SaveStateDetails rows={saveStateRows} />
+            </details>
+            <WorkspaceTools
+              storage={appApi.storage}
+              onRepairOrder={openOrderRepair}
+              conflictRecovery={
+                <details className="conflict-recovery-details" onKeyDown={closeDetailsOnEscape}>
+                  <summary>保全した競合データを取り出す</summary>
+                  <WorkspaceConflictRecoveryPanel port={conflictRecoveryPort} />
+                </details>
+              }
+            />
+          </div>
           <div
             className="topbar-group topbar-actions"
             inert={creatingPage || !!recordView || undefined}
           >
-            <WorkspaceSyncIndicator startupMessage={syncMessage} inputReady={syncDecisionInputReady} />
-            <SyncManagementButton />
-            <details className="conflict-recovery-details" onKeyDown={event => {if(event.key === "Escape") {event.preventDefault();event.stopPropagation();event.currentTarget.open=false;event.currentTarget.querySelector("summary")?.focus();}}}><summary>保全した競合データを取り出す</summary><WorkspaceConflictRecoveryPanel port={conflictRecoveryPort} /></details>
-            <span
-              className={"save-state " + (error ? "error" : "")}
-              data-state={error ? "error" : pending || edits.current.size || sessions.current.hasUnsaved() || hasNumberDrafts() || hasDatabasePending() || recoveryStatus?.state !== "saved" || recoveryError ? "pending" : "saved"}
-              aria-live="polite"
-            >
-              {error ? (
-                "保存エラー"
-              ) : pending || edits.current.size || sessions.current.hasUnsaved() || hasNumberDrafts() || hasDatabasePending() || recoveryStatus?.state !== "saved" || recoveryError ? (
-                "保存中…"
-              ) : (
-                <>
-                  <Check size={12} />
-                  保存済み
-                </>
-              )}
-            </span>
+            <WorkspaceSyncIndicator startupMessage={syncMessage} inputReady={syncDecisionInputReady} sync={appApi.sync} conflict={appApi.conflict} capabilities={appApi.capabilities} />
+            <SyncManagementButton sync={appApi.sync} />
             {page && (
               <button
                 aria-label="お気に入り"
@@ -1874,6 +2108,11 @@ export function App({ syncMessage }: { syncMessage?: string } = {}) {
                     <History size={15} />
                     変更履歴
                   </button>
+                  <hr />
+                  <div className="menu-section-label">表示</div>
+                  <div className="menu-page-layout">
+                    <PageLayoutControl value={effectivePageWidth(activeDatabase?.page ?? page)} disabled={!!page.documentError || restoringIds.has(page.id)} onChange={(width) => {if (!composition.current) update(page.id, {width});}} />
+                  </div>
                   <hr />
                   <div className="menu-section-label">書き出し・復旧</div>
                   <button
@@ -1939,7 +2178,7 @@ export function App({ syncMessage }: { syncMessage?: string } = {}) {
                     fail("保存の競合を安全に再試行できません。未保存の変更を記録してから内容を確認してください。");
                   }}
                 >
-                  保存を再試行
+                  {latchedRecoveryError() ? "復旧用保存を確認してから再試行" : "保存を再試行"}
                 </button>
                 <button
                   onClick={() =>
@@ -1991,9 +2230,7 @@ export function App({ syncMessage }: { syncMessage?: string } = {}) {
                         // may not yet be present in the last rendered snapshot.
                         // If load fails, leave every pending entry untouched.
                         const membershipEpoch = refreshEpoch.current;
-                        const membership = await api<Snapshot>({
-                          type: "load",
-                        });
+                        const membership = await appApi.workspace.load();
                         if (membershipEpoch !== refreshEpoch.current)
                           throw new Error("所属の確認中に表示が変わりました。未保存変更を保持しています。");
                         if ((recordIdsRef.current.size || recordDatabaseIdsRef.current.size) &&
@@ -2038,7 +2275,7 @@ export function App({ syncMessage }: { syncMessage?: string } = {}) {
                         });
                         if (!path) return;
                         // Do not discard pending edits if the post-write reload fails.
-                        const persisted = await api<Snapshot>({ type: "load" });
+                        const persisted = await appApi.workspace.load();
                         if (selectionVersion.current !== recoverySelection ||
                             refreshEpoch.current !== membershipEpoch + 1 ||
                             currentEditor() !== recoveryEditor || composition.current ||
@@ -2078,7 +2315,7 @@ export function App({ syncMessage }: { syncMessage?: string } = {}) {
           </div>
         )}
         {databaseCreation.current?.state === "unknown" && !newDatabaseOpen && <div className="r5-database-operation" role="status">
-          <span>データベースの作成結果を確認できません。名前と操作を保持しています。</span>
+          <span>{databaseCreation.current.error ?? "データベースの作成結果を確認できません。"} 名前と操作を画面内に保持しています。新しい保存は確認できていません。</span>
           <button disabled={databaseCreating.current} onClick={() => void resolveDatabaseCreation()}>作成結果を確認</button>
         </div>}
         {pageCreationUnknown() && <div className="r5-database-operation" role="status">
@@ -2251,23 +2488,6 @@ export function App({ syncMessage }: { syncMessage?: string } = {}) {
                       (recordDatabaseIdsRef.current.has(page.id) && (!activeDatabase || ["unknown", "conflict", "blocked"].includes(activeDatabase.state)))}
                     onChange={(e) => update(page.id, { title: e.target.value }, displayedSession?.sessionId)}
                   />
-                  <div className="page-subtitle">
-                    <span className="page-kind">
-                      {page.kind === "database"
-                        ? "データベース"
-                        : "プライベートページ"}
-                    </span>
-                    <span className="meta-dot" aria-hidden="true">
-                      ·
-                    </span>
-                    <span className="page-updated">
-                      {new Date(page.updatedAt).toLocaleDateString("ja-JP", {
-                        month: "long",
-                        day: "numeric",
-                      })}{" "}
-                      更新
-                    </span>
-                  </div>
                   {findOpen && !page.documentError && (
                     <div className="page-find">
                       <Search size={14} />
@@ -2367,6 +2587,7 @@ export function App({ syncMessage }: { syncMessage?: string } = {}) {
                     <LiveRecordDatabase
                       key={page.id}
                       databasePageId={page.id}
+                      workspace={appApi.workspace}
                       sessions={sessions.current}
                       databases={databases.current}
                       creatingRecord={creatingRows.current.has(page.id)}
@@ -2423,8 +2644,6 @@ export function App({ syncMessage }: { syncMessage?: string } = {}) {
                 >
                   ページを作成
                 </button>
-                <StoragePressurePanel />
-                <WorkspaceMaintenancePanel onRepairOrder={openOrderRepair} />
               </div>
             )}
           </div>
@@ -2449,7 +2668,8 @@ export function App({ syncMessage }: { syncMessage?: string } = {}) {
               onTitleChange={(title) => editRecord(recordView.id, { title })}
               onValueChange={(propertyId, value) => editRecord(recordView.id, {}, { [propertyId]: value })}
               focusBody={() => editor.current?.commands.focus()}
-              body={<><PageLayoutControl value={effectivePageWidth(openedRecord.page)} onChange={(width) => {if (!composition.current) editRecord(recordView.id, {width});}} /><Editor
+              displayOptions={<PageLayoutControl value={effectivePageWidth(openedRecord.page)} onChange={(width) => {if (!composition.current) editRecord(recordView.id, {width});}} />}
+              body={<><Editor
                 key={openedRecord.handle.sessionId}
                 documentId={recordView.id}
                 doc={openedRecord.page.doc}
@@ -2486,6 +2706,19 @@ export function App({ syncMessage }: { syncMessage?: string } = {}) {
                   {page.icon} {page.title}
                 </p>
                 <dl>
+                  <dt>種類</dt>
+                  <dd>
+                    {page.kind === "database"
+                      ? "データベース"
+                      : "プライベートページ"}
+                  </dd>
+                  <dt>更新日</dt>
+                  <dd>
+                    {new Date(page.updatedAt).toLocaleDateString("ja-JP", {
+                      month: "long",
+                      day: "numeric",
+                    })}
+                  </dd>
                   <dt>作成日</dt>
                   <dd>
                     {new Date(page.createdAt).toLocaleDateString("ja-JP")}
@@ -2500,8 +2733,6 @@ export function App({ syncMessage }: { syncMessage?: string } = {}) {
                   <dd>このMac</dd>
                 </dl>
               </section>
-              <StoragePressurePanel />
-              <WorkspaceMaintenancePanel onRepairOrder={openOrderRepair} />
               <section className="inspector-section">
                 <h3 className="inspector-label">アウトライン</h3>
                 {headings.length ? (
@@ -2530,9 +2761,6 @@ export function App({ syncMessage }: { syncMessage?: string } = {}) {
                 ) : (
                   <p className="subtle">見出しを追加すると表示されます</p>
                 )}
-              </section>
-              <section className="inspector-section">
-                <PageLayoutControl value={effectivePageWidth(activeDatabase?.page ?? page)} disabled={!!page.documentError || restoringIds.has(page.id)} onChange={(width) => {if (!composition.current) update(page.id, {width});}} />
               </section>
               <BacklinksPanel groups={backlinks} onNavigate={navigateBacklink} />
               <button className="history-link" onClick={openHistory} disabled={!!page && (recordIds.has(page.id) || recordDatabaseIdsRef.current.has(page.id))}>
@@ -2822,14 +3050,20 @@ export function App({ syncMessage }: { syncMessage?: string } = {}) {
         </DialogFrame>
       )}
       {backupOpen && <WorkspaceBackupDialog
-        onClose={() => {if (!backupBusy.current) safe(async () => {await api({type: "workspaceBackup:release"}); setBackupOpen(false);});}}
+        backupHold={backupWriteHold}
+        onClose={() => {if (!backupBusy.current) safe(async () => {
+          if (!backupCloseReleaseAllowed(backupWriteHold)) {setBackupOpen(false); return;}
+          await api({type: "workspaceBackup:release"});
+          setBackupOpen(false);
+        });}}
         onBusyChange={(busy) => {backupBusy.current = busy;}}
-        onCreate={async () => {await prepareWorkspaceBackup(); return api<BackupPreview>({type: "workspaceBackup:create"});}}
-        onChoose={() => api<BackupPreview | null>({type: "workspaceBackup:choose"})}
-        onRestore={(preview) => api<BackupRestored | null>({type: "workspaceBackup:restore", ticket: preview.ticket})}
-        onOpen={async (result) => {await api({type: "workspaceBackup:open", ticket: result.ticket});}}
+        onCreate={() => backupWriteEntry.create<BackupPreview>({type: "workspaceBackup:create"})}
+        onChoose={() => backupWriteEntry.query<BackupPreview | null>({type: "workspaceBackup:choose"})}
+        onRestore={(preview) => backupWriteEntry.write<BackupRestored | null>({type: "workspaceBackup:restore", ticket: preview.ticket})}
+        onOpen={async (result) => {await backupWriteEntry.write({type: "workspaceBackup:open", ticket: result.ticket});}}
       />}
       {structural && <StructuralDatabaseDialog family={structural.family} owner={structural.owner}
+        workspace={appApi.workspace} structure={appApi.structure}
         onClose={() => setStructural(null)} retain={retainStructural}
         onApplied={async () => {await ensureSaved(); await retainStructural(null); window.location.reload();}} />}
       {orderRepairOpen && <PageOrderRepairDialog pages={pages}

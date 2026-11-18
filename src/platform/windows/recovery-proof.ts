@@ -2,6 +2,7 @@ import { CollaborationError } from "../../collaboration/runtime/contract";
 import {
   createWindowsAppPrivate,
   type WindowsAppPrivateConfig,
+  type WindowsAppPrivate,
 } from "./app-private";
 import { WindowsRuntimePlatform } from "./runtime-platform";
 import { asciiCaseFold, validateWindowsPath } from "./path-policy";
@@ -98,12 +99,14 @@ function readIdentity(
 
 export function createWindowsRecoveryProof(
   config: WindowsAppPrivateConfig,
+  suppliedAppPrivate?: WindowsAppPrivate,
 ): SharedRecoveryFilesystemProof {
-  const appPrivate = createWindowsAppPrivate(config);
+  const appPrivate = suppliedAppPrivate ?? createWindowsAppPrivate(config);
   const factory = (
     appPrivate as unknown as Partial<NativeRuntimeFactory>
   ).runtimePlatform;
   const cache = new Map<string, CachedRuntime>();
+  let closed = false;
 
   function cacheKey(
     directory: string,
@@ -120,6 +123,7 @@ export function createWindowsRecoveryProof(
     name: string,
     createDirectory: boolean,
   ): RuntimeWithIdentity {
+    if (closed) fail("WINDOWS_RECOVERY_PROOF_CLOSED");
     if (typeof factory === "function")
       return factory.call(appPrivate, directory, name, createDirectory);
     if (createDirectory) fail("WINDOWS_RUNTIME_PLATFORM_UNAVAILABLE");
@@ -229,5 +233,14 @@ export function createWindowsRecoveryProof(
     assertFile,
     createIndex,
     identity,
+    close() {
+      if (closed) return;
+      const failures: unknown[] = [];
+      for (const entry of cache.values()) {
+        try {entry.runtime.close();} catch (error) {failures.push(error);}
+      }
+      if (failures.length) throw new AggregateError(failures, "Windows recovery proof cleanup failed");
+      cache.clear(); closed = true;
+    },
   });
 }

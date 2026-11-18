@@ -1,5 +1,5 @@
 import { spawnSync } from "node:child_process";
-import { createHash } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 import {
   closeSync,
   fsyncSync,
@@ -12,6 +12,10 @@ import { CollaborationError } from "../../collaboration/runtime/contract";
 import { isValidPrivateLedgerName } from "../../sync/private-platform";
 import type { RuntimeStorePlatform } from "../runtime-store-platform";
 import {
+  createWindowsHotJournalSnapshot,
+  type WindowsHotJournalSnapshotProfile,
+} from "./hot-journal-snapshot";
+import {
   asciiCaseFold,
   assertWindowsProbe,
   validateWindowsPath,
@@ -21,6 +25,13 @@ import {
   WINDOWS_PROBE_MAX_OUTPUT_BYTES,
   WINDOWS_PROBE_TIMEOUT_MS,
 } from "./private-root";
+import {
+  createWindowsExclusiveDirectory,
+  createWindowsExclusiveDirectoryForTesting,
+  type WindowsExclusiveDirectoryExecRequest,
+  type WindowsExclusiveDirectoryExecResult,
+  type WindowsExclusiveDirectoryResult,
+} from "./exclusive-directory";
 
 export const WINDOWS_RUNTIME_FILE = "shared-runtime.sqlite";
 export const WINDOWS_RUNTIME_TRUST_BOUNDARY =
@@ -67,6 +78,9 @@ export type WindowsRuntimeProbePort = Readonly<{
   create?(path: string, root: string): unknown;
   open?(path: string, root: string): unknown;
   directory?(path: string, root: string): unknown;
+  exclusiveDirectory?(
+    request: WindowsExclusiveDirectoryExecRequest,
+  ): WindowsExclusiveDirectoryExecResult;
 }>;
 
 export type WindowsRuntimeUntrustedTestPort = Readonly<{
@@ -82,6 +96,10 @@ export type WindowsRuntimePlatformOptions = Readonly<{
   expectedHash?: string;
   expectedRoot?: WindowsRuntimeRootIdentity;
   expectedDirectory?: WindowsRuntimeDirectoryIdentity;
+  /** Declared hot-snapshot profile for this runtime's journals. Omission
+   * keeps the default small-ledger 64 MiB bound; the profile is never
+   * inferred from a file name or measured size. */
+  snapshotProfile?: WindowsHotJournalSnapshotProfile;
   untrustedTestPort?: WindowsRuntimeUntrustedTestPort;
 }>;
 
@@ -334,11 +352,16 @@ export class WindowsRuntimePlatform implements RuntimeStorePlatform {
   readonly #expectedHash: string | undefined;
   readonly #expectedRoot: WindowsRuntimeRootIdentity | undefined;
   readonly #expectedDirectory: WindowsRuntimeDirectoryIdentity | undefined;
+  readonly #snapshotProfile: WindowsHotJournalSnapshotProfile | undefined;
   #executablePin: ExecutablePin | undefined;
   #rootPin: RootPin | undefined;
   #preparedDirectory: WindowsRuntimePreparedDirectory | undefined;
   readonly #filePins = new Map<string, DatabasePin>();
   readonly #sidecarPins = new Map<string, DatabasePin>();
+  // Exclusive directory targets consumed for this runtime's lifetime. A
+  // target is consumed before dispatch and is never released, so the same
+  // runtime cannot repeat a create even after an UNKNOWN outcome.
+  readonly #attemptedDirectories = new Set<string>();
   #closed = false;
 
   constructor(options: WindowsRuntimePlatformOptions) {
@@ -376,6 +399,13 @@ export class WindowsRuntimePlatform implements RuntimeStorePlatform {
     } else {
       this.#expectedHash = undefined;
     }
+    const snapshotProfile = options.snapshotProfile;
+    if (snapshotProfile !== undefined &&
+        snapshotProfile !== "small-ledger" &&
+        snapshotProfile !== "recovery-archive" &&
+        snapshotProfile !== "backup-artifact")
+      fail("INVALID_SNAPSHOT_PROFILE");
+    this.#snapshotProfile = snapshotProfile;
     if (options.expectedRoot !== undefined) {
       if (
         typeof options.expectedRoot !== "object" ||
@@ -454,7 +484,7 @@ export class WindowsRuntimePlatform implements RuntimeStorePlatform {
           typeof untrusted.probe.probe !== "function"
         )
           fail("INVALID_WINDOWS_TEST_PORT");
-        for (const key of ["create", "open", "directory"]) {
+        for (const key of ["create", "open", "directory", "exclusiveDirectory"]) {
           const method = (untrusted.probe as Record<string, unknown>)[key];
           if (method !== undefined && typeof method !== "function")
             fail("INVALID_WINDOWS_TEST_PORT");
@@ -787,6 +817,121 @@ export class WindowsRuntimePlatform implements RuntimeStorePlatform {
       fail("WINDOWS_DIRECTORY_IDENTITY_CHANGED");
   }
 
+  /** Detached native identity for another narrowly scoped native operation.
+   * Re-proves the root and directory; no POSIX stat is promoted to File ID. */
+  validatedDirectoryIdentity(): WindowsRuntimePreparedDirectory {
+    this.assertRoot();
+    const pin = this.#pin();
+    return Object.freeze({
+      canonicalPath: pin.directory,
+      directoryFileId: pin.directoryFileId,
+      directoryVolumeId: pin.directoryVolumeId,
+      rootFileId: pin.rootFileId,
+      rootVolumeId: pin.rootVolumeId,
+    });
+  }
+
+  /**
+   * Exclusive single-basename directory creation below the bound directory
+   * through the pinned helper's --exclusive-directory-v1 mode. The bound
+   * parent identity is re-proven before dispatch and again afterwards; any
+   * post-dispatch drift converts the outcome to UNKNOWN with the exact
+   * captured wire/pipe evidence preserved. A consumed target can never be
+   * dispatched again on this runtime. This is NOT the old create-or-open
+   * directory helper and never falls back to it.
+   */
+  withHotJournalSnapshot(path: string, callback: (snapshotPath: string) => void): void {
+    this.#assertOpen();
+    if (!this.#expectedHash) fail("WINDOWS_HOT_JOURNAL_HASH_REQUIRED");
+    this.assertRoot(); this.assertDatabase(path); this.assertSidecars(path);
+    const controller = createWindowsHotJournalSnapshot({root: this.#root, probeExecutable: this.#executable,
+      expectedHash: this.#expectedHash, systemRoot: this.#systemRoot,
+      profile: this.#snapshotProfile});
+    controller.withSnapshot({path, expectedDirectory: this.validatedDirectoryIdentity(), expectedFile: this.validatedFileIdentity(path)}, callback);
+    this.assertRoot(); this.assertDatabase(path); this.assertSidecars(path);
+  }
+
+  createExclusiveDirectory(
+    path: string,
+  ): WindowsExclusiveDirectoryResult {
+    this.#assertOpen();
+    const pin = this.#pin();
+    this.#assertExecutable();
+    if (this.#expectedHash === undefined)
+      fail("WINDOWS_EXCLUSIVE_DIRECTORY_HASH_REQUIRED");
+    const identity = this.validatedDirectoryIdentity();
+    const validated = validateWindowsPath(path, pin.directory);
+    const relative = validated.relative;
+    if (
+      relative.length === 0 ||
+      relative.includes("\\") ||
+      relative.includes("/")
+    )
+      fail("WINDOWS_EXCLUSIVE_DIRECTORY_PATH");
+    const canonicalPath = validated.canonical;
+    if (this.#attemptedDirectories.has(asciiCaseFold(canonicalPath)))
+      fail("WINDOWS_EXCLUSIVE_DIRECTORY_CONSUMED");
+    const options = {
+      root: this.#root,
+      probeExecutable: this.#executable,
+      expectedHash: this.#expectedHash,
+      systemRoot: this.#systemRoot,
+      expectedRoot: Object.freeze({
+        rootFileId: identity.rootFileId,
+        volumeId: identity.rootVolumeId,
+      }),
+    };
+    const attemptId = randomUUID().replace(/-/g, "");
+    // Consume the target before the helper is even constructed.
+    this.#attemptedDirectories.add(asciiCaseFold(canonicalPath));
+    const request = {
+      path: canonicalPath,
+      attemptId,
+      expectedDirectory: Object.freeze({
+        fileId: identity.directoryFileId,
+        volumeId: identity.directoryVolumeId,
+      }),
+    };
+    const probePort = this.#probePort;
+    let result: WindowsExclusiveDirectoryResult;
+    if (probePort === undefined) {
+      result = createWindowsExclusiveDirectory(options).create(request);
+    } else {
+      const exec = probePort.exclusiveDirectory;
+      if (exec === undefined)
+        fail("PROBE_EXCLUSIVE_DIRECTORY_UNAVAILABLE");
+      result = createWindowsExclusiveDirectoryForTesting(options, {
+        fs: {
+          lstat: this.#fs.lstat.bind(this.#fs),
+          readFile: this.#fs.readFile.bind(this.#fs),
+        },
+        exec: exec.bind(probePort),
+      }).create(request);
+    }
+    // Re-prove the bound parent after dispatch; drift is never reported as a
+    // created/existing certainty, only as UNKNOWN with the same evidence.
+    try {
+      const after = this.validatedDirectoryIdentity();
+      if (
+        after.directoryFileId !== identity.directoryFileId ||
+        after.directoryVolumeId !== identity.directoryVolumeId ||
+        after.rootFileId !== identity.rootFileId ||
+        after.rootVolumeId !== identity.rootVolumeId
+      )
+        fail("WINDOWS_ROOT_IDENTITY_CHANGED");
+    } catch {
+      return Object.freeze({
+        state: "UNKNOWN",
+        path: result.path,
+        attemptId: result.attemptId,
+        preserve: true,
+        reason: "EXCLUSIVE_DIRECTORY_UNKNOWN",
+        evidence: result.evidence,
+      }) as WindowsExclusiveDirectoryResult;
+    }
+    return result;
+  }
+
   #assertNamedPath(path: string, pin: RootPin): string {
     const validated = validateWindowsPath(path, pin.directory);
     const relative = validated.relative;
@@ -858,6 +1003,7 @@ export class WindowsRuntimePlatform implements RuntimeStorePlatform {
     canonicalPath: string,
     pin: RootPin,
     mode: "create" | "open",
+    requireReceipt = false,
   ): WindowsProbeEvidence {
     this.#assertExecutable();
     const expectation = Object.freeze({
@@ -892,7 +1038,7 @@ export class WindowsRuntimePlatform implements RuntimeStorePlatform {
       fail("PROBE_FAILED");
     }
     let evidence: unknown = raw;
-    if (this.#probePort === undefined) {
+    if (this.#probePort === undefined || requireReceipt) {
       const record = raw as Record<string, unknown>;
       const expectedState = mode === "create" ? "CREATED" : "OPEN";
       if (record.state !== expectedState)
@@ -995,6 +1141,32 @@ export class WindowsRuntimePlatform implements RuntimeStorePlatform {
     const stat = this.#assertFileAt(canonicalPath, pin);
     if (!existing && stat.size !== 0) fail("WINDOWS_DATABASE_NOT_EMPTY");
     this.assertRoot();
+  }
+
+  /** Positive CREATE_NEW capability. Existing files take only the read-only
+   * identity path: opening/flushing an unbound existing database is forbidden. */
+  createExclusiveDurablyWithReceipt(path: string): Readonly<{
+    state: "CREATED" | "EXISTING"; identity: WindowsRuntimeFileIdentity;
+  }> {
+    this.#assertOpen();
+    const pin = this.#pin(), canonicalPath = this.#assertNamedPath(path, pin);
+    this.assertRoot();
+    if (this.#fileExists(canonicalPath)) {
+      const identity = this.validatedFileIdentity(canonicalPath);
+      this.assertRoot();
+      return Object.freeze({state: "EXISTING", identity});
+    }
+    // An EXISTS/racing create reply is never reinterpreted as CREATED.
+    const evidence = this.#probeMode(canonicalPath, pin, "create", true);
+    this.#assertRootPin(evidence, pin);
+    if (asciiCaseFold(evidence.canonicalPath) !== asciiCaseFold(canonicalPath))
+      fail("WINDOWS_DATABASE_IDENTITY_CHANGED");
+    this.#recordFileEvidence(evidence);
+    const stat = this.#assertFileAt(canonicalPath, pin);
+    if (stat.size !== 0) fail("WINDOWS_DATABASE_NOT_EMPTY");
+    const identity = this.validatedFileIdentity(canonicalPath);
+    this.assertRoot();
+    return Object.freeze({state: "CREATED", identity});
   }
 
   #recordSidecarEvidence(

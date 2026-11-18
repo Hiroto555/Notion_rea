@@ -3,6 +3,8 @@ import { DatabaseSync } from "node:sqlite";
 import { createHash, randomUUID } from "node:crypto";
 import { existsSync, mkdirSync } from "node:fs";
 import { dirname, join } from "node:path";
+import type { NativePrivateSqliteLease } from "../platform/private-persistence";
+import {closeStartupConnection, startupRetainsNativeLease, assertStartupOwnerCapacity} from "./startup-connection-owner";
 import {
   blankDoc,
   isDocument,
@@ -44,6 +46,11 @@ import {
 // and v5 is an explicitly promoted local-first workspace. Opening v5 is
 // supported, but this Store never promotes a workspace by itself.
 const STORE_VERSION = 5;
+export const storeInitializationRetainsNativeLease = startupRetainsNativeLease;
+function failedInitialization(connection: DatabaseSync, original: unknown, lease?: NativePrivateSqliteLease): never {
+  closeStartupConnection(connection, lease, {error: original});
+  throw original;
+}
 // Only malformed page data is quarantined. SQL, I/O and programmer errors must
 // still abort the snapshot instead of being mistaken for a damaged document.
 class PageDataError extends Error {}
@@ -51,17 +58,47 @@ export class Store {
   private readonly connection: DatabaseSync;
   private unusable = false;
   private connectionClosed = false;
+  private nativeLease?: NativePrivateSqliteLease;
   get db(): DatabaseSync {
+    this.nativeLease?.assertHeld();
     if (this.unusable)
       throw new Error(
         "SQLite connection is unusable after snapshot transaction failure; reopen the workspace.",
       );
     return this.connection;
   }
+  /** Host startup handoff proof: a plain Store or closed connection cannot
+   * acknowledge transfer of a raw native startup protector. */
+  assertNativeStartupLease(): void {
+    if (!this.nativeLease || this.unusable || this.connectionClosed || this.connection.isOpen !== true)
+      throw new Error("Native PRIMARY startup lease is not held");
+    this.nativeLease.assertHeld();
+  }
+  /** A proof-only closure for the native lease's workspace fence. The public
+   * db getter must keep asserting that lease; calling it from its own fence
+   * would recursively acquire/assert the same K authority. This closure owns
+   * the existing connection and exposes neither it nor a query interface. */
+  recoveryWorkspaceFence(expectedWorkspaceId: string): () => void {
+    this.nativeLease?.assertHeld();
+    if (typeof expectedWorkspaceId !== "string" || expectedWorkspaceId.length === 0)
+      throw new Error("Invalid recovery workspace binding");
+    const connection = this.connection;
+    const current = (): void => {
+      if (this.unusable || this.connectionClosed || connection.isOpen !== true ||
+          connection.prepare("SELECT value FROM settings WHERE key=?")
+            .get("folio.recovery.workspaceId")?.value !== expectedWorkspaceId)
+        throw new Error("workspace-recovery-binding-changed");
+    };
+    current();
+    return current;
+  }
   constructor(
     readonly path: string,
     options: StoreStartupOptions = {},
   ) {
+    assertStartupOwnerCapacity(options.nativeLease);
+    this.nativeLease = options.nativeLease;
+    this.nativeLease?.assertHeld();
     if (
       !options.allowIncompleteRecovery &&
       existsSync(join(dirname(path), "FOLIO-RECOVERY-INCOMPLETE"))
@@ -70,27 +107,21 @@ export class Store {
         "復旧が完了していないワークスペースです。原本を保護するため起動を停止しました。",
       );
     if (options.readOnly) {
-      const connection = openReadOnlyStore(path, STORE_VERSION);
+      const connection = openReadOnlyStore(path, STORE_VERSION, this.nativeLease);
       try {
         assertConnectionState(connection);
       } catch (error) {
-        try {
-          connection.close();
-        } catch (closeError) {
-          throw new AggregateError(
-            [error, closeError],
-            "SQLite state check and close failed",
-          );
-        }
-        throw error;
+        failedInitialization(connection, error, this.nativeLease);
       }
       this.connection = connection;
       return;
     }
     // Preflight is read-only. It rejects unsupported versions and unsafe
     // source files before the space callback, mkdir or journal-mode change.
-    const startup = inspectWritableStartup(path, STORE_VERSION);
+    const startup = inspectWritableStartup(path, STORE_VERSION, options.nativeHotJournalSnapshot, this.nativeLease);
+    this.nativeLease?.assertHeld();
     options.beforeOpen?.(startup.additionalBytes);
+    this.nativeLease?.assertHeld();
     mkdirSync(dirname(path), { recursive: true });
     this.connection = new DatabaseSync(path);
     try {
@@ -128,7 +159,7 @@ export class Store {
         // The snapshot is created fresh and verified; an existing name is never
         // trusted or overwritten.
         if (originalVersion === 1)
-          publishSchemaSnapshot(this.db, path, 1);
+          publishSchemaSnapshot(this.db, path, 1, options.nativePrivateFilesystem ? options : undefined);
         this.transaction(() => {
           this.db.exec(
             "ALTER TABLE versions ADD COLUMN database TEXT; PRAGMA user_version=2;",
@@ -143,17 +174,14 @@ export class Store {
         // real v2 workspace is kept before the page/version JSON is rewritten;
         // the rewrite itself and the version bump commit atomically.
         if (originalVersion === 2)
-          publishSchemaSnapshot(this.db, path, 2);
+          publishSchemaSnapshot(this.db, path, 2, options.nativePrivateFilesystem ? options : undefined);
         this.transaction(() => {
           this.migrateStoredDatabases();
           this.db.exec("PRAGMA user_version=3");
         });
       }
     } catch (error) {
-      try {
-        this.connection.close();
-      } catch {}
-      throw error;
+      failedInitialization(this.connection, error, this.nativeLease);
     }
   }
   private migrateStoredDatabases() {
@@ -507,23 +535,20 @@ export class Store {
       this.connectionClosed = true;
       return;
     }
+    let failed = false, closeError: unknown;
+    try {this.connection.close();}
+    catch (error) {failed = true; closeError = error;}
     try {
-      this.connection.close();
-      this.connectionClosed = true;
-    } catch (closeError) {
-      try {
-        const stillOpen = this.readConnectionFlag();
-        if (typeof stillOpen !== "boolean")
-          throw new Error("SQLite connection state is unavailable after close");
-        if (!stillOpen) this.connectionClosed = true;
-      } catch (probeError) {
-        throw new AggregateError(
-          [closeError, probeError],
-          "SQLite close outcome unknown",
-        );
-      }
-      throw closeError;
+      const stillOpen = this.readConnectionFlag();
+      if (typeof stillOpen !== "boolean")
+        throw new Error("SQLite connection state is unavailable after close");
+      if (!stillOpen) this.connectionClosed = true;
+    } catch (probeError) {
+      if (failed) throw new AggregateError([closeError, probeError], "SQLite close outcome unknown");
+      throw probeError;
     }
+    if (failed) throw closeError;
+    if (!this.connectionClosed) throw new Error("UNKNOWN: SQLite close unconfirmed; native lease retained");
   }
   /** Allocate away from existing pages and reserved historical row IDs. */
   allocatePageId(
@@ -1489,6 +1514,18 @@ export class Store {
     );
   }
   close() {
-    this.closeConnection();
+    this.unusable = true;
+    let failed = false, failure: unknown;
+    try {this.closeConnection();} catch (error) {failed = true; failure = error;}
+    // Retain the lease after an uncertain SQLite close. A reported close
+    // failure with isOpen=false still permits ordered owned-lease cleanup.
+    if (this.connectionClosed && this.nativeLease) {
+      try {this.nativeLease.close(); this.nativeLease = undefined;}
+      catch (cleanup) {
+        if (failed) throw new AggregateError([failure, cleanup], "Store and native lease close failed");
+        throw cleanup;
+      }
+    }
+    if (failed) throw failure;
   }
 }

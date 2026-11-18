@@ -1,6 +1,7 @@
 import { lowerEditorDocument } from "./editor-plan";
 import type { Doc } from "../../shared/types";
 import { canonical } from "./canonical";
+import { digest } from "./digest";
 import {
   CollaborationError,
   clone,
@@ -10,6 +11,7 @@ import {
   type Command,
   type Cut,
   type DocumentState,
+  type Json,
   type Receipt,
   type SemanticResult,
   type TableMetadata,
@@ -629,6 +631,41 @@ export class LocalHistory {
   private readonly redoStack: Entry[] = [];
   private pending: Pending | null = null;
   private currentCut: Cut | null = null;
+  private retentionLeaseActive = false;
+
+  /** Host-owned lease: while held every history mutator rejects so the
+   * detached retentionRoots snapshot cannot drift mid-operation. Read-only
+   * queries and retentionRoots remain available standalone. */
+  acquireRetentionLease(): Readonly<{ release(): void }> {
+    if (this.retentionLeaseActive) fail("RETENTION_HISTORY_BUSY");
+    this.retentionLeaseActive = true;
+    let released = false;
+    return {
+      release: () => {
+        if (released) return;
+        released = true;
+        this.retentionLeaseActive = false;
+      },
+    };
+  }
+
+  private assertMutable(): void {
+    if (this.retentionLeaseActive) fail("RETENTION_HISTORY_BUSY");
+  }
+
+  /** Read-only recovery roots, including both stacks and in-flight Undo.
+   * Overflow refuses the snapshot; it never truncates or clears history. */
+  retentionRoots(): Readonly<{ generation: string; pending: boolean; roots: Json }> {
+    const roots = JSON.parse(canonical({
+      v: 1,
+      incarnationId: this.incarnationId,
+      undo: this.undoStack,
+      redo: this.redoStack,
+      pending: this.pending,
+      currentCut: this.currentCut,
+    }, 2_000_000)) as Json;
+    return { generation: digest(roots), pending: this.pending !== null, roots };
+  }
 
   record(
     before: DocumentState,
@@ -637,6 +674,7 @@ export class LocalHistory {
     cut: Cut,
     receipt?: Receipt,
   ): void {
+    this.assertMutable();
     if (this.pending) fail("HISTORY_PENDING");
     if (!command || typeof command !== "object") fail("INVALID_COMMAND");
     if (!result || typeof result !== "object" || !result.state)
@@ -665,6 +703,7 @@ export class LocalHistory {
     intervening: AppliedText[],
     allocateId: () => string,
   ): { command: Command; base: Cut } {
+    this.assertMutable();
     if (this.pending) fail("HISTORY_PENDING");
     const entry = this.undoStack[this.undoStack.length - 1];
     if (!entry) fail("HISTORY_EMPTY");
@@ -688,6 +727,7 @@ export class LocalHistory {
     intervening: AppliedText[],
     allocateId: () => string,
   ): { command: Command; base: Cut } {
+    this.assertMutable();
     if (this.pending) fail("HISTORY_PENDING");
     const entry = this.redoStack[this.redoStack.length - 1];
     if (!entry) fail("HISTORY_EMPTY");
@@ -712,6 +752,7 @@ export class LocalHistory {
     appliedTextOverride?: AppliedText | null,
     beforeOverride?: DocumentState,
   ): void {
+    this.assertMutable();
     if (!this.pending) fail("HISTORY_NO_PENDING");
     if (!receipt || receipt.v !== 1) fail("INVALID_RECEIPT");
     if (receipt.status !== "SERVER_ACCEPTED") fail("HISTORY_NOT_ACCEPTED");
@@ -744,6 +785,7 @@ export class LocalHistory {
   }
 
   reject(): void {
+    this.assertMutable();
     if (!this.pending) fail("HISTORY_NO_PENDING");
     this.pending = null;
   }
@@ -763,6 +805,7 @@ export class LocalHistory {
   }
 
   clear(): void {
+    this.assertMutable();
     this.undoStack.length = 0;
     this.redoStack.length = 0;
     this.pending = null;

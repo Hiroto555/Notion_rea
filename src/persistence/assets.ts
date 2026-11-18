@@ -4,6 +4,7 @@ import { randomUUID, createHash } from "node:crypto";
 import type { DatabaseSync } from "node:sqlite";
 import { parseAssetURL } from "../shared/assets";
 import { writeNewFileDurably } from "./durable-file";
+import { privatePersistencePort, type PrivatePersistenceOptions } from "../platform/private-persistence";
 const mimes: Record<string, string> = {
   ".png": "image/png",
   ".jpg": "image/jpeg",
@@ -22,7 +23,9 @@ export type Asset = {
   size: number;
   sha256: string;
 };
-export function attachFile(db: DatabaseSync, assets: string, file: string, beforeWrite?: (actualBytes: number) => void) {
+export function attachFile(db: DatabaseSync, assets: string, file: string, beforeWrite?: (actualBytes: number) => void,
+  options?: PrivatePersistenceOptions) {
+  const native = privatePersistencePort(options);
   const size = statSync(file).size;
   if (size > 20_000_000) throw new Error("添付の上限は20MBです");
   const bytes = readFileSync(file);
@@ -46,7 +49,8 @@ export function attachFile(db: DatabaseSync, assets: string, file: string, befor
   // The attachment body and its directory entry must be durable before the
   // metadata row can reference them. An existing file is never replaced
   // (exclusive create), and a failed write/fsync removes only this new file.
-  writeNewFileDurably(dest, bytes, {
+  if (native) native.writeNew(dest, bytes, 20_000_000);
+  else writeNewFileDurably(dest, bytes, {
     mode: 0o600,
     syncParentDirectory: true,
   });
@@ -63,7 +67,8 @@ export function attachFile(db: DatabaseSync, assets: string, file: string, befor
     ...metadata,
   };
 }
-export function resolveAsset(db: DatabaseSync, assets: string, url: string) {
+export function resolveAsset(db: DatabaseSync, assets: string, url: string, options?: PrivatePersistenceOptions) {
+  const native = privatePersistencePort(options);
   const id = parseAssetURL(url);
   if (!id) throw new Error("添付URLが不正です");
   const row = db.prepare("SELECT metadata FROM assets WHERE id=?").get(id) as
@@ -75,7 +80,8 @@ export function resolveAsset(db: DatabaseSync, assets: string, url: string) {
   if (metadata && (metadata.storageName !== id || metadata.id !== id))
     throw new Error("添付情報が不正です");
   const path = join(assets, id);
-  if (lstatSync(path).isSymbolicLink() || !statSync(path).isFile())
+  if (native) native.inspectFileIdentity(path);
+  else if (lstatSync(path).isSymbolicLink() || !statSync(path).isFile())
     throw new Error("添付ファイルを開けません");
   return {
     path,

@@ -46,7 +46,15 @@ test("legacy board keeps a saved descending group direction", async ({
     .locator(".page-tree-label")
     .filter({ hasText: "プロジェクト" })
     .click();
-  await reopened.getByRole("button", { name: "ボード", exact: true }).click();
+  const boardTab = reopened.getByRole("tab", {
+    name: "ビュー: ボード",
+    exact: true,
+  });
+  if (await boardTab.count()) await boardTab.click();
+  else
+    await reopened
+      .getByLabel("ビューを追加", { exact: true })
+      .selectOption("board");
   const labels = async () =>
     (await reopened.locator(".board-column h4").allTextContents()).map((text) =>
       text.replace(/\s*\d+\s*$/, "").trim(),

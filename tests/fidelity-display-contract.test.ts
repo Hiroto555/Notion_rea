@@ -84,9 +84,10 @@ describe("Round 3 focus and long-title display", () => {
     expect(rule(".search-input input:focus-visible")).toContain(
       "outline: 2px solid var(--focus);",
     );
-    expect(rule(".folio-editor:focus-visible")).toContain(
-      "outline: 2px solid var(--focus);",
-    );
+    // The tabbable contenteditable can match :focus-visible even after a
+    // mouse click; it must keep the cascade ring suppressed instead of a
+    // page-wide perimeter. The caret-block handle carries the keyboard cue.
+    expect(rule(".folio-editor:focus-visible")).toContain("outline: none;");
     expect(rule('input[type="checkbox"]:focus-visible')).toContain(
       "outline: 2px solid var(--focus);",
     );

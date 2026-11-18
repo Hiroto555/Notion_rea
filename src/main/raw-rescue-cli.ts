@@ -5,13 +5,29 @@ import {
   realpathSync,
   type BigIntStats,
 } from "node:fs";
-import { isAbsolute, join, relative, resolve, sep } from "node:path";
+import { dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
 import { DatabaseSync } from "node:sqlite";
 import { createRawWorkspaceSalvage } from "../persistence/raw-workspace-salvage";
 import { writeNewFileDurably } from "../persistence/durable-file";
 import { assertOutsideFolioData } from "../persistence/output-path";
 import { estimateBackupBytes } from "./bulk-storage-budget";
 import { WorkspaceStoragePressure } from "./storage-pressure";
+import {
+  privatePersistencePort,
+  withPrivatePersistence,
+  type NativePrivateFilesystemPort,
+  type NativePrivateIdentity,
+  type NativePrivateSqliteLease,
+} from "../platform/private-persistence";
+import {
+  createWindowsProductNative,
+  type WindowsProductNative,
+  type WindowsProductNativeOptions,
+} from "../platform/windows/product-native";
+import {
+  windowsOperatorConfigFromEnvironment,
+  type WindowsOperatorConfig,
+} from "../platform/windows/operator-native";
 
 /**
  * Headless emergency export for a workspace that cannot start normally.
@@ -24,9 +40,10 @@ import { WorkspaceStoragePressure } from "./storage-pressure";
  * Cross-file snapshots cannot be made atomic with SQLite alone. The caller
  * must confirm that the workspace is closed (`--workspace-closed`), and this
  * CLI additionally fingerprints the source before and after the capture. Any
- * change observed during the capture turns the result into a failure and
- * restores the incomplete marker on the bundle. A flag is only a declaration;
- * it is never treated as proof that external processes are stopped.
+ * change observed during the capture turns the result into a failure. Windows
+ * never repairs an uncertain marker operation: partial outputs and the native
+ * journal remain evidence, not proof of completion. A flag is a declaration,
+ * never proof that external processes are stopped.
  */
 
 const INCOMPLETE_MARKER = "FOLIO-RAW-SALVAGE-INCOMPLETE";
@@ -37,6 +54,8 @@ const JOURNAL_NAME = /^crash-recovery\.json(?:\.stage-[A-Za-z0-9-]{1,64})?$/;
 const MAX_ENTRIES = 200_000;
 const MAX_DEPTH = 64;
 const MAX_FILE_BYTES = 512 * 1024 * 1024;
+const NATIVE_COPY_MAX_BYTES = 256 * 1024 * 1024;
+const NATIVE_MANIFEST_MAX_BYTES = 32 * 1024 * 1024;
 const MAX_JOURNALS = 101;
 const RESCUE_DIRECTORY_PREFIX = "folio-raw-salvage-";
 
@@ -61,7 +80,13 @@ export const RAW_RESCUE_HELP = `Folio 生データ救出 (headless / 診断用�
   - 出力は完全バックアップではない。salvage-manifest.json は restorable: false で、
     復元には使えません。FOLIO-RAW-SALVAGE-INCOMPLETE がある出力は未完了。
   - --workspace-closed は外部プロセスの終了を証明しない。救出中にソースが
-    変化した場合は失敗し、未完了マーカーを付ける。
+    変化した場合は失敗する。Windows の不確定な操作は再試行しないため、
+    未完了マーカーがなくても、失敗した出力は完了済みと扱わない。
+  - Windows は明示設定された native helper / SHA256 / private state が必須。
+    FOLIO_WINDOWS_NATIVE_ROOT / FOLIO_WINDOWS_NATIVE_PROBE /
+    FOLIO_WINDOWS_NATIVE_SHA256 / FOLIO_WINDOWS_PUBLICATION_STATE_ROOT /
+    FOLIO_WINDOWS_PUBLICATION_STATE_DIR をインストール設定に従って指定する。
+    Windows の native copy / snapshot の上限は 1 ファイル 256 MiB。
   - 退避先の空き容量は本番の救出経路と同じ見積もり (DB + assets + journals +
     安全余裕) で確認する。
 
@@ -74,6 +99,23 @@ export type RawRescueIo = {
   err(text: string): void;
   cwd(): string;
 };
+
+type RawRescueNative = Pick<WindowsProductNative, "privateFilesystem" | "assertRoot" | "close">;
+
+/** Disposable off-win32 contract simulation ONLY; not a production override,
+ * helper trust, NTFS/ACL/handle proof, or Windows acceptance evidence. */
+export type RawRescueCliOptions = Readonly<{
+  untrustedTest: Readonly<{
+    trust: "untrusted-test";
+    platform: "win32";
+    env: NodeJS.ProcessEnv;
+    createProductNative(
+      config: WindowsOperatorConfig,
+      options: WindowsProductNativeOptions,
+    ): RawRescueNative;
+    openReadOnlyDatabase?: (path: string) => DatabaseSync;
+  }>;
+}>;
 
 type RawRescueOptions = {
   workspace: string;
@@ -153,10 +195,14 @@ function statLine(info: BigIntStats): string {
     .join(":");
 }
 
+function nativeIdentityLine(identity: NativePrivateIdentity): string {
+  return JSON.stringify([identity.path, identity.fileId.toLowerCase(), identity.volumeId.toLowerCase()]);
+}
+
 /** Fingerprint the source files that a raw salvage consumes. The transient
  * `-shm` index is deliberately omitted: SQLite rewrites it when a read-only
  * WAL reader opens or closes, and it contains no committed payload. */
-function fingerprintWorkspace(root: string): string {
+function fingerprintWorkspace(root: string, native?: NativePrivateFilesystemPort): string {
   const hash = createHash("sha256");
   const add = (line: string): void => {
     hash.update(String(Buffer.byteLength(line)));
@@ -167,8 +213,10 @@ function fingerprintWorkspace(root: string): string {
   const addOptional = (label: string, path: string): void => {
     const info = lstatOptional(path);
     add(`${label}:${info ? statLine(info) : "missing"}`);
+    if (info && native) add(`${label}:native:${nativeIdentityLine(native.inspectFileIdentity(path))}`);
   };
 
+  if (native) add(`root:native:${nativeIdentityLine(native.inspectDirectory(root))}`);
   addOptional("database", join(root, "workspace.sqlite"));
   for (const suffix of SIDECAR_SUFFIXES) {
     if (suffix === "-shm") continue;
@@ -177,13 +225,17 @@ function fingerprintWorkspace(root: string): string {
     // Opening a WAL-mode database for reading can create an empty WAL.
     // It carries no committed payload, as does an absent WAL/journal.
     add(`sidecar${suffix}:${!info || (info.isFile() && !info.isSymbolicLink() && info.size === 0n) ? "empty" : statLine(info)}`);
+    // Live SQLite main/WAL/journal files have metadata identity proof only.
+    // Their committed payload is captured by VACUUM, never an immutable hash.
+    if (native && info && info.size !== 0n)
+      add(`sidecar${suffix}:native:${nativeIdentityLine(native.inspectFileIdentity(path))}`);
   }
-  addJournals(root, add);
-  addAssetTree(join(root, "assets"), add);
+  addJournals(root, add, native);
+  addAssetTree(join(root, "assets"), add, native);
   return hash.digest("hex");
 }
 
-function addJournals(root: string, add: (line: string) => void): void {
+function addJournals(root: string, add: (line: string) => void, native?: NativePrivateFilesystemPort): void {
   let visited = 0;
   const names: string[] = [];
   for (const name of readdirSync(root)) {
@@ -202,7 +254,7 @@ function addJournals(root: string, add: (line: string) => void): void {
       throw new Error(
         "クラッシュ復旧ジャーナルの名前が想定と異なります: " + name,
       );
-    addOptionalFile(join(root, name), "クラッシュ復旧ジャーナル", name, add);
+    addOptionalFile(join(root, name), "クラッシュ復旧ジャーナル", name, add, native);
   }
 }
 
@@ -211,6 +263,7 @@ function addOptionalFile(
   label: string,
   relativePath: string,
   add: (line: string) => void,
+  native?: NativePrivateFilesystemPort,
 ): void {
   const info = lstatOptional(path);
   add(`${label}:${relativePath}:${info ? statLine(info) : "missing"}`);
@@ -219,9 +272,13 @@ function addOptionalFile(
     throw new Error(`${label}が通常ファイルではありません: ${relativePath}`);
   if (info.size > BigInt(MAX_FILE_BYTES))
     throw new Error(`${label}がサイズ上限を超えました: ${relativePath}`);
+  if (native) {
+    const file = native.inspectFile(path, NATIVE_COPY_MAX_BYTES);
+    add(`payload:native:${nativeIdentityLine(file)}:${file.bytes}:${file.sha256}`);
+  }
 }
 
-function addAssetTree(root: string, add: (line: string) => void): void {
+function addAssetTree(root: string, add: (line: string) => void, native?: NativePrivateFilesystemPort): void {
   const rootInfo = lstatOptional(root);
   add(`assets:${rootInfo ? statLine(rootInfo) : "missing"}`);
   if (!rootInfo) return;
@@ -240,6 +297,7 @@ function addAssetTree(root: string, add: (line: string) => void): void {
       throw new Error(
         "添付フォルダの階層が深すぎるため生データ退避を中止しました。",
       );
+    if (native) add(`directory:native:${nativeIdentityLine(native.inspectDirectory(current.path))}`);
     const names = readdirSync(current.path).sort();
     for (const name of names) {
       if (++entries > MAX_ENTRIES)
@@ -284,6 +342,10 @@ function addAssetTree(root: string, add: (line: string) => void): void {
         throw new Error(
           "添付ファイルが1ファイルのサイズ上限を超えました: " + relativePath,
         );
+      if (native) {
+        const file = native.inspectFile(path, NATIVE_COPY_MAX_BYTES);
+        add(`payload:native:${nativeIdentityLine(file)}:${file.bytes}:${file.sha256}`);
+      }
     }
   }
 }
@@ -409,7 +471,7 @@ function prepareRescue(options: RawRescueOptions, cwd: string): PreparedRescue {
   };
 }
 
-function assertSafeSidecarsNow(root: string): void {
+function assertSafeSidecarsNow(root: string, native?: NativePrivateFilesystemPort): void {
   for (const suffix of SIDECAR_SUFFIXES) {
     const info = lstatOptional(join(root, "workspace.sqlite" + suffix));
     if (!info) continue;
@@ -417,6 +479,7 @@ function assertSafeSidecarsNow(root: string): void {
       throw new Error(
         `SQLite の sidecar が安全ではありません: workspace.sqlite${suffix}`,
       );
+    native?.inspectFileIdentity(join(root, "workspace.sqlite" + suffix));
   }
 }
 
@@ -526,9 +589,206 @@ function successText(prepared: PreparedRescue, result: RescueResult): string {
   ].join("\n");
 }
 
+// A failed open/close is not proof of a released SQLite handle or native
+// lease. Keep the entire owner graph reachable; do not retry its cleanup.
+const retainedNativeRescues = new Set<{
+  product: RawRescueNative;
+  connection?: DatabaseSync;
+  lease?: NativePrivateSqliteLease;
+}>();
+
+/** Supplement the writer's portable verification with common-FS identity/hash
+ * proof of the closed snapshot and payload, never the mutable source DB. */
+function verifyNativeOutput(native: NativePrivateFilesystemPort, bundle: RescueResult): void {
+  native.inspectDirectory(bundle.directory);
+  const path = join(bundle.directory, "salvage-manifest.json");
+  const expected = native.inspectFile(path, NATIVE_MANIFEST_MAX_BYTES);
+  const manifest = JSON.parse(new TextDecoder("utf-8", { fatal: true }).decode(
+    native.read(path, expected, NATIVE_MANIFEST_MAX_BYTES),
+  )) as Record<string, unknown> | null;
+  function invalid(): never { throw new Error("WINDOWS_RAW_RESCUE_OUTPUT_UNVERIFIED"); }
+  if (!manifest || manifest.format !== "folio-raw-workspace-salvage" || manifest.version !== 1 ||
+      manifest.restorable !== false || manifest.files !== bundle.files || manifest.bytes !== bundle.bytes ||
+      !Array.isArray(manifest.entries) || manifest.entries.length !== bundle.files || bundle.files > 100_000)
+    invalid();
+  const paths = new Set<string>();
+  let bytes = 0;
+  for (const raw of manifest.entries as unknown[]) {
+    if (!raw || typeof raw !== "object" || Array.isArray(raw)) invalid();
+    const entry = raw as Record<string, unknown>;
+    if (typeof entry.path !== "string" || entry.path.length > 1024 || /[\\\u0000]/.test(entry.path) ||
+        isAbsolute(entry.path) || entry.path.split("/").some(part => !part || part === "." || part === ".." || part.length > 255) ||
+        paths.has(entry.path) || !(entry.path === "workspace.raw.sqlite" ||
+          entry.path.startsWith("assets/") || JOURNAL_NAME.test(entry.path)))
+      invalid();
+    const relativePath = entry.path as string;
+    paths.add(relativePath);
+    const filePath = join(bundle.directory, ...relativePath.split("/"));
+    native.inspectDirectory(dirname(filePath));
+    const file = native.inspectFile(filePath, NATIVE_COPY_MAX_BYTES);
+    if (file.bytes !== entry.bytes || file.sha256 !== entry.sha256) invalid();
+    bytes += file.bytes;
+    if (!Number.isSafeInteger(bytes)) invalid();
+  }
+  if (!paths.has("workspace.raw.sqlite") || bytes !== bundle.bytes) invalid();
+  const after = native.inspectFile(path, NATIVE_MANIFEST_MAX_BYTES);
+  if (nativeIdentityLine(after) !== nativeIdentityLine(expected) ||
+      after.bytes !== expected.bytes || after.sha256 !== expected.sha256) invalid();
+}
+
+function runWindowsRescue(
+  options: RawRescueOptions,
+  io: RawRescueIo,
+  env: NodeJS.ProcessEnv,
+  factory: (config: WindowsOperatorConfig, options: WindowsProductNativeOptions) => RawRescueNative,
+  openDatabase: (path: string) => DatabaseSync,
+): number {
+  let active = true;
+  let sourceFence: (() => void) | undefined;
+  let config: WindowsOperatorConfig;
+  let product: RawRescueNative;
+  try {
+    const selected = windowsOperatorConfigFromEnvironment(env);
+    if (!selected) throw new Error("WINDOWS_RAW_RESCUE_CONFIG_REQUIRED: 明示的な Windows native インストール設定が必要です。");
+    config = selected;
+    product = factory(config, {
+      enrollExistingSources: env.FOLIO_WINDOWS_ENROLL_EXISTING_SOURCES === "1",
+      assertCurrent() {
+        if (!active) throw new Error("WINDOWS_RAW_RESCUE_SESSION_CLOSED");
+        // No native recursion here: the factory invokes this from inside
+        // its own operations. Node metadata is only a namespace/change hint.
+        sourceFence?.();
+      },
+    });
+  } catch (error) {
+    active = false;
+    io.err(`救出できませんでした: ${errorText(error)}\n`);
+    if (env.FOLIO_WINDOWS_PUBLICATION_STATE_DIR)
+      io.err(`設定された native 証拠の確認先: ${env.FOLIO_WINDOWS_PUBLICATION_STATE_DIR}\n`);
+    io.err("初期化の結果は未確認です。既存の native 証拠を保全してください。自動再試行はしていません。\n");
+    return 1;
+  }
+
+  return withPrivatePersistence({ nativePrivateFilesystem: product.privateFilesystem }, () => {
+    let prepared: PreparedRescue | undefined;
+    let connection: DatabaseSync | undefined;
+    let lease: NativePrivateSqliteLease | undefined;
+    let bundle: RescueResult | undefined;
+    let destinationBefore: Set<string> | undefined;
+    let openUnknown = false;
+    let leaseUnknown = false;
+    const failures: unknown[] = [];
+    try {
+      const native = privatePersistencePort()!;
+      if (!native.acquireSqliteLease) throw new Error("WINDOWS_RAW_RESCUE_SQLITE_LEASE_REQUIRED");
+      product.assertRoot();
+      prepared = prepareRescue(options, io.cwd());
+      assertSafeSidecarsNow(prepared.workspaceRoot, native);
+      const initialNativeFingerprint = fingerprintWorkspace(prepared.workspaceRoot, native);
+      const databaseIdentity = native.inspectFileIdentity(prepared.databasePath);
+      const destinationIdentity = native.inspectDirectory(prepared.destinationParent);
+      product.assertRoot();
+      leaseUnknown = true;
+      lease = native.acquireSqliteLease(prepared.databasePath, databaseIdentity);
+      leaseUnknown = false;
+      lease.assertHeld();
+      openUnknown = true;
+      connection = openDatabase(prepared.databasePath);
+      openUnknown = false;
+      assertCanonicalConnection(connection, prepared.databasePath);
+      const dataVersion = readDataVersion(connection);
+      const currentPrepared = prepared, currentConnection = connection;
+      sourceFence = () => assertSourceUnchanged(
+        currentPrepared.workspaceRoot, currentPrepared.initialFingerprint,
+        dataVersion, currentConnection,
+      );
+      const assertCurrentSource = (): void => {
+        sourceFence!();
+        product.assertRoot();
+        lease!.assertHeld();
+        assertSafeSidecarsNow(currentPrepared.workspaceRoot, native);
+        if (fingerprintWorkspace(currentPrepared.workspaceRoot, native) !== initialNativeFingerprint)
+          throw new SourceChangedError();
+        if (nativeIdentityLine(native.inspectDirectory(currentPrepared.destinationParent)) !== nativeIdentityLine(destinationIdentity))
+          throw new Error("WINDOWS_RAW_RESCUE_DESTINATION_CHANGED");
+        product.assertRoot();
+        lease!.assertHeld();
+        sourceFence!();
+      };
+      assertCurrentSource();
+      destinationBefore = new Set(readdirSync(prepared.destinationParent));
+      bundle = createRawWorkspaceSalvage(
+        connection, prepared.workspaceRoot, prepared.destinationParent,
+        (journalBytes) => {
+          assertCurrentSource();
+          const estimate = estimateBackupBytes(currentConnection, currentPrepared.workspaceRoot) + journalBytes;
+          new WorkspaceStoragePressure(currentPrepared.destinationParent).assertWritable(estimate);
+          assertCurrentSource();
+        },
+      );
+      verifyNativeOutput(native, bundle);
+      assertCurrentSource();
+    } catch (error) {
+      failures.push(error);
+    } finally {
+      // Stop source reads before close, but keep the factory session alive
+      // until SQLite -> source lease -> native state have closed in order.
+      sourceFence = undefined;
+      if (connection) {
+        try {
+          connection.close();
+          openUnknown = connection.isOpen !== false;
+          if (openUnknown) failures.push(new Error("SQLite close UNKNOWN"));
+        } catch (error) {
+          failures.push(error);
+          try { openUnknown = connection.isOpen !== false; }
+          catch { openUnknown = true; }
+        }
+      }
+      if (!openUnknown && !leaseUnknown && lease) {
+        leaseUnknown = true;
+        try { lease.close(); leaseUnknown = false; }
+        catch (error) { failures.push(error); }
+      }
+      if (!openUnknown && !leaseUnknown) {
+        try { product.close(); }
+        catch (error) {
+          failures.push(error);
+          retainedNativeRescues.add({ product, connection, lease });
+        }
+      } else {
+        retainedNativeRescues.add({ product, connection, lease });
+        failures.push(new Error("SQLite/native lease UNKNOWN; owners retained, cleanup not retried"));
+      }
+      active = false;
+    }
+
+    if (failures.length === 0 && prepared && bundle) {
+      io.out(successText(prepared, bundle));
+      return 0;
+    }
+    for (const error of failures) io.err(`救出できませんでした: ${errorText(error)}\n`);
+    // A writer error may follow an applied marker unlink. Conversely a
+    // returned bundle may fail its final fence/close. Neither permits retry,
+    // deletion, or automatic marker reconstruction on Windows.
+    if (bundle) io.err(`出力（状態未確認）: ${bundle.directory}\n`);
+    else if (prepared && destinationBefore) {
+      try {
+        for (const output of newRescueDirectories(prepared.destinationParent, destinationBefore))
+          io.err(`出力（状態未確認・名前の観測のみ）: ${output.directory}\n`);
+      } catch { /* Reporting must not mutate or obscure the original failure. */ }
+    }
+    io.err(`native 操作の証拠保存先: ${config.publicationStateDirectory}\n`);
+    io.err("出力の完了状態は未確認です。マーカーの有無だけで成功と判断しないでください。\n");
+    io.err("元データ・読み取れる出力・native 証拠を削除せず保全してください。自動再試行はしていません。復元には使えません。\n");
+    return 1;
+  });
+}
+
 export function runRawRescueCli(
   argv: readonly string[],
   io: RawRescueIo = defaultIo,
+  execution?: RawRescueCliOptions,
 ): number {
   let options: RawRescueOptions;
   try {
@@ -546,6 +806,26 @@ export function runRawRescueCli(
     return 0;
   }
 
+  const simulation = execution?.untrustedTest;
+  if (execution !== undefined && (
+    process.platform === "win32" || !simulation ||
+    simulation.trust !== "untrusted-test" || simulation.platform !== "win32" ||
+    typeof simulation.createProductNative !== "function"
+  )) {
+    io.err("WINDOWS_RAW_RESCUE_TEST_OPTIONS_FORBIDDEN: untrusted simulation is off-win32 only.\n");
+    return 1;
+  }
+  if (process.platform === "win32" || simulation) {
+    return runWindowsRescue(
+      options, io, { ...(simulation?.env ?? process.env) },
+      simulation?.createProductNative ?? createWindowsProductNative,
+      simulation?.openReadOnlyDatabase ?? ((path) => new DatabaseSync(path, { readOnly: true, timeout: 5_000 })),
+    );
+  }
+  return runPosixRescue(options, io);
+}
+
+function runPosixRescue(options: RawRescueOptions, io: RawRescueIo): number {
   let prepared: PreparedRescue | undefined;
   let connection: DatabaseSync | undefined;
   let bundle: RescueResult | undefined;

@@ -1,11 +1,13 @@
-import { writePendingJournalFile } from "../persistence/pending-journal-file";
+import { writePendingJournalFileV3 } from "../persistence/pending-journal-file-v3";
+import type { PrivateFileV2Port } from "../platform/private-file-v2";
+import type { PrivateFileV3Port } from "../platform/windows/private-recovery-io";
 import type { WorkspaceConflictCandidateSnapshot, WorkspaceConflictCandidateTarget } from "../shared/workspace-conflict-view";
 import { hashCheckpoint, parseCheckpoint, requireCondition } from "../sync/protocol";
 import { validateWorkspaceCheckpoint } from "../sync/workspace-checkpoint";
 
 /** Export only the selected checkpoint JSON. Attachment bytes are not included. */
 export function exportConflictCheckpoint(destination: string, candidate: WorkspaceConflictCandidateSnapshot,
-  checkDestination: (path: string) => void): string {
+  checkDestination: (path: string) => void, privateFilePort?: PrivateFileV2Port | PrivateFileV3Port): string {
   requireCondition(candidate.checkpointJson !== null && candidate.checkpointHash !== null,
     "conflict-head-empty", 409);
   const content = candidate.checkpointJson;
@@ -15,7 +17,8 @@ export function exportConflictCheckpoint(destination: string, candidate: Workspa
     requireCondition(validateWorkspaceCheckpoint(checkpoint) && hashCheckpoint(checkpoint) === expectedHash,
       "conflict-candidate-hash-mismatch", 409);
   };
-  return writePendingJournalFile(destination, content, {validate, checkDestination}).path;
+  return writePendingJournalFileV3(destination, content, {validate, checkDestination,
+    ...(privateFilePort?.contractVersion === 3 ? {privateFilePortV3: privateFilePort} : {privateFilePortV2: privateFilePort})}).path;
 }
 
 /** Re-read the exact candidate after the asynchronous picker and recheck the

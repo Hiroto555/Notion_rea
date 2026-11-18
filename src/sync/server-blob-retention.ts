@@ -11,6 +11,10 @@ import {
 } from "node:fs";
 import { isAbsolute, join, resolve } from "node:path";
 import { SyncError } from "./protocol";
+import {
+  windowsServerNative,
+  type WindowsServerNativePort,
+} from "../platform/windows/server-native";
 
 export type ServerBlobRetentionLimits = {
   maxBytes?: number;
@@ -314,6 +318,68 @@ function scanDirectory(path: string, depth: number, state: ScanState): void {
   if (!sameDirectory(pin, after)) unknown();
 }
 
+/**
+ * Windows branch: the scan is a bounded K-native walk — directory names are
+ * namespace hints (listNames, capped), every directory is re-proven by its
+ * native identity before and after listing, and each file contributes its
+ * actual native ID/hash/bytes. Unknown regular files and partials count
+ * toward held accounting; unrecognized nested directories, reparse points
+ * and vanishing entries reject. No collection is performed anywhere on this
+ * branch: retention/admission is accounting only. Deletion GC and the
+ * WorkspaceBlobStore live lifecycle belong to the unowned native host.
+ */
+function scanNativeDirectory(
+  native: WindowsServerNativePort,
+  path: string,
+  depth: number,
+  state: ScanState,
+): void {
+  const pin = native.inspectDirectory(path);
+  const names = native.listNames(path, state.maxEntries);
+  for (const name of names) {
+    if (state.held) break;
+    if (++state.visited > state.maxEntries + 1 + ENTRY_SCAN_SLACK) {
+      state.held = true;
+      break;
+    }
+    const child = native.join(path, name);
+    const kind = native.kindOf(child);
+    if (kind === "absent" || kind === "other") unknown();
+    if (kind === "directory") {
+      if (depth !== 0 || !HASH.test(name)) unknown();
+      scanNativeDirectory(native, child, 1, state);
+      continue;
+    }
+    const file = native.inspectFile(child, DEFAULT_MAX_BYTES);
+    state.bytes = addBytes(state.bytes, file.bytes);
+    if (depth > 0 && (HASH.test(name) || PARTIAL.test(name)))
+      state.entries += 1;
+    checkOverflow(state);
+  }
+  native.assertDirectory(path, pin);
+}
+
+function inspectNativeWithLimits(
+  native: WindowsServerNativePort,
+  directory: string,
+  limits: ResolvedLimits,
+): ServerBlobRetentionInspection {
+  const path = native.canonical(directory, true);
+  const kind = native.kindOf(path);
+  if (kind === "absent") return { bytes: 0, entries: 0, held: false };
+  if (kind !== "directory") unknown();
+  const state: ScanState = {
+    maxBytes: limits.maxBytes,
+    maxEntries: limits.maxEntries,
+    bytes: 0,
+    entries: 0,
+    held: false,
+    visited: 0,
+  };
+  scanNativeDirectory(native, path, 0, state);
+  return { bytes: state.bytes, entries: state.entries, held: state.held };
+}
+
 function inspectWithLimits(
   directory: string,
   limits: ResolvedLimits,
@@ -336,7 +402,11 @@ export function inspectServerBlobRetention(
   directory: string,
   limits?: ServerBlobRetentionLimits,
 ): ServerBlobRetentionInspection {
+  const native = windowsServerNative();
   const resolved = resolveLimits(limits);
+  if (native !== undefined)
+    return inspectNativeWithLimits(native, directory, resolved);
+  if (process.platform === "win32") unknown();
   return inspectWithLimits(directory, resolved);
 }
 
@@ -346,6 +416,7 @@ export function assertServerBlobAdmission(
   limits?: ServerBlobRetentionLimits,
   additionalEntries = 1,
 ): void {
+  const native = windowsServerNative();
   const resolved = resolveLimits(limits);
   if (
     typeof additionalBytes !== "number" ||
@@ -353,7 +424,11 @@ export function assertServerBlobAdmission(
     additionalBytes < 0 || !Number.isSafeInteger(additionalEntries) || additionalEntries < 0 || additionalEntries > 1
   )
     unknown();
-  const inspection = inspectWithLimits(directory, resolved);
+  if (native === undefined && process.platform === "win32") unknown();
+  const inspection =
+    native !== undefined
+      ? inspectNativeWithLimits(native, directory, resolved)
+      : inspectWithLimits(directory, resolved);
   const projected = addBytes(inspection.bytes, additionalBytes);
   if (
     inspection.held ||

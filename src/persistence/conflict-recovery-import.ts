@@ -1,5 +1,5 @@
 import { assertOutsideFolioData } from "./output-path";
-import { randomUUID } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 import { existsSync, realpathSync, unlinkSync } from "node:fs";
 import { basename, dirname, isAbsolute, join, resolve, sep } from "node:path";
 import { hashCheckpoint, requireCondition } from "../sync/protocol";
@@ -16,6 +16,16 @@ import {
   type RecoveryFault,
 } from "./recovery-io";
 import { Store } from "./store";
+import { privatePersistencePort, type NativePrivateSqliteLease, type NativePrivateFile } from "../platform/private-persistence";
+
+// Deliberately retained cleanup owners on UNKNOWN; no retry/release API.
+// The durable incomplete marker/checkpoint remain the recovery authority.
+const retainedConflictOwners: { store?: Store; lease: NativePrivateSqliteLease; failure?: unknown }[] = [];
+function assertConflictDatabase(expected: NativePrivateFile, actual: NativePrivateFile): void {
+  requireCondition(expected.path === actual.path &&
+    expected.fileId.toLowerCase() === actual.fileId.toLowerCase() &&
+    expected.volumeId.toLowerCase() === actual.volumeId.toLowerCase(), "recovery-database-identity-changed");
+}
 
 const MAX_CHECKPOINT_BYTES = 1024 * 1024;
 const BUDGET_SLACK_BYTES = 64 * 1024 * 1024;
@@ -55,6 +65,8 @@ export function restoreRecoveryBundle(
   destination: string,
   options: { admitBytes: (bytes: number) => void; fault?: RecoveryFault },
 ): RecoveredWorkspace {
+  const native = privatePersistencePort();
+  requireCondition(!native || !!native.acquireSqliteLease, "native-sqlite-lease-required", 503);
   const expectedFingerprint=verified.fingerprint;
   const candidate = verifyRecoveryBundle(verified.directory);
   requireCondition(candidate.fingerprint === expectedFingerprint, "recovery-source-changed");
@@ -67,31 +79,90 @@ export function restoreRecoveryBundle(
   const target = assertFreshDestination(candidate.directory, destination);
   assertOutsideFolioData(dirname(target));
   options.admitBytes(recoveryBudget(candidate));
+  requireCondition(verifyRecoveryBundle(candidate.directory).fingerprint === expectedFingerprint,
+    "recovery-source-changed");
+  assertFreshDestination(candidate.directory, destination);
 
   const recoveryId = randomUUID();
   createRecoveryDirectory(target);
   const assetsDirectory = join(target, ASSETS_DIRECTORY);
   createRecoveryDirectory(assetsDirectory);
-  writeRecoveryFile(target, RECOVERY_INCOMPLETE, Buffer.alloc(0), options.fault);
+  const incomplete = writeRecoveryFile(target, RECOVERY_INCOMPLETE, Buffer.alloc(0), options.fault);
   const checkpointBytes = readRecoveryFile(
     candidate.directory,
     CHECKPOINT_FILE,
     MAX_CHECKPOINT_BYTES,
   );
+  requireCondition(checkpointBytes.length === candidate.manifest.checkpoint.bytes &&
+    createHash("sha256").update(checkpointBytes).digest("hex") === candidate.manifest.checkpoint.sha256,
+  "recovery-checkpoint-mismatch");
   writeRecoveryFile(target, CHECKPOINT_FILE, checkpointBytes, options.fault);
   for (const asset of candidate.manifest.assets) {
     copyRecoveryAsset(candidate.directory, target, asset, { fault: options.fault });
   }
 
-  const store = new Store(join(target, "workspace.sqlite"), { allowIncompleteRecovery: true });
+  const databasePath = join(target, "workspace.sqlite");
+  let lease: NativePrivateSqliteLease | undefined;
+  let store: Store | undefined;
+  let originalDatabase: NativePrivateFile | undefined;
+  let constructorAttempted = false, closeAttempted = false;
+  const errors: unknown[] = [];
   try {
+    if (native) {
+      originalDatabase = native.writeNew(databasePath, new Uint8Array(), 0).identity;
+      lease = native.acquireSqliteLease!(databasePath, originalDatabase);
+      lease.assertHeld();
+    }
+    constructorAttempted = true;
+    store = new Store(databasePath, { allowIncompleteRecovery: true,
+      ...(native ? { nativePrivateFilesystem: native, nativeLease: lease } : {}) });
+    lease?.assertHeld();
     initializeRecoveredContent(store, candidate.checkpoint, recoveryId);
-  } finally {
+    lease?.assertHeld();
+    store.db.exec("PRAGMA wal_checkpoint(TRUNCATE)");
+    requireCondition(store.db.prepare("PRAGMA integrity_check").get()?.integrity_check === "ok",
+      "recovery-content-mismatch");
+    closeAttempted = true;
     store.close();
+    store = undefined; lease = undefined;
+  } catch (error) { errors.push(error);
+  } finally {
+    if (store && !closeAttempted) {
+      closeAttempted = true;
+      try { store.close(); store = undefined; lease = undefined; } catch (error) { errors.push(error); }
+    }
+    if (lease && !constructorAttempted) {
+      try { lease.close(); lease = undefined; } catch (error) { errors.push(error); }
+    }
+    if (native && lease) retainedConflictOwners.push({ store, lease, failure: errors[0] });
   }
-
-  const inspectedId = inspectRecoveredContent(target, checkpointHash, true);
-  requireCondition(inspectedId === recoveryId, "recovery-id-mismatch");
+  if (errors.length === 1) throw errors[0];
+  if (errors.length > 1) throw new AggregateError(errors, "recovery SQLite lifetime UNKNOWN");
+  if (native) {
+    // inspectRecoveredContent owns an internal Store. Only a successful return
+    // proves its finally-close returned; any thrown outcome retains this lease.
+    const inspectionLease = native.acquireSqliteLease!(databasePath, originalDatabase!);
+    try {
+      inspectionLease.assertHeld();
+      requireCondition(inspectRecoveredContent(target, checkpointHash, true) === recoveryId, "recovery-id-mismatch");
+      inspectionLease.assertHeld();
+      options.fault?.("before-complete");
+      inspectionLease.assertHeld();
+      requireCondition(verifyRecoveryBundle(candidate.directory).fingerprint === expectedFingerprint,
+        "recovery-source-changed");
+      requireCondition(inspectRecoveredContent(target, checkpointHash, true) === recoveryId, "recovery-id-mismatch");
+      inspectionLease.assertHeld();
+      inspectionLease.close();
+    } catch (error) {
+      retainedConflictOwners.push({ lease: inspectionLease, failure: error });
+      throw error;
+    }
+    const file = native.inspectFile(databasePath, 256 * 1024 * 1024);
+    assertConflictDatabase(originalDatabase!, file);
+    native.proveSync(databasePath, file);
+  } else {
+    requireCondition(inspectRecoveredContent(target, checkpointHash, true) === recoveryId, "recovery-id-mismatch");
+  }
 
   const sourceAgain = verifyRecoveryBundle(candidate.directory);
   requireCondition(sourceAgain.fingerprint === expectedFingerprint, "recovery-source-changed");
@@ -100,7 +171,15 @@ export function restoreRecoveryBundle(
     "recovery-checkpoint-mismatch",
   );
 
-  options.fault?.("before-complete");
+  if (!native) options.fault?.("before-complete");
+  requireCondition(verifyRecoveryBundle(candidate.directory).fingerprint === expectedFingerprint,
+    "recovery-source-changed");
+  if (native) {
+    requireCondition(!!incomplete, "recovery-marker-identity-required");
+    native.unlinkExact(join(target, RECOVERY_INCOMPLETE), incomplete, 0);
+    options.fault?.("after-complete");
+    return { directory: target, checkpointHash, recoveryId };
+  }
   unlinkSync(join(target, RECOVERY_INCOMPLETE));
   options.fault?.("before-complete-sync");
   syncRecoveryDirectory(target);

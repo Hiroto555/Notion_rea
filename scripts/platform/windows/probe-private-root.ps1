@@ -91,7 +91,33 @@ public static class FolioWindowsProbe
     private const byte SystemScopedPolicyIdAceType = 19;
     private const byte SystemProcessTrustLabelAceType = 20;
     private const byte SystemAccessFilterAceType = 21;
-    private const uint FILE_REMOTE_DEVICE = 0x00000001;
+    // Device characteristics and filesystem capability flags are different
+    // namespaces. 0x1 in lpFileSystemFlags means CASE_SENSITIVE_SEARCH.
+    private const uint FILE_REMOTE_DEVICE = 0x00000010;
+    private const uint FILE_PERSISTENT_ACLS = 0x00000008;
+    private const int FileFsDeviceInformation = 4;
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct IO_STATUS_BLOCK
+    {
+        public IntPtr Status;
+        public UIntPtr Information;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct FILE_FS_DEVICE_INFORMATION
+    {
+        public uint DeviceType;
+        public uint Characteristics;
+    }
+
+    [DllImport("ntdll.dll")]
+    private static extern int NtQueryVolumeInformationFile(
+        SafeFileHandle handle,
+        out IO_STATUS_BLOCK ioStatus,
+        out FILE_FS_DEVICE_INFORMATION information,
+        uint length,
+        int informationClass);
 
     [StructLayout(LayoutKind.Sequential)]
     private struct FILE_ATTRIBUTE_TAG_INFO
@@ -462,15 +488,31 @@ public static class FolioWindowsProbe
         {
             throw new Win32Exception(Marshal.GetLastWin32Error());
         }
-        if (filesystem.Length == 0)
+        if (!String.Equals(filesystem.ToString(), "NTFS", StringComparison.OrdinalIgnoreCase))
         {
             throw new Win32Exception(87);
         }
-        if ((flags & FILE_REMOTE_DEVICE) != 0)
+        IO_STATUS_BLOCK ioStatus;
+        FILE_FS_DEVICE_INFORMATION device;
+        uint deviceBytes = (uint)Marshal.SizeOf(typeof(FILE_FS_DEVICE_INFORMATION));
+        int status = NtQueryVolumeInformationFile(handle, out ioStatus,
+            out device, deviceBytes, FileFsDeviceInformation);
+        if (status != 0 || ioStatus.Status != IntPtr.Zero ||
+            ioStatus.Information.ToUInt64() != deviceBytes)
+        {
+            throw new Win32Exception(50);
+        }
+        if ((device.Characteristics & FILE_REMOTE_DEVICE) != 0)
         {
             throw new Win32Exception(53);
         }
-        if ((ulong)serial != expectedSerial)
+        if ((flags & FILE_PERSISTENT_ACLS) == 0)
+        {
+            throw new Win32Exception(50);
+        }
+        // GetVolumeInformation's DWORD serial is not the 64-bit FileIdInfo
+        // serial. Recheck using the same native identity class as the pin.
+        if (Identity(handle).VolumeSerialNumber != expectedSerial)
         {
             throw new Win32Exception(4390);
         }
@@ -807,6 +849,88 @@ public static class FolioWindowsProbe
                 canonicalRoot = finalRoot
             };
         }
+    }
+
+    // Proves a directory on handles the CALLER already holds (for example an
+    // NtCreateFile FILE_CREATE child and its locked private root). The
+    // supplied handles are inspected, never reopened, and the same checks as
+    // Run apply; the handles are only valid for this process lifetime.
+    public static FolioWindowsProbeResult RunHeldDirectory(
+        SafeFileHandle targetHandle,
+        SafeFileHandle rootHandle,
+        string target,
+        string root,
+        string currentSid)
+    {
+        if (targetHandle == null || rootHandle == null ||
+            targetHandle.IsInvalid || targetHandle.IsClosed ||
+            rootHandle.IsInvalid || rootHandle.IsClosed)
+        {
+            throw new Win32Exception(87);
+        }
+        string expectedTarget = Normalize(System.IO.Path.GetFullPath(target));
+        string expectedRoot = Normalize(System.IO.Path.GetFullPath(root));
+
+        string finalTarget;
+        string finalRoot;
+        uint linkCount;
+        uint rootLinkCount;
+        FILE_ID_INFO targetId = InspectHandle(
+            targetHandle,
+            expectedTarget,
+            currentSid,
+            true,
+            out finalTarget,
+            out linkCount);
+        FILE_ID_INFO rootId = InspectHandle(
+            rootHandle,
+            expectedRoot,
+            currentSid,
+            false,
+            out finalRoot,
+            out rootLinkCount);
+
+        // Both supplied handles must refer to directories.
+        if (!Standard(targetHandle).Directory ||
+            !Standard(rootHandle).Directory)
+        {
+            throw new Win32Exception(4390);
+        }
+
+        RejectReparseAncestors(finalTarget);
+        RejectReparseAncestors(finalRoot);
+
+        if (rootLinkCount == 0)
+        {
+            throw new Win32Exception(87);
+        }
+        if (targetId.VolumeSerialNumber != rootId.VolumeSerialNumber)
+        {
+            throw new Win32Exception(4390);
+        }
+        string rootPrefix = finalRoot.EndsWith(@"\", StringComparison.Ordinal)
+            ? finalRoot
+            : finalRoot + @"\";
+        if (!String.Equals(finalTarget, finalRoot, StringComparison.Ordinal) &&
+            !finalTarget.StartsWith(rootPrefix, StringComparison.Ordinal))
+        {
+            throw new Win32Exception(4390);
+        }
+
+        return new FolioWindowsProbeResult
+        {
+            daclPrivate = true,
+            fileId = HexId(targetId),
+            rootFileId = HexId(rootId),
+            linkCount = (int)linkCount,
+            localFilesystem = true,
+            ownerSid = currentSid,
+            reparsePoint = false,
+            volumeId = targetId.VolumeSerialNumber.ToString("x16"),
+            rootVolumeId = rootId.VolumeSerialNumber.ToString("x16"),
+            canonicalPath = finalTarget,
+            canonicalRoot = finalRoot
+        };
     }
 }
 '@

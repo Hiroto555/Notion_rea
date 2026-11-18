@@ -10,6 +10,8 @@ import {
   realpathSync,
   type Stats,
 } from "node:fs";
+import { createHash } from "node:crypto";
+import { DatabaseSync } from "node:sqlite";
 import {
   basename,
   dirname,
@@ -20,6 +22,11 @@ import {
   sep,
 } from "node:path";
 import { sqliteHeader } from "../../persistence/sqlite-header";
+import { synchronousPort } from "../../platform/synchronous-port";
+import type {
+  PublicationAuthorization,
+  PublicationResolutionPort,
+} from "../../platform/windows/publication-resolution";
 import { pinPrivateRoot } from "../../sync/m3-private-root";
 import { SharedAuthority } from "./authority";
 import { validateRuntimeBackup, type RuntimeBackup } from "./backup";
@@ -33,17 +40,25 @@ import {
   type Scope,
 } from "./contract";
 import { SharedMaintenance } from "./maintenance";
+import {
+  createSharedOperatorContext,
+  readSharedOperatorFile,
+  type SharedOperatorFilePort,
+  type SharedOperatorPorts,
+} from "./operator-files";
 import type { BackupVerification } from "./retention";
+import { RetentionHostRegistry } from "./retention-host-environment";
+import type { RetentionArtifactStore, RetentionHoldSelection } from "./retention-release";
 import {
   RuntimeStore,
   SHARED_RUNTIME_APPLICATION_ID,
   SHARED_RUNTIME_FILE,
   SHARED_RUNTIME_VERSION,
-  type RuntimeStoreOptions,
 } from "./store";
 
 const ACTIONS = [
   "preview",
+  "dependencies-preview",
   "verify",
   "compact",
   "upgrade",
@@ -51,13 +66,22 @@ const ACTIONS = [
   "collect",
   "staging-preview",
   "staging-abandon",
+  "publication-inspect",
+  "publication-resolve",
+  "retention-preview",
+  "retention-export",
+  "retention-release",
 ] as const;
 
 type Action = (typeof ACTIONS)[number];
 
 const ACTION_VALUES: Readonly<Record<Action, readonly string[]>> = {
+  "retention-preview": ["workspace", "document", "incarnation", "expected-cut", "holds"],
+  "retention-export": ["workspace", "document", "incarnation", "expected-cut", "holds", "fingerprint", "destination"],
+  "retention-release": ["workspace", "document", "incarnation", "expected-cut", "holds", "fingerprint", "artifact", "artifact-hash", "ack-artifact-hash"],
   "staging-preview": ["workspace", "document", "incarnation"],
   "staging-abandon": ["workspace", "document", "incarnation", "writer", "copy-id", "manifest-hash", "expected-cut"],
+  "dependencies-preview": ["expected-cut"],
   preview: [],
   verify: ["destination", "epoch"],
   compact: ["destination", "epoch", "backup"],
@@ -70,16 +94,24 @@ const ACTION_VALUES: Readonly<Record<Action, readonly string[]>> = {
     "expected-cut",
     "hashes",
   ],
+  "publication-inspect": ["attempt", "expected-cut"],
+  "publication-resolve": ["attempt", "expected-cut", "fingerprint"],
 };
 const OPTIONAL_VALUES: Readonly<Record<Action, readonly string[]>> = {
+  "retention-preview": [],
+  "retention-export": [],
+  "retention-release": [],
   "staging-preview": [],
   "staging-abandon": [],
+  "dependencies-preview": [],
   preview: [],
   verify: ["backup"],
   compact: [],
   upgrade: [],
   "collect-preview": [],
   collect: [],
+  "publication-inspect": [],
+  "publication-resolve": [],
 };
 const BASE_VALUES = ["root", "org", "token-file", "action"] as const;
 
@@ -92,8 +124,27 @@ const MAX_HASHES_ARGUMENT = 1_000_000;
 const PRIVATE_FILE_MODE = 0o600;
 const PRIVATE_DIRECTORY_MODE = 0o700;
 const HASH_PATTERN = /^[a-f0-9]{64}$/;
+const ATTEMPT_PATTERN = /^[0-9a-f]{32}$/;
+const PUBLICATION_RESOLUTION_CONTRACT = {
+  inspect: { result: "object" },
+  resolve: { result: "object" },
+} as const;
 
-export type MaintenanceOperatorPorts = RuntimeStoreOptions;
+export type MaintenanceOperatorPorts = SharedOperatorPorts &
+  Readonly<{
+    nativePublication?: PublicationResolutionPort;
+    /** Host-owned registry only; no CLI coverage/roster flags are accepted. */
+    retentionHost?: RetentionHostRegistry;
+    /**
+     * Trusted offline host factory, bound to the just-opened authority.
+     * Synchronous only; used when no live registry was injected. The
+     * returned close() releases any stores/leases the factory opened.
+     */
+    retentionHostFactory?: (authority: SharedAuthority) => Readonly<{
+      host: RetentionHostRegistry;
+      close(): void;
+    }>;
+  }>;
 
 export type MaintenanceOperatorHandle = Readonly<{
   state: "maintained";
@@ -392,14 +443,14 @@ function tokenText(value: unknown, code: string): string {
   return value;
 }
 
-function readTokenFile(rawPath: string): string {
+function readTokenFile(
+  rawPath: string,
+  files?: SharedOperatorFilePort,
+): string {
   const path = absolutePath(rawPath);
-  const bytes = readPinnedFile(
-    path,
-    MAX_TOKEN_BYTES,
-    "INVALID_TOKEN_FILE",
-    true,
-  );
+  const bytes = files
+    ? readSharedOperatorFile(files, path, MAX_TOKEN_BYTES, "INVALID_TOKEN_FILE")
+    : readPinnedFile(path, MAX_TOKEN_BYTES, "INVALID_TOKEN_FILE", true);
   const text = decodeText(bytes, "INVALID_TOKEN_FILE").trim();
   if (!text.startsWith("{")) return tokenText(text, "INVALID_TOKEN_FILE");
   let parsed: unknown;
@@ -429,14 +480,19 @@ function readTokenFile(rawPath: string): string {
   return token;
 }
 
-function readBackupFile(rawPath: string): RuntimeBackup {
+function readBackupFile(
+  rawPath: string,
+  files?: SharedOperatorFilePort,
+): RuntimeBackup {
   const path = absolutePath(rawPath);
-  const bytes = readPinnedFile(
-    path,
-    MAX_BACKUP_BYTES,
-    "INVALID_BACKUP_FILE",
-    true,
-  );
+  const bytes = files
+    ? readSharedOperatorFile(
+        files,
+        path,
+        MAX_BACKUP_BYTES,
+        "INVALID_BACKUP_FILE",
+      )
+    : readPinnedFile(path, MAX_BACKUP_BYTES, "INVALID_BACKUP_FILE", true);
   const text = decodeText(bytes, "INVALID_BACKUP_FILE");
   let parsed: unknown;
   try {
@@ -455,7 +511,7 @@ function readBackupFile(rawPath: string): RuntimeBackup {
   return backup;
 }
 
-function assertSourceRoot(rawRoot: string, nativeAdapter: boolean): string {
+function assertSourceRoot(rawRoot: string): string {
   const absolute = absolutePath(rawRoot);
   const listed = optionalStat(absolute);
   if (listed === undefined) fail("ROOT_MISSING");
@@ -467,13 +523,11 @@ function assertSourceRoot(rawRoot: string, nativeAdapter: boolean): string {
     return fail("INVALID_ROOT");
   }
 
-  let rootUid: number | undefined;
-  if (!nativeAdapter) {
-    try {
-      rootUid = pinPrivateRoot(canonicalRoot).uid;
-    } catch {
-      return fail("UNSAFE_ROOT");
-    }
+  let rootUid: number;
+  try {
+    rootUid = pinPrivateRoot(canonicalRoot).uid;
+  } catch {
+    return fail("UNSAFE_ROOT");
   }
 
   const database = join(canonicalRoot, SHARED_RUNTIME_FILE);
@@ -485,10 +539,7 @@ function assertSourceRoot(rawRoot: string, nativeAdapter: boolean): string {
     databaseStat.nlink !== 1
   )
     fail("INVALID_ROOT");
-  if (
-    !nativeAdapter &&
-    (databaseStat.uid !== rootUid || (databaseStat.mode & 0o077) !== 0)
-  )
+  if (databaseStat.uid !== rootUid || (databaseStat.mode & 0o077) !== 0)
     fail("UNSAFE_ROOT");
 
   let header: ReturnType<typeof sqliteHeader> | undefined;
@@ -509,7 +560,6 @@ function assertSourceRoot(rawRoot: string, nativeAdapter: boolean): string {
 function assertDestination(
   rawDestination: string,
   sourceRoot: string,
-  nativeAdapter: boolean,
 ): string {
   const absolute = absolutePath(rawDestination);
   if (optionalStat(absolute) !== undefined) fail("DESTINATION_EXISTS");
@@ -519,25 +569,20 @@ function assertDestination(
   if (parent === absolute) invalidArguments();
   const canonicalParent = canonicalCandidate(parent);
 
-  let target: string;
-  if (nativeAdapter) {
-    target = join(canonicalParent, name);
-  } else {
-    let pinnedParent: ReturnType<typeof pinPrivateRoot>;
-    try {
-      pinnedParent = pinPrivateRoot(canonicalParent);
-    } catch {
-      return fail("UNSAFE_DESTINATION_PARENT");
-    }
-    target = join(pinnedParent.path, name);
+  let pinnedParent: ReturnType<typeof pinPrivateRoot>;
+  try {
+    pinnedParent = pinPrivateRoot(canonicalParent);
+  } catch {
+    return fail("UNSAFE_DESTINATION_PARENT");
   }
+  const target = join(pinnedParent.path, name);
   if (optionalStat(target) !== undefined) fail("DESTINATION_EXISTS");
   if (inside(sourceRoot, target) || inside(target, sourceRoot))
     fail("DESTINATION_INSIDE_ROOT");
   return target;
 }
 
-function createDestination(target: string, nativeAdapter: boolean): void {
+function createDestination(target: string): void {
   try {
     mkdirSync(target, { mode: PRIVATE_DIRECTORY_MODE });
   } catch (error) {
@@ -545,7 +590,6 @@ function createDestination(target: string, nativeAdapter: boolean): void {
       return fail("DESTINATION_EXISTS");
     return fail("DESTINATION_CREATE_FAILED");
   }
-  if (nativeAdapter) return;
   try {
     chmodSync(target, PRIVATE_DIRECTORY_MODE);
     const pin = pinPrivateRoot(target);
@@ -613,6 +657,102 @@ function parseHashes(raw: string): string[] {
   return sorted;
 }
 
+function parseHolds(raw: string): RetentionHoldSelection[] {
+  let parsed: unknown;
+  try { parsed = JSON.parse(raw); } catch { return fail("INVALID_RELEASE_HOLDS"); }
+  if (!Array.isArray(parsed) || parsed.length === 0 || parsed.length > 32 ||
+      canonical(parsed) !== raw)
+    return fail("INVALID_RELEASE_HOLDS");
+  return parsed.map((item) => {
+    if (!item || typeof item !== "object" ||
+        Object.keys(item).sort().join(",") !== "hash,holdId" ||
+        typeof item.hash !== "string" || !HASH_PATTERN.test(item.hash))
+      return fail("INVALID_RELEASE_HOLDS");
+    return { hash: item.hash, holdId: id(item.holdId) };
+  });
+}
+
+/** Artifact acknowledgment never opens a foreign DB writable. Incomplete
+ * recovery/sidecars are retained for investigation, not rolled back here. */
+function openRetentionArtifact(root: string, files?: SharedOperatorFilePort): RetentionArtifactStore {
+  const path = join(root, SHARED_RUNTIME_FILE);
+  for (const suffix of ["-journal", "-wal", "-shm"])
+    if (optionalStat(path + suffix) !== undefined)
+      fail("RETENTION_ARTIFACT_RECOVERY_REQUIRED");
+  const read = () => files
+    ? readSharedOperatorFile(files, path, 16_000_000, "RETENTION_ARTIFACT_INVALID")
+    : readPinnedFile(path, 16_000_000, "RETENTION_ARTIFACT_INVALID", true);
+  const original = createHash("sha256").update(read()).digest("hex");
+  const assertUnchanged = () => {
+    if (createHash("sha256").update(read()).digest("hex") !== original)
+      fail("RETENTION_ARTIFACT_CHANGED");
+  };
+  const db = new DatabaseSync(path, { readOnly: true });
+  try {
+    db.exec("PRAGMA query_only=ON; PRAGMA trusted_schema=OFF; PRAGMA busy_timeout=3000");
+    const row = db.prepare("SELECT raw FROM runtime_records WHERE namespace='meta' AND key='role'").get();
+    if (!row || row.raw !== canonical("retention-recovery"))
+      fail("RETENTION_ARTIFACT_INVALID");
+    const totals = db.prepare(`SELECT
+      (SELECT count(*) FROM runtime_records) AS records,
+      (SELECT count(*) FROM runtime_blobs) AS blobs,
+      (SELECT coalesce(sum(length(CAST(raw AS BLOB))),0) FROM runtime_records) +
+      (SELECT coalesce(sum(length(bytes)),0) FROM runtime_blobs) AS bytes`).get()!;
+    if (Number(totals.records) !== 2 || Number(totals.blobs) > 32 ||
+        Number(totals.bytes) > 8_000_000)
+      fail("RETENTION_ARTIFACT_LIMIT");
+    assertUnchanged();
+  } catch (error) {
+    try { db.close(); } catch (cleanup) {
+      throw new AggregateError([error, cleanup], "UNKNOWN: artifact open cleanup");
+    }
+    throw error;
+  }
+  const decode = (raw: unknown): unknown => {
+    if (typeof raw !== "string") return fail("RETENTION_ARTIFACT_INVALID");
+    const value: unknown = JSON.parse(raw);
+    if (canonical(value) !== raw) return fail("RETENTION_ARTIFACT_INVALID");
+    return value;
+  };
+  const readonly = (): never => fail("RETENTION_ARTIFACT_READ_ONLY");
+  return {
+    path, db,
+    transaction<T>(work: () => T): T {
+      assertUnchanged();
+      if (db.isTransaction) return work();
+      db.exec("BEGIN");
+      let value: T;
+      try { value = work(); assertUnchanged(); }
+      catch (error) {
+        try { db.exec("ROLLBACK"); } catch (cleanup) {
+          throw new AggregateError([error, cleanup], "UNKNOWN: artifact rollback");
+        }
+        throw error;
+      }
+      db.exec("COMMIT");
+      return value;
+    },
+    get(namespace, key) {
+      const row = db.prepare("SELECT raw FROM runtime_records WHERE namespace=? AND key=?").get(namespace, key);
+      return row ? decode(row.raw) : null;
+    },
+    all(namespace) {
+      return db.prepare("SELECT key,raw FROM runtime_records WHERE namespace=? ORDER BY key").all(namespace)
+        .map((row) => ({ key: String(row.key), value: decode(row.raw) }));
+    },
+    blobGet(scope, hash) {
+      const row = db.prepare("SELECT bytes FROM runtime_blobs WHERE scope=? AND hash=?").get(scope, hash);
+      if (!row) return null;
+      if (!(row.bytes instanceof Uint8Array) ||
+          createHash("sha256").update(row.bytes).digest("hex") !== hash)
+        return fail("RETENTION_ARTIFACT_INVALID");
+      return new Uint8Array(row.bytes);
+    },
+    set: readonly, blobPut: readonly, blobDelete: readonly,
+    close() { db.close(); },
+  };
+}
+
 function sameCut(left: Cut, right: Cut): boolean {
   return (
     left.epoch === right.epoch &&
@@ -628,8 +768,11 @@ function sameHashes(left: readonly string[], right: readonly string[]): boolean 
   );
 }
 
-function storeOptions(ports: MaintenanceOperatorPorts): RuntimeStoreOptions {
-  return ports;
+function unknownOutcome(error: unknown): boolean {
+  if (!(error instanceof Error)) return false;
+  if (error instanceof CollaborationError)
+    return error.code === "UNKNOWN" || error.code.endsWith("_UNKNOWN");
+  return /UNKNOWN/.test(error.message);
 }
 
 function verifyArtifact(
@@ -648,31 +791,47 @@ function verifyArtifact(
 }
 
 function closeOpened(stores: readonly { close(): void }[]): void {
+  const failures: unknown[] = [];
   for (const store of [...stores].reverse()) {
     try {
       store.close();
-    } catch {}
+    } catch (error) {
+      failures.push(error);
+    }
   }
+  if (failures.length > 0)
+    throw new Error("UNKNOWN: maintenance resource cleanup", {
+      cause: new AggregateError(failures),
+    });
 }
 
 export async function runMaintenanceOperator(
   args: string[],
   ports: MaintenanceOperatorPorts = {},
 ): Promise<MaintenanceOperatorHandle> {
-  if (process.platform === "win32" && ports.platformAdapter === undefined)
-    fail("WINDOWS_MAINTENANCE_OPERATOR_UNSUPPORTED");
+  const context = createSharedOperatorContext(
+    ports,
+    "WINDOWS_MAINTENANCE_OPERATOR_UNSUPPORTED",
+  );
+  const files = context.privateFiles;
 
   const values = parseArguments(args);
   const action = value(values, "action") as Action;
+  const retentionAction = action === "retention-preview" ||
+    action === "retention-export" || action === "retention-release";
   const orgId = id(value(values, "org"));
-  const nativeAdapter =
-    process.platform === "win32" && ports.platformAdapter !== undefined;
-  const sourceRoot = assertSourceRoot(value(values, "root"), nativeAdapter);
-  const token = readTokenFile(value(values, "token-file"));
+  const sourceOptions = context.storeOptions(
+    absolutePath(value(values, "root")),
+    true,
+  );
+  const sourceRoot = files
+    ? files.assertDirectory(absolutePath(value(values, "root")))
+    : assertSourceRoot(value(values, "root"));
+  const token = readTokenFile(value(values, "token-file"), files);
 
   const backup =
     action === "compact" || (action === "verify" && values.has("backup"))
-      ? readBackupFile(value(values, "backup"))
+      ? readBackupFile(value(values, "backup"), files)
       : undefined;
   const epoch =
     action === "verify" || action === "compact" || action === "upgrade"
@@ -680,15 +839,16 @@ export async function runMaintenanceOperator(
       : undefined;
   const destinationTarget =
     action === "verify" || action === "compact" || action === "upgrade"
-      ? assertDestination(
-          value(values, "destination"),
-          sourceRoot,
-          nativeAdapter,
-        )
+      ? files
+        ? files.assertNewDirectory(
+            absolutePath(value(values, "destination")),
+            [sourceRoot],
+          )
+        : assertDestination(value(values, "destination"), sourceRoot)
       : undefined;
 
   const scope: Scope | undefined =
-    action === "collect-preview" || action === "collect" || action === "staging-preview" || action === "staging-abandon"
+    retentionAction || action === "collect-preview" || action === "collect" || action === "staging-preview" || action === "staging-abandon"
       ? {
           orgId,
           workspaceId: id(value(values, "workspace")),
@@ -697,18 +857,30 @@ export async function runMaintenanceOperator(
         }
       : undefined;
   const expectedCut =
-    action === "collect" || action === "staging-abandon"
+    action === "collect" || action === "staging-abandon" || action === "dependencies-preview" ||
+    action === "publication-inspect" || action === "publication-resolve" || retentionAction
       ? parseExpectedCut(value(values, "expected-cut"))
       : undefined;
   const hashes =
     action === "collect"
       ? parseHashes(value(values, "hashes"))
       : undefined;
+  const attemptId =
+    action === "publication-inspect" || action === "publication-resolve"
+      ? value(values, "attempt")
+      : undefined;
+  if (attemptId !== undefined && !ATTEMPT_PATTERN.test(attemptId))
+    fail("INVALID_ATTEMPT");
+  const fingerprint =
+    action === "publication-resolve" || action === "retention-export" || action === "retention-release"
+      ? value(values, "fingerprint")
+      : undefined;
+  if (fingerprint !== undefined && !HASH_PATTERN.test(fingerprint))
+    fail("INVALID_FINGERPRINT");
 
-  const options = storeOptions(ports);
   let authority: SharedAuthority;
   try {
-    authority = new SharedAuthority(sourceRoot, options);
+    authority = context.openAuthority(sourceRoot, sourceOptions);
   } catch (error) {
     return normalize(error, "MAINTENANCE_FAILED");
   }
@@ -716,7 +888,87 @@ export async function runMaintenanceOperator(
   const opened: { close(): void }[] = [authority];
   let result: unknown;
   try {
-    if (action === "staging-preview") {
+    if (retentionAction) {
+      if (!scope || !expectedCut) return invalidArguments();
+      // Current owner/all-workspace read + exact-cut authorization BEFORE
+      // any host evidence is opened, registered, or leased.
+      authority.retentionDependencies(token, orgId, expectedCut);
+      authority.session(token, orgId);
+      let host: RetentionHostRegistry;
+      if (ports.retentionHost instanceof RetentionHostRegistry) {
+        host = ports.retentionHost.bindAuthority(authority);
+      } else if (typeof ports.retentionHostFactory === "function") {
+        // Trusted synchronous offline factory only: a known-async function
+        // is rejected before invocation and a thenable result fails closed —
+        // never a fabricated coverage roster.
+        const factory = synchronousPort(
+          { build: ports.retentionHostFactory },
+          { build: { result: "object" } },
+        );
+        const built = factory.build(authority) as Readonly<{
+          host: RetentionHostRegistry;
+          close(): void;
+        }> | null;
+        if (
+          built === null ||
+          typeof built !== "object" ||
+          !(built.host instanceof RetentionHostRegistry) ||
+          typeof built.close !== "function"
+        )
+          fail("RETENTION_HOST_INVALID");
+        const closer = synchronousPort(
+          built,
+          { close: { result: "void", cleanup: true } },
+        );
+        opened.push(closer);
+        // Queue owned cleanup before source binding can fail.
+        host = built.host.bindAuthority(authority);
+      } else {
+        fail("RETENTION_HOST_REQUIRED");
+      }
+      const maintenance = new SharedMaintenance(authority, host);
+      const request = { scope, expectedCut, holds: parseHolds(value(values, "holds")) };
+      result = host.withLease(() => {
+        // This is the actual current owner/all-workspace read/cut boundary.
+        // Destination creation and artifact disclosure follow authorization.
+        authority.retentionDependencies(token, orgId, expectedCut);
+        if (action === "retention-preview")
+          return maintenance.retentionReleasePreview(token, request);
+        if (action === "retention-export") {
+          const preview = maintenance.retentionReleasePreview(token, request);
+          if (!preview.releasable)
+            fail(preview.blocks[0] ?? "RETENTION_RELEASE_BLOCKED");
+          if (preview.combinedFingerprint !== fingerprint)
+            fail("RETENTION_FINGERPRINT_MISMATCH");
+          const target = files
+            ? files.assertNewDirectory(absolutePath(value(values, "destination")), [sourceRoot])
+            : assertDestination(value(values, "destination"), sourceRoot);
+          if (files) {
+            files.createDirectory(target);
+            if (files.assertDirectory(target) !== target) fail("UNSAFE_DESTINATION");
+          } else createDestination(target);
+          const artifact = new RuntimeStore(target, context.storeOptions(target));
+          opened.push(artifact);
+          return maintenance.exportRetentionRelease(token, request, fingerprint!, artifact);
+        }
+        const artifactHash = value(values, "artifact-hash");
+        const ack = value(values, "ack-artifact-hash");
+        if (!HASH_PATTERN.test(artifactHash) || !HASH_PATTERN.test(ack))
+          fail("INVALID_ARTIFACT_ACK");
+        const target = files
+          ? files.assertDirectory(absolutePath(value(values, "artifact")))
+          : assertSourceRoot(value(values, "artifact"));
+        if (inside(sourceRoot, target) || inside(target, sourceRoot))
+          fail("RETENTION_DESTINATION_NOT_ISOLATED");
+        const artifact = openRetentionArtifact(target, files);
+        opened.push(artifact);
+        return maintenance.releaseRetentionHolds(
+          token, request, fingerprint!, artifactHash, ack, artifact,
+        );
+      });
+    } else if (action === "dependencies-preview") {
+      result = authority.retentionDependencies(token, orgId, expectedCut!);
+    } else if (action === "staging-preview") {
       if (!scope) return invalidArguments();
       result = authority.stagingPreview(token, scope);
     } else if (action === "staging-abandon") {
@@ -742,12 +994,77 @@ export async function runMaintenanceOperator(
         expectedCut,
         hashes,
       );
+    } else if (
+      action === "publication-inspect" ||
+      action === "publication-resolve"
+    ) {
+      if (!ports.nativePublication)
+        fail("PUBLICATION_RESOLUTION_UNAVAILABLE");
+      if (!expectedCut || !attemptId) return invalidArguments();
+      const nativePublication = synchronousPort(
+        ports.nativePublication,
+        PUBLICATION_RESOLUTION_CONTRACT,
+      );
+      // Fresh current authorization each call: the same owner + all-workspace
+      // read + exact cut gate as dependencies-preview, then the session and
+      // the genesis hash the port binds to the resolution fingerprint. The
+      // callback is synchronous JSON only — never the token.
+      const currentAuthorization = (): PublicationAuthorization => {
+        authority.retentionDependencies(token, orgId, expectedCut);
+        const auth = authority.session(token, orgId);
+        const genesis = authority.store.get("meta", "genesis");
+        if (genesis === null) fail("PUBLICATION_SOURCE_UNAVAILABLE");
+        return {
+          sourceRoot,
+          orgId,
+          genesisHash: createHash("sha256")
+            .update(canonical(genesis))
+            .digest("hex"),
+          auth: {
+            userId: auth.userId,
+            deviceId: auth.deviceId,
+            writerId: auth.writerId,
+            sessionId: auth.sessionId,
+          },
+          cut: { ...authority.head() },
+        };
+      };
+      result = authority.store.transaction(() => {
+        // Authorize even with an injected port; the synchronous guard rejects
+        // any deferred or generator implementation before invocation.
+        currentAuthorization();
+        return action === "publication-inspect"
+          ? nativePublication.inspect(
+              { attemptId, expectedCut },
+              currentAuthorization,
+            )
+          : nativePublication.resolve(
+              { attemptId, expectedCut, fingerprint: fingerprint! },
+              currentAuthorization,
+            );
+      });
     } else {
       if (!epoch || !destinationTarget) return invalidArguments();
       authority.recoveryStatus(token, orgId);
 
-      createDestination(destinationTarget, nativeAdapter);
-      const destination = new RuntimeStore(destinationTarget, options);
+      const destinationOptions = context.storeOptions(destinationTarget);
+      if (files) {
+        try {
+          files.createDirectory(destinationTarget);
+          if (files.assertDirectory(destinationTarget) !== destinationTarget)
+            fail("UNSAFE_DESTINATION");
+        } catch (error) {
+          if ((error as NodeJS.ErrnoException).code === "EEXIST")
+            fail("DESTINATION_EXISTS");
+          throw error;
+        }
+      } else {
+        createDestination(destinationTarget);
+      }
+      const destination = new RuntimeStore(
+        destinationTarget,
+        destinationOptions,
+      );
       opened.push(destination);
 
       const maintenance = new SharedMaintenance(authority);
@@ -780,11 +1097,17 @@ export async function runMaintenanceOperator(
       }
     }
   } catch (error) {
-    closeOpened(opened);
+    if (retentionAction) {
+      try { closeOpened(opened); }
+      catch (cleanup) {
+        const failure = new CollaborationError("MAINTENANCE_UNKNOWN");
+        Object.assign(failure, { cause: new AggregateError([error, cleanup]) });
+        throw failure;
+      }
+    } else closeOpened(opened);
     if (
-      !(error instanceof CollaborationError) &&
-      error instanceof Error &&
-      /UNKNOWN/.test(error.message)
+      (files !== undefined || !(error instanceof CollaborationError)) &&
+      unknownOutcome(error)
     )
       return fail("MAINTENANCE_UNKNOWN");
     return normalize(error, "MAINTENANCE_FAILED");
@@ -797,6 +1120,15 @@ export async function runMaintenanceOperator(
     async close(): Promise<void> {
       if (closed) return;
       closed = true;
+      if (retentionAction) {
+        try { closeOpened(opened); }
+        catch (cause) {
+          const failure = new CollaborationError("MAINTENANCE_UNKNOWN");
+          Object.assign(failure, { cause });
+          throw failure;
+        }
+        return;
+      }
       let failure: unknown;
       for (const store of [...opened].reverse()) {
         try {

@@ -8,6 +8,7 @@ import {
   mkdirSync,
   mkdtempSync,
   readdirSync,
+  readFileSync,
   realpathSync,
   rmSync,
 } from "node:fs";
@@ -287,4 +288,12 @@ describe("transfer cache catalog counter", () => {
     expect(collected).toHaveLength(58);
     expect(new Set(collected.map((entry) => entry.entryId)).size).toBe(58);
   });
+});
+
+it("preserves original hot rollback evidence when the recovered copy has the wrong binding", async () => {
+  const workspace = makeWorkspace(), scope = "a".repeat(64);
+  const {directory, sidecar} = await createHotSidecar(workspace, scope, "download-" + "b".repeat(64));
+  const main = join(directory, "state.sqlite"), beforeMain = readFileSync(main), beforeJournal = readFileSync(sidecar);
+  expect(() => new BlobTransferJournal(directory, {scopeHash: "f".repeat(64)})).toThrow();
+  expect(readFileSync(main)).toEqual(beforeMain); expect(readFileSync(sidecar)).toEqual(beforeJournal);
 });

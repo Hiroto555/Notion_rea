@@ -28,13 +28,18 @@ import { validateRuntimeBackup, type RuntimeBackup } from "./backup";
 import { canonical } from "./canonical";
 import { CollaborationError, identifier, wellFormed } from "./contract";
 import { IdentityAuthority } from "./identity";
+import {
+  createSharedOperatorContext,
+  readSharedOperatorFile,
+  type SharedOperatorFilePort,
+  type SharedOperatorPorts,
+} from "./operator-files";
 import { createRuntimeGenesis } from "./state-root";
 import {
   RuntimeStore,
   SHARED_RUNTIME_APPLICATION_ID,
   SHARED_RUNTIME_FILE,
   SHARED_RUNTIME_VERSION,
-  type RuntimeStoreOptions,
 } from "./store";
 
 const VALUE_NAMES = [
@@ -321,14 +326,11 @@ function tokenText(value: unknown, code: string): string {
   return value;
 }
 
-function readTokenFile(rawPath: string): string {
+function readTokenFile(rawPath: string, files?: SharedOperatorFilePort): string {
   const path = absolutePath(rawPath);
-  const bytes = readPinnedFile(
-    path,
-    MAX_TOKEN_BYTES,
-    "INVALID_TOKEN_FILE",
-    true,
-  );
+  const bytes = files
+    ? readSharedOperatorFile(files, path, MAX_TOKEN_BYTES, "INVALID_TOKEN_FILE")
+    : readPinnedFile(path, MAX_TOKEN_BYTES, "INVALID_TOKEN_FILE", true);
   const text = decodeText(bytes, "INVALID_TOKEN_FILE");
   let parsed: unknown;
   try {
@@ -357,14 +359,19 @@ function readTokenFile(rawPath: string): string {
   return token;
 }
 
-function readBackupFile(rawPath: string): RuntimeBackup {
+function readBackupFile(
+  rawPath: string,
+  files?: SharedOperatorFilePort,
+): RuntimeBackup {
   const path = absolutePath(rawPath);
-  const bytes = readPinnedFile(
-    path,
-    MAX_BACKUP_BYTES,
-    "INVALID_BACKUP_FILE",
-    false,
-  );
+  const bytes = files
+    ? readSharedOperatorFile(
+        files,
+        path,
+        MAX_BACKUP_BYTES,
+        "INVALID_BACKUP_FILE",
+      )
+    : readPinnedFile(path, MAX_BACKUP_BYTES, "INVALID_BACKUP_FILE", false);
   const text = decodeText(bytes, "INVALID_BACKUP_FILE");
   let parsed: unknown;
   try {
@@ -506,13 +513,19 @@ function assertCredentialsTarget(
   return target;
 }
 
-function readCredentialsBack(path: string, expected: string): void {
-  const bytes = readPinnedFile(
-    path,
-    MAX_TOKEN_BYTES,
-    "CREDENTIALS_WRITE_FAILED",
-    true,
-  );
+function readCredentialsBack(
+  path: string,
+  expected: string,
+  files?: SharedOperatorFilePort,
+): void {
+  const bytes = files
+    ? readSharedOperatorFile(
+        files,
+        path,
+        MAX_TOKEN_BYTES,
+        "CREDENTIALS_WRITE_FAILED",
+      )
+    : readPinnedFile(path, MAX_TOKEN_BYTES, "CREDENTIALS_WRITE_FAILED", true);
   const text = decodeText(bytes, "CREDENTIALS_WRITE_FAILED");
   if (text !== expected) fail("CREDENTIALS_WRITE_FAILED");
 }
@@ -524,32 +537,47 @@ export type RestoreOperatorHandle = Readonly<{
 
 export async function runRestoreOperator(
   args: string[],
-  options: RuntimeStoreOptions = {},
+  ports: SharedOperatorPorts = {},
 ): Promise<RestoreOperatorHandle> {
-  if (process.platform === "win32")
-    fail("WINDOWS_RESTORE_OPERATOR_UNSUPPORTED");
+  const context = createSharedOperatorContext(
+    ports,
+    "WINDOWS_RESTORE_OPERATOR_UNSUPPORTED",
+  );
+  const files = context.privateFiles;
 
   const values = parseArguments(args);
   const orgId = id(value(values, "org"));
   const epoch = id(value(values, "epoch"));
   const deviceId = id(value(values, "device"));
-  const sourceRoot = assertSourceRoot(value(values, "root"));
-  const token = readTokenFile(value(values, "token-file"));
-  const backup = readBackupFile(value(values, "backup"));
+  const sourceOptions = context.storeOptions(
+    absolutePath(value(values, "root")),
+    true,
+  );
+  const sourceRoot = files
+    ? files.assertDirectory(absolutePath(value(values, "root")))
+    : assertSourceRoot(value(values, "root"));
+  const token = readTokenFile(value(values, "token-file"), files);
+  const backup = readBackupFile(value(values, "backup"), files);
   if (epoch === backup.head.epoch) fail("EPOCH_NOT_FRESH");
-  const destinationTarget = assertDestination(
-    value(values, "destination"),
-    sourceRoot,
-  );
-  const credentialsTarget = assertCredentialsTarget(
-    value(values, "credentials-output"),
-    sourceRoot,
-    destinationTarget,
-  );
+  const destinationTarget = files
+    ? files.assertNewDirectory(absolutePath(value(values, "destination")), [
+        sourceRoot,
+      ])
+    : assertDestination(value(values, "destination"), sourceRoot);
+  const credentialsTarget = files
+    ? files.assertNewFile(absolutePath(value(values, "credentials-output")), [
+        sourceRoot,
+        destinationTarget,
+      ])
+    : assertCredentialsTarget(
+        value(values, "credentials-output"),
+        sourceRoot,
+        destinationTarget,
+      );
 
   let authority: SharedAuthority;
   try {
-    authority = new SharedAuthority(sourceRoot, options);
+    authority = context.openAuthority(sourceRoot, sourceOptions);
   } catch (error) {
     return normalize(error, "RESTORE_FAILED");
   }
@@ -563,31 +591,58 @@ export async function runRestoreOperator(
     return normalize(error, "RESTORE_FAILED");
   }
 
+  let destinationOptions: ReturnType<typeof context.storeOptions>;
   try {
-    mkdirSync(destinationTarget, { mode: PRIVATE_DIRECTORY_MODE });
+    destinationOptions = context.storeOptions(destinationTarget);
   } catch (error) {
     try {
       authority.close();
     } catch {}
-    if ((error as NodeJS.ErrnoException).code === "EEXIST")
-      return fail("DESTINATION_EXISTS");
-    return fail("DESTINATION_CREATE_FAILED");
+    return normalize(error, "RESTORE_FAILED");
   }
-  try {
-    chmodSync(destinationTarget, PRIVATE_DIRECTORY_MODE);
-    const pin = pinPrivateRoot(destinationTarget);
-    if (pin.path !== destinationTarget) fail("UNSAFE_DESTINATION");
-  } catch (error) {
+  if (files) {
     try {
-      authority.close();
-    } catch {}
-    // Preserve the newly created diagnostic destination; never recursively delete it.
-    return normalize(error, "UNSAFE_DESTINATION");
+      files.createDirectory(destinationTarget);
+      if (files.assertDirectory(destinationTarget) !== destinationTarget)
+        fail("UNSAFE_DESTINATION");
+    } catch (error) {
+      try {
+        authority.close();
+      } catch {}
+      if (error instanceof Error && /UNKNOWN/.test(error.message))
+        return fail("RESTORE_UNKNOWN");
+      if ((error as NodeJS.ErrnoException).code === "EEXIST")
+        return fail("DESTINATION_EXISTS");
+      if (error instanceof CollaborationError) throw error;
+      return fail("DESTINATION_CREATE_FAILED");
+    }
+  } else {
+    try {
+      mkdirSync(destinationTarget, { mode: PRIVATE_DIRECTORY_MODE });
+    } catch (error) {
+      try {
+        authority.close();
+      } catch {}
+      if ((error as NodeJS.ErrnoException).code === "EEXIST")
+        return fail("DESTINATION_EXISTS");
+      return fail("DESTINATION_CREATE_FAILED");
+    }
+    try {
+      chmodSync(destinationTarget, PRIVATE_DIRECTORY_MODE);
+      const pin = pinPrivateRoot(destinationTarget);
+      if (pin.path !== destinationTarget) fail("UNSAFE_DESTINATION");
+    } catch (error) {
+      try {
+        authority.close();
+      } catch {}
+      // Preserve the newly created diagnostic destination; never recursively delete it.
+      return normalize(error, "UNSAFE_DESTINATION");
+    }
   }
 
   let destination: RuntimeStore;
   try {
-    destination = new RuntimeStore(destinationTarget, options);
+    destination = new RuntimeStore(destinationTarget, destinationOptions);
   } catch (error) {
     try {
       authority.close();
@@ -597,6 +652,7 @@ export async function runRestoreOperator(
   }
 
   let credentialsCreated = false;
+  let nativeCredentialsContent: string | undefined;
   try {
     destination.transaction(() => {
       const restored = authority.restoreInto(
@@ -624,18 +680,27 @@ export async function runRestoreOperator(
         token: recovered.token,
         recoveryKey: recovered.recoveryKey,
       });
-      try {
-        writeNewFileDurably(credentialsTarget, content, {
-          mode: PRIVATE_FILE_MODE,
-          syncParentDirectory: true,
-        });
+      if (files) {
+        nativeCredentialsContent = content;
         credentialsCreated = true;
-      } catch (error) {
-        if ((error as NodeJS.ErrnoException).code === "EEXIST")
-          fail("CREDENTIALS_EXIST");
-        return fail("CREDENTIALS_WRITE_FAILED");
+        files.publishNewFile(
+          credentialsTarget,
+          Buffer.from(content, "utf8"),
+        );
+      } else {
+        try {
+          writeNewFileDurably(credentialsTarget, content, {
+            mode: PRIVATE_FILE_MODE,
+            syncParentDirectory: true,
+          });
+          credentialsCreated = true;
+        } catch (error) {
+          if ((error as NodeJS.ErrnoException).code === "EEXIST")
+            fail("CREDENTIALS_EXIST");
+          return fail("CREDENTIALS_WRITE_FAILED");
+        }
       }
-      readCredentialsBack(credentialsTarget, content);
+      readCredentialsBack(credentialsTarget, content, files);
     });
   } catch (error) {
     try {
@@ -650,6 +715,42 @@ export async function runRestoreOperator(
     )
       return fail("RESTORE_UNKNOWN");
     return normalize(error, "RESTORE_FAILED");
+  }
+
+  if (files) {
+    try {
+      if (nativeCredentialsContent === undefined) fail("UNKNOWN");
+      const published = JSON.parse(nativeCredentialsContent) as {
+        token: string;
+      };
+      const proof = readSharedOperatorFile(
+        files,
+        credentialsTarget,
+        MAX_TOKEN_BYTES,
+        "UNKNOWN",
+      );
+      if (proof.toString("utf8") !== nativeCredentialsContent)
+        fail("UNKNOWN");
+      files.assertDirectory(sourceRoot);
+      if (files.assertDirectory(destinationTarget) !== destinationTarget)
+        fail("UNKNOWN");
+      if (destination.get("meta", "role") !== "authority") fail("UNKNOWN");
+      const head = destination.get("meta", "head") as {
+        epoch?: unknown;
+        seq?: unknown;
+      } | null;
+      if (head === null || head.epoch !== epoch || head.seq !== 0)
+        fail("UNKNOWN");
+      new IdentityAuthority(destination).authenticate(published.token);
+    } catch {
+      try {
+        destination.close();
+      } catch {}
+      try {
+        authority.close();
+      } catch {}
+      return fail("RESTORE_UNKNOWN");
+    }
   }
 
   let closed = false;

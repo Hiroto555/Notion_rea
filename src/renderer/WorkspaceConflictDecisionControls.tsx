@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import type { ConflictDecisionPort } from "../shared/app-api";
 import type { WorkspaceConflictInspection } from "../shared/workspace-conflict-view";
+import { conflictDecisionBridge } from "./conflict-decision-port";
 import {
   ConflictDecisionModel,
   emptyConflictDecisionUi,
@@ -58,10 +60,12 @@ export function WorkspaceConflictDecisionControls({
   conflict,
   inputReady,
   onReview,
+  decision,
 }: {
   conflict: WorkspaceConflictInspection | null;
   inputReady: () => boolean;
   onReview: () => void;
+  decision: ConflictDecisionPort;
 }) {
   const readiness = useRef(inputReady);
   readiness.current = inputReady;
@@ -70,7 +74,7 @@ export function WorkspaceConflictDecisionControls({
   const [model] = useState(
     () =>
       new ConflictDecisionModel(
-        (request) => window.folio.request(request),
+        conflictDecisionBridge(decision),
         () => readiness.current(),
         setState,
       ),

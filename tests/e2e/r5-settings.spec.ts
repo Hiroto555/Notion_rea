@@ -1,4 +1,4 @@
-import { openR7Settings } from "./r5-fixture";
+import { openR7Search, openR7Settings } from "./r5-fixture";
 import { expect, test, type ElectronApplication } from "@playwright/test";
 import {
   addR5Record,
@@ -252,6 +252,7 @@ test("held settings ACK preserves later settings and owner title through navigat
         app!.evaluate(() => typeof (globalThis as any).r5DatabaseGate.release),
       )
       .toBe("function");
+    await openR7Search(window);
     await r5Settings(window)
       .getByLabel("ビュー内検索", { exact: true })
       .fill("later search");

@@ -184,7 +184,7 @@ describe("local page integrity regressions", () => {
     } finally { f.dispose(); }
   });
 
-  it.each(["x".repeat(500), "😀".repeat(250)])("preserves the duplicate suffix within the title limit without splitting Unicode", title => {
+  it.each(["x".repeat(500), "😀".repeat(250)])("preserves the duplicate suffix within the title limit without splitting Unicode (case %#)", title => {
     const f = fixture();
     try {
       const original = f.store.create(null, "page", title);

@@ -373,6 +373,7 @@ it("classifies every request and enforces the read/checkpoint/write guard before
     "export": "read",
     "import": "read",
     "startup:status": "read",
+    "desktop:capabilities": "read",
     "sync:status": "read",
     "sync:connectionStatus": "read", "sync:retentionStatus": "read", "sync:connectionConfigure": "checkpoint", "sync:connectionDisable": "checkpoint", "sync:connectionResolve": "read",
     "sync:transferInventory": "read", "sync:transferPlan": "checkpoint", "sync:transferRelease": "maintenance", "sync:transferResolve": "read",

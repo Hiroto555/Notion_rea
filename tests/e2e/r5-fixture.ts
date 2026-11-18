@@ -262,3 +262,14 @@ export async function openR7Settings(
   if ((await trigger.getAttribute("aria-expanded")) !== "true")
     await trigger.click();
 }
+
+/** Open the local search disclosure only when its input is hidden. A saved
+ * non-empty query keeps the input visible, so an already visible field is
+ * never toggled closed. */
+export async function openR7Search(window: Page) {
+  const settings = r5Settings(window);
+  const input = settings.getByLabel("ビュー内検索", { exact: true });
+  if (!(await input.isVisible()))
+    await settings.locator('[data-search-toggle="search"]').click();
+  await expect(input).toBeVisible();
+}

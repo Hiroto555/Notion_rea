@@ -22,6 +22,9 @@ import { DatabaseSync as SQLite, type DatabaseSync } from "node:sqlite";
 import { sqliteAllocatedBytes } from "./sqlite-allocation";
 import { assertOutsideFolioData } from "./output-path";
 import { syncPath, writeNewFileDurably } from "./durable-file";
+import { privatePersistencePort, type NativePrivateFilesystemPort } from "../platform/private-persistence";
+import {withNativeSqliteReader} from "./native-sqlite-reader";
+
 
 /**
  * A raw diagnostic export, deliberately distinct from the verified full
@@ -473,7 +476,7 @@ function syncTree(root: string): void {
 /** Verify the published bytes, inventory and SQLite snapshot before removing
  * the incomplete marker. Page JSON is deliberately not decoded or validated:
  * malformed Page documents are the reason this raw path exists. */
-function verifyBundle(directory: string): Manifest {
+function verifyBundle(directory: string, native?: NativePrivateFilesystemPort): Manifest {
   const marker = join(directory, MARKER);
   const markerInfo = lstatSync(marker);
   if (markerInfo.isSymbolicLink() || !markerInfo.isFile())
@@ -500,41 +503,53 @@ function verifyBundle(directory: string): Manifest {
       );
   }
   const snapshotPath = join(directory, DATABASE);
-  const snapshot = new SQLite(snapshotPath, { readOnly: true });
-  try {
+  withNativeSqliteReader(snapshotPath, native, snapshot => {
     const checks = snapshot.prepare("PRAGMA integrity_check").all() as Record<
       string,
       unknown
     >[];
     if (checks.length !== 1 || Object.values(checks[0])[0] !== "ok")
       throw new Error("SQLiteスナップショットの整合性を検証できません");
-  } finally {
-    snapshot.close();
-  }
+  });
   return manifest;
 }
 
 function reserveDestination(
   workspace: string,
   externalParent: string,
+  native?: NativePrivateFilesystemPort,
+  policy: "external" | "workspace-backups" = "external",
 ): { directory: string; parent: string } {
+  if (policy === "workspace-backups") {
+    const expected = join(workspace, "backups");
+    if (resolve(externalParent) !== expected) throw new Error("Invalid original-copy destination");
+    if (!lstatOptional(expected)) {
+      if (native) native.createDirectory(expected); else mkdirSync(expected, {mode: 0o700});
+    }
+    if (realpathSync(expected) !== expected) throw new Error("Unsafe original-copy parent");
+  }
   const parent = realpathSync(resolve(externalParent));
   const parentInfo = lstatSync(parent);
   if (parentInfo.isSymbolicLink() || !parentInfo.isDirectory())
     throw new Error("退避先の親フォルダが通常のディレクトリではありません");
-  if (inside(workspace, parent))
+  if (policy === "external" && inside(workspace, parent))
     throw new Error("ワークスペース内には生データ退避を出力できません");
-  assertOutsideFolioData(parent);
+  if (policy === "external") assertOutsideFolioData(parent);
   const directory = join(parent, "folio-raw-salvage-" + randomUUID());
   if (!inside(parent, directory))
     throw new Error("生データ退避先を解決できません");
   if (lstatOptional(directory))
     throw new Error("生データ退避先が既に存在します");
+  if (native) {
+    native.inspectDirectory(parent);
+    native.createDirectory(directory);
+    return { directory, parent };
+  }
   mkdirSync(directory, { mode: 0o700 });
   const real = realpathSync(directory);
   if (real !== directory)
     throw new Error("生データ退避先の実体を確認できません");
-  if (inside(workspace, real)) {
+  if (policy === "external" && inside(workspace, real)) {
     try {
       rmdirSync(real);
     } catch {}
@@ -563,6 +578,25 @@ export function createRawWorkspaceSalvage(
   externalParent: string,
   beforeWrite?: (journalBytes: number) => void,
 ): { directory: string; files: number; bytes: number } {
+  return createWorkspaceSalvage(db, workspace, externalParent, beforeWrite, "external");
+}
+
+/** Fixed internal rescue destination for the original-copy button. Backups
+ * are excluded from source scanning, so the copy never includes itself. It
+ * retains raw page/asset metadata and is explicitly diagnostic, not restorable. */
+export function createOriginalWorkspaceCopy(
+  db: DatabaseSync, workspace: string, beforeWrite?: (journalBytes: number) => void,
+): { directory: string; files: number; bytes: number } {
+  const root = realpathSync(resolve(workspace));
+  return createWorkspaceSalvage(db, root, join(root, "backups"), beforeWrite, "workspace-backups");
+}
+
+function createWorkspaceSalvage(
+  db: DatabaseSync, workspace: string, externalParent: string,
+  beforeWrite: ((journalBytes: number) => void) | undefined,
+  policy: "external" | "workspace-backups",
+): { directory: string; files: number; bytes: number } {
+  const native = privatePersistencePort();
   if (db.isTransaction !== false)
     throw new Error("未確定のトランザクションでは生データ退避を作成できません");
 
@@ -597,7 +631,46 @@ export function createRawWorkspaceSalvage(
   if (assetsReal && !inside(root, assetsReal))
     throw new Error("添付フォルダがワークスペースの外を指しています");
 
-  const { directory, parent } = reserveDestination(root, externalParent);
+  if (native) {
+    const cap = 256 * 1024 * 1024;
+    const assetFiles = assetsReal ? scanAssetTree(assetsReal) : [];
+    if (sqliteAllocatedBytes(db) > cap || [...assetFiles, ...journalFiles].some(file => file.bytes > cap) ||
+      assetFiles.length + journalFiles.length + 1 > MAX_FILES)
+      throw new Error("生データ退避のnative上限を超えています");
+    native.inspectDirectory(root);
+    const { directory } = reserveDestination(root, externalParent, native, policy);
+    const markerPath = join(directory, MARKER);
+    const marker = native.writeNew(markerPath, Buffer.from(MARKER_TEXT), 4096).identity;
+    const snapshotPath = join(directory, DATABASE);
+    const snapshot = db.prepare("PRAGMA query_only").get()?.query_only === 1
+      ? withNativeSqliteReader(databasePath, native, reader => native.snapshotSqlite(reader, snapshotPath).identity)
+      : native.snapshotSqlite(db, snapshotPath).identity;
+    const entries: ManifestEntry[] = [{ path: DATABASE, bytes: snapshot.bytes, sha256: snapshot.sha256 }];
+    native.createDirectory(join(directory, ASSETS));
+    const ensureParent = (target: string): void => {
+      if (target === directory) return;
+      if (lstatOptional(target)) { native.inspectDirectory(target); return; }
+      ensureParent(dirname(target)); native.createDirectory(target);
+    };
+    for (const file of [...assetFiles.map(file => ({ ...file, output: `${ASSETS}/${file.relativePath}` })),
+      ...journalFiles.map(file => ({ ...file, output: file.relativePath }))]) {
+      const destination = join(directory, ...file.output.split("/"));
+      if (!inside(directory, destination)) throw new Error("生データ退避先が不正です");
+      ensureParent(dirname(destination));
+      const expected = native.inspectFile(file.absolutePath, cap);
+      if (expected.bytes !== file.bytes) throw new Error("生データ退避元が変更されています");
+      const copied = native.copyNew(file.absolutePath, destination, expected, cap).identity;
+      entries.push({ path: file.output, bytes: copied.bytes, sha256: copied.sha256 });
+    }
+    entries.sort((a, b) => a.path < b.path ? -1 : a.path > b.path ? 1 : 0);
+    const manifest: Manifest = { format: FORMAT, version: VERSION, createdAt: new Date().toISOString(),
+      restorable: false, entries, files: entries.length, bytes: entries.reduce((n, file) => addBytes(n, file.bytes), 0) };
+    native.writeNew(join(directory, MANIFEST), Buffer.from(JSON.stringify(manifest, null, 2)), MAX_MANIFEST_BYTES);
+    const verified = verifyBundle(directory, native);
+    native.unlinkExact(markerPath, marker, 4096);
+    return { directory, files: verified.files, bytes: verified.bytes };
+  }
+  const { directory, parent } = reserveDestination(root, externalParent, undefined, policy);
   const marker = join(directory, MARKER);
   writeFileSync(marker, MARKER_TEXT, { flag: "wx", mode: 0o600 });
   syncPath(marker);

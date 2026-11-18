@@ -41,6 +41,7 @@ const REQUEST_STORAGE_ACTIONS = {
   "workspaceBackup:restore": "read",
   "workspaceBackup:open": "read",
   "startup:status": "read",
+  "desktop:capabilities": "read",
   "sync:status": "read",
   "sync:connectionStatus": "read", "sync:connectionConfigure": "checkpoint",
   "sync:retentionStatus": "read",

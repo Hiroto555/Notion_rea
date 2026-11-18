@@ -1,6 +1,9 @@
 import { useId, type MouseEvent as ReactMouseEvent } from "react";
 import type { PageWidth } from "../../shared/page-layout";
+import { shouldPreservePointerFocus } from "../../shared/pointer-focus";
 import "./page-layout.css";
+
+export { shouldPreservePointerFocus };
 
 export type PageLayoutControlProps = {
   /** Persisted (or effective default) width owned by the parent. */
@@ -28,25 +31,6 @@ const WIDTH_CHOICES: readonly WidthChoice[] = [
     description: "画面の幅いっぱいに本文を表示します。",
   },
 ];
-
-type FocusMatchLike = {
-  matches(selector: string): boolean;
-};
-
-/**
- * Pointer-only width changes must behave like the record page layout toggle:
- * keep focus in a raw property input or the Editor. Keyboard activation keeps
- * normal button focus because it never dispatches a primary mousedown.
- */
-export function shouldPreservePointerFocus(
-  button: number,
-  active: FocusMatchLike | null,
-): boolean {
-  if (button !== 0 || active === null) return false;
-  return active.matches(
-    "input, textarea, [contenteditable='true'], [contenteditable='']",
-  );
-}
 
 /**
  * Accessible page-width choice. The parent owns persistence, the effective

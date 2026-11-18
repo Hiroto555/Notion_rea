@@ -77,6 +77,8 @@ describe("Windows secret ledger final review regressions (injected contracts, no
     const root = directory(),
       forbidden = directory();
     let failed = false;
+    const proofFailure = new SyncError("WINDOWS_DATABASE_IDENTITY_CHANGED", 409);
+    const cleanupFailure = new Error("secret cleanup sentinel");
     const normal = () => new PosixPrivatePlatform([forbidden]);
     const adapter = new SecretRecordLedgerPersistence({
       directory: root,
@@ -98,7 +100,7 @@ describe("Windows secret ledger final review regressions (injected contracts, no
               .get();
             if (Number(count?.count) === 1) {
               failed = true;
-              throw new SyncError("WINDOWS_DATABASE_IDENTITY_CHANGED", 409);
+              throw proofFailure;
             }
           } catch (error) {
             if (error instanceof SyncError) throw error;
@@ -106,13 +108,18 @@ describe("Windows secret ledger final review regressions (injected contracts, no
             db?.close();
           }
         };
+        const close = platform.close.bind(platform);
+        platform.close = () => { close(); if (failed) throw cleanupFailure; };
         return platform;
       },
     });
-    await expect(adapter.write(key, ciphertext)).rejects.toMatchObject({
+    const error = await adapter.write(key, ciphertext).catch(error => error);
+    expect(error).toMatchObject({
       code: "secret-record-ledger-outcome-unknown",
       status: 503,
     });
+    expect(error.cause).toBeInstanceOf(AggregateError);
+    expect(error.cause.errors).toEqual([proofFailure, cleanupFailure]);
     expect(failed).toBe(true);
     const reopened = new SecretRecordLedgerPersistence({
       directory: root,
@@ -125,5 +132,23 @@ describe("Windows secret ledger final review regressions (injected contracts, no
     await expect(
       reopened.write(key, new Uint8Array(Buffer.from("different ciphertext"))),
     ).rejects.toMatchObject({ code: "secret-record-ledger-conflict" });
+  });
+  it("retains a conflict and cleanup failure without changing the original ciphertext", async () => {
+    const root = directory(), forbidden = directory();
+    const normal = () => new PosixPrivatePlatform([forbidden]);
+    const options = {directory: root, forbiddenRoots: [forbidden], platform: "win32" as const};
+    const original = new SecretRecordLedgerPersistence({...options, privatePlatformFactory: normal});
+    await original.write(key, ciphertext);
+    const cleanupFailure = new Error("conflict cleanup sentinel");
+    const adapter = new SecretRecordLedgerPersistence({...options, privatePlatformFactory() {
+      const platform = normal(), close = platform.close.bind(platform);
+      platform.close = () => {close(); throw cleanupFailure;};
+      return platform;
+    }});
+    const error = await adapter.write(key, Buffer.from("different ciphertext")).catch(error => error);
+    expect(error).toBeInstanceOf(AggregateError);
+    expect(error.errors[0]).toMatchObject({code: "secret-record-ledger-conflict"});
+    expect(error.errors[1]).toBe(cleanupFailure);
+    expect(await original.read(key)).toEqual(ciphertext);
   });
 });

@@ -26,7 +26,10 @@ test("R7 normal restart retains the Japanese record body and saved view settings
     // A newly created R6 database has text/number/checkbox columns. Add the
     // other two through the real preview/commit UI before testing persistence.
     for (const [name, type] of [["ステータス", "select"], ["期日", "date"]] as const) {
-      await window.getByRole("button", { name: "列の設定", exact: true }).click();
+      await openR7Settings(window, "view-options");
+      await r5Settings(window)
+        .getByRole("button", { name: "プロパティを編集", exact: true })
+        .click();
       const schema = window.getByRole("dialog", { name: "列の設定", exact: true });
       await schema.getByRole("button", { name: "列を追加", exact: true }).click();
       await schema.getByLabel("列名", { exact: true }).fill(name);

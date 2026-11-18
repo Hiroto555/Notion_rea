@@ -8,6 +8,8 @@ import { commitDatabaseOperation, resolveDatabaseOperation, readDatabaseSnapshot
 import { prepareDatabaseCreation, type DatabaseOperation } from "../src/shared/database-operation";
 import { emptyDatabase, type DatabaseSettings } from "../src/shared/types";
 import { sendDatabaseOperation, resolveDatabaseOperation as resolveRemote } from "../src/renderer/reliable-database-operation";
+import { StorageFailureError, storageFailureMessageV1 } from "../src/renderer/private-request";
+import type { StorageFailureV1 } from "../src/shared/private-storage-failure";
 
 function fixture() {
   const root = mkdtempSync(resolve("output/r5-database-operations-"));
@@ -175,5 +177,81 @@ it("rejects an owner update at the revision limit before any write or receipt", 
     expect(() => commitDatabaseOperation(f.store, operation)).toThrow();
     expect(f.store.get(page.id)).toEqual(page);
     expect(f.store.db.prepare("SELECT operation_id FROM save_receipts WHERE operation_id=?").get(operation.operationId)).toBeUndefined();
+  } finally {f.dispose();}
+});
+
+const localE = (requestType: string): Partial<StorageFailureV1> => ({
+  kind: "UNCLASSIFIED", family: "REQUEST", requestType});
+const typed = (requestType: string): StorageFailureV1 => ({
+  version: 1, kind: "OUTCOME_UNKNOWN", family: "K", stage: "COMMIT", failureSubject: "CURRENT_ATTEMPT",
+  mutationDispatch: "DISPATCHED", proofOrigin: "DISPATCH_OBSERVED", requestType,
+  sourceOutcome: {source: "K_EXCEPTION", state: "UNKNOWN", reason: "PRIVATE_K_COMMIT_UNKNOWN"},
+  sourceCauseCodes: ["PRIVATE_K_COMMIT_UNKNOWN"], causeSummaryIncomplete: false, attemptId: null,
+  precondition: null, operationProgress: "PARTIAL_OR_UNKNOWN", retryAuthority: "NONE", preserve: true});
+
+it("normalizes a terminal receipt carrying a diagnostic and rebuilds an unknown carrier's display", async () => {
+  const f = fixture();
+  try {
+    const operation = prepareDatabaseCreation("Tasks", null, f.settings);
+    const applied = commitDatabaseOperation(f.store, operation);
+    // Applied or rejected carrying its own failure metadata is contradictory:
+    // the exchange normalizes it to the bounded local E for this request.
+    for (const reply of [{...applied, storageFailure: typed("database:commit")},
+      {...applied, status: "rejected" as const, storageFailure: typed("database:commit")}]) {
+      const result = await sendDatabaseOperation(operation, async () => reply);
+      expect(result.status).toBe("unknown");
+      expect(result.storageFailure).toMatchObject(localE("database:commit"));
+      expect(result).toMatchObject({operationId: operation.operationId, sessionId: operation.sessionId,
+        seq: operation.seq, commandKind: operation.command.kind});
+    }
+    // An unknown wire with a valid carried diagnostic keeps it bounded and
+    // validated; the display comes from its kind, never the carrier message.
+    const wire = {status: "unknown", operationId: operation.operationId, sessionId: operation.sessionId,
+      seq: operation.seq, commandKind: operation.command.kind, fingerprint: applied.fingerprint,
+      message: "raw /secret/carrier", storageFailure: typed("database:resolve")};
+    const resolved = await resolveRemote(operation, async () => wire);
+    expect(resolved.status).toBe("unknown");
+    expect(resolved.storageFailure).toEqual(typed("database:resolve"));
+    expect(resolved.message).toBe(storageFailureMessageV1(typed("database:resolve")));
+    expect(JSON.stringify(resolved)).not.toContain("secret");
+    // A verified business rejection without a diagnostic keeps its meaning.
+    const rejected = await sendDatabaseOperation(prepareDatabaseCreation("Bad", "missing-parent", f.settings),
+      async (request) => f.store.handle(request));
+    expect(rejected.status).toBe("rejected");
+    expect(rejected.storageFailure).toBeUndefined();
+  } finally {f.dispose();}
+});
+
+it("carries a bounded typed diagnostic and degrades raw transport failures to the local E", async () => {
+  const f = fixture();
+  try {
+    const operation = prepareDatabaseCreation("Tasks", null, f.settings);
+    const failure = typed("database:commit");
+    const held = await sendDatabaseOperation(operation, async () => {throw new StorageFailureError(failure);});
+    expect(held.status).toBe("unknown");
+    expect(held.storageFailure).toEqual(failure);
+    expect(held.message).toBe(storageFailureMessageV1(failure));
+    expect(held).toMatchObject({operationId: operation.operationId, sessionId: operation.sessionId, seq: operation.seq});
+    // A valid diagnostic for another request type is demoted, never trusted.
+    const foreign = await sendDatabaseOperation(operation, async () => {throw new StorageFailureError(typed("save:commit"));});
+    expect(foreign.storageFailure).toMatchObject(localE("database:commit"));
+    // Raw rejections never leak their message, cause or path.
+    const raw = await sendDatabaseOperation(operation, async () => {throw new Error("capacity at /secret/workspace");});
+    expect(raw.status).toBe("unknown");
+    expect(raw.storageFailure).toMatchObject(localE("database:commit"));
+    expect(JSON.stringify(raw)).not.toContain("secret");
+    expect(JSON.stringify(raw)).not.toContain("capacity");
+    const timed = await resolveRemote(operation, async () => new Promise(() => {}), 5);
+    expect(timed.status).toBe("unknown");
+    expect(timed.storageFailure).toMatchObject(localE("database:resolve"));
+    // A typed failure never reaches the store; no receipt or page was written.
+    expect(f.store.pages()).toHaveLength(0);
+    expect(f.store.db.prepare("SELECT operation_id FROM save_receipts WHERE operation_id=?").get(operation.operationId)).toBeUndefined();
+    // The durable receipt never carries the transient metadata.
+    expect(commitDatabaseOperation(f.store, operation).status).toBe("applied");
+    const row = f.store.db.prepare("SELECT result_json FROM save_receipts WHERE operation_id=?")
+      .get(operation.operationId) as {result_json: string};
+    expect(row.result_json).not.toContain("storageFailure");
+    expect(JSON.stringify(operation)).not.toContain("storageFailure");
   } finally {f.dispose();}
 });

@@ -13,6 +13,8 @@ import {
   validateCrashRecoverySnapshot,
 } from "../src/shared/crash-recovery";
 import { prepareCrashRecovery } from "../src/renderer/prepare-crash-recovery";
+import { RecoveryCheckpoint } from "../src/renderer/recovery-checkpoint";
+import { StorageFailureError, unclassifiedRequestFailure } from "../src/renderer/private-request";
 import type { Request } from "../src/shared/types";
 
 function fixture() {
@@ -216,6 +218,161 @@ it("stores unresolved page operations in crash recovery and resolves them at sta
     );
     expect(restored.pageOperations).toEqual([]);
     expect(f.store.pages()).toHaveLength(1);
+  } finally {
+    f.dispose();
+  }
+});
+
+it("sends explicit retries through the retry boundary while resolve keeps the original send", async () => {
+  const f = fixture();
+  try {
+    const sends: Request[] = [];
+    const retries: Request[] = [];
+    const coordinator = new PageOperationCoordinator(
+      async (request) => {
+        sends.push(request);
+        if (request.type === "page:commit") throw new Error("lost before commit");
+        return f.store.handle(request);
+      },
+      {
+        persist: async () => {},
+        retrySend: async (request) => {retries.push(request); return f.store.handle(request);},
+      },
+    );
+    await expect(coordinator.create(null, "再試行")).rejects.toThrow();
+    expect(sends.map((request) => request.type)).toEqual(["page:commit"]);
+    // A read-only resolve outside retry keeps the original send.
+    const peek = await coordinator.resolveNext();
+    expect(peek?.status).toBe("unknown");
+    expect(sends.map((request) => request.type)).toEqual(["page:commit", "page:resolve"]);
+    expect(retries).toHaveLength(0);
+    // The explicit retry uses the boundary transport with the same identity.
+    const retried = await coordinator.retryUnknown();
+    expect(retried?.status).toBe("applied");
+    expect(retries.map((request) => request.type)).toEqual(["page:resolve", "page:commit"]);
+    const first = sends[0], resent = retries[1];
+    if (first.type === "page:commit" && resent.type === "page:commit")
+      expect(resent.operation).toEqual(first.operation);
+    expect(f.store.pages()[0]?.title).toBe("再試行");
+    expect(coordinator.hasUnresolved()).toBe(false);
+  } finally {
+    f.dispose();
+  }
+});
+
+it("holds a latched recovery failure at the retry boundary and keeps the operation retained", async () => {
+  const f = fixture();
+  try {
+    const queue = new RecoveryCheckpoint(
+      async () => {throw new Error("journal send unused");},
+      0,
+      undefined,
+      {diagnostics: "v1"},
+    );
+    const invokes: Request[] = [];
+    const sends: Request[] = [];
+    const retrySend = async (request: Request) => {
+      const held = queue.getStatus();
+      if (held.state === "error")
+        throw new StorageFailureError(held.storageFailure ?? unclassifiedRequestFailure("recovery:write"));
+      invokes.push(request);
+      const result = f.store.handle(request);
+      // The journal latches only after this resolve has already been sent.
+      if (request.type === "page:resolve") queue.captureFailure(new Error("journal capture broke"));
+      return result;
+    };
+    const coordinator = new PageOperationCoordinator(
+      async (request) => {
+        sends.push(request);
+        if (request.type === "page:commit") throw new Error("lost before commit");
+        return f.store.handle(request);
+      },
+      {persist: async () => {}, retrySend},
+    );
+    await expect(coordinator.create(null, "保持された操作")).rejects.toThrow();
+    const retained = coordinator.unresolvedOperations()[0];
+    expect(coordinator.firstUnknown()?.operation.operationId).toBe(retained.operationId);
+    // The resolve dispatches before the latch lands; the commit must not.
+    const retried = await coordinator.retryUnknown();
+    expect(retried?.status).toBe("unknown");
+    expect(invokes.map((request) => request.type)).toEqual(["page:resolve"]);
+    expect(sends).toHaveLength(1);
+    expect(queue.getStatus().state).toBe("error");
+    expect(f.store.pages()).toHaveLength(0);
+    const still = coordinator.firstUnknown();
+    expect(still?.operation.operationId).toBe(retained.operationId);
+  } finally {
+    f.dispose();
+  }
+});
+
+it("sends an uncheckpointed retry through the boundary but holds once the journal latches", async () => {
+  const f = fixture();
+  try {
+    const sends: Request[] = [];
+    const invokes: Request[] = [];
+    let persistFails = true;
+    const coordinator = new PageOperationCoordinator(
+      async (request) => {sends.push(request); return f.store.handle(request);},
+      {
+        persist: async () => {
+          if (persistFails) {persistFails = false; throw new Error("journal unavailable");}
+        },
+        retrySend: async (request) => {invokes.push(request); return f.store.handle(request);},
+      },
+    );
+    await expect(coordinator.create(null, "未記録の再試行")).rejects.toThrow(/復旧記録/);
+    expect(sends).toHaveLength(0);
+    expect(coordinator.firstUncheckpointed()).toBeDefined();
+    // The commit reaches the store through retrySend, not the original send.
+    const page = await coordinator.retryUncheckpointed();
+    expect(page?.title).toBe("未記録の再試行");
+    expect(sends).toHaveLength(0);
+    expect(invokes.map((request) => request.type)).toEqual(["page:commit"]);
+    expect(f.store.pages()).toHaveLength(1);
+    expect(coordinator.hasUnresolved()).toBe(false);
+  } finally {
+    f.dispose();
+  }
+});
+
+it("sends nothing when the journal latches inside the barrier of an uncheckpointed retry", async () => {
+  const f = fixture();
+  try {
+    const queue = new RecoveryCheckpoint(
+      async () => {throw new Error("journal send unused");},
+      0,
+      undefined,
+      {diagnostics: "v1"},
+    );
+    const invokes: Request[] = [];
+    const sends: Request[] = [];
+    let persistFails = true, latchOnPersist = false;
+    const coordinator = new PageOperationCoordinator(
+      async (request) => {sends.push(request); return f.store.handle(request);},
+      {
+        persist: async () => {
+          if (persistFails) {persistFails = false; throw new Error("journal unavailable");}
+          if (latchOnPersist) queue.captureFailure(new Error("journal capture broke"));
+        },
+        retrySend: async (request) => {
+          if (queue.getStatus().state === "error")
+            throw new StorageFailureError(unclassifiedRequestFailure("recovery:write"));
+          invokes.push(request);
+          return f.store.handle(request);
+        },
+      },
+    );
+    await expect(coordinator.create(null, "保持")).rejects.toThrow(/復旧記録/);
+    latchOnPersist = true;
+    // persist resolves but latches the journal; the boundary still sends 0.
+    await expect(coordinator.retryUncheckpointed()).rejects.toThrow(/確認/);
+    expect(invokes).toHaveLength(0);
+    expect(sends).toHaveLength(0);
+    const still = coordinator.firstUnknown();
+    expect(still).toBeDefined();
+    expect(still?.operation.operationId).toBe(coordinator.unresolvedOperations()[0]?.operationId);
+    expect(f.store.pages()).toHaveLength(0);
   } finally {
     f.dispose();
   }

@@ -1,4 +1,5 @@
 import { normalizeSharedEndpoint } from "./endpoint-policy";
+import {assertPrivateOperationAuthority} from "../../platform/private-operation-authority";
 import {
   CollaborationError,
   identifier,
@@ -308,6 +309,7 @@ export class HttpSharedProvider implements SharedProvider {
   }
 
   private async request(operation: string, payload: unknown): Promise<unknown> {
+    assertPrivateOperationAuthority();
     if (this.closed) fail("CLOSED");
     const body = canonical(payload, HTTP_MAX_REQUEST_BYTES);
     const controller = new AbortController();
@@ -373,6 +375,7 @@ export class HttpSharedProvider implements SharedProvider {
         return fail("INVALID_RESPONSE");
       }
       const parsed = parseCanonicalWire(raw, HTTP_MAX_RESPONSE_BYTES);
+      assertPrivateOperationAuthority();
       if (!response.ok) fail(checkError(parsed));
       return checkSuccess(parsed);
     } finally {

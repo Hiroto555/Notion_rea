@@ -156,6 +156,26 @@ function codeOf(work: () => unknown): string {
 }
 
 describe("WindowsRuntimePlatform.prepareDirectory", () => {
+  it("exports native directory evidence only after rechecking the bound identity", () => {
+    const { fs, probe } = setup();
+    const platform = runtime(fs, probe);
+    platform.bind(DIRECTORY);
+    expect(platform.validatedDirectoryIdentity()).toEqual({
+      canonicalPath: DIRECTORY, directoryFileId: FILE_ID, directoryVolumeId: VOLUME_ID,
+      rootFileId: ROOT_FILE_ID, rootVolumeId: VOLUME_ID,
+    });
+    probe.targetFileId = OTHER_FILE_ID;
+    expect(codeOf(() => platform.validatedDirectoryIdentity())).toBe("WINDOWS_DIRECTORY_IDENTITY_CHANGED");
+    platform.close();
+  });
+
+  it("does not issue native evidence for an unbound or closed directory", () => {
+    const { fs, probe } = setup(); const platform = runtime(fs, probe);
+    expect(codeOf(() => platform.validatedDirectoryIdentity())).toBe("WINDOWS_ROOT_NOT_BOUND");
+    platform.close();
+    expect(codeOf(() => platform.validatedDirectoryIdentity())).toBe("WINDOWS_PLATFORM_CLOSED");
+  });
+
   it("invokes the directory helper then binds only the prepared identity", () => {
     const { fs, probe } = setup();
     const platform = runtime(fs, probe);

@@ -1,4 +1,6 @@
 import { describe, expect, it } from "vitest";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import {
   PackageTargetError,
   planPackage,
@@ -6,8 +8,60 @@ import {
   type ArtifactEvidenceInput,
   type PackagePlanInput,
 } from "../scripts/platform/package-target.mjs";
+// @ts-ignore - untyped orchestration binds the exact production invocation.
+import { createPackageInvocation } from "../scripts/platform/package-evidence.mjs";
 
 const HASH = "a".repeat(64);
+
+describe("exact production options and deterministic invocation", () => {
+  it("retains planned prune and binds electron, stage, cache and platform icon", () => {
+    const plan = planPackage({
+      platform: "darwin", arch: "arm64", version: "0.1.0", outputRoot: "/tmp/folio-release",
+    });
+    const input = { plan, stage: join(tmpdir(), "folio-stage"), electronVersion: "45.0.0",
+      cacheRoot: join(tmpdir(), "folio-cache") };
+    const first = createPackageInvocation(input);
+    expect(first.packagerOptions).toEqual({
+      ...plan.packagerOptions, dir: input.stage, electronVersion: "45.0.0", tmpdir: `${input.stage}-packager`,
+      download: { cacheRoot: input.cacheRoot }, appBundleId: "local.folio.desktop",
+      appCategoryType: "public.app-category.productivity",
+    });
+    expect(first.packagerOptions.prune).toBe(true);
+    expect(() => createPackageInvocation({ ...input, plan: {
+      ...plan, packagerOptions: { ...plan.packagerOptions, prune: false },
+    } })).toThrow("PACKAGE_STALE_PLAN");
+    expect(createPackageInvocation(input)).toEqual(first);
+    for (const change of [{ stage: join(tmpdir(), "another-stage") }, { electronVersion: "46.0.0" },
+      { cacheRoot: join(tmpdir(), "another-cache") }, { plan: planPackage({
+        platform: "darwin", arch: "arm64", version: "0.1.0", outputRoot: "/tmp/folio-release",
+        icon: "/tmp/icon.icns",
+      }) }]) expect(createPackageInvocation({ ...input, ...change }).deterministicBase)
+      .not.toBe(first.deterministicBase);
+    expect(Object.isFrozen(first.packagerOptions)).toBe(true);
+    expect(Object.isFrozen(first.packagerOptions.download)).toBe(true);
+  });
+
+  it("binds Windows icon and trusted helper pins into the actual invocation", () => {
+    const plan = planPackage({
+      platform: "win32", arch: "x64", version: "0.1.0",
+      outputRoot: "/tmp/folio-release", icon: "/tmp/icon.ico",
+    });
+    const helpers = ["probe", "owned"].map(role => ({
+      role, arch: "x64", path: join(tmpdir(), `${role}.exe`), sha256: HASH, assemblySha256: HASH,
+    }));
+    const input = { plan, stage: join(tmpdir(), "folio-stage"), electronVersion: "45.0.0",
+      cacheRoot: join(tmpdir(), "folio-cache"), helpers };
+    const first = createPackageInvocation(input);
+    expect(first.packagerOptions.icon).toBe("/tmp/icon.ico");
+    expect(first.packagerOptions.extraResource).toEqual(helpers.map(helper => helper.path));
+    expect(first.packagerOptions.prune).toBe(true);
+    const changed = [{ ...helpers[0], sha256: "b".repeat(64) }, helpers[1]];
+    expect(createPackageInvocation({ ...input, helpers: changed }).deterministicBase)
+      .not.toBe(first.deterministicBase);
+    expect(() => createPackageInvocation({ ...input, helpers: [] }))
+      .toThrow("PACKAGE_HELPER_PIN_REQUIRED");
+  });
+});
 
 function planInput(
   overrides: Partial<PackagePlanInput> = {},

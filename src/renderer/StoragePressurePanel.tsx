@@ -1,5 +1,16 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { StoragePressureSnapshot } from "../shared/storage-pressure";
+import type { StorageReadPort } from "../shared/app-api";
+
+/** The panel's retained observation, for display-only callers. `error` means
+ * the manual check itself failed. `undefined` means nothing has been observed
+ * yet — it is never a save authorization or a success proof. */
+export type StoragePressureObservation =
+  | "ready"
+  | "blocked"
+  | "unknown"
+  | "error"
+  | undefined;
 
 function bytes(value: number | null): string {
   if (value === null) return "未確認";
@@ -10,21 +21,31 @@ function bytes(value: number | null): string {
 }
 
 /** Manual observation only; no polling or filesystem tree scans on render. */
-export function StoragePressurePanel() {
+export function StoragePressurePanel({
+  storage,
+  onObservation,
+}: {
+  storage: StorageReadPort;
+  /** Optional display-only mirror of the last manual observation. It is called
+   * only when the retained state changes, never triggers a read itself, and
+   * must never be treated as save authorization or evidence of success. */
+  onObservation?: (state: StoragePressureObservation) => void;
+}) {
   const [snapshot, setSnapshot] = useState<StoragePressureSnapshot>();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const observation: StoragePressureObservation =
+    snapshot?.state ?? (error ? "error" : undefined);
+  useEffect(() => {
+    onObservation?.(observation);
+  }, [observation, onObservation]);
   async function refresh() {
     if (busy) return;
     setBusy(true);
     setError("");
     setSnapshot(undefined);
     try {
-      setSnapshot(
-        (await window.folio.request({
-          type: "storage:pressure",
-        })) as StoragePressureSnapshot,
-      );
+      setSnapshot(await storage.readPressure());
     } catch {
       setError(
         "空き容量を確認できませんでした。時間をおいて再確認してください。",

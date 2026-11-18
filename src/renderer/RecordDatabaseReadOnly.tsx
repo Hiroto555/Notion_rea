@@ -1,13 +1,16 @@
 import { useEffect, useState } from "react";
+import type { WorkspaceReadPort } from "../shared/app-api";
 import type { DatabaseProjection, DatabaseCallbacks } from "../shared/types";
 import { DatabasePresentation } from "../database/DatabasePresentation";
 
 /** Transitional viewer for registered databases: no rows or settings writes. */
 export function RecordDatabaseReadOnly({
   databasePageId,
+  workspace,
   onOpenRecord,
 }: {
   databasePageId: string;
+  workspace: WorkspaceReadPort;
   onOpenRecord: (pageId: string) => void;
 }) {
   const [projection, setProjection] = useState<DatabaseProjection | null>(null);
@@ -17,8 +20,8 @@ export function RecordDatabaseReadOnly({
     let cancelled = false;
     setProjection(null);
     setError("");
-    void window.folio
-      .request<DatabaseProjection>({ type: "database:load", databasePageId })
+    void workspace
+      .loadDatabase(databasePageId)
       .then((result) => {
         if (cancelled) return;
         if (
@@ -38,7 +41,7 @@ export function RecordDatabaseReadOnly({
     return () => {
       cancelled = true;
     };
-  }, [databasePageId]);
+  }, [databasePageId, workspace]);
 
   const unavailable = async (): Promise<never> => {
     throw new Error("レコードと設定の編集は準備中です。");

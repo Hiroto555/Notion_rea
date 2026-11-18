@@ -140,6 +140,58 @@
   gap: 6px;
   margin-inline-start: auto;
 }
+.r7-search-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: var(--control-height, 32px);
+  padding: 5px 9px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--text-soft);
+  font-size: 12px;
+  white-space: nowrap;
+}
+.r7-search-toggle:hover {
+  background: var(--hover);
+  color: var(--text);
+}
+.r7-search-toggle[hidden],
+.r7-view-search[hidden] {
+  display: none !important;
+}
+.r7-search-dismiss {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  padding: 3px;
+  color: var(--muted);
+  border-radius: var(--radius-xs);
+}
+.r7-search-dismiss:hover {
+  color: var(--text);
+  background: var(--hover);
+}
+/* The legacy database uses the same action row classes. Keep its compact
+ * view/add controls readable without changing the legacy writer. */
+.legacy-database .db-tabs {
+  align-items: center;
+}
+.legacy-database .r7-add-view {
+  margin-inline-start: auto;
+}
+.legacy-database .db-command-row {
+  padding-block: 7px;
+}
+.legacy-database .r7-view-options-panel .property-form[hidden] {
+  display: none !important;
+}
+.legacy-database .r7-schema-section .property-form {
+  margin-top: 8px;
+}
 
 /* Menu triggers and popovers --------------------------------------------- */
 .r7-menu {
@@ -221,7 +273,8 @@
   gap: 8px;
   margin-bottom: 10px;
 }
-.r7-panel-heading h3 {
+.r7-panel-heading h3,
+.r7-popover .r7-panel-heading h4 {
   margin: 0;
   font-size: 12px;
   font-weight: 600;
@@ -280,8 +333,9 @@
 /* Active condition summaries --------------------------------------------- */
 .r7-active-conditions {
   display: flex;
-  align-items: flex-start;
-  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
   min-width: 0;
   color: var(--muted);
   font-size: 11px;
@@ -303,6 +357,93 @@
   margin: 0;
   padding: 0;
   list-style: none;
+}
+.r7-condition-count {
+  padding: 3px 7px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--muted);
+  font-size: 10px;
+  line-height: 1.5;
+  white-space: nowrap;
+}
+.r7-condition-details {
+  min-width: 0;
+  color: var(--muted);
+}
+.r7-condition-details > summary {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 7px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--text-soft);
+  font-size: 10px;
+  line-height: 1.5;
+  cursor: pointer;
+  list-style-position: inside;
+}
+.r7-condition-details > summary:hover {
+  background: var(--hover);
+  color: var(--text);
+}
+.r7-condition-detail-body {
+  flex-basis: 100%;
+  width: 100%;
+  margin-top: 6px;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+.r7-condition-detail-body section + section {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--line);
+}
+.r7-condition-detail-body h4 {
+  margin: 0 0 5px;
+  color: var(--text-soft);
+  font-size: 10px;
+  font-weight: 600;
+}
+.r7-condition-expression {
+  margin: 0 0 6px;
+  padding: 5px 7px;
+  border-radius: var(--radius-xs);
+  background: var(--panel);
+  color: var(--text-soft);
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+.r7-condition-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.r7-summary-text {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.r7-schema-section {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--line);
+}
+.r7-schema-section > h4 {
+  margin: 0 0 6px;
+}
+.r7-schema-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
 }
 .r7-summary-chip {
   display: inline-flex;

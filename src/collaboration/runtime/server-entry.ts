@@ -1,13 +1,18 @@
+import { createWindowsOperatorNative, windowsOperatorConfigFromEnvironment } from "../../platform/windows/operator-native";
 import { runRecoveryOperator } from "./recovery-operator";
 import { runMaintenanceOperator } from "./maintenance-operator";
 import { runRestoreOperator } from "./restore-operator";
-import { randomUUID } from "node:crypto";
+import { createSharedOperatorContext, readSharedOperatorFile, type SharedOperatorPorts } from "./operator-files";
+import { synchronousPort } from "../../platform/synchronous-port";
+import { createHash, randomUUID } from "node:crypto";
 import {
   closeSync,
   constants,
+  existsSync,
   fstatSync,
   lstatSync,
   openSync,
+  readFileSync,
   readSync,
   realpathSync,
   type Stats,
@@ -22,22 +27,28 @@ import {
   resolve,
   sep,
 } from "node:path";
-import type { RuntimeStorePlatform } from "../../platform/runtime-store-platform";
 import { writeNewFileDurably } from "../../persistence/durable-file";
 import { sqliteHeader } from "../../persistence/sqlite-header";
 import { documentSchema } from "../../shared/editor-schema";
 import type { Doc } from "../../shared/types";
-import { pinPrivateRoot } from "../../sync/m3-private-root";
+import { pinPrivateRoot, assertPrivateRoot } from "../../sync/m3-private-root";
 import { SharedAuthority } from "./authority";
-import { CollaborationError, identifier, wellFormed } from "./contract";
+import { canonical } from "./canonical";
+import { CollaborationError, identifier, wellFormed, type Cut } from "./contract";
+import { digest } from "./digest";
+import {
+  ProductionRetentionHost,
+  RetentionHostRegistry,
+} from "./retention-host-environment";
 import { createSharedRequestListener } from "./http-server";
 import { HTTP_REQUEST_TIMEOUT_MS } from "./http-provider";
 import { createSharedHttpsServer } from "./https-host";
+import { DatabaseSync } from "node:sqlite";
 import {
+  RuntimeStore,
   SHARED_RUNTIME_APPLICATION_ID,
   SHARED_RUNTIME_FILE,
   SHARED_RUNTIME_VERSION,
-  type RuntimeStoreOptions,
 } from "./store";
 
 const PRIVATE_FILE_MODE = 0o600;
@@ -66,12 +77,569 @@ type Parsed = {
   flags: Set<string>;
 };
 
-/** Optional platform seam for the Windows RuntimeStore boundary. Nothing else
- * is injectable: the server always uses the real SharedAuthority and real HTTP
- * or TLS host. */
-export type SharedServerPorts = Readonly<{
-  platformAdapter?: RuntimeStorePlatform;
+/** Optional platform seam for the Windows RuntimeStore boundary plus the
+ * trusted in-process retention host used by `maintain` actions. Nothing else
+ * is injectable: the server always uses the real SharedAuthority and real
+ * HTTP or TLS host. Host registration is trusted owner configuration, never
+ * a serialized CLI coverage flag. */
+export type SharedServerPorts = Readonly<
+  SharedOperatorPorts & {
+    retentionHost?: RetentionHostRegistry;
+    retentionHostFactory?: (authority: SharedAuthority) => Readonly<{
+      host: RetentionHostRegistry;
+      close(): void;
+    }>;
+  }
+>;
+
+/** Strict DISPOSABLE_OFFLINE_V1 host profile: a finite declared roster for a
+ * known disposable offline host, never arbitrary UI coverage claims. All
+ * fields except unaccountedStores are required; a serialized `clients`
+ * section is intentionally absent — an offline profile has no live UI
+ * history to declare, and real clients must register in-process instead. */
+export type MaintenanceRetentionHostConfig = Readonly<{
+  profile: "DISPOSABLE_OFFLINE_V1";
+  /** Canonical absolute directory containing the authority runtime file. */
+  sourceRoot: string;
+  orgId: string;
+  /** sha256(canonical(meta/genesis)) of the declared source. */
+  sourceGenesisHash: string;
+  expectedCut: Cut;
+  runtimeStores: readonly Readonly<{
+    id: string;
+    /** RuntimeStore DIRECTORY containing the shared runtime file. */
+    path: string;
+    /** Required semantic role: client | resource-client | connection-cache. */
+    role: string;
+  }>[];
+  retainedStores: readonly Readonly<{
+    id: string;
+    /** Existing opaque SQLite journal FILE path. */
+    path: string;
+    role: string;
+    /** Exact retained identity.binding, when the journal has one. */
+    binding?: string;
+  }>[];
+  unaccountedStores?: readonly string[];
 }>;
+
+const RETENTION_CONFIG_KEYS = [
+  "expectedCut",
+  "orgId",
+  "profile",
+  "retainedStores",
+  "runtimeStores",
+  "sourceGenesisHash",
+  "sourceRoot",
+  "unaccountedStores",
+];
+const RETENTION_REQUIRED_KEYS = [
+  "expectedCut",
+  "orgId",
+  "profile",
+  "retainedStores",
+  "runtimeStores",
+  "sourceGenesisHash",
+  "sourceRoot",
+];
+const RUNTIME_STORE_ROLES = new Set([
+  "client",
+  "resource-client",
+  "connection-cache",
+]);
+const MAX_RETENTION_CONFIG_BYTES = 64 * 1024;
+const retentionConfigOrigins = new WeakMap<object, Readonly<{
+  path: string;
+  canonical: string;
+  assertCurrent(): void;
+}>>();
+
+function configIdentifier(value: unknown): string {
+  return identifier(value);
+}
+
+function configPathCheck(value: unknown): string {
+  if (
+    typeof value !== "string" ||
+    !isAbsolute(value) ||
+    value.length > MAX_PATH_LENGTH ||
+    value.includes("\0") ||
+    !wellFormed(value)
+  )
+    throw new CollaborationError("RETENTION_HOST_CONFIG_INVALID");
+  return value;
+}
+
+function configStoreList(
+  value: unknown,
+  roles: ReadonlySet<string> | null,
+): readonly { id: string; path: string; role: string; binding?: string }[] {
+  if (!Array.isArray(value) || value.length > 15)
+    throw new CollaborationError("RETENTION_HOST_CONFIG_INVALID");
+  return value.map((raw) => {
+    const entry = raw as Record<string, unknown> | null;
+    if (
+      entry === null ||
+      typeof entry !== "object" ||
+      !["id,path,role", ...(roles === null ? ["binding,id,path,role"] : [])]
+        .includes(Object.keys(entry).sort().join(","))
+    )
+      throw new CollaborationError("RETENTION_HOST_CONFIG_INVALID");
+    const role = entry.role;
+    if (
+      typeof role !== "string" ||
+      (roles !== null && !roles.has(role)) ||
+      !/^[a-z0-9-]{1,64}$/.test(role) ||
+      (entry.binding !== undefined &&
+        (typeof entry.binding !== "string" || entry.binding.length === 0 || entry.binding.length > 16_384))
+    )
+      throw new CollaborationError("RETENTION_HOST_CONFIG_INVALID");
+    return {
+      id: configIdentifier(entry.id),
+      path: configPathCheck(entry.path),
+      role,
+      ...(entry.binding === undefined ? {} : { binding: entry.binding as string }),
+    };
+  });
+}
+
+function configCut(value: unknown): Cut {
+  const entry = value as Record<string, unknown> | null;
+  if (
+    entry === null ||
+    typeof entry !== "object" ||
+    Object.keys(entry).sort().join(",") !== "epoch,hash,seq" ||
+    typeof entry.seq !== "number" ||
+    !Number.isSafeInteger(entry.seq) ||
+    entry.seq < 0 ||
+    typeof entry.hash !== "string" ||
+    !/^[a-f0-9]{64}$/.test(entry.hash)
+  )
+    throw new CollaborationError("RETENTION_HOST_CONFIG_INVALID");
+  return {
+    epoch: configIdentifier(entry.epoch),
+    seq: entry.seq,
+    hash: entry.hash,
+  } as Cut;
+}
+
+/** Strict schema validation shared by file read and direct object input;
+ * the returned config is a detached canonical snapshot — never a mutable
+ * caller alias. */
+function parseRetentionHostConfig(
+  value: unknown,
+): MaintenanceRetentionHostConfig {
+  const entry = value as Record<string, unknown> | null;
+  if (entry === null || typeof entry !== "object" || Array.isArray(entry))
+    throw new CollaborationError("RETENTION_HOST_CONFIG_INVALID");
+  const keys = Object.keys(entry).sort();
+  for (const key of keys)
+    if (!RETENTION_CONFIG_KEYS.includes(key))
+      throw new CollaborationError("RETENTION_HOST_CONFIG_INVALID");
+  for (const key of RETENTION_REQUIRED_KEYS)
+    if (!keys.includes(key))
+      throw new CollaborationError("RETENTION_HOST_CONFIG_INVALID");
+  if (entry.profile !== "DISPOSABLE_OFFLINE_V1")
+    throw new CollaborationError("RETENTION_HOST_CONFIG_INVALID");
+  if (
+    entry.unaccountedStores !== undefined &&
+    (!Array.isArray(entry.unaccountedStores) || entry.unaccountedStores.length > 16)
+  )
+    throw new CollaborationError("RETENTION_HOST_CONFIG_INVALID");
+  const genesis = entry.sourceGenesisHash;
+  if (typeof genesis !== "string" || !/^[a-f0-9]{64}$/.test(genesis))
+    throw new CollaborationError("RETENTION_HOST_CONFIG_INVALID");
+  const runtimeStores = configStoreList(entry.runtimeStores, RUNTIME_STORE_ROLES);
+  const retainedStores = configStoreList(entry.retainedStores, null);
+  if (runtimeStores.length + retainedStores.length > 15)
+    throw new CollaborationError("RETENTION_HOST_CONFIG_INVALID");
+  const ids = ["authority", ...runtimeStores.map(({id}) => id), ...retainedStores.map(({id}) => id)];
+  if (new Set(ids).size !== ids.length)
+    throw new CollaborationError("RETENTION_HOST_CONFIG_INVALID");
+  const config: MaintenanceRetentionHostConfig = {
+    profile: "DISPOSABLE_OFFLINE_V1",
+    sourceRoot: configPathCheck(entry.sourceRoot),
+    orgId: configIdentifier(entry.orgId),
+    sourceGenesisHash: genesis,
+    expectedCut: configCut(entry.expectedCut),
+    runtimeStores,
+    retainedStores,
+    ...(entry.unaccountedStores !== undefined
+      ? {
+          unaccountedStores: (entry.unaccountedStores as unknown[]).map(
+            (id) => configIdentifier(id),
+          ),
+        }
+      : {}),
+  };
+  return Object.freeze(
+    JSON.parse(canonical(config, MAX_RETENTION_CONFIG_BYTES)),
+  ) as MaintenanceRetentionHostConfig;
+}
+
+/** POSIX pinned private read: canonical parent pin, owner-only single-link
+ * regular file, size preflight, O_NOFOLLOW open with fstat identity, then
+ * the parent pin re-asserted after the read. */
+function readPinnedPrivateFile(path: string, expected?: Stats): Buffer {
+  const parent = pinPrivateRoot(dirname(path));
+  if (!existsSync(path))
+    throw new CollaborationError("RETENTION_HOST_CONFIG_INVALID");
+  const stat = lstatSync(path);
+  const uid =
+    typeof process.getuid === "function" ? process.getuid() : stat.uid;
+  if (
+    !stat.isFile() ||
+    stat.isSymbolicLink() ||
+    stat.nlink !== 1 ||
+    stat.uid !== uid ||
+    (stat.mode & 0o077) !== 0 ||
+    stat.size > MAX_RETENTION_CONFIG_BYTES ||
+    (expected !== undefined && (stat.dev !== expected.dev || stat.ino !== expected.ino ||
+      stat.mtimeMs !== expected.mtimeMs || stat.ctimeMs !== expected.ctimeMs))
+  )
+    throw new CollaborationError("RETENTION_HOST_CONFIG_INVALID");
+  const fd = openSync(
+    path,
+    constants.O_RDONLY | (constants.O_NOFOLLOW ?? 0),
+  );
+  try {
+    const opened = fstatSync(fd);
+    if (
+      opened.dev !== stat.dev ||
+      opened.ino !== stat.ino ||
+      opened.size !== stat.size ||
+      !opened.isFile() || opened.nlink !== 1 || opened.uid !== uid ||
+      (opened.mode & 0o077) !== 0
+    )
+      throw new CollaborationError("RETENTION_HOST_CONFIG_INVALID");
+    const bytes = Buffer.alloc(MAX_RETENTION_CONFIG_BYTES + 1);
+    let length = 0;
+    while (length < bytes.byteLength) {
+      const read = readSync(fd, bytes, length, bytes.byteLength - length, length);
+      if (read === 0) break;
+      length += read;
+    }
+    const after = fstatSync(fd);
+    const named = lstatSync(path);
+    if (length !== stat.size || after.size !== stat.size ||
+        after.mtimeMs !== stat.mtimeMs || after.ctimeMs !== stat.ctimeMs ||
+        named.dev !== stat.dev || named.ino !== stat.ino || named.nlink !== 1)
+      throw new CollaborationError("RETENTION_HOST_CONFIG_INVALID");
+    assertPrivateRoot(parent);
+    return bytes.subarray(0, length);
+  } finally {
+    closeSync(fd);
+  }
+}
+
+/**
+ * Reads the trusted offline host profile from FOLIO_RETENTION_HOST_CONFIG
+ * (or the given path). Absent configuration is NOT an error — the caller
+ * keeps ports unchanged and retention actions fail with
+ * RETENTION_HOST_REQUIRED. When a native private-files port is supplied it
+ * performs the bounded private read; otherwise a POSIX pinned read is used
+ * (a native platform with no port fails RETENTION_NATIVE_EVIDENCE_REQUIRED).
+ * Non-canonical or malformed content always fails closed.
+ */
+export function readRetentionHostConfig(
+  envPath?: string,
+  ports?: SharedServerPorts,
+): MaintenanceRetentionHostConfig | null {
+  const path = envPath ?? process.env.FOLIO_RETENTION_HOST_CONFIG;
+  if (path === undefined || path === "") return null;
+  if (!isAbsolute(path))
+    throw new CollaborationError("RETENTION_HOST_CONFIG_INVALID");
+  let read: () => Buffer;
+  if (ports?.privateFiles !== undefined) {
+    const files = synchronousPort(ports.privateFiles, {
+      readPrivateFile: { result: "buffer" },
+    });
+    read = () => files.readPrivateFile(path, MAX_RETENTION_CONFIG_BYTES);
+  } else {
+    if (process.platform === "win32")
+      throw new CollaborationError("RETENTION_NATIVE_EVIDENCE_REQUIRED");
+    const expected = lstatSync(path);
+    read = () => readPinnedPrivateFile(path, expected);
+  }
+  const raw = read();
+  if (raw.byteLength > MAX_RETENTION_CONFIG_BYTES)
+    throw new CollaborationError("RETENTION_HOST_CONFIG_INVALID");
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(
+      new TextDecoder("utf-8", { fatal: true }).decode(raw),
+    );
+  } catch {
+    throw new CollaborationError("RETENTION_HOST_CONFIG_INVALID");
+  }
+  const config = parseRetentionHostConfig(parsed);
+  if (canonical(config) !== raw.toString("utf8"))
+    throw new CollaborationError("RETENTION_HOST_CONFIG_INVALID");
+  retentionConfigOrigins.set(config, {
+    path: realpathSync(path),
+    canonical: raw.toString("utf8"),
+    assertCurrent: () => {
+      if (!read().equals(raw))
+        throw new CollaborationError("RETENTION_HOST_CONFIG_CHANGED");
+    },
+  });
+  return config;
+}
+
+function noRetentionSidecars(file: string): void {
+  for (const suffix of ["-journal", "-wal", "-shm"]) {
+    try { lstatSync(file + suffix); }
+    catch (error) {
+      if ((error as NodeJS.ErrnoException).code === "ENOENT") continue;
+      throw error;
+    }
+    throw new CollaborationError("RETENTION_HOST_EVIDENCE_INVALID");
+  }
+}
+
+/** Pin the actual existing source, not merely a caller's path string.
+ * Native private reads preserve the factory's file-ID/ACL proof. */
+function pinRetentionEvidenceFile(file: string, ports: SharedServerPorts): () => void {
+  const files = ports.privateFiles === undefined ? undefined : synchronousPort(
+    ports.privateFiles,
+    { readPrivateFile: { result: "buffer" }, assertDirectory: { result: "string" } },
+  );
+  if (process.platform === "win32" && files === undefined)
+    throw new CollaborationError("RETENTION_NATIVE_EVIDENCE_REQUIRED");
+  const root = files ? undefined : pinPrivateRoot(dirname(file));
+  const original = lstatSync(file);
+  const assert = () => {
+    if (files) {
+      if (files.assertDirectory(dirname(file)) !== dirname(file))
+        throw new CollaborationError("RETENTION_HOST_EVIDENCE_INVALID");
+      files.readPrivateFile(file, 8_000_000);
+    } else {
+      assertPrivateRoot(root!);
+      const current = lstatSync(file);
+      if (!current.isFile() || current.isSymbolicLink() || current.nlink !== 1 ||
+          current.uid !== root!.uid || (current.mode & 0o077) !== 0 ||
+          current.dev !== original.dev || current.ino !== original.ino)
+        throw new CollaborationError("RETENTION_HOST_EVIDENCE_INVALID");
+    }
+    noRetentionSidecars(file);
+  };
+  assert();
+  return assert;
+}
+
+/** Read-only semantic-role proof on an EXISTING runtime file before the
+ * RuntimeStore constructor runs — a wrong-role or missing store is rejected
+ * without any pragma mutation or directory creation. */
+function preflightRuntimeRole(file: string, role: string): void {
+  const header = sqliteHeader(file);
+  if (header?.applicationId !== SHARED_RUNTIME_APPLICATION_ID ||
+      header.version !== SHARED_RUNTIME_VERSION)
+    throw new CollaborationError("RETENTION_HOST_ROLE_MISMATCH");
+  let db: DatabaseSync;
+  let failure: unknown;
+  try {
+    db = new DatabaseSync(file, { readOnly: true });
+  } catch {
+    throw new CollaborationError("RETENTION_HOST_STORE_MISSING");
+  }
+  try {
+    db.exec("PRAGMA trusted_schema=OFF; PRAGMA query_only=ON; PRAGMA busy_timeout=0");
+    const row = db
+      .prepare(
+        "SELECT raw FROM runtime_records WHERE namespace = ? AND key = ?",
+      )
+      .get("meta", "role");
+    const raw = row === undefined ? undefined : (row as { raw: unknown }).raw;
+    if (typeof raw !== "string" || raw !== canonical(role))
+      throw new CollaborationError("RETENTION_HOST_ROLE_MISMATCH");
+  } catch (error) {
+    failure = error;
+    throw error;
+  } finally {
+    try { db.close(); }
+    catch (cleanup) {
+      if (failure !== undefined)
+        throw new AggregateError([failure, cleanup], "UNKNOWN: retained runtime preflight cleanup");
+      throw cleanup;
+    }
+  }
+}
+
+export function createMaintenanceRetentionPorts(
+  basePorts: SharedServerPorts,
+  config: MaintenanceRetentionHostConfig | null,
+): SharedServerPorts {
+  if (
+    config === null ||
+    basePorts.retentionHost !== undefined ||
+    basePorts.retentionHostFactory !== undefined
+  )
+    return basePorts;
+  // Re-validate and detach: the declared profile is a canonical snapshot,
+  // never a mutable caller alias.
+  const declared = parseRetentionHostConfig(config);
+  const origin = retentionConfigOrigins.get(config);
+  if (origin !== undefined && canonical(declared) !== origin.canonical)
+    throw new CollaborationError("RETENTION_HOST_CONFIG_CHANGED");
+  return {
+    ...basePorts,
+    retentionHostFactory: (authority: SharedAuthority) => {
+      origin?.assertCurrent();
+      const context = createSharedOperatorContext(basePorts, "RETENTION_NATIVE_EVIDENCE_REQUIRED");
+      // A native platform needs its trusted file port for the default
+      // offline factory; there is no POSIX fallback pretending coverage.
+      if (
+        process.platform === "win32" &&
+        basePorts.privateFiles === undefined
+      )
+        throw new CollaborationError("RETENTION_NATIVE_EVIDENCE_REQUIRED");
+      // Source binding: canonical root directory, primary organization,
+      // sha256(canonical(genesis)), and the exact expected authority cut.
+      const sourceRoot = realpathSync(dirname(authority.store.path));
+      if (
+        realpathSync(declared.sourceRoot) !== sourceRoot ||
+        declared.sourceRoot !== sourceRoot
+      )
+        throw new CollaborationError("RETENTION_HOST_SOURCE_CHANGED");
+      if (authority.store.get("meta", "primary-org") !== declared.orgId)
+        throw new CollaborationError("RETENTION_HOST_SOURCE_CHANGED");
+      const genesis = authority.store.get("meta", "genesis");
+      if (
+        genesis === null ||
+        createHash("sha256").update(canonical(genesis)).digest("hex") !==
+          declared.sourceGenesisHash
+      )
+        throw new CollaborationError("RETENTION_HOST_SOURCE_CHANGED");
+      if (canonical(authority.head()) !== canonical(declared.expectedCut))
+        throw new CollaborationError("RETENTION_HOST_SOURCE_CHANGED");
+      // The trusted config file must live outside the source and every
+      // declared store directory once the source is known.
+      if (origin !== undefined) {
+        let file = origin.path;
+        try {
+          file = realpathSync(file);
+        } catch {
+          throw new CollaborationError("RETENTION_HOST_CONFIG_INVALID");
+        }
+        const dirs = [
+          declared.sourceRoot,
+          ...declared.runtimeStores.map((entry) => entry.path),
+          ...declared.retainedStores.map((entry) => dirname(entry.path)),
+        ].map((dir) => {
+          try {
+            return realpathSync(dir);
+          } catch {
+            return dir;
+          }
+        });
+        for (const dir of dirs)
+          if (
+            file === dir ||
+            file.startsWith(dir + sep) ||
+            dir.startsWith(file + sep)
+          )
+            throw new CollaborationError("RETENTION_HOST_CONFIG_INVALID");
+      }
+      const opened: RuntimeStore[] = [];
+      const proofs: (() => void)[] = [];
+      try {
+        const host = new ProductionRetentionHost({
+          authority,
+          expectedServiceIds: [
+            ...declared.runtimeStores.map((entry) => entry.id),
+            ...declared.retainedStores.map((entry) => entry.id),
+          ],
+          unaccountedStores: declared.unaccountedStores ?? [],
+        });
+        for (const entry of declared.runtimeStores) {
+          const file = join(entry.path, SHARED_RUNTIME_FILE);
+          if (
+            !existsSync(file) ||
+            !lstatSync(file).isFile() ||
+            lstatSync(file).isSymbolicLink()
+          )
+            throw new CollaborationError("RETENTION_HOST_STORE_MISSING");
+          const assertOwned = pinRetentionEvidenceFile(file, basePorts);
+          proofs.push(assertOwned);
+          preflightRuntimeRole(file, entry.role);
+          assertOwned();
+          const store = new RuntimeStore(entry.path, {
+            ...context.storeOptions(entry.path),
+            ...(entry.role === "client" ? { requiredExistingRole: "client" as const } : {}),
+          });
+          opened.push(store);
+          assertOwned();
+          host.registerRuntimeStore(entry.id, store);
+        }
+        for (const entry of declared.retainedStores) {
+          // A native file-ID/ACL proof alone does not prove which authority
+          // a journal belongs to. Other native ledger layouts need their
+          // actual owner's in-process factory/semantic binding proof.
+          if (context.privateFiles !== undefined && entry.binding === undefined)
+            throw new CollaborationError("RETENTION_NATIVE_EVIDENCE_REQUIRED");
+          const assertOwned = pinRetentionEvidenceFile(entry.path, basePorts);
+          proofs.push(assertOwned);
+          host.registerRetainedSqlite(entry.id, {
+            path: entry.path,
+            role: entry.role,
+            ...(entry.binding === undefined ? {} : { binding: entry.binding }),
+            assertOwned,
+          });
+        }
+        const registry = host.registry(authority);
+        const checkRoster = registry.rosterCheck!;
+        registry.rosterCheck = () => {
+          checkRoster();
+          origin?.assertCurrent();
+          for (const proof of proofs) proof();
+        };
+        return {
+          host: registry,
+          close: () => {
+            const failures: unknown[] = [];
+            for (const store of [...opened].reverse())
+              try {
+                store.close();
+              } catch (error) {
+                failures.push(error);
+              }
+            if (failures.length > 0)
+              throw new Error("UNKNOWN: retention host cleanup", {
+                cause: new AggregateError(failures),
+              });
+          },
+        };
+      } catch (error) {
+        const failures: unknown[] = [error];
+        for (const store of [...opened].reverse())
+          try {
+            store.close();
+          } catch (closeError) {
+            failures.push(closeError);
+          }
+        throw failures.length === 1
+          ? error
+          : new Error("UNKNOWN: retention host cleanup", {
+              cause: new AggregateError(failures),
+            });
+      }
+    },
+  };
+}
+
+function retentionPortsWithDefaults(
+  ports: SharedServerPorts,
+): SharedServerPorts {
+  if (
+    ports.retentionHost !== undefined ||
+    ports.retentionHostFactory !== undefined
+  )
+    return ports;
+  return createMaintenanceRetentionPorts(
+    ports,
+    readRetentionHostConfig(undefined, ports),
+  );
+}
 
 export type SharedServerHandle = Readonly<{
   state?: "restored" | "maintained" | "recovered";
@@ -320,12 +888,6 @@ function seedDocument(): Doc {
     .toJSON() as Doc;
 }
 
-function storeOptions(ports: SharedServerPorts): RuntimeStoreOptions {
-  return ports.platformAdapter === undefined
-    ? {}
-    : { platformAdapter: ports.platformAdapter };
-}
-
 async function bootstrapCommand(
   parsed: Parsed,
   ports: SharedServerPorts,
@@ -336,20 +898,31 @@ async function bootstrapCommand(
   const deviceId = id(value(parsed, "device"));
   const workspaceId = id(value(parsed, "workspace"));
   const documentId = id(value(parsed, "document"));
-  assertBootstrapRoot(root);
-  const target = assertCredentialTarget(
-    root,
-    value(parsed, "credentials-output"),
-  );
+  const context = createSharedOperatorContext(ports, "WINDOWS_BOOTSTRAP_OPERATOR_UNSUPPORTED");
+  const files = context.privateFiles;
+  let target: string;
+  if (files) {
+    // Preflight the external credential name before creating any authority.
+    target = files.assertNewFile(absolutePath(value(parsed, "credentials-output")), [root]);
+    if (optionalStat(root) === undefined) {
+      const destination = files.assertNewDirectory(root, []);
+      if (destination !== root) fail("UNSAFE_ROOT");
+      files.createDirectory(root);
+    } else if (files.assertDirectory(root) !== root) fail("UNSAFE_ROOT");
+  } else {
+    assertBootstrapRoot(root);
+    target = assertCredentialTarget(root, value(parsed, "credentials-output"));
+  }
 
   let authority: SharedAuthority;
   try {
-    authority = new SharedAuthority(root, storeOptions(ports));
+    authority = new SharedAuthority(root, context.storeOptions(root));
   } catch (error) {
     return normalize(error, "BOOTSTRAP_FAILED");
   }
 
-  let published = false;
+  let published = false, publicationAttempted = false;
+  let expectedCredentials: string | undefined;
   try {
     authority.store.transaction(() => {
       const issued = authority.bootstrap({
@@ -360,16 +933,19 @@ async function bootstrapCommand(
         documentId,
         document: seedDocument(),
       });
-      writeNewFileDurably(
-        target,
-        JSON.stringify({
-          token: issued.token,
-          recoveryKey: issued.recoveryKey,
-        }),
-        { mode: PRIVATE_FILE_MODE, syncParentDirectory: true },
-      );
+      context.bindPublicationSource(authority);
+      expectedCredentials = JSON.stringify({token: issued.token, recoveryKey: issued.recoveryKey});
+      if (files) {
+        files.assertNewFile(target, [root]);
+        publicationAttempted = true;
+        files.publishNewFile(target, Buffer.from(expectedCredentials, "utf8"));
+        if (readSharedOperatorFile(files, target, KEY_MAX_BYTES, "CREDENTIALS_PROOF_FAILED").toString("utf8") !== expectedCredentials)
+          fail("CREDENTIALS_PROOF_FAILED");
+      } else writeNewFileDurably(target, expectedCredentials, {mode: PRIVATE_FILE_MODE, syncParentDirectory: true});
       published = true;
     });
+    if (files && readSharedOperatorFile(files, target, KEY_MAX_BYTES, "CREDENTIALS_PROOF_FAILED").toString("utf8") !== expectedCredentials)
+      fail("CREDENTIALS_PROOF_FAILED");
   } catch (error) {
     const remains = optionalStat(target) !== undefined;
     try {
@@ -379,7 +955,7 @@ async function bootstrapCommand(
     }
     if (!published && (error as NodeJS.ErrnoException).code === "EEXIST")
       return fail("CREDENTIALS_EXIST");
-    if (published || remains) return fail("BOOTSTRAP_UNKNOWN");
+    if (published || publicationAttempted || remains) return fail("BOOTSTRAP_UNKNOWN");
     return normalize(error, "BOOTSTRAP_FAILED");
   }
 
@@ -508,7 +1084,10 @@ async function serveCommand(
   parsed: Parsed,
   ports: SharedServerPorts,
 ): Promise<SharedServerHandle> {
-  const root = assertServeRoot(value(parsed, "root"));
+  const context = createSharedOperatorContext(ports, "WINDOWS_SERVE_OPERATOR_UNSUPPORTED");
+  const files = context.privateFiles;
+  const requestedRoot = absolutePath(value(parsed, "root"));
+  const root = files ? files.assertDirectory(requestedRoot) : assertServeRoot(requestedRoot);
   const host = value(parsed, "host");
   if (!isLoopbackHost(host)) fail("INVALID_HOST");
   const portNumber = port(value(parsed, "port"));
@@ -516,7 +1095,7 @@ async function serveCommand(
 
   let authority: SharedAuthority;
   try {
-    authority = new SharedAuthority(root, storeOptions(ports));
+    authority = context.openAuthority(root, context.storeOptions(root, true));
   } catch (error) {
     return normalize(error, "SERVE_FAILED");
   }
@@ -528,8 +1107,11 @@ async function serveCommand(
     if (loopback) {
       bound = await listenLoopback(authority, host, portNumber);
     } else {
-      const keyText = readTlsMaterial(value(parsed, "key"), KEY_MAX_BYTES);
-      const certText = readTlsMaterial(value(parsed, "cert"), CERT_MAX_BYTES);
+      const material = (path: string, max: number) => files
+        ? new TextDecoder("utf-8", {fatal: true}).decode(readSharedOperatorFile(files, absolutePath(path), max, "INVALID_TLS_FILE"))
+        : readTlsMaterial(path, max);
+      const keyText = material(value(parsed, "key"), KEY_MAX_BYTES);
+      const certText = material(value(parsed, "cert"), CERT_MAX_BYTES);
       const tls = createSharedHttpsServer(authority, {
         key: keyText,
         cert: certText,
@@ -573,11 +1155,18 @@ export async function runSharedServer(
   ports: SharedServerPorts = {},
 ): Promise<SharedServerHandle> {
   if (args[0] === "recover")
-    return runRecoveryOperator(args.slice(1), storeOptions(ports));
-  if (args[0] === "maintain")
-    return runMaintenanceOperator(args.slice(1), storeOptions(ports));
+    return runRecoveryOperator(args.slice(1), ports);
+  if (args[0] === "maintain") {
+    const actionIndex = args.indexOf("--action");
+    const retentionAction =
+      actionIndex !== -1 && args[actionIndex + 1]?.startsWith("retention-");
+    return runMaintenanceOperator(
+      args.slice(1),
+      retentionAction ? retentionPortsWithDefaults(ports) : ports,
+    );
+  }
   if (args[0] === "restore")
-    return runRestoreOperator(args.slice(1), storeOptions(ports));
+    return runRestoreOperator(args.slice(1), ports);
   const parsed = parse(args);
   if (parsed.command === "bootstrap") return bootstrapCommand(parsed, ports);
   return serveCommand(parsed, ports);
@@ -600,12 +1189,16 @@ function waitForSignal(): Promise<void> {
 export async function main(
   args: string[] = process.argv.slice(2),
 ): Promise<void> {
-  const handle = await runSharedServer(args);
+  const nativeConfig = process.platform === "win32" ? windowsOperatorConfigFromEnvironment(process.env) : undefined;
+  const native = nativeConfig ? createWindowsOperatorNative(nativeConfig, {enrollExistingSources: args[0] === "bootstrap" || process.env.FOLIO_WINDOWS_ENROLL_EXISTING_SOURCES === "1"}) : undefined;
+  let handle: SharedServerHandle;
+  try { handle = await runSharedServer(args, native?.ports); }
+  catch (error) { try {native?.close();} catch (cleanup) {throw new AggregateError([error, cleanup], "Native operator cleanup failed");} throw error; }
   let closed = false;
   const close = async (): Promise<void> => {
     if (closed) return;
     closed = true;
-    await handle.close();
+    try {await handle.close();} finally {native?.close();}
   };
   try {
     if (handle.url === undefined) {

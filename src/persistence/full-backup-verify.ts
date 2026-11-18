@@ -1,3 +1,5 @@
+import {privatePersistencePort} from "../platform/private-persistence";
+import {withNativeSqliteReader} from "./native-sqlite-reader";
 import { createHash } from "node:crypto";
 import {
   closeSync,
@@ -117,12 +119,14 @@ function lstatOptional(path: string) {
 }
 
 function requireDirectory(path: string, label: string): void {
+  privatePersistencePort()?.inspectDirectory(path);
   const info = lstatSync(path);
   if (info.isSymbolicLink() || !info.isDirectory())
     throw new Error(`${label} is not a regular directory`);
 }
 
 function requireRegularFile(path: string, label: string): void {
+  privatePersistencePort()?.inspectFileIdentity(path);
   const info = lstatSync(path);
   if (info.isSymbolicLink() || !info.isFile())
     throw new Error(`${label} is not a regular file`);
@@ -149,6 +153,11 @@ function openRegularFile(path: string, label: string) {
 }
 
 function hashRegularFile(path: string, label: string): HashFileInfo {
+  const native = privatePersistencePort();
+  if (native) {
+    const file = native.inspectFile(path, 256 * 1024 * 1024);
+    return {bytes: file.bytes, sha256: file.sha256};
+  }
   const { fd, opened } = openRegularFile(path, label);
   try {
     const hash = createHash("sha256");
@@ -177,6 +186,15 @@ function hashRegularFile(path: string, label: string): HashFileInfo {
 }
 
 function readBoundedFile(path: string, label: string): Buffer {
+  const native = privatePersistencePort();
+  if (native) {
+    const file = native.inspectFile(path, MAX_MANIFEST_BYTES);
+    return Buffer.from(native.read(path, file, MAX_MANIFEST_BYTES));
+  }
+  return readBoundedSelectionFile(path, label);
+}
+
+function readBoundedSelectionFile(path: string, label: string): Buffer {
   const { fd, opened } = openRegularFile(path, label);
   try {
     if (opened.size > MAX_MANIFEST_BYTES)
@@ -655,9 +673,8 @@ export function inspectWorkspaceSnapshot(directory: string): SnapshotInspection 
     if (lstatOptional(databasePath + suffix))
       throw new Error("Workspace database has an unsafe SQLite sidecar");
 
-  let db: DatabaseSync | undefined;
+  return withNativeSqliteReader(databasePath, privatePersistencePort(), db => {
   try {
-    db = new DatabaseSync(databasePath, { readOnly: true });
     db.exec("BEGIN");
     const checks = db.prepare("PRAGMA integrity_check").all() as {
       integrity_check: string;
@@ -689,15 +706,14 @@ export function inspectWorkspaceSnapshot(directory: string): SnapshotInspection 
     db.exec("COMMIT");
     return { storeVersion: version, inventory, logicalSha256, assets };
   } catch (error) {
-    if (db?.isTransaction) {
+    if (db.isTransaction) {
       try {
         db.exec("ROLLBACK");
       } catch {}
     }
     throw error;
-  } finally {
-    db?.close();
   }
+  });
 }
 
 function canonicalRelativePath(value: unknown, label: string): string {
@@ -892,4 +908,14 @@ export function verifyFullBackup(
     manifest,
     fingerprint: createHash("sha256").update(manifestBytes).digest("hex"),
   };
+}
+
+/** Bounded untrusted manifest parsing for a trusted picker boundary. This
+ * grants no source identity; the caller must subsequently admit its exact
+ * native ID/hash and then run full verification under the native scope. */
+export function readBackupManifestSelection(directory: string): {manifestSha256: string; manifestPath: string} {
+  const manifestPath = join(directory, MANIFEST_FILE);
+  const bytes = readBoundedSelectionFile(manifestPath, "Selected backup manifest");
+  parseManifest(JSON.parse(new TextDecoder("utf-8", {fatal: true}).decode(bytes)));
+  return {manifestPath, manifestSha256: createHash("sha256").update(bytes).digest("hex")};
 }

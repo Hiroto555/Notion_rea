@@ -69,6 +69,7 @@ export class SharedRuntimeService {
       copyCatalog?: () => {id: string; title: string; kind: "page" | "record" | "database"}[];
       pickBackup?: () => Promise<string | null>;
       forbiddenRoots?: string[];
+      nativeBackup?: import("../platform/windows/backup-artifact").WindowsBackupArtifactPort;
       recoveryFilesystemProof?: import("./shared-recovery-index").SharedRecoveryFilesystemProof;
       runtimeStoreOptions?: (directory: string) => import("../collaboration/runtime/store").RuntimeStoreOptions;
     } = {},
@@ -452,15 +453,51 @@ export class SharedRuntimeService {
           demand(c && req.orgId === c.orgId, "AUTH_SCOPE_MISMATCH");
           demand(this.options.pickBackup, "BACKUP_PICKER_UNAVAILABLE");
           const backup = new SharedBackupProvider(c.url, c.token);
+          const generation = this.generation;
+          const client = this.client;
+          const authSnapshot = canonical(c.auth);
+          const token = c.token, url = c.url, orgId = c.orgId;
+          const allowed = () =>
+            isAuthorized() &&
+            this.connection === c &&
+            this.generation === generation &&
+            this.client === client &&
+            canonical(c.auth) === authSnapshot &&
+            c.token === token &&
+            c.url === url &&
+            c.orgId === orgId;
           try {
             result = await exportSharedBackup({
               download: () => backup.download(c.orgId),
               pick: this.options.pickBackup,
-              isAuthorized,
+              isAuthorized: allowed,
               forbiddenRoots: [
                 this.root,
                 ...(this.options.forbiddenRoots ?? []),
               ],
+              nativeBackup: this.options.nativeBackup,
+              // Deliberate second full backup fetch for authority
+              // authorization/current cut after the stage and immediately
+              // before the irreversible commit. This cannot prove a global
+              // server-side lease — it only fences authorization and source
+              // drift; no stronger atomic claim is made.
+              revalidateSource: async (frozen) => {
+                demand(allowed(), "UNAUTHORIZED_IPC_SENDER");
+                const session = await c.provider.session(c.orgId);
+                demand(allowed(), "UNAUTHORIZED_IPC_SENDER");
+                demand(
+                  canonical(session) === authSnapshot,
+                  "AUTH_SCOPE_MISMATCH",
+                );
+                const current = await backup.download(c.orgId);
+                demand(allowed(), "UNAUTHORIZED_IPC_SENDER");
+                demand(
+                  current.hash === frozen.hash &&
+                    canonical(current.head) === canonical(frozen.head) &&
+                    current.raw === frozen.raw,
+                  "BACKUP_SOURCE_CHANGED",
+                );
+              },
             });
           } finally {
             backup.close();
@@ -735,7 +772,10 @@ export class SharedRuntimeService {
               else client.retainDraft(req.document);
             } else client.clearEditingRaw();
           } catch (error) {
-            client.retainDraft(req.document);
+            // Editing input is already durable. A revoked continuation must
+            // preserve it without querying/writing another draft after the
+            // originating authority was lost.
+            if (isAuthorized()) client.retainDraft(req.document);
             throw error;
           }
           break;

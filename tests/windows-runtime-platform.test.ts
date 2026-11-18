@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { describe, expect, it } from "vitest";
 import { CollaborationError } from "../src/collaboration/runtime/contract";
 import {
@@ -7,6 +8,7 @@ import {
   type WindowsRuntimePlatformOptions,
   type WindowsRuntimeProbePort,
 } from "../src/platform/windows/runtime-platform";
+import type { WindowsExclusiveDirectoryExecRequest } from "../src/platform/windows/exclusive-directory";
 
 const ROOT = "C:\\Folio";
 const DIRECTORY = "C:\\Folio\\runtime";
@@ -223,6 +225,39 @@ function countPrefix(fs: FakeFs, prefix: string): number {
 }
 
 describe("WindowsRuntimePlatform injected contract", () => {
+  it("returns EXISTING using read-only proof without native open or file flushing", () => {
+    const {fs, probe, platform} = setup();
+    let opens = 0;
+    (probe as {open?: WindowsRuntimeProbePort["open"]}).open = () => { opens++; throw new Error("must not open"); };
+    platform.bind(DIRECTORY);
+    const receipt = platform.createExclusiveDurablyWithReceipt(DATABASE);
+    expect(receipt.state).toBe("EXISTING");
+    expect(receipt.identity.fileId).toBe(probeState().databaseFileId);
+    expect(opens).toBe(0);
+    expect(fs.calls.some(c => c.startsWith("open:") || c.startsWith("fsync:"))).toBe(false);
+    platform.close();
+  });
+  it.each(["CREATED", "EXISTS", "wrong-handle", "changed-after-create"] as const)(
+    "requires a positive same-handle empty-file CREATE_NEW receipt: %s", mode => {
+      const {fs, state, probe, platform} = setup();
+      fs.entries.delete(fold(DATABASE));
+      (probe as {create?: WindowsRuntimeProbePort["create"]}).create = (path, root) => {
+        fs.addFile(path);
+        const id = state.databaseFileId;
+        const value = evidence(path, root, id, state.databaseVolumeId, state.rootFileId, state.rootVolumeId, {});
+        if (mode === "changed-after-create") state.databaseFileId = "f".repeat(32);
+        return {...value, state: mode === "EXISTS" ? "EXISTS" : "CREATED",
+          handleFileId: mode === "wrong-handle" ? "e".repeat(32) : id, handleVolumeId: state.databaseVolumeId};
+      };
+      platform.bind(DIRECTORY);
+      if (mode === "CREATED") {
+        const receipt = platform.createExclusiveDurablyWithReceipt(DATABASE);
+        expect(receipt.state).toBe("CREATED");
+        expect(receipt.identity.fileId).toBe(state.databaseFileId);
+        expect(platform.createExclusiveDurablyWithReceipt(DATABASE).state).toBe("EXISTING");
+      } else expect(() => platform.createExclusiveDurablyWithReceipt(DATABASE)).toThrow();
+      platform.close();
+    });
   it("binds a preprovisioned directory and verifies root and database identity", () => {
     const { fs, state, platform } = setup();
     expect(platform.bind(DIRECTORY)).toBe(DIRECTORY);
@@ -628,4 +663,250 @@ describe("WindowsRuntimePlatform injected contract", () => {
       );
     });
   }
+});
+
+// createExclusiveDirectory contract simulation over injected ports. This is
+// not Windows OS acceptance of the --exclusive-directory-v1 helper mode.
+const EMPTY_SHA256 = createHash("sha256")
+  .update(new Uint8Array())
+  .digest("hex");
+const EXCLUSIVE_TARGET = "C:\\Folio\\runtime\\dest";
+const EXCLUSIVE_SID = "S-1-5-21-1000";
+
+function exclusiveProbeEvidence(
+  path: string,
+  fileId: string,
+): Record<string, unknown> {
+  return {
+    platform: "win32",
+    sid: EXCLUSIVE_SID,
+    ownerSid: EXCLUSIVE_SID,
+    daclPrivate: true,
+    reparsePoint: false,
+    linkCount: 1,
+    localFilesystem: true,
+    fileId,
+    rootFileId: "1".repeat(32),
+    volumeId: "2".repeat(16),
+    rootVolumeId: "2".repeat(16),
+    canonicalPath: path,
+    canonicalRoot: ROOT,
+  };
+}
+
+function exclusiveReply(request: WindowsExclusiveDirectoryExecRequest): {
+  status: number | null;
+  signal: string | null;
+  stdout: string;
+  stderr: string;
+} {
+  const wire = JSON.parse(
+    Buffer.from(request.input).toString("utf8"),
+  ) as Record<string, unknown>;
+  return {
+    status: 0,
+    signal: null,
+    stderr: "",
+    stdout: JSON.stringify({
+      contractVersion: 1,
+      operation: "create-directory",
+      path: wire.path,
+      root: wire.root,
+      attemptId: wire.attemptId,
+      state: "CREATED",
+      rootEvidence: exclusiveProbeEvidence(ROOT, "1".repeat(32)),
+      parent: exclusiveProbeEvidence(DIRECTORY, "3".repeat(32)),
+      directory: exclusiveProbeEvidence(EXCLUSIVE_TARGET, "5".repeat(32)),
+      handleFileId: "5".repeat(32),
+      handleVolumeId: "2".repeat(16),
+      filesystem: "NTFS",
+      ancestorsHeld: true,
+      daclProtected: true,
+      namespace: "EXCLUSIVE_CREATE",
+    }),
+  };
+}
+
+function exclusiveSetup(
+  exec: (
+    request: WindowsExclusiveDirectoryExecRequest,
+  ) => {
+    status: number | null;
+    signal: string | null;
+    stdout: string;
+    stderr: string;
+    errorCode?: string;
+  },
+  omitHash = false,
+): {
+  platform: WindowsRuntimePlatform;
+  requests: WindowsExclusiveDirectoryExecRequest[];
+  state: ProbeState;
+} {
+  const fs = new FakeFs();
+  fs.addDirectory(ROOT);
+  fs.addDirectory(DIRECTORY);
+  fs.addFile(EXECUTABLE);
+  const state = probeState();
+  const requests: WindowsExclusiveDirectoryExecRequest[] = [];
+  const probe: WindowsRuntimeProbePort = {
+    ...makeProbe(state),
+    directory() {
+      throw new CollaborationError("LEGACY_DIRECTORY_MUST_NOT_RUN");
+    },
+    exclusiveDirectory(request) {
+      requests.push(request);
+      return exec(request);
+    },
+  };
+  const platform = new WindowsRuntimePlatform({
+    ...options(fs, probe),
+    expectedHash: omitHash ? undefined : EMPTY_SHA256,
+  });
+  platform.bind(DIRECTORY);
+  return { platform, requests, state };
+}
+
+describe("WindowsRuntimePlatform createExclusiveDirectory contract", () => {
+  it("creates an immediate child and validates the exact request and proof", () => {
+    const { platform, requests } = exclusiveSetup(exclusiveReply);
+    const result = platform.createExclusiveDirectory(EXCLUSIVE_TARGET);
+    expect(requests).toHaveLength(1);
+    const request = requests[0];
+    expect(request.executable).toBe(EXECUTABLE);
+    expect(request.args).toEqual(["--exclusive-directory-v1"]);
+    expect(request.cwd).toBe(SYSTEM_ROOT);
+    expect(request.env).toEqual({
+      SystemRoot: SYSTEM_ROOT,
+      windir: SYSTEM_ROOT,
+      TEMP: `${SYSTEM_ROOT}\\Temp`,
+      TMP: `${SYSTEM_ROOT}\\Temp`,
+    });
+    expect(request.shell).toBe(false);
+    expect(request.windowsHide).toBe(true);
+    expect(request.stdio).toBe("pipe");
+    expect(request.encoding).toBe("buffer");
+    const wire = JSON.parse(
+      Buffer.from(request.input).toString("utf8"),
+    ) as Record<string, unknown>;
+    expect(wire).toEqual({
+      contractVersion: 1,
+      operation: "create-directory",
+      path: EXCLUSIVE_TARGET,
+      root: ROOT,
+      attemptId: expect.stringMatching(/^[0-9a-f]{32}$/),
+      rootFileId: "1".repeat(32),
+      rootVolumeId: "2".repeat(16),
+      directoryFileId: "3".repeat(32),
+      directoryVolumeId: "2".repeat(16),
+    });
+    expect(result.state).toBe("CREATED");
+    if (result.state !== "CREATED") throw new Error("unreachable");
+    expect(result.identity).toEqual({
+      canonicalPath: EXCLUSIVE_TARGET,
+      directoryFileId: "5".repeat(32),
+      directoryVolumeId: "2".repeat(16),
+      rootFileId: "1".repeat(32),
+      rootVolumeId: "2".repeat(16),
+    });
+    expect(result.preserve).toBe(true);
+    expect(result.evidence.exactWire).toBe(
+      Buffer.from(request.input).toString("utf8"),
+    );
+    expect(result.evidence.captured.status).toBe(0);
+    platform.close();
+  });
+
+  it("fails before invocation when the helper exclusive op is unavailable and never uses the legacy directory helper", () => {
+    const fs = new FakeFs();
+    fs.addDirectory(ROOT);
+    fs.addDirectory(DIRECTORY);
+    fs.addFile(EXECUTABLE);
+    const state = probeState();
+    let directoryCalls = 0;
+    const probe: WindowsRuntimeProbePort = {
+      ...makeProbe(state),
+      directory() {
+        directoryCalls++;
+        throw new CollaborationError("LEGACY_DIRECTORY_MUST_NOT_RUN");
+      },
+    };
+    const platform = new WindowsRuntimePlatform({
+      ...options(fs, probe),
+      expectedHash: EMPTY_SHA256,
+    });
+    platform.bind(DIRECTORY);
+    expectCode(
+      () => platform.createExclusiveDirectory(EXCLUSIVE_TARGET),
+      "PROBE_EXCLUSIVE_DIRECTORY_UNAVAILABLE",
+    );
+    expect(directoryCalls).toBe(0);
+  });
+
+  it("returns UNKNOWN with the exact preserved evidence on a malformed reply", () => {
+    const { platform, requests } = exclusiveSetup(() => ({
+      status: 0,
+      signal: null,
+      stdout: "{broken",
+      stderr: "",
+    }));
+    const result = platform.createExclusiveDirectory(EXCLUSIVE_TARGET);
+    expect(result.state).toBe("UNKNOWN");
+    expect(result.state !== "CREATED" && result.evidence.captured.stdout).toBe(
+      "{broken",
+    );
+    expect(requests).toHaveLength(1);
+  });
+
+  it("converts post-dispatch parent identity drift to UNKNOWN with evidence", () => {
+    const { platform, state } = exclusiveSetup((request) => {
+      state.directoryFileId = "A".repeat(32);
+      return exclusiveReply(request);
+    });
+    const result = platform.createExclusiveDirectory(EXCLUSIVE_TARGET);
+    expect(result.state).toBe("UNKNOWN");
+    expect(result.evidence.captured.status).toBe(0);
+  });
+
+  it("rejects non-child targets and a consumed target without dispatch", () => {
+    const { platform, requests } = exclusiveSetup(exclusiveReply);
+    expectCode(
+      () => platform.createExclusiveDirectory("C:\\Folio\\runtime\\a\\b"),
+      "WINDOWS_EXCLUSIVE_DIRECTORY_PATH",
+    );
+    expectCode(
+      () => platform.createExclusiveDirectory(DIRECTORY),
+      "WINDOWS_EXCLUSIVE_DIRECTORY_PATH",
+    );
+    expect(requests).toHaveLength(0);
+    platform.createExclusiveDirectory(EXCLUSIVE_TARGET);
+    expectCode(
+      () => platform.createExclusiveDirectory(EXCLUSIVE_TARGET),
+      "WINDOWS_EXCLUSIVE_DIRECTORY_CONSUMED",
+    );
+    expect(requests).toHaveLength(1);
+  });
+
+  it("requires the pinned helper hash for the new operation", () => {
+    const { platform } = exclusiveSetup(exclusiveReply, true);
+    expectCode(
+      () => platform.createExclusiveDirectory(EXCLUSIVE_TARGET),
+      "WINDOWS_EXCLUSIVE_DIRECTORY_HASH_REQUIRED",
+    );
+  });
+
+  it("requires a bound parent before any exclusive dispatch", () => {
+    const fs = new FakeFs();
+    fs.addDirectory(ROOT);
+    fs.addDirectory(DIRECTORY);
+    fs.addFile(EXECUTABLE);
+    const platform = new WindowsRuntimePlatform({
+      ...options(fs, makeProbe(probeState())),
+      expectedHash: EMPTY_SHA256,
+    });
+    expectCode(
+      () => platform.createExclusiveDirectory(EXCLUSIVE_TARGET),
+      "WINDOWS_ROOT_NOT_BOUND",
+    );
+  });
 });

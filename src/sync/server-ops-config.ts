@@ -14,6 +14,10 @@ import { basename, dirname, join, resolve } from "node:path";
 import { syncPath } from "../persistence/durable-file";
 import { pinPrivateRoot, assertPrivateRoot } from "./m3-private-root";
 import { identifier, SyncError } from "./protocol";
+import {
+  windowsServerNative,
+  type WindowsServerNativePort,
+} from "../platform/windows/server-native";
 
 export type ServerOpsConfig = {
   format: "folio-server-config/v1";
@@ -56,6 +60,17 @@ const CREDENTIAL_KEYS = [
 const TOKEN = /^[A-Za-z0-9_-]{32,512}$/;
 const FILE_MODE = 0o600;
 const MAX_FILE_BYTES = 4_096;
+/** Names that mark a managed root; a credential handoff may never share an
+ * ancestor with any of them (mirrors the POSIX ancestor walk, expressed as
+ * bounded namespace hints that never leave the configured native root). */
+const FORBIDDEN_NAMES = [
+  "workspace.sqlite",
+  "server.sqlite",
+  "full-manifest.json",
+  "manifest.json",
+  ".folio-sync-transfers",
+] as const;
+const MAX_ANCESTORS = 128;
 function assertHandoffAncestors(path: string): void {
   let parent = dirname(resolve(path));
   for (let depth = 0; depth < 128; depth++) {
@@ -344,7 +359,114 @@ function pin(directory: string, forbiddenRoots: readonly string[] = []) {
   }
 }
 
+/** Map any non-parse native failure to the fixed unsafe code; never leak
+ * helper/transport detail across this boundary. */
+function normalizeNative(error: unknown): never {
+  if (
+    error instanceof SyncError &&
+    (error.code === INVALID || error.code === UNSAFE)
+  )
+    throw error;
+  throw Object.assign(new SyncError(UNSAFE, 409), { cause: error });
+}
+
+function decodeUtf8Exact(bytes: Uint8Array): string {
+  const buffer = Buffer.from(bytes);
+  const text = buffer.toString("utf8");
+  if (!Buffer.from(text, "utf8").equals(buffer)) fail(INVALID);
+  return text;
+}
+
+function parseJsonText<T>(text: string, parse: (value: unknown) => T): T {
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(text);
+  } catch {
+    fail(INVALID);
+  }
+  return parse(parsed);
+}
+
+/**
+ * Walk ancestors of a handoff target within the configured native root and
+ * reject any directory that carries a managed-root marker name. Ancestors
+ * above the configured root are outside this adapter's authority: the
+ * parent must configure a root broad enough to cover every credential and
+ * backup sibling it intends to hand off.
+ */
+export function assertNativeServerHandoffAncestors(
+  native: WindowsServerNativePort,
+  path: string,
+): void {
+  const inside = (p: string): boolean => {
+    try {
+      native.canonical(p, true);
+      return true;
+    } catch {
+      return false;
+    }
+  };
+  let parent = native.parent(path);
+  for (let depth = 0; depth < MAX_ANCESTORS; depth++) {
+    if (!inside(parent)) return;
+    for (const name of FORBIDDEN_NAMES) {
+      if (native.kindOf(native.join(parent, name)) !== "absent")
+        fail(UNSAFE);
+    }
+    if (native.samePath(parent, native.root)) return;
+    const next = native.parent(parent);
+    if (native.samePath(next, parent)) return;
+    parent = next;
+  }
+  fail(UNSAFE);
+}
+
+function nativeReadSecureFile(
+  native: WindowsServerNativePort,
+  path: string,
+): string {
+  const file = native.inspectFile(path, MAX_FILE_BYTES);
+  if (file.bytes > MAX_FILE_BYTES) fail(INVALID);
+  const bytes = native.readFile(path, file, MAX_FILE_BYTES);
+  if (bytes.byteLength !== file.bytes) fail(UNSAFE);
+  return decodeUtf8Exact(bytes);
+}
+
+function nativeWriteSecureExclusive(
+  native: WindowsServerNativePort,
+  path: string,
+  text: string,
+): void {
+  const bytes = Buffer.from(text, "utf8");
+  if (bytes.byteLength > MAX_FILE_BYTES) fail(INVALID);
+  if (native.kindOf(path) !== "absent") fail(UNSAFE);
+  const created = native.writeNewFile(path, bytes, MAX_FILE_BYTES);
+  try {
+    if (created.bytes !== bytes.byteLength || !native.samePath(created.path, path)) fail(UNSAFE);
+    const current = native.inspectFile(path, MAX_FILE_BYTES);
+    if (!native.sameIdentity(current, created) || current.sha256 !== created.sha256 || current.bytes !== created.bytes) fail(UNSAFE);
+    const readback = native.readFile(path, current, MAX_FILE_BYTES);
+    if (!Buffer.from(readback).equals(bytes)) fail(UNSAFE);
+  } catch (error) { native.poison(error); }
+}
+
 export function readServerOpsConfig(directory: string): ServerOpsConfig {
+  const native = windowsServerNative();
+  if (native !== undefined) {
+    try {
+      const dir = native.canonical(directory);
+      const root = native.inspectDirectory(dir);
+      const text = nativeReadSecureFile(
+        native,
+        native.join(dir, CONFIG_FILE),
+      );
+      native.assertDirectory(dir, root);
+      return parseJsonText(text, parseConfig);
+    } catch (error) {
+      return normalizeNative(error);
+    }
+  }
+  if (process.platform === "win32") fail(UNSAFE);
   const root = pin(directory);
   const text = readSecureFile(join(root.path, CONFIG_FILE));
   assertPrivateRoot(root);
@@ -361,6 +483,26 @@ export function writeServerOpsConfig(
   directory: string,
   config: ServerOpsConfig,
 ): void {
+  const native = windowsServerNative();
+  if (native !== undefined) {
+    const value = parseConfig(config);
+    try {
+      const dir = native.canonical(directory);
+      const root = native.inspectDirectory(dir);
+      const text = JSON.stringify(value);
+      nativeWriteSecureExclusive(
+        native,
+        native.join(dir, CONFIG_FILE),
+        text,
+      );
+      native.assertDirectory(dir, root);
+      native.assertCurrent();
+    } catch (error) {
+      return normalizeNative(error);
+    }
+    return;
+  }
+  if (process.platform === "win32") fail(UNSAFE);
   const value = parseConfig(config);
   const root = pin(directory);
   const text = JSON.stringify(value);
@@ -372,6 +514,21 @@ export function writeServerOpsConfig(
 export function readIssuedSyncCredential(
   path: string,
 ): IssuedSyncCredential {
+  const native = windowsServerNative();
+  if (native !== undefined) {
+    try {
+      const absolute = native.canonical(path);
+      assertNativeServerHandoffAncestors(native, absolute);
+      const parent = native.parent(absolute);
+      const root = native.inspectDirectory(parent);
+      const text = nativeReadSecureFile(native, absolute);
+      native.assertDirectory(parent, root);
+      return parseJsonText(text, parseCredential);
+    } catch (error) {
+      return normalizeNative(error);
+    }
+  }
+  if (process.platform === "win32") fail(UNSAFE);
   assertHandoffAncestors(path);
   const absolute = resolve(path), root = pin(dirname(absolute));
   const text = readSecureFile(join(root.path, basename(absolute)));
@@ -390,6 +547,48 @@ export function writeIssuedSyncCredential(
   value: IssuedSyncCredential,
   forbiddenRoots: readonly string[],
 ): void {
+  const native = windowsServerNative();
+  if (native !== undefined) {
+    const credential = parseCredential(value);
+    try {
+      if (!Array.isArray(forbiddenRoots) || forbiddenRoots.length === 0)
+        fail(INVALID);
+      // Every credential path must stay under the configured K root; the
+      // parent configures a broader root when credentials/backups live in
+      // separate sibling directories.
+      const absolute = native.canonical(path);
+      const name = native.basename(absolute);
+      if (name === "" || name === "." || name === "..") fail(INVALID);
+      const parent = native.parent(absolute);
+      if (native.samePath(parent, absolute)) fail(UNSAFE);
+      for (const root of forbiddenRoots) {
+        if (
+          typeof root !== "string" ||
+          root.length === 0 ||
+          root.includes("\0")
+        )
+          fail(INVALID);
+        const forbidden = native.canonicalAbsolute(root);
+        // No overlap in either direction: the credential may not sit inside
+        // a managed server/workspace root, nor may a root sit inside it.
+        if (
+          native.overlaps(parent, forbidden) ||
+          native.overlaps(absolute, forbidden)
+        )
+          fail(UNSAFE);
+      }
+      assertNativeServerHandoffAncestors(native, absolute);
+      const rootPin = native.inspectDirectory(parent);
+      const text = JSON.stringify(credential);
+      nativeWriteSecureExclusive(native, absolute, text);
+      native.assertDirectory(parent, rootPin);
+      native.assertCurrent();
+    } catch (error) {
+      return normalizeNative(error);
+    }
+    return;
+  }
+  if (process.platform === "win32") fail(UNSAFE);
   assertHandoffAncestors(path);
   const credential = parseCredential(value);
   if (!Array.isArray(forbiddenRoots) || forbiddenRoots.length === 0)

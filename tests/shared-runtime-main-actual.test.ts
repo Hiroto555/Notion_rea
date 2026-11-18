@@ -1,3 +1,8 @@
+import {withPrivateOperationAuthority} from "../src/platform/private-operation-authority";
+import {DatabaseSync} from "node:sqlite";
+import {createPrivatePersistenceLifecycle} from "../src/main/private-persistence-lifecycle";
+import {withNativeSqliteReader} from "../src/persistence/native-sqlite-reader";
+import type {NativePrivateFilesystemPort} from "../src/platform/private-persistence";
 import { canonical } from "../src/collaboration/runtime/canonical";
 import {
   existsSync,
@@ -9,7 +14,7 @@ import {
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { SharedAuthority } from "../src/collaboration/runtime/authority";
 import { SharedRuntimeClient } from "../src/collaboration/runtime/client";
 import { SharedResourceClient } from "../src/collaboration/runtime/resource-client";
@@ -788,4 +793,126 @@ describe("shared runtime main service actual integration", () => {
     },
     TEST_TIMEOUT,
   );
+  it.each([{latch: false, stage: "head"}, {latch: true, stage: "head"}, {latch: false, stage: "protocol"}, {latch: true, stage: "protocol"}])("fences a resource across awaited HTTP $stage while preserving its positive control ($latch)", async ({latch, stage}) => {
+    const f = await fixture(), life = createPrivatePersistenceLifecycle();
+    const service = new SharedRuntimeService(join(f.tmp, "service-lifecycle")); f.services.push(service);
+    await service.handle({type: "connect", url: f.url, token: f.ownerToken, orgId: "org1"});
+    const opened = await service.handle({type: "open", scope: f.scope}) as {generation: number};
+    const gate = deferred(), entered = deferred(), originalAdmin = HttpSharedProvider.prototype.admin;
+    const adminSpy = vi.spyOn(HttpSharedProvider.prototype, "admin").mockImplementation(async function(this: HttpSharedProvider, ...args: Parameters<HttpSharedProvider["admin"]>) {
+      const result = await originalAdmin.apply(this, args);
+      if (stage === "head" && (args[0] as {action?: unknown}).action === "head") {entered.release(); await gate.promise;}
+      return result;
+    });
+    const originalProtocol = HttpSharedProvider.prototype.protocol;
+    const protocolSpy = vi.spyOn(HttpSharedProvider.prototype, "protocol").mockImplementation(async function(this: HttpSharedProvider, ...args: Parameters<HttpSharedProvider["protocol"]>) {
+      const result = await originalProtocol.apply(this, args);
+      if (stage === "protocol") {entered.release(); await gate.promise;}
+      return result;
+    });
+    const submitSpy = vi.spyOn(HttpSharedProvider.prototype, "submit");
+    const executeSpy = vi.spyOn(SharedResourceClient.prototype, "execute");
+    const before = f.authority.head();
+    let retained: DatabaseSync | undefined, closeSpy: ReturnType<typeof vi.spyOn> | undefined;
+    const rawClose = DatabaseSync.prototype.close, leaseClose = vi.fn();
+    const current = () => {if (!life.isUsable()) throw new CollaborationError("UNAUTHORIZED_IPC_SENDER");};
+    const pending = life.run(() => withPrivateOperationAuthority(current, () => service.handle({type: "resource", generation: opened.generation, scope: f.scope,
+      command: {kind: "resource", action: "db.create", payload: {databaseId: "lifecycle_db", revision: 0, properties: []}}}, () => life.isUsable())));
+    try {
+      await entered.promise;
+      if (latch) {
+        const path = join(f.tmp, "independent-reader.sqlite"), seed = new DatabaseSync(path); seed.exec("CREATE TABLE proof(value)"); seed.close();
+        const native = {inspectFileIdentity: () => ({path, fileId: "1".repeat(32), volumeId: "2".repeat(16)}),
+          acquireSqliteLease: () => ({assertHeld() {}, close: leaseClose})} as unknown as NativePrivateFilesystemPort;
+        closeSpy = vi.spyOn(DatabaseSync.prototype, "close").mockImplementationOnce(function(this: DatabaseSync) {retained = this; throw new Error("retained reader close");});
+        expect(() => life.run(() => withNativeSqliteReader(path, native, db => db.prepare("SELECT * FROM proof").all()))).toThrow();
+        closeSpy.mockRestore();
+      }
+      gate.release();
+      if (latch) {
+        await expect(pending).rejects.toMatchObject({code: "UNAUTHORIZED_IPC_SENDER"});
+        expect(executeSpy).toHaveBeenCalledTimes(stage === "head" ? 0 : 1);
+        expect(submitSpy).not.toHaveBeenCalled(); expect(f.authority.head()).toEqual(before);
+        if (stage === "protocol") {
+          const client = executeSpy.mock.contexts[0];
+          if (!(client instanceof SharedResourceClient)) throw new Error("Missing actual resource client receiver");
+          expect(client.store.all("client.queue")).toEqual([]);
+        }
+        expect(leaseClose).not.toHaveBeenCalled(); expect(retained!.isOpen).toBe(true);
+      } else {
+        expect((await pending as Receipt).status).toBe("SERVER_ACCEPTED"); expect(executeSpy).toHaveBeenCalledOnce();
+      }
+    } finally {
+      gate.release(); await pending.catch(() => undefined);
+      closeSpy?.mockRestore(); adminSpy.mockRestore(); protocolSpy.mockRestore(); submitSpy.mockRestore(); executeSpy.mockRestore();
+      if (retained?.isOpen) rawClose.call(retained);
+    }
+  }, TEST_TIMEOUT);
+
+  it.each([
+    {stage: "protocol", latch: false, ordinary: false}, {stage: "protocol", latch: true, ordinary: false},
+    {stage: "submit", latch: false, ordinary: false}, {stage: "submit", latch: true, ordinary: false},
+    {stage: "protocol", latch: false, ordinary: true},
+  ])("preserves editing input and fences editor $stage continuation (latch=$latch ordinary=$ordinary)", async ({stage, latch, ordinary}) => {
+    const f = await fixture(), life = createPrivatePersistenceLifecycle();
+    const service = new SharedRuntimeService(join(f.tmp, "service-editor-lifecycle")); f.services.push(service);
+    await service.handle({type: "connect", url: f.url, token: f.ownerToken, orgId: "org1"});
+    const opened = await service.handle({type: "open", scope: f.scope}) as {generation: number; snapshot: Snapshot};
+    const gate = deferred(), entered = deferred(), before = f.authority.head();
+    const originalProtocol = HttpSharedProvider.prototype.protocol, originalSubmit = HttpSharedProvider.prototype.submit;
+    const protocolSpy = vi.spyOn(HttpSharedProvider.prototype, "protocol").mockImplementation(async function(this: HttpSharedProvider, ...args: Parameters<HttpSharedProvider["protocol"]>) {
+      const result = await originalProtocol.apply(this, args);
+      if (stage === "protocol") {entered.release(); await gate.promise; if (ordinary) throw new Error("ordinary protocol failure");}
+      return result;
+    });
+    const submitSpy = vi.spyOn(HttpSharedProvider.prototype, "submit").mockImplementation(async function(this: HttpSharedProvider, ...args: Parameters<HttpSharedProvider["submit"]>) {
+      const result = await originalSubmit.apply(this, args);
+      if (stage === "submit") {entered.release(); await gate.promise;}
+      return result;
+    });
+    const clientSpy = vi.spyOn(SharedRuntimeClient.prototype, "submit"), draftSpy = vi.spyOn(SharedRuntimeClient.prototype, "retainDraft");
+    const receiptSpy = vi.spyOn(HttpSharedProvider.prototype, "receipt");
+    const current = () => {if (!life.isUsable()) throw new CollaborationError("UNAUTHORIZED_IPC_SENDER");};
+    const pending = life.run(() => withPrivateOperationAuthority(current, () => service.handle({type: "editorDocument", generation: opened.generation,
+      base: opened.snapshot.cut, document: documentWith("p1", "Hello changed")}, () => life.isUsable())));
+    let retained: DatabaseSync | undefined, closeSpy: ReturnType<typeof vi.spyOn> | undefined;
+    const rawClose = DatabaseSync.prototype.close, leaseClose = vi.fn();
+    let getSpy: {mockRestore(): void} | undefined, allSpy: {mockRestore(): void} | undefined, transactionSpy: {mockRestore(): void} | undefined;
+    try {
+      await entered.promise;
+      const client = clientSpy.mock.contexts[0];
+      if (!(client instanceof SharedRuntimeClient)) throw new Error("Missing actual document client receiver");
+      const editingBefore = client.store.all("client.editing"), draftsBefore = client.store.all("client.drafts");
+      expect(editingBefore.some(row => row.value !== null)).toBe(true);
+      getSpy = vi.spyOn(client.store, "get"); allSpy = vi.spyOn(client.store, "all"); transactionSpy = vi.spyOn(client.store, "transaction");
+      if (latch) {
+        const path = join(f.tmp, "editor-independent-reader.sqlite"), seed = new DatabaseSync(path); seed.exec("CREATE TABLE proof(value)"); seed.close();
+        const native = {inspectFileIdentity: () => ({path, fileId: "1".repeat(32), volumeId: "2".repeat(16)}),
+          acquireSqliteLease: () => ({assertHeld() {}, close: leaseClose})} as unknown as NativePrivateFilesystemPort;
+        closeSpy = vi.spyOn(DatabaseSync.prototype, "close").mockImplementationOnce(function(this: DatabaseSync) {retained = this; throw new Error("retained editor reader");});
+        expect(() => life.run(() => withNativeSqliteReader(path, native, db => db.prepare("SELECT * FROM proof").all()))).toThrow(); closeSpy.mockRestore();
+      }
+      gate.release();
+      if (latch) {
+        await expect(pending).rejects.toMatchObject({code: "UNAUTHORIZED_IPC_SENDER"});
+        expect(draftSpy).not.toHaveBeenCalled(); expect(getSpy).not.toHaveBeenCalled(); expect(allSpy).not.toHaveBeenCalled(); expect(transactionSpy).not.toHaveBeenCalled();
+        expect(receiptSpy).not.toHaveBeenCalled(); expect(leaseClose).not.toHaveBeenCalled(); expect(retained!.isOpen).toBe(true);
+      } else if (ordinary) {
+        await expect(pending).rejects.toThrow("ordinary protocol failure"); expect(draftSpy).toHaveBeenCalledOnce(); expect(life.isUsable()).toBe(true);
+      } else {await pending; expect(draftSpy).not.toHaveBeenCalled();}
+      getSpy?.mockRestore(); allSpy?.mockRestore(); transactionSpy?.mockRestore();
+      if (latch) {
+        expect(client.store.all("client.editing")).toEqual(editingBefore); expect(client.store.all("client.drafts")).toEqual(draftsBefore);
+        const queue = client.entries();
+        if (stage === "protocol") {expect(queue).toEqual([]); expect(f.authority.head()).toEqual(before); expect(submitSpy).not.toHaveBeenCalled();}
+        else {expect(queue).toHaveLength(1); expect(queue[0].state).toBe("UNKNOWN"); expect(f.authority.head().seq).toBeGreaterThan(before.seq);}
+      } else if (ordinary) {expect(client.store.all("client.drafts")).toHaveLength(draftsBefore.length + 1);}
+      else {expect(f.authority.head().seq).toBeGreaterThan(before.seq);}
+    } finally {
+      gate.release(); await pending.catch(() => undefined); closeSpy?.mockRestore(); getSpy?.mockRestore(); allSpy?.mockRestore(); transactionSpy?.mockRestore();
+      protocolSpy.mockRestore(); submitSpy.mockRestore(); clientSpy.mockRestore(); draftSpy.mockRestore(); receiptSpy.mockRestore();
+      if (retained?.isOpen) rawClose.call(retained);
+    }
+  }, TEST_TIMEOUT);
+
 });

@@ -3,9 +3,11 @@ import type { DatabaseSessionRecovery } from "../shared/crash-recovery";
 import type { DatabaseReadSnapshot } from "../shared/database-operation";
 import type { DatabaseProjection, DatabaseSettings, FilterValue, Page, RecordPagePatch } from "../shared/types";
 import type { DatabaseOperation, DatabaseOperationResult } from "../shared/database-operation";
+import type { StorageFailureV1 } from "../shared/private-storage-failure";
 import type { EditSessionHandle, EditSessionState } from "./edit-session-coordinator";
 import type { SaveTransport } from "./reliable-save";
-import { sendDatabaseOperation, resolveDatabaseOperation } from "./reliable-database-operation";
+import { sendDatabaseOperation, resolveDatabaseOperation, type DiagnosticDatabaseOperationResult } from "./reliable-database-operation";
+import { requestStorageFailure, storageFailureMessageV1, unclassifiedRequestFailure } from "./private-request";
 import { validateOwnerPage, assertOwnerTransition } from "./settings-save-coordinator";
 import { applySettingsIntent, canonicalSettings, sameSettingsValue, type SettingsIntent } from "./settings-intent";
 
@@ -19,6 +21,10 @@ export type DatabaseSessionView = {
   operation?: DatabaseOperation;
   /** Latest applied record creation, retained across subsequent settings ACKs. */
   lastResult?: DatabaseOperationResult;
+  /** Transient bounded diagnostic for the lane's current operation. Renderer
+   * metadata only: never in the operation, receipt or exportRecovery, and
+   * cleared together with the proven applied state. */
+  storageFailure?: StorageFailureV1;
 };
 type Intent = {seq: number} & (
   {kind: "page"; patch: RecordPagePatch} | {kind: "settings"; intent: SettingsIntent} |
@@ -26,7 +32,7 @@ type Intent = {seq: number} & (
 );
 type Lane = {handle: EditSessionHandle; page: Page; projection: DatabaseProjection; intents: Intent[];
   seq: number; state: EditSessionState; error?: string; operation?: DatabaseOperation;
-  lastResult?: DatabaseOperationResult; running?: Promise<void>};
+  storageFailure?: StorageFailureV1; lastResult?: DatabaseOperationResult; running?: Promise<void>};
 
 /** App-owned: owner metadata, view intents and record creation use one revision
  * lineage. A list refresh cannot promote draft settings onto a newer owner. */
@@ -59,13 +65,15 @@ export class DatabaseSessionCoordinator {
       seq: lane.seq, intents: structuredClone(lane.intents), ...(lane.operation ? {operation: structuredClone(lane.operation)} : {}),
     }));
   }
-  restoreRecovery(input: DatabaseSessionRecovery, current: DatabaseReadSnapshot, resolved?: DatabaseOperationResult): EditSessionHandle {
+  restoreRecovery(input: DatabaseSessionRecovery, current: DatabaseReadSnapshot, resolved?: DiagnosticDatabaseOperationResult): EditSessionHandle {
     if (this.lanes.has(input.base.id)) throw new Error("データベース編集セッションが既にあります。");
     const entry = reconcileDatabaseRecovery(input, current, resolved);
     const handle = Object.freeze({pageId: entry.base.id, sessionId: entry.sessionId});
+    const failure = resolved && resolved.status !== "applied" ? requestStorageFailure(resolved) : undefined;
     this.lanes.set(entry.base.id, {handle, page: entry.base, projection: entry.projection, seq: entry.seq, intents: entry.intents,
       operation: entry.operation, state: entry.operation ? resolved?.status === "rejected" ? "conflict" : "unknown" : entry.intents.length ? "pending" : "saved",
-      ...(resolved?.status === "applied" && resolved.commandKind === "createRecord" ? {lastResult: structuredClone(resolved)} : {})});
+      ...(resolved?.status === "applied" && resolved.commandKind === "createRecord" ? {lastResult: structuredClone(resolved)} : {}),
+      ...(failure ? {storageFailure: failure} : {})});
     this.notify(); return handle;
   }
   private overlay(lane: Lane) {
@@ -83,6 +91,8 @@ export class DatabaseSessionCoordinator {
     if (!lane) return;
     return {...this.overlay(lane), handle: lane.handle, state: lane.state, error: lane.error, seq: lane.seq,
       operation: lane.operation ? structuredClone(lane.operation) : undefined,
+      // Consumers get a bounded copy; mutating it cannot corrupt the latch.
+      storageFailure: lane.storageFailure ? structuredClone(lane.storageFailure) : undefined,
       lastResult: lane.lastResult ? structuredClone(lane.lastResult) : undefined};
   }
   views() {return [...this.lanes.keys()].map((id) => this.get(id)!);}
@@ -133,7 +143,12 @@ export class DatabaseSessionCoordinator {
         const operation: DatabaseOperation = {operationId: this.uuid(), sessionId: lane.handle.sessionId, seq: entry.seq, command: structuredClone(command)};
         lane.operation = operation; lane.state = "saving"; this.notify();
         try {await this.options.beforeSend?.(); this.accept(lane, operation, await sendDatabaseOperation(operation, this.send, this.options.timeoutMs));}
-        catch (error) {lane.state = "unknown"; lane.error = error instanceof Error ? error.message : String(error);}
+        catch (error) {
+          lane.state = "unknown";
+          // The display is rebuilt from the validated latched diagnostic; a
+          // raw caught message, name or cause is never shown.
+          lane.error = storageFailureMessageV1(this.latchFailure(lane, error, "database:commit"));
+        }
         this.notify();
       }
     };
@@ -147,15 +162,29 @@ export class DatabaseSessionCoordinator {
     const operation = lane.operation;
     const run = async () => {
       try {this.accept(lane, operation, await resolveDatabaseOperation(operation, this.send, this.options.timeoutMs));}
-      catch (error) {lane.state = "unknown"; lane.error = error instanceof Error ? error.message : String(error);}
+      catch (error) {
+        lane.state = "unknown";
+        lane.error = storageFailureMessageV1(this.latchFailure(lane, error, "database:resolve"));
+      }
       this.notify();
     };
     lane.running = run().finally(() => {lane.running = undefined; this.notify();});
     return lane.running.then(() => {if (lane.state === "pending") return this.flush(id);});
   }
-  private accept(lane: Lane, operation: DatabaseOperation, result: DatabaseOperationResult) {
+  /** Latch the first valid bounded diagnostic for the lane's current
+   * operation. A later unknown, diagnostic-less or unclassified failure can
+   * neither clear nor reclassify it; the latch never touches another lane. */
+  private latchFailure(lane: Lane, error: unknown, requestType: string): StorageFailureV1 {
+    if (lane.storageFailure === undefined)
+      lane.storageFailure = requestStorageFailure(error) ?? unclassifiedRequestFailure(requestType);
+    return lane.storageFailure;
+  }
+  private accept(lane: Lane, operation: DatabaseOperation, result: DiagnosticDatabaseOperationResult) {
     if (lane.operation !== operation || lane.handle.sessionId !== operation.sessionId) return;
-    if (result.status === "applied" && result.database && result.page) {
+    // A terminal receipt still carrying its own failure metadata is
+    // contradictory and can never settle the lane as applied or rejected.
+    const carriesDiagnostic = Object.hasOwn(result, "storageFailure");
+    if (result.status === "applied" && result.database && result.page && !carriesDiagnostic) {
       if (operation.command.kind === "updateDatabase") {
         validateOwnerPage(result.page, lane.page.id, operation.command.revision + 1, operation.command.settings);
         assertOwnerTransition(lane.page, result.page, operation.command.patch, operation.command.settings);
@@ -164,11 +193,19 @@ export class DatabaseSessionCoordinator {
       lane.projection = structuredClone(result.database);
       lane.intents = lane.intents.filter((entry) => entry.seq > operation.seq);
       if (operation.command.kind === "createRecord") lane.lastResult = structuredClone(result);
-      lane.operation = undefined; lane.error = undefined;
+      lane.operation = undefined; lane.error = undefined; lane.storageFailure = undefined;
       lane.state = lane.intents.length ? "pending" : "saved";
     } else {
-      lane.state = result.status === "rejected" ? "conflict" : "unknown";
-      lane.error = result.message ?? "データベースの保存結果を確認できません。";
+      const failure = requestStorageFailure(result);
+      if (lane.storageFailure === undefined && failure) lane.storageFailure = failure;
+      lane.state = result.status === "rejected" && !carriesDiagnostic ? "conflict" : "unknown";
+      // Unknown displays only the validated latched kind or the fixed safe
+      // line; a carrier or caught raw message is never shown. A verified
+      // business rejection keeps its normal message.
+      lane.error = lane.state === "unknown"
+        ? (lane.storageFailure ? storageFailureMessageV1(lane.storageFailure)
+          : "画面内に未保存入力を保持しています。新しい保存は確認できていません。")
+        : (result.message ?? "データベースの保存結果を確認できません。");
     }
   }
 }

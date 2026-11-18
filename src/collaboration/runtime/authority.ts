@@ -27,6 +27,7 @@ import { OrganizationService } from "./organization";
 import { RuntimeOperations } from "./operations";
 import { exportBackup, restoreBackup } from "./backup";
 import { RetentionService, readRetentionCheckpoint } from "./retention";
+import { planRetentionReclamation, type RetentionDependencyLimits } from "./retention-dependencies";
 import { applyBlock } from "./block-commands";
 import { applyTable, seedTables } from "./table-commands";
 import { applyText } from "./text-intent";
@@ -148,7 +149,7 @@ export class SharedAuthority {
   readonly operations: RuntimeOperations;
   private readonly retentionCore: RetentionService;
   constructor(directory: string, options: RuntimeStoreOptions = {}) {
-    this.store = new RuntimeStore(directory, options);
+    this.store = new RuntimeStore(directory, {...options, expectedExistingRole: "authority"});
     this.identity = new IdentityAuthority(this.store);
     this.policy = new WorkspacePolicy(this.store);
     this.assets = new SharedAssets(this.store);
@@ -1538,6 +1539,24 @@ export class SharedAuthority {
         }
       },
     );
+  }
+  /** Whole-store dependency metadata includes historical body/asset references.
+   * An organization role alone never grants access to that information. */
+  retentionDependencies(token: string, orgId: string, expectedCut: Cut, limits: RetentionDependencyLimits = {}) {
+    return this.store.transaction(() => {
+      const auth = this.authenticate(token);
+      this.assertOrganizationAdministrator(auth, orgId);
+      for (const row of this.store.all("workspaces")) {
+        const workspace = row.value as { orgId: string; workspaceId: string };
+        demand(workspace.orgId === orgId, "AUTH_SCOPE_MISMATCH");
+        this.authorize(auth, {
+          orgId, workspaceId: identifier(workspace.workspaceId),
+          documentId: "__retention", incarnationId: this.head().epoch,
+        }, "read");
+      }
+      this.verify();
+      return planRetentionReclamation(this.store, expectedCut, limits);
+    });
   }
   backup(token: string, orgId: string) {
     return this.store.transaction(() => {

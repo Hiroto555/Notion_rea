@@ -8,6 +8,7 @@ import {
 import { mkdirSync, writeFileSync, readFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { fixtureElectronOptions, fixtureRoot } from "./fixture-isolation";
+import { openWorkspaceMaintenance } from "./ui-chrome-controls";
 
 export type LocalSession = {
   root: string;
@@ -100,13 +101,20 @@ require(${JSON.stringify(resolve("dist/main.cjs"))});
         await app.evaluate(() => (globalThis as any).localFirstOffline),
       ).toBe(true);
       await app.evaluate(({ ipcMain }) => {
-        const ipc = ipcMain as any,
-          original = ipc._invokeHandlers.get("folio:request");
-        ipc.removeHandler("folio:request");
-        ipc.handle("folio:request", (event: any, request: any) => {
-          (globalThis as any).localFirstRequests.push(structuredClone(request));
-          return original(event, request);
-        });
+        const ipc = ipcMain as any;
+        for (const lane of ["folio:request", "folio:request:diagnostic-v1"]) {
+          const original = ipc._invokeHandlers.get(lane);
+          if (typeof original !== "function")
+            throw new Error(`missing registered handler ${lane}`);
+          ipc.removeHandler(lane);
+          ipc.handle(lane, (event: any, request: any) => {
+            (globalThis as any).localFirstRequests.push({
+              ...structuredClone(request),
+              lane,
+            });
+            return original(event, request);
+          });
+        }
       });
       if (options?.readOnly)
         await expect(
@@ -190,20 +198,7 @@ export async function savePicker(s: LocalSession, path: string | null) {
   }, path);
 }
 export async function maintenance(s: LocalSession) {
-  const w = s.window;
-  if (!(await w.locator(".workspace-maintenance").isVisible()))
-    await w.getByLabel("ページ情報", { exact: true }).click();
-  const section = w.getByRole("region", {
-    name: "ワークスペースの保守",
-    exact: true,
-  });
-  if (
-    !(await section
-      .locator("details")
-      .evaluate((element: HTMLDetailsElement) => element.open))
-  )
-    await section.locator("summary").click();
-  return section;
+  return openWorkspaceMaintenance(s.window);
 }
 export const saved = async (s: LocalSession) =>
   expect(s.window.locator(".save-state")).toHaveText("保存済み");

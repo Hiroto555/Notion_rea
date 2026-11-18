@@ -1,9 +1,15 @@
 import {compactInline} from "./compact-inline";
 import { randomUUID } from "node:crypto";
+import {assertPrivateOperationAuthority} from "../../platform/private-operation-authority";
 import { type RuntimeStoreOptions, RuntimeStore } from "./store";
+import {
+  defaultClientStoreFactory,
+  type ClientStoreHostDeps,
+} from "./client-store-factory";
 import { DurableQueue, type QueueEntry } from "./durable-queue";
 import { LocalHistory } from "./local-history";
 import { canonical } from "./canonical";
+import { digest } from "./digest";
 import { checkedState } from "./document";
 import { parseCut, parseScope } from "./wire";
 import {
@@ -19,6 +25,7 @@ import {
   type Command,
   type Attempt,
   type Receipt,
+  type Json,
 } from "./contract";
 import type { SharedProvider } from "./provider-port";
 
@@ -32,6 +39,7 @@ export class SharedRuntimeClient {
   private busy = false;
   private historyResetPending = false;
   private closed = false;
+  private retentionLeaseActive = false;
   private pendingHistory: {intentId: string; command: Command; before: Snapshot; operation: boolean} | null = null;
   constructor(
     directory: string,
@@ -39,11 +47,15 @@ export class SharedRuntimeClient {
     readonly scope: Scope,
     readonly writerId: string,
     options: RuntimeStoreOptions = {},
+    hostDeps: ClientStoreHostDeps = {},
   ) {
     parseScope(scope);
     this.history = new LocalHistory(scope.incarnationId);
     identifier(writerId);
-    this.store = new RuntimeStore(directory, options);
+    this.store = (hostDeps.createStore ?? defaultClientStoreFactory)(
+      directory,
+      options,
+    );
     try {
       const role = this.store.get("meta", "role");
       demand(role === null || role === "client", "WRONG_STORE_ROLE");
@@ -63,11 +75,60 @@ export class SharedRuntimeClient {
     }
   }
   private active() {
+    assertPrivateOperationAuthority();
     demand(!this.closed, "CLIENT_CLOSED");
+  }
+  /** Host-only bounded snapshot. No network, receipt query or state mutation.
+   * A pending reconciliation is not evidence of a quiescent client. */
+  retentionRoots(): Readonly<{ generation: string; roots: Json }> {
+    this.active();
+    const history = this.history.retentionRoots();
+    demand(!this.busy && !this.pendingHistory && !this.historyResetPending &&
+      !history.pending, "RETENTION_CLIENT_BUSY");
+    const roots = JSON.parse(canonical({
+      scope: this.scope,
+      writerId: this.writerId,
+      snapshot: this.current,
+      textChanges: this.textChanges,
+      history: history.roots,
+    }, 2_000_000)) as Json;
+    return { generation: digest(roots), roots };
+  }
+  /**
+   * Host-owned synchronous lease for a retention operation. While held,
+   * new lock()/close() work is refused so the client's private stores and
+   * memory roots stay quiescent; each inspect() re-asserts quiescence
+   * rather than returning a stale snapshot. Rejects a busy, pending or
+   * already-leased client and stays bound to this process.
+   */
+  acquireRetentionLease(): Readonly<{
+    inspect(): Readonly<{ generation: string; roots: Json }>;
+    release(): void;
+  }> {
+    this.active();
+    demand(!this.retentionLeaseActive, "RETENTION_CLIENT_BUSY");
+    this.retentionRoots();
+    // The history lease freezes direct undo/record/clear mutations for the
+    // same duration; release order is reverse acquisition.
+    const historyLease = this.history.acquireRetentionLease();
+    this.retentionLeaseActive = true;
+    let released = false;
+    return {
+      inspect: () => {
+        demand(this.retentionLeaseActive && !released, "RETENTION_CLIENT_BUSY");
+        return this.retentionRoots();
+      },
+      release: () => {
+        if (released) return;
+        released = true;
+        this.retentionLeaseActive = false;
+        historyLease.release();
+      },
+    };
   }
   private async lock<T>(work: () => Promise<T>): Promise<T> {
     this.active();
-    demand(!this.busy, "CLIENT_BUSY");
+    demand(!this.busy && !this.retentionLeaseActive, "CLIENT_BUSY");
     this.busy = true;
     try {
       return await work();
@@ -156,6 +217,7 @@ export class SharedRuntimeClient {
     );
   }
   writerPendingEntries(): QueueEntry[] {
+    this.active();
     return this.store
       .all("client.queue")
       .map((row) => row.value as QueueEntry)
@@ -233,10 +295,12 @@ export class SharedRuntimeClient {
     });
   }
   private async finishHistory(receipt: Receipt, snapshot: Snapshot): Promise<void> {
+    this.active();
     const pending = this.pendingHistory;
     if (!pending || pending.intentId !== receipt.intentId) return;
     if (receipt.status === "SERVER_ACCEPTED") {
       const event = snapshot.events.find(event => event.attemptId === receipt.attemptId) ?? await this.provider.acceptedEvent?.(this.scope, receipt.attemptId);
+      this.active();
       demand(event && event.writerId === this.writerId && canonical(event.receipt) === canonical(receipt), "ACCEPTED_EVENT_MISSING");
       if (pending.operation) this.history.confirm(receipt, event.state ?? snapshot.state, event.appliedText, event.appliedBefore);
       else this.history.record(event.appliedBefore ?? pending.before.state, pending.command, {state: event.state ?? snapshot.state, appliedText: event.appliedText}, receipt.cut, receipt);
@@ -270,6 +334,7 @@ export class SharedRuntimeClient {
             if (receipt) this.queue.confirm(receipt);
           }
       const snapshot = await this.refresh();
+      this.active();
       if (this.pendingHistory) {
         const entry = this.queue.read(this.pendingHistory.intentId);
         const receipt = entry?.attempts.at(-1)?.receipt;
@@ -298,7 +363,7 @@ export class SharedRuntimeClient {
   }
   archive(intentId: string): void {
     this.active();
-    demand(!this.busy, "CLIENT_BUSY");
+    demand(!this.busy && !this.retentionLeaseActive, "CLIENT_BUSY");
     const entry = this.queue.read(identifier(intentId));
     demand(
       entry &&
@@ -318,6 +383,7 @@ export class SharedRuntimeClient {
   }
   retainEditingRaw(raw: string): void {
     this.active();
+    demand(!this.retentionLeaseActive, "CLIENT_BUSY");
     demand(
       typeof raw === "string" &&
         new TextEncoder().encode(raw).length <= 2_000_000,
@@ -332,6 +398,8 @@ export class SharedRuntimeClient {
     );
   }
   clearEditingRaw(): void {
+    this.active();
+    demand(!this.retentionLeaseActive, "CLIENT_BUSY");
     this.store.transaction(() =>
       this.store.set(
         "client.editing",
@@ -357,6 +425,7 @@ export class SharedRuntimeClient {
   }
   retainDraft(document: unknown): void {
     this.active();
+    demand(!this.retentionLeaseActive, "CLIENT_BUSY");
     const bytes = new TextEncoder().encode(
       canonical(document, 2_000_000),
     ).length;
@@ -378,6 +447,7 @@ export class SharedRuntimeClient {
   }
   close(): void {
     if (this.closed) return;
+    demand(!this.retentionLeaseActive, "CLIENT_BUSY");
     this.closed = true;
     this.history.clear();
     this.provider.close();

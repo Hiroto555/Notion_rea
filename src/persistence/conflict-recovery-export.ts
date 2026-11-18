@@ -1,4 +1,5 @@
 import { validateWorkspaceCheckpoint } from "../sync/workspace-checkpoint";
+import { privatePersistencePort, type NativePrivateFile } from "../platform/private-persistence";
 import { archiveTargetSchema } from "../shared/conflict-recovery";
 import { lstatSync, realpathSync, unlinkSync } from "node:fs";
 import { basename, dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
@@ -78,8 +79,16 @@ function capacityBytes(known: number): number {
   return reserved;
 }
 
-function publish(directory: string, marker: string, fault?: RecoveryFault): void {
+function publish(directory: string, marker: string, fault?: RecoveryFault, expected?: NativePrivateFile): void {
   fault?.("before-complete");
+  const native = privatePersistencePort();
+  if (native) {
+    requireCondition(expected, "native-recovery-marker-identity-required", 409);
+    fault?.("before-complete-sync");
+    native.unlinkExact(marker, expected, 4096);
+    fault?.("after-complete-sync"); fault?.("after-complete");
+    return;
+  }
   unlinkSync(marker);
   fault?.("before-complete-sync");
   syncRecoveryDirectory(directory);
@@ -94,6 +103,7 @@ export function exportRecoveryArchive(
   mode: "metadata-only" | "complete-bundle",
   options: RecoveryExportOptions,
 ): RecoveryExportResult {
+  const native = privatePersistencePort();
   requireCondition(mode === "metadata-only" || mode === "complete-bundle", "invalid-recovery-export-mode");
 
   // Freeze the snapshot input before touching the filesystem.
@@ -135,12 +145,12 @@ export function exportRecoveryArchive(
   const directory = createRecoveryDirectory(output);
   const marker = recoveryPath(directory, RECOVERY_INCOMPLETE);
 
-  writeRecoveryFile(directory, RECOVERY_INCOMPLETE, INCOMPLETE_CONTENT, options.fault);
+  const markerIdentity = writeRecoveryFile(directory, RECOVERY_INCOMPLETE, INCOMPLETE_CONTENT, options.fault);
   writeRecoveryFile(directory, CHECKPOINT_FILE, checkpointBytes, options.fault);
   if (mode === "metadata-only") {
     writeRecoveryFile(directory, DESCRIPTION_FILE, DESCRIPTION_CONTENT, options.fault);
     options.assertTarget();
-    publish(directory, marker, options.fault);
+    publish(directory, marker, options.fault, markerIdentity || undefined);
     return { kind: "metadata-only", directory, checkpointHash };
   }
 
@@ -148,13 +158,21 @@ export function exportRecoveryArchive(
   if (assets.length > 0) {
     createRecoveryDirectory(join(directory, ASSETS_DIRECTORY));
     for (const asset of assets) {
-      copyRecoveryAsset(source, directory, asset, { fault: options.fault });
+      if (native) {
+        options.assertTarget();
+        const from = recoveryPath(source, `${ASSETS_DIRECTORY}/${asset.id}`);
+        const to = recoveryPath(directory, `${ASSETS_DIRECTORY}/${asset.id}`);
+        const expected = native.inspectFile(from, 20_000_000);
+        requireCondition(expected.bytes === asset.bytes && expected.sha256 === asset.sha256,
+          "recovery-asset-hash-mismatch", 409);
+        native.copyNew(from, to, expected, 20_000_000);
+      } else copyRecoveryAsset(source, directory, asset, { fault: options.fault });
     }
   }
 
   const verified = verifyRecoveryBundle(directory, { allowIncomplete: true });
   options.assertTarget();
-  publish(directory, marker, options.fault);
+  publish(directory, marker, options.fault, markerIdentity || undefined);
   return {
     kind: "complete-bundle",
     directory,

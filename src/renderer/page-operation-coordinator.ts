@@ -99,6 +99,12 @@ export function retryPageOperation(
 export type PageOperationCoordinatorOptions = {
   /** Durably record the unresolved operation before its first send. */
   persist?: () => Promise<void>;
+  /** Boundary transport used only by explicit retries (retryUncheckpointed,
+   * retryUnknown) at the actual request after their awaits, so a hold latched
+   * meanwhile still sends nothing. A guarded rejection becomes a retained
+   * unknown result, never a new operation identity. Creates, first sends and
+   * read-only resolves always use the original `send`. */
+  retrySend?: SaveTransport;
   timeoutMs?: number;
   onChange?: (entries: readonly PageOperationEntry[]) => void;
 };
@@ -161,7 +167,7 @@ export class PageOperationCoordinator {
     entry.state = "saving";
     entry.error = undefined;
     this.notify();
-    return this.persistAndSend(entry);
+    return this.persistAndSend(entry, this.options.retrySend ?? this.send);
   }
 
   /** Explicit user action after preserving the rejected input elsewhere. */
@@ -213,9 +219,10 @@ export class PageOperationCoordinator {
     this.notify();
     try {
       await this.options.persist?.();
-      let result = await resolvePageOperation(entry.operation, this.send, this.options.timeoutMs);
+      const send = this.options.retrySend ?? this.send;
+      let result = await resolvePageOperation(entry.operation, send, this.options.timeoutMs);
       if (result.status === "unknown")
-        result = await retryPageOperation(entry.operation, this.send, this.options.timeoutMs);
+        result = await retryPageOperation(entry.operation, send, this.options.timeoutMs);
       return this.recordResult(entry, result);
     } catch (error) {
       entry.state = "unknown";
@@ -276,7 +283,7 @@ export class PageOperationCoordinator {
     return this.persistAndSend(entry);
   }
 
-  private async persistAndSend(entry: PageOperationEntry): Promise<Page> {
+  private async persistAndSend(entry: PageOperationEntry, send: SaveTransport = this.send): Promise<Page> {
     const operation = entry.operation;
     try {
       // The recovery journal must contain the operation before any request can
@@ -294,7 +301,7 @@ export class PageOperationCoordinator {
     }
     const result = await sendPageOperation(
       operation,
-      this.send,
+      send,
       this.options.timeoutMs,
     );
     if (result.status === "applied") {

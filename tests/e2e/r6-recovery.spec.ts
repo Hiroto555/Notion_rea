@@ -1,5 +1,5 @@
 import { launchFixture, captureFixture } from "./recovery-ci-runtime";
-import { openR7Settings } from "./r5-fixture";
+import { openR7Search, openR7Settings } from "./r5-fixture";
 import {
   expect,
   test,
@@ -494,6 +494,7 @@ test("SIGKILL after settings COMMIT preserves later view input without replaying
     await r5Settings(window)
       .getByLabel("ビュー名", { exact: true })
       .fill("R6 latest view");
+    await openR7Search(window);
     await r5Settings(window)
       .getByLabel("ビュー内検索", { exact: true })
       .fill("R6 later search");

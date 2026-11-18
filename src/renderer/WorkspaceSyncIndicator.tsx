@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import type { WorkspaceSyncView, WorkspaceSyncRestartView, WorkspaceSyncRestartAction } from "../shared/workspace-sync-view";
+import type { CapabilitiesReadPort, SyncControlPort, WorkspaceConflictPort } from "../shared/app-api";
+import type { WorkspaceSyncView, WorkspaceSyncRestartView } from "../shared/workspace-sync-view";
 import { WorkspaceConflictPanel } from "./WorkspaceConflictPanel";
 
 /** Text only describes durable transfer state; it never claims a remote
@@ -42,7 +43,7 @@ export function restartApplyText(view: WorkspaceSyncRestartView): string {
   }
 }
 
-export function WorkspaceSyncIndicator({startupMessage, inputReady = () => false}: {startupMessage?: string; inputReady?: () => boolean}) {
+export function WorkspaceSyncIndicator({startupMessage, inputReady = () => false, sync, conflict, capabilities}: {startupMessage?: string; inputReady?: () => boolean; sync: SyncControlPort; conflict: WorkspaceConflictPort; capabilities: CapabilitiesReadPort}) {
   const [view, setView] = useState<WorkspaceSyncView | null>(null);
   const [busy, setBusy] = useState(false);
   const [failed, setFailed] = useState(false);
@@ -51,26 +52,28 @@ export function WorkspaceSyncIndicator({startupMessage, inputReady = () => false
   const [restartNotice, setRestartNotice] = useState("");
   useEffect(() => {
     let active = true;
-    const refresh = () => window.folio.request<WorkspaceSyncView>({type: "sync:status"})
+    const refresh = () => sync.status()
       .then((next) => {if (active) {setView(next); setFailed(false);}})
       .catch(() => {if (active) setFailed(true);});
     void refresh();
     const timer = window.setInterval(() => {void refresh();}, 10_000);
     return () => {active = false; window.clearInterval(timer);};
-  }, []);
+  }, [sync]);
   useEffect(() => {
     let active = true;
-    const refresh = () => window.folio.request<WorkspaceSyncRestartView>({type: "sync:restartStatus"})
+    const refresh = () => sync.restartStatus()
       .then((next) => {if (active) setRestart(next);})
       .catch(() => {if (active) setRestart(null);});
     void refresh();
     const timer = window.setInterval(() => {void refresh();}, 10_000);
     return () => {active = false; window.clearInterval(timer);};
-  }, []);
-  const changeRestart = async (type: "sync:restartRequest" | "sync:restartCancel") => {
+  }, [sync]);
+  const changeRestart = async (kind: "request" | "cancel") => {
     setRestartBusy(true); setRestartNotice("");
     try {
-      const action = await window.folio.request<WorkspaceSyncRestartAction>(type === "sync:restartCancel" ? {type,reservationId:restart?.available ? restart.reservationId : undefined} : {type});
+      const action = kind === "cancel"
+        ? await sync.restartCancel(restart?.available ? restart.reservationId : undefined)
+        : await sync.restartRequest();
       setRestart(action.view);
       setRestartNotice(action.result === "prepared" ? "終了時に安全条件を確認して予約を確定します。" :
         action.result === "cancelled" ? "予約を取り消しました。" :
@@ -83,16 +86,16 @@ export function WorkspaceSyncIndicator({startupMessage, inputReady = () => false
   const restartControls = restartView && (restartText || restartView.canRequest || restartView.canCancel) ?
     <span className="save-state" aria-live="polite" title={restartNotice || restartText}>
       {restartNotice || restartText}{" "}
-      {restartView.canRequest && <button type="button" disabled={restartBusy} onClick={() => void changeRestart("sync:restartRequest")}>適用を予約</button>}
-      {restartView.canCancel && <button type="button" disabled={restartBusy} onClick={() => void changeRestart("sync:restartCancel")}>予約を取り消す</button>}
+      {restartView.canRequest && <button type="button" disabled={restartBusy} onClick={() => void changeRestart("request")}>適用を予約</button>}
+      {restartView.canCancel && <button type="button" disabled={restartBusy} onClick={() => void changeRestart("cancel")}>予約を取り消す</button>}
     </span> : null;
   if (!view?.available) return <>{startupMessage && <span className="save-state" title={startupMessage}>{startupMessage}</span>}
-    <WorkspaceConflictPanel showCandidates={false} inputReady={inputReady} />{restartControls}</>;
+    <WorkspaceConflictPanel showCandidates={false} inputReady={inputReady} conflict={conflict} capabilities={capabilities} />{restartControls}</>;
   const transfer = async () => {
     setBusy(true); setFailed(false);
     try {
-      setView(await window.folio.request<WorkspaceSyncView>({type: "sync:run"}));
-      void window.folio.request<WorkspaceSyncRestartView>({type: "sync:restartStatus"}).then(setRestart).catch(() => {});
+      setView(await sync.run());
+      void sync.restartStatus().then(setRestart).catch(() => {});
     }
     catch {setFailed(true);}
     finally {setBusy(false);}
@@ -107,5 +110,5 @@ export function WorkspaceSyncIndicator({startupMessage, inputReady = () => false
     <button type="button" onClick={() => void transfer()} disabled={busy || view.running}>
       {busy || view.running ? "同期中…" : view.connection === "disconnected" ? "再接続" : "同期"}
     </button>
-  </span><WorkspaceConflictPanel showCandidates={!!view.workspace?.conflict} inputReady={inputReady} />{restartControls}</>;
+  </span><WorkspaceConflictPanel showCandidates={!!view.workspace?.conflict} inputReady={inputReady} conflict={conflict} capabilities={capabilities} />{restartControls}</>;
 }

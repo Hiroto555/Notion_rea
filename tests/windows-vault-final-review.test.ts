@@ -150,6 +150,8 @@ describe("Windows vault independent final review regressions (injected contracts
     const workspace = join(forbidden, "workspace.sqlite");
     writeFileSync(workspace, "", { mode: 0o600 });
     let failed = false;
+    const proofFailure = new SyncError("WINDOWS_DIRECTORY_IDENTITY_CHANGED", 409);
+    const cleanupFailure = new SyncError("WINDOWS_PLATFORM_CLOSED",409);
     const normal = () => new PosixPrivatePlatform([forbidden]);
     const o = options({
       directory: vaultDirectory,
@@ -175,7 +177,7 @@ describe("Windows vault independent final review regressions (injected contracts
               .get();
             if (Number(count?.count) === 2) {
               failed = true;
-              throw new SyncError("WINDOWS_DIRECTORY_IDENTITY_CHANGED", 409);
+              throw proofFailure;
             }
           } catch (error) {
             if (error instanceof SyncError) throw error;
@@ -184,7 +186,7 @@ describe("Windows vault independent final review regressions (injected contracts
           }
         };
         const close = platform.close.bind(platform);
-        platform.close = () => {close();if (failed) throw new SyncError("WINDOWS_PLATFORM_CLOSED",409);};
+        platform.close = () => {close();if (failed) throw cleanupFailure;};
         return platform;
       },
     });
@@ -196,6 +198,11 @@ describe("Windows vault independent final review regressions (injected contracts
       outcome: "outcome-unknown",
       view: { reason: "outcome-unknown" },
     });
+    const causes: unknown[] = [], seen = new Set<unknown>();
+    const visit = (error: unknown): void => {if (!error || seen.has(error)) return; seen.add(error); causes.push(error);
+      if (error instanceof AggregateError) error.errors.forEach(visit); if (error instanceof Error) visit(error.cause);};
+    visit(vault.diagnosticFailure());
+    expect(causes).toContain(proofFailure); expect(causes).toContain(cleanupFailure);
     const reopened = new SyncConnectionVault({
       ...o,
       privatePlatformFactory: normal,

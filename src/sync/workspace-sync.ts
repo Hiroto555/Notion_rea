@@ -1,13 +1,14 @@
 import { assertRecoverySyncAllowed } from "../persistence/recovery-origin";
 import type { NormalApplyRecord } from "./normal-apply-journal";
 import { randomUUID } from "node:crypto";
-import { mkdirSync, realpathSync } from "node:fs";
+import { existsSync, mkdirSync, realpathSync } from "node:fs";
 import { basename, dirname, join } from "node:path";
 import { estimateBackupBytes } from "../main/bulk-storage-budget";
 import { WorkspaceStoragePressure } from "../main/storage-pressure";
 import { assertBackupRetention } from "./backup-retention";
 import { readSyncSuccess, writeSyncSuccess } from "../main/workspace-sync-history";
 import { createFullBackup } from "../persistence/full-backup-create";
+import { privatePersistencePort, type PrivatePersistenceOptions } from "../platform/private-persistence";
 import { readUserVersion } from "../persistence/schema-startup";
 import type { Store } from "../persistence/store";
 import type { WorkspaceConflictCandidateTarget } from "../shared/workspace-conflict-view";
@@ -42,7 +43,7 @@ export type WorkspaceSyncAdmission = (
   purpose: "content" | "assets" | "backup",
 ) => void;
 
-type WorkspaceSyncOptions = WorkspaceDevice & {
+type WorkspaceSyncOptions = WorkspaceDevice & PrivatePersistenceOptions & {
   store: Store;
   baseUrl: string;
   token: string;
@@ -111,7 +112,7 @@ export class WorkspaceSync {
     // A restored v5 backup has no live binding, including when a caller
     // passes the old credentials. Recovery is a separate explicit enrollment.
     if (version === 5 && !recovering)
-      verifyWorkspaceBinding(options.store.path, options, false);
+      verifyWorkspaceBinding(options.store.path, options, false, options.nativePrivateFilesystem ? options : undefined);
     const remote = new CheckpointRemote(options);
     const { serverEpoch, head } = await remote.head();
     // The receipt route is device scoped. A workspace reader's token cannot
@@ -127,13 +128,16 @@ export class WorkspaceSync {
     if (recovering) {
       local.rebindRestored(() => {
         sync.backup("before-rebind");
-        verifyWorkspaceBinding(options.store.path, options, true);
+        verifyWorkspaceBinding(options.store.path, options, true, {
+          nativePrivateFilesystem: privatePersistencePort(options.nativePrivateFilesystem ? options : undefined),
+          reenroll: true,
+        });
       });
-      verifyWorkspaceBinding(options.store.path, options, false);
+      verifyWorkspaceBinding(options.store.path, options, false, options.nativePrivateFilesystem ? options : undefined);
     } else if (version !== 5 && (mode === "publish" || mode === "join")) {
       local.enable(mode, () => {
         sync.backup("before-enable");
-        verifyWorkspaceBinding(options.store.path, options, true);
+        verifyWorkspaceBinding(options.store.path, options, true, options.nativePrivateFilesystem ? options : undefined);
       });
     }
     const { appliedRevision, receivedCursor } = local.status();
@@ -153,7 +157,7 @@ export class WorkspaceSync {
     requireCondition(basename(options.store.path) === "workspace.sqlite", "invalid-workspace-path");
     requireCondition(typeof options.canApply === "function", "edit-barrier-required");
     requireCondition(options.mode === undefined && readUserVersion(options.store.db) === 5, "not-a-v5-workspace");
-    verifyWorkspaceBinding(options.store.path, options, false);
+    verifyWorkspaceBinding(options.store.path, options, false, options.nativePrivateFilesystem ? options : undefined);
     const local = new WorkspaceSyncStore(options.store, {...options, serverEpoch});
     local.status(); // Validate the stored identity and schema before returning.
     return new WorkspaceSync({...options}, local, new CheckpointRemote(options), true);
@@ -379,7 +383,7 @@ export class WorkspaceSync {
     work: () => Promise<SyncStatus>,
   ): Promise<SyncStatus> {
     requireCondition(!this.running, "sync-already-running", 409);
-    verifyWorkspaceBinding(this.options.store.path, this.options, false);
+    verifyWorkspaceBinding(this.options.store.path, this.options, false, this.options.nativePrivateFilesystem ? this.options : undefined);
     this.running = true;
     try {
       return await work();
@@ -484,7 +488,10 @@ export class WorkspaceSync {
 
   private stagingDirectory(): string {
     const path = join(this.directory, ".folio-sync-assets-staging");
-    mkdirSync(path, { recursive: true, mode: 0o700 });
+    const native = privatePersistencePort(this.options.nativePrivateFilesystem ? this.options : undefined);
+    if (native) {
+      if (existsSync(path)) native.inspectDirectory(path); else native.createDirectory(path);
+    } else mkdirSync(path, { recursive: true, mode: 0o700 });
     return path;
   }
 
@@ -496,11 +503,17 @@ export class WorkspaceSync {
     this.admitBytes(estimatedBytes, "backup");
     assertBackupRetention(this.directory, estimatedBytes);
     const root = join(this.directory, "backups");
-    mkdirSync(root, { recursive: true, mode: 0o700 });
+    const options = this.options.nativePrivateFilesystem ? this.options : undefined;
+    const native = privatePersistencePort(options);
+    if (native) {
+      // Existing directory inspection and exclusive creation are distinct.
+      if (existsSync(root)) native.inspectDirectory(root); else native.createDirectory(root);
+    } else mkdirSync(root, { recursive: true, mode: 0o700 });
     createFullBackup(
       store.db,
       this.directory,
       join(root, `sync-${reason}-${Date.now()}-${randomUUID()}`),
+      options,
     );
   }
 

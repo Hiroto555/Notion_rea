@@ -2,17 +2,16 @@ import { useEffect, useState } from "react";
 import { App } from "./App";
 import { ReadOnlyWorkspace } from "./ReadOnlyWorkspace";
 import type { StartupStatus } from "../shared/startup-status";
+import type { DesktopRootBindings } from "./desktop-api";
 
-export function StartupApp() {
+export function StartupApp({ desktop }: { desktop: DesktopRootBindings }) {
   const [status, setStatus] = useState<StartupStatus>();
   const [error, setError] = useState("");
   useEffect(() => {
     let active = true;
-    window.folio
-      .request<StartupStatus>({ type: "startup:status" })
+    desktop.readOnly.workspace
+      .startupStatus()
       .then((value) => {
-        if (value?.mode !== "writable" && value?.mode !== "readOnly")
-          throw new Error("Invalid startup state");
         if (active) setStatus(value);
       })
       .catch(() => {
@@ -22,7 +21,7 @@ export function StartupApp() {
     return () => {
       active = false;
     };
-  }, []);
+  }, [desktop]);
   if (error)
     return (
       <main className="loading" role="alert">
@@ -32,8 +31,12 @@ export function StartupApp() {
   if (!status)
     return <main className="loading">ワークスペースを確認しています…</main>;
   return status.mode === "readOnly" ? (
-    <ReadOnlyWorkspace status={status} />
+    <ReadOnlyWorkspace status={status} api={desktop.readOnly} />
   ) : (
-    <App syncMessage={status.syncMessage} />
+    <App
+      api={desktop.writable}
+      desktopCompatibility={desktop.compatibility}
+      syncMessage={status.syncMessage}
+    />
   );
 }

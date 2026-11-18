@@ -23,7 +23,8 @@
     "review:export": "node scripts/export-review.mjs",
     "folio:rescue": "node scripts/raw-rescue.mjs",
     "folio:sync-server": "node dist/server-ops.cjs",
-    "folio:shared-server": "node dist/shared-server.cjs"
+    "folio:shared-server": "node dist/shared-server.cjs",
+    "folio:private-maintenance": "node scripts/private-maintenance.mjs"
   },
   "dependencies": {
     "@tiptap/extension-details": "^3.0.0",

@@ -1,4 +1,4 @@
-import { openR7Settings } from "./r5-fixture";
+import { openR7Search, openR7Settings } from "./r5-fixture";
 import {
   expect,
   test,
@@ -241,6 +241,7 @@ test("board groups and gallery filtering use saved views and open the same recor
       .selectOption("gallery");
     await openR7Settings(window, 'view-options');
     await settings.getByLabel("ビュー名", { exact: true }).fill("R5 Gallery");
+    await openR7Search(window);
     await settings
       .getByLabel("ビュー内検索", { exact: true })
       .fill("R5 card B");

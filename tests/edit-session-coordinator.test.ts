@@ -1,6 +1,9 @@
 import { expect, it } from "vitest";
 import { EditSessionCoordinator } from "../src/renderer/edit-session-coordinator";
+import { StorageFailureError, storageFailureMessageV1 } from "../src/renderer/private-request";
+import type { StorageFailureV1 } from "../src/shared/private-storage-failure";
 import { saveFixture } from "./fixtures/r4-save-fixture";
+import { operationFingerprint } from "../src/shared/save-contract";
 import type { Request } from "../src/shared/types";
 
 function barrier() {
@@ -8,6 +11,20 @@ function barrier() {
   const promise = new Promise<void>((resolve) => {release = resolve;});
   return {promise, release};
 }
+const base = (overrides: Partial<StorageFailureV1> = {}): StorageFailureV1 => ({
+  version: 1, kind: "UNCLASSIFIED", family: "REQUEST", stage: "REQUEST", failureSubject: "UNIDENTIFIED",
+  mutationDispatch: "UNPROVEN", proofOrigin: "NONE", requestType: "save:commit", sourceOutcome: null,
+  sourceCauseCodes: [], causeSummaryIncomplete: true, attemptId: null, precondition: null,
+  operationProgress: "PARTIAL_OR_UNKNOWN", retryAuthority: "NONE", preserve: true, ...overrides});
+const typed = (requestType: string): StorageFailureV1 => base({kind: "OUTCOME_UNKNOWN", family: "K", stage: "COMMIT",
+  failureSubject: "CURRENT_ATTEMPT", mutationDispatch: "DISPATCHED", proofOrigin: "DISPATCH_OBSERVED",
+  requestType, sourceOutcome: {source: "K_EXCEPTION", state: "UNKNOWN", reason: "PRIVATE_K_COMMIT_UNKNOWN"},
+  sourceCauseCodes: ["PRIVATE_K_COMMIT_UNKNOWN"], causeSummaryIncomplete: false});
+const checkpoint = (): StorageFailureV1 => base({kind: "PRE_DISPATCH_CAPACITY", family: "CHECKPOINT", stage: "RESERVE",
+  failureSubject: "CURRENT_ATTEMPT", mutationDispatch: "NOT_DISPATCHED_PROVEN", proofOrigin: "LOCAL_ADMISSION_GUARD",
+  requestType: "recovery:write",
+  sourceOutcome: {source: "RECOVERY_IO", contractVersion: 3, state: "REJECTED", reason: "PRIVATE_IO_V3_REJECTED"},
+  sourceCauseCodes: ["WINDOWS_RECOVERY_ARCHIVE_CAPACITY"], causeSummaryIncomplete: false, attemptId: "a".repeat(32)});
 
 it("keeps later inputs and independent record sessions when an earlier ACK is delayed", async () => {
   const f = saveFixture();
@@ -143,5 +160,157 @@ it("keeps an earlier query with no receipt unknown until the original delayed re
     expect(coordinator.get(handle.pageId)?.state).toBe("saved");
     expect(f.store.get(handle.pageId).revision).toBe(1);
     expect(commits).toBe(1);
+  } finally {f.dispose();}
+});
+
+it("latches a checkpoint failure before dispatch and clears it only on applied proof", async () => {
+  const f = saveFixture();
+  try {
+    const requests: Request[] = [];
+    const failure = checkpoint();
+    const coordinator = new EditSessionCoordinator(async (request) => {requests.push(request); return f.store.handle(request);},
+      {beforeSend: async () => {throw new StorageFailureError(failure);}});
+    const handle = coordinator.attach(f.store.get(f.record.pageId), f.record);
+    coordinator.edit(handle, {title: "Held"});
+    await coordinator.flush(handle.pageId);
+    // Zero commits reached the store; the lane is unknown with the checkpoint diagnostic.
+    expect(requests).toEqual([]);
+    const held = coordinator.get(handle.pageId)!;
+    expect(held).toMatchObject({state: "unknown"});
+    expect(held.storageFailure).toEqual(failure);
+    expect(held.error).toBe(storageFailureMessageV1(failure));
+    expect(held.operation).toBeDefined();
+    // Another lane is untouched, and the view is a bounded copy.
+    const other = f.repo.create(f.owner.id, "Other", {});
+    const otherHandle = coordinator.attach(f.store.get(other.pageId), other);
+    expect(coordinator.get(other.pageId)!.storageFailure).toBeUndefined();
+    (held.storageFailure as unknown as Record<string, unknown>).kind = "MUTATED";
+    expect(coordinator.get(handle.pageId)!.storageFailure).toEqual(failure);
+    // A diagnostic-less resolve keeps the operation and the first diagnostic.
+    await coordinator.resolve(handle.pageId);
+    expect(requests.map((request) => request.type)).toEqual(["save:resolve"]);
+    expect(coordinator.get(handle.pageId)).toMatchObject({state: "unknown", storageFailure: failure});
+    // The exact applied proof clears operation and diagnostic together.
+    f.store.commitSave(held.operation!);
+    await coordinator.resolve(handle.pageId);
+    expect(coordinator.get(handle.pageId)).toMatchObject({state: "saved", storageFailure: undefined, operation: undefined});
+    expect(JSON.stringify(coordinator.exportRecovery(true))).not.toContain("storageFailure");
+  } finally {f.dispose();}
+});
+
+it("shows only the fixed safe diagnostic text when the checkpoint throws a raw error", async () => {
+  const f = saveFixture();
+  try {
+    const coordinator = new EditSessionCoordinator(async (request) => f.store.handle(request),
+      {beforeSend: async () => {throw new Error("capacity at /secret/workspace");}});
+    const handle = coordinator.attach(f.store.get(f.record.pageId), f.record);
+    coordinator.edit(handle, {title: "Held"});
+    await coordinator.flush(handle.pageId);
+    const view = coordinator.get(handle.pageId)!;
+    expect(view.state).toBe("unknown");
+    expect(view.storageFailure).toMatchObject({kind: "UNCLASSIFIED", family: "REQUEST", requestType: "save:commit"});
+    // The lane error is rebuilt from the validated latched kind, never the
+    // raw caught message or path.
+    expect(view.error).toBe(storageFailureMessageV1(view.storageFailure!));
+    expect(view.error).not.toContain("secret");
+    expect(view.operation).toBeDefined();
+  } finally {f.dispose();}
+});
+
+it("keeps the first diagnostic and its fixed display through a diagnostic-less or raw resolve", async () => {
+  const f = saveFixture();
+  try {
+    const failure = checkpoint();
+    let send: "store" | "raw" = "store";
+    const coordinator = new EditSessionCoordinator(async (request) => {
+      if (send === "raw") throw new Error("secondary /other/path");
+      return f.store.handle(request);
+    }, {beforeSend: async () => {throw new StorageFailureError(failure);}});
+    const handle = coordinator.attach(f.store.get(f.record.pageId), f.record);
+    coordinator.edit(handle, {title: "Held"});
+    await coordinator.flush(handle.pageId);
+    expect(coordinator.get(handle.pageId)).toMatchObject({state: "unknown",
+      storageFailure: failure, error: storageFailureMessageV1(failure)});
+    // A diagnostic-less resolve keeps the first diagnostic and its display.
+    await coordinator.resolve(handle.pageId);
+    expect(coordinator.get(handle.pageId)).toMatchObject({state: "unknown",
+      storageFailure: failure, error: storageFailureMessageV1(failure)});
+    // So does a secondary raw failure that reaches the resolve catch.
+    send = "raw";
+    await coordinator.resolve(handle.pageId);
+    const held = coordinator.get(handle.pageId)!;
+    expect(held.storageFailure).toEqual(failure);
+    expect(held.error).toBe(storageFailureMessageV1(failure));
+    expect(held.error).not.toContain("other");
+  } finally {f.dispose();}
+});
+
+it("shows the fixed safe line for an unknown carrier without a diagnostic and keeps rejected messages", async () => {
+  const f = saveFixture();
+  try {
+    const coordinator = new EditSessionCoordinator(async (request) => {
+      if (request.type === "save:commit") return {status: "unknown", operationId: request.operation.operationId,
+        sessionId: request.operation.sessionId, seq: request.operation.seq, pageId: request.operation.pageId,
+        fingerprint: await operationFingerprint(request.operation), message: "raw /secret/wire"};
+      return f.store.handle(request);
+    });
+    const handle = coordinator.attach(f.store.get(f.record.pageId), f.record);
+    coordinator.edit(handle, {title: "Held"});
+    await coordinator.flush(handle.pageId);
+    const view = coordinator.get(handle.pageId)!;
+    expect(view.state).toBe("unknown");
+    expect(view.storageFailure).toBeUndefined();
+    expect(view.error).toBe("画面内に未保存入力を保持しています。新しい保存は確認できていません。");
+    expect(view.error).not.toContain("secret");
+    // A verified business rejection without a diagnostic keeps its normal
+    // wire message.
+    const other = f.repo.create(f.owner.id, "Other", {});
+    const conflicts = new EditSessionCoordinator(async (request) => {
+      if (request.type === "save:commit") return {status: "rejected", operationId: request.operation.operationId,
+        sessionId: request.operation.sessionId, seq: request.operation.seq, pageId: request.operation.pageId,
+        fingerprint: await operationFingerprint(request.operation), message: "保存が競合しました。"};
+      return f.store.handle(request);
+    });
+    const otherHandle = conflicts.attach(f.store.get(other.pageId), other);
+    conflicts.edit(otherHandle, {title: "Stale"});
+    await conflicts.flush(other.pageId);
+    expect(conflicts.get(other.pageId)).toMatchObject({state: "conflict", error: "保存が競合しました。"});
+  } finally {f.dispose();}
+});
+
+it("latches a typed transport failure and advances held input only after applied proof", async () => {
+  const f = saveFixture();
+  try {
+    const requests: Request[] = [];
+    let fail = true;
+    const failure = typed("save:commit");
+    const coordinator = new EditSessionCoordinator(async (request) => {
+      requests.push(request);
+      if (fail && request.type === "save:commit") throw new StorageFailureError(failure);
+      return f.store.handle(request);
+    });
+    const handle = coordinator.attach(f.store.get(f.record.pageId), f.record);
+    coordinator.edit(handle, {title: "Maybe applied"}, {count: 7});
+    await coordinator.flush(handle.pageId);
+    expect(requests.map((request) => request.type)).toEqual(["save:commit"]);
+    const view = coordinator.get(handle.pageId)!;
+    expect(view).toMatchObject({state: "unknown", storageFailure: failure});
+    expect(view.error).toBe(storageFailureMessageV1(failure));
+    expect(f.store.get(handle.pageId).title).toBe("Task");
+    // Later input is held: it does not resend the unknown operation.
+    coordinator.edit(handle, {title: "Later"});
+    await coordinator.flush(handle.pageId);
+    expect(requests.map((request) => request.type)).toEqual(["save:commit"]);
+    // A diagnostic-less resolve keeps operation and first diagnostic.
+    await coordinator.resolve(handle.pageId);
+    expect(coordinator.get(handle.pageId)).toMatchObject({state: "unknown", storageFailure: failure});
+    // The exact applied proof clears both and lets the held input advance causally.
+    fail = false;
+    f.store.commitSave(view.operation!);
+    await coordinator.resolve(handle.pageId);
+    expect(requests.map((request) => request.type)).toEqual(
+      ["save:commit", "save:resolve", "save:resolve", "save:commit"]);
+    expect(coordinator.get(handle.pageId)).toMatchObject(
+      {state: "saved", storageFailure: undefined, page: {title: "Later", revision: 2}});
   } finally {f.dispose();}
 });

@@ -12,6 +12,12 @@ import { join, resolve } from "node:path";
 import { DatabaseSync } from "node:sqlite";
 import { SyncError } from "./protocol";
 import { syncPath } from "../persistence/durable-file";
+import {
+  windowsServerNative,
+  onceNativeServerClose,
+  closeNativeServerResources,
+  type NativeServerFailure,
+} from "../platform/windows/server-native";
 
 const LOCK_NAME = ".folio-server-lock.sqlite";
 const MAX_LOCK_BYTES = 1024 * 1024;
@@ -314,9 +320,106 @@ function createLease(
   };
 }
 
+/**
+ * Windows branch: the lock file is created-or-pinned once through the
+ * authority platform (its createExclusive acquires the held C lease before
+ * any SQLite open; an EXISTS race fails without retry), then a real SQLite
+ * BEGIN EXCLUSIVE on the same file provides cross-process directory
+ * exclusion. assertOwned re-proves root + lock native identities, the held
+ * C scope, and the transaction on every assert. The database always closes
+ * before the C handle; close failures are aggregated and an unknown close
+ * outcome stays a stable failure — never silent success or a retry.
+ */
+function acquireNativeLease(directory: string): ServerDirectoryLease {
+  const native = windowsServerNative()!;
+  const path = native.canonical(directory);
+  const platform = native.authorityPlatform();
+  let database: DatabaseSync | undefined;
+  let opening = false;
+  let closeDatabaseNative: (() => void) | undefined;
+  const closePlatform = onceNativeServerClose(native, () => {
+    native.assertCurrent();
+    platform.close();
+  });
+  try {
+    platform.bind(path);
+    const lockPath = native.join(path, LOCK_NAME);
+    platform.createExclusive(lockPath);
+    platform.assertRoot();
+    platform.assertFile(lockPath);
+    platform.assertSidecars(lockPath);
+    for (const suffix of ["-journal", "-wal", "-shm"]) {
+      const sidecar = `${lockPath}${suffix}`;
+      const kind = native.kindOf(sidecar);
+      if (kind === "absent") continue;
+      if (kind !== "file") unsafe();
+      // Lock databases contain no product records. Refuse hot sidecars rather
+      // than recover an uninspected original to acquire directory authority.
+      if (native.inspectFile(sidecar, MAX_LOCK_BYTES).bytes !== 0)
+        throw new SyncError("server-recovery-required", 409);
+    }
+    if (native.inspectFile(lockPath, MAX_LOCK_BYTES).bytes > 0) {
+      opening = true;
+      const check = new DatabaseSync(lockPath, { readOnly: true });
+      opening = false;
+      let primary: NativeServerFailure | undefined;
+      try {
+        check.exec("PRAGMA query_only=ON; PRAGMA trusted_schema=OFF; PRAGMA busy_timeout=0");
+        if (check.prepare("SELECT name FROM sqlite_schema WHERE name NOT LIKE 'sqlite_%'").all().length !== 0) unsafe();
+        platform.assertRoot();
+        platform.assertFile(lockPath);
+      } catch (error) { primary = { error }; }
+      closeNativeServerResources(native, [onceNativeServerClose(native, () => check.close())], primary);
+    }
+    opening = true;
+    database = new DatabaseSync(lockPath);
+    opening = false;
+    closeDatabaseNative = onceNativeServerClose(native, () => database!.close());
+    database.exec("PRAGMA busy_timeout = 0");
+    database.exec("PRAGMA journal_mode = DELETE");
+    database.exec("PRAGMA synchronous = FULL");
+    database.exec("BEGIN EXCLUSIVE");
+    platform.assertRoot();
+    platform.assertFile(lockPath);
+    assertDatabase(database);
+    let closed = false;
+    const close = onceNativeServerClose(native, () => {
+      // A poisoned inner scope may still be live. Keep directory exclusion
+      // held until its owner can reconcile the unknown outcome.
+      native.assertCurrent();
+      closed = true;
+      // SQLite close ends the owned exclusive transaction. Never use the
+      // POSIX best-effort close helper before releasing the native handle.
+      closeNativeServerResources(native, [closeDatabaseNative!, closePlatform]);
+    });
+    return {
+      directory: path,
+      assertOwned(): void {
+        if (closed) unsafe();
+        platform.assertRoot();
+        platform.assertFile(lockPath);
+        assertDatabase(database!);
+        platform.assertRoot();
+        platform.assertFile(lockPath);
+      },
+      close,
+    };
+  } catch (error) {
+    if (opening) return native.retainUnknown(platform, error);
+    const primary = isBusy(error) ?
+      Object.assign(new SyncError("server-maintenance-busy", 409), { cause: error }) : error;
+    closeNativeServerResources(native,
+      [...(closeDatabaseNative ? [closeDatabaseNative] : []), closePlatform],
+      { error: primary });
+    throw primary;
+  }
+}
+
 export function acquireServerDirectoryLease(
   directory: string,
 ): ServerDirectoryLease {
+  if (windowsServerNative() !== undefined) return acquireNativeLease(directory);
+  if (process.platform === "win32") unsafe();
   const root = pinRoot(directory);
   const lock = openLock(root);
   let database: DatabaseSync | undefined;

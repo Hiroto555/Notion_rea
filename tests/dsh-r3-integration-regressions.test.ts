@@ -3,10 +3,11 @@ import {
   mkdirSync,
   existsSync,
   readdirSync,
+  readFileSync,
   rmSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { join, resolve } from "node:path";
 import { afterEach, expect, it, vi } from "vitest";
 import { Store } from "../src/persistence/store";
 import { WorkspaceStoragePressure } from "../src/main/storage-pressure";
@@ -168,7 +169,7 @@ it("a known rejected create is retained and cannot be silently retried", async (
   expect(coordinator.hasRetained()).toBe(true);
 });
 
-it("ordinary save retries the exact revision and resolves an applied receipt without writing twice", async () => {
+it("ordinary save retry stays query-only while unknown and resolves a later applied receipt without a commit", async () => {
   const f = saveFixture();
   disposers.push(() => f.dispose());
   let available = 0n;
@@ -183,16 +184,35 @@ it("ordinary save retries the exact revision and resolves an applied receipt wit
     return f.store.handle(request);
   };
   const operation = f.operation();
-  expect((await sendReliableSave(operation, send)).status).toBe("unknown");
+  const refused = await sendReliableSave(operation, send);
+  expect(refused.status).toBe("unknown");
+  // The raw transport refusal becomes the bounded local diagnostic of the
+  // actual request type; its raw message is never concatenated or inferred.
+  expect(refused.storageFailure).toMatchObject({
+    kind: "UNCLASSIFIED",
+    family: "REQUEST",
+    requestType: "save:commit",
+  });
+  expect(refused.message).not.toContain("capacity-exceeded");
   expect(f.store.get(f.page.id)).toEqual(f.page);
   expect(f.store.resolveSave(operation).status).toBe("unknown");
   available = 1000n;
+  sent.length = 0;
+  // An unknown outcome never authorizes a resend: retry is read-only.
+  expect(await retryReliableSave(operation, send)).toMatchObject({
+    status: "unknown",
+    operationId: operation.operationId,
+  });
+  expect(sent.map((r) => r.type)).toEqual(["save:resolve"]);
+  expect(f.store.get(f.page.id).revision).toBe(0);
+  // A lost ACK that actually committed is proven by the same read-only query.
+  expect(f.store.commitSave(operation).status).toBe("applied");
   sent.length = 0;
   expect(await retryReliableSave(operation, send)).toMatchObject({
     status: "applied",
     operationId: operation.operationId,
   });
-  expect(sent.map((r) => r.type)).toEqual(["save:resolve", "save:commit"]);
+  expect(sent.map((r) => r.type)).toEqual(["save:resolve"]);
   for (const request of sent)
     if (request.type === "save:resolve" || request.type === "save:commit")
       expect(request.operation).toEqual(operation);
@@ -202,6 +222,26 @@ it("ordinary save retries the exact revision and resolves an applied receipt wit
   expect(sent.map((r) => r.type)).toEqual(["save:resolve"]);
   expect(f.store.get(f.page.id).revision).toBe(1);
   expect(f.store.versions(f.page.id)).toHaveLength(1);
+});
+
+it("App page-save confirmation/retry is resolve-only at the actual App boundary", () => {
+  const source = readFileSync(resolve("src/renderer/App.tsx"), "utf8");
+  const start = source.indexOf("async function resolvePageSaves");
+  const end = source.indexOf("async function openRecord", start);
+  const body = source.slice(start, end);
+  // A latched checkpoint failure still stops this action before any request.
+  expect(body).toContain("latchedRecoveryError()");
+  // Neither a checkpoint write nor a commit is triggered by this action: the
+  // retry branch no longer retries or re-barriers the recovery queue, it only
+  // resolves the exact retained operation through the guarded boundary.
+  expect(body).not.toContain("recoveryQueue.current?.retry()");
+  expect(body).not.toContain("recoveryBarrierRef");
+  expect(body).toContain("retryReliableSave");
+  expect(body).toContain("resolveReliableSave");
+  expect(body).toContain("recoveryGuardedRequest");
+  // The resolved ACK still flows through the production settle helper so an
+  // applied proof can causally advance held input under the normal barrier.
+  expect(body).toContain("acknowledgePage(operation, result, true)");
 });
 
 it("ordinary save retry never rebases onto a newer revision and never resends a rejection", async () => {
@@ -214,8 +254,14 @@ it("ordinary save retry never rebases onto a newer revision and never resends a 
     sent.push(request);
     return f.store.handle(request);
   };
-  expect((await retryReliableSave(operation, send)).status).toBe("rejected");
+  // With no receipt the read-only resolve honestly stays unknown; it can
+  // neither rebase onto the newer revision nor resend the operation.
+  expect((await retryReliableSave(operation, send)).status).toBe("unknown");
+  expect(sent.map((r) => r.type)).toEqual(["save:resolve"]);
   expect(f.store.get(f.page.id).title).toBe("別の新しい編集");
+  // A known terminal rejection is returned by the same read-only query and is
+  // never resent as a commit.
+  expect(f.store.commitSave(operation).status).toBe("rejected");
   sent.length = 0;
   expect((await retryReliableSave(operation, send)).status).toBe("rejected");
   expect(sent.map((r) => r.type)).toEqual(["save:resolve"]);

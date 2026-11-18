@@ -3,10 +3,13 @@ import { closeSync, constants, fstatSync, fsyncSync, lstatSync, mkdirSync, openS
   realpathSync, writeSync, type Stats } from "node:fs";
 import { dirname, isAbsolute, join, resolve } from "node:path";
 import { requireCondition } from "../sync/protocol";
+import { privatePersistencePort, type NativePrivateFile } from "../platform/private-persistence";
 
 export type RecoveryFault = (stage: string) => void;
 export function assertRecoveryDirectory(path: string): string {
   requireCondition(isAbsolute(path) && !path.includes("\0"), "invalid-recovery-directory");
+  const native = privatePersistencePort();
+  if (native) return native.inspectDirectory(path).path;
   const canonical = resolve(path), stat = lstatSync(canonical);
   requireCondition(stat.isDirectory() && !stat.isSymbolicLink() && realpathSync(canonical) === canonical,
     "unsafe-recovery-directory");
@@ -26,6 +29,7 @@ function same(a: Stats, b: Stats): boolean {
 }
 export function withRecoveryRead<T>(root: string, relative: string, max: number,
   use: (fd: number, stat: Stats) => T): T {
+  requireCondition(!privatePersistencePort(), "native-recovery-fd-callback-unavailable", 503);
   const path = recoveryPath(root, relative), parent = lstatSync(dirname(path));
   const fd = openSync(path, constants.O_RDONLY | constants.O_NONBLOCK | (constants.O_NOFOLLOW ?? 0));
   try {
@@ -41,6 +45,11 @@ export function withRecoveryRead<T>(root: string, relative: string, max: number,
   } finally {closeSync(fd);}
 }
 export function readRecoveryFile(root: string, relative: string, max: number): Buffer {
+  const native = privatePersistencePort();
+  if (native) {
+    const path = recoveryPath(root, relative), file = native.inspectFile(path, max);
+    return Buffer.from(native.read(path, file, max));
+  }
   return withRecoveryRead(root, relative, max, (fd, stat) => {
     const bytes = Buffer.alloc(stat.size); let offset = 0;
     while (offset < bytes.length) { const n = readSync(fd, bytes, offset, bytes.length - offset, offset);
@@ -49,6 +58,11 @@ export function readRecoveryFile(root: string, relative: string, max: number): B
   });
 }
 export function hashRecoveryFile(root: string, relative: string, max: number): {bytes: number; sha256: string} {
+  const native = privatePersistencePort();
+  if (native) {
+    const file = native.inspectFile(recoveryPath(root, relative), max);
+    return { bytes: file.bytes, sha256: file.sha256 };
+  }
   return withRecoveryRead(root, relative, max, (fd, stat) => {
     const hash = createHash("sha256"), buffer = Buffer.alloc(65536); let offset = 0;
     while (offset < stat.size) {const n = readSync(fd, buffer, 0, Math.min(buffer.length, stat.size-offset), offset);
@@ -57,17 +71,31 @@ export function hashRecoveryFile(root: string, relative: string, max: number): {
   });
 }
 export function syncRecoveryDirectory(path: string): void {
+  // Native operations return their own file-metadata receipt; this legacy API
+  // promises directory fsync and must not silently impersonate that proof.
+  requireCondition(!privatePersistencePort(), "native-directory-fsync-unsupported", 503);
   assertRecoveryDirectory(path); const fd = openSync(path, constants.O_RDONLY);
   try {fsyncSync(fd);} finally {closeSync(fd);}
 }
 export function createRecoveryDirectory(path: string): string {
   requireCondition(isAbsolute(path) && resolve(path) === path, "invalid-recovery-destination");
+  const native = privatePersistencePort();
+  if (native) return native.createDirectory(path).path;
   assertRecoveryDirectory(dirname(path)); mkdirSync(path, {mode: 0o700});
   syncRecoveryDirectory(path); syncRecoveryDirectory(dirname(path)); return path;
 }
 /** Fresh file only. On uncertain failure retain all bytes; never clean up a path. */
-export function writeRecoveryFile(root: string, relative: string, bytes: Buffer | string, fault?: RecoveryFault): void {
+export function writeRecoveryFile(root: string, relative: string, bytes: Buffer | string, fault?: RecoveryFault): NativePrivateFile | void {
   const path = recoveryPath(root, relative), data = Buffer.isBuffer(bytes) ? bytes : Buffer.from(bytes);
+  const native = privatePersistencePort();
+  if (native) {
+    fault?.("before-file-sync");
+    const written = native.writeNew(path, data, 32 * 1024 * 1024 + 4096).identity;
+    fault?.("after-file-sync");
+    // These hooks remain failure-injection boundaries, not directory proofs.
+    fault?.("before-directory-sync"); fault?.("after-directory-sync");
+    return written;
+  }
   const fd = openSync(path, constants.O_WRONLY | constants.O_CREAT | constants.O_EXCL | (constants.O_NOFOLLOW ?? 0), 0o600);
   try {let offset = 0; while (offset < data.length) {const n = writeSync(fd, data, offset, data.length-offset);
     requireCondition(n > 0, "recovery-write-incomplete"); offset += n;}

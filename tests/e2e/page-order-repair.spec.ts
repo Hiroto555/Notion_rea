@@ -2,6 +2,7 @@ import { DatabaseSync } from "node:sqlite";
 import { join } from "node:path";
 import { readdirSync } from "node:fs";
 import { test, expect, saved, type Session } from "./next-round-fixture";
+import { openWorkspaceMaintenance } from "./ui-chrome-controls";
 import type { Page } from "../../src/shared/types";
 import type { PageOrderRepairPreview } from "../../src/shared/page-order-repair";
 import { verifyFullBackup } from "../../src/persistence/full-backup-verify";
@@ -61,10 +62,7 @@ async function setupTie(session: Session) {
 }
 
 async function openRepair(session: Session) {
-  const panel = session.window.getByLabel("ワークスペースの保守", {
-    exact: true,
-  });
-  await panel.locator("summary").click();
+  const panel = await openWorkspaceMaintenance(session.window);
   await panel
     .getByRole("button", { name: "ページの並び順を修復", exact: true })
     .click();

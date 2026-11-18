@@ -412,6 +412,7 @@ export const requestSchema = z.discriminatedUnion("type", [
   z.object({ type: z.literal("pageOrder:preview") }).strict(),
   z.object({ type: z.literal("pageOrder:apply"), sourceFingerprint: z.string().regex(/^[a-f0-9]{64}$/) }).strict(),
   z.object({type:z.literal("startup:status")}).strict(),
+  z.object({type:z.literal("desktop:capabilities")}).strict(),
   z.object({type: z.literal("storage:readLimits")}).strict(),
   z.object({type: z.literal("storage:applyLimits"), expectedRevision: z.string().uuid().nullable(), configured: managedGrowthLimitsSchema}).strict(),
   z.object({type: z.literal("storage:pressure")}).strict(),
@@ -622,6 +623,7 @@ export type Request = z.infer<typeof requestSchema>;
 export interface FolioAPI {
   shared?:import("./shared-runtime-ipc").SharedRuntimeAPI;
   request<T = unknown>(request: Request): Promise<T>;
+  requestDiagnostic(request: Request): Promise<unknown>;
 }
 declare global {
   interface Window {

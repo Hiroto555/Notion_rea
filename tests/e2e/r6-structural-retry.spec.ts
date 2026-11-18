@@ -1,13 +1,16 @@
 import { expect, test, type ElectronApplication, type Page } from "@playwright/test";
 import type { DatabaseOperationResult } from "../../src/shared/database-operation";
-import { addR5Record, assertR5LegacyUnchanged, createR5Database, disposeR5, launchR5,
-  r5Data, r5Database, r5Saved, r5SettingsSaved } from "./r5-fixture";
+import { addR5Record, assertR5LegacyUnchanged, createR5Database, disposeR5, launchR5, openR7Settings,
+  r5Data, r5Database, r5Saved, r5Settings, r5SettingsSaved } from "./r5-fixture";
 
 const dialog = (window: Page) => window.getByRole("dialog", {name: "列の設定", exact: true});
 async function openSchema(window: Page) {
   await r5Saved(window);
   await expect(window.locator(".r6-recovery-status")).toHaveAttribute("data-recovery-state", "saved");
-  await window.getByRole("button", {name: "列の設定", exact: true}).click();
+  await openR7Settings(window, "view-options");
+  await r5Settings(window)
+    .getByRole("button", {name: "プロパティを編集", exact: true})
+    .click();
   await expect(dialog(window)).toBeVisible();
 }
 async function preview(window: Page) {

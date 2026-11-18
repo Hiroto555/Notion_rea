@@ -1,12 +1,13 @@
 import { useEffect, useRef, useState } from "react";
-import type { SyncConnectionAction, SyncConnectionView, SyncRetentionView, TransferMaintenanceView, TransferReleasePlanView, TransferReleaseResult } from "../../shared/sync-management";
+import type { SyncControlPort } from "../../shared/app-api";
+import type { SyncConnectionAction, SyncConnectionView, SyncRetentionView, TransferMaintenanceView } from "../../shared/sync-management";
 import { formatTransferBytes } from "./TransferMaintenancePanel";
 import { SyncConnectionPanel } from "./SyncConnectionPanel";
 import { TransferMaintenancePanel } from "./TransferMaintenancePanel";
 import "./sync-management.css";
 
 /** Input and confirmations only. Main owns every path, credential and ticket. */
-export function SyncManagementDialog({onClose}: {onClose(): void}) {
+export function SyncManagementDialog({onClose, sync}: {onClose(): void; sync: SyncControlPort}) {
   const dialog = useRef<HTMLDialogElement>(null);
   const [connection, setConnection] = useState<SyncConnectionView | null>(null);
   const [transfers, setTransfers] = useState<TransferMaintenanceView | null>(null);
@@ -15,24 +16,24 @@ export function SyncManagementDialog({onClose}: {onClose(): void}) {
   const [busy, setBusy] = useState(true);
   const alive = useRef(true);
   const refreshConnection = async () => {
-    const view = await window.folio.request<SyncConnectionView>({type: "sync:connectionStatus"});
+    const view = await sync.connectionStatus();
     if (alive.current) setConnection(view);
   };
   const refreshTransfers = async (cursor?: string) => {
-    const view = await window.folio.request<TransferMaintenanceView>({type: "sync:transferInventory", cursor});
+    const view = await sync.transferInventory(cursor);
     if (alive.current) setTransfers(view);
   };
   useEffect(() => {
     alive.current = true;
     dialog.current?.showModal();
-    void Promise.allSettled([refreshConnection(), refreshTransfers(), window.folio.request<SyncRetentionView>({type: "sync:retentionStatus"})
+    void Promise.allSettled([refreshConnection(), refreshTransfers(), sync.retention()
       .then(view => {if (alive.current) setRetention(view);})]).then(results => {
       if (!alive.current) return;
       if (results.some(result => result.status === "rejected")) setError("一部の同期設定を確認できませんでした。更新して再確認してください。");
       setBusy(false);
     });
     return () => {alive.current = false;};
-  }, []);
+  }, [sync]);
   const remember = (action: SyncConnectionAction) => {if (alive.current) setConnection(action.view); return action;};
   return <dialog ref={dialog} className="sync-management-dialog" aria-labelledby="sync-management-title" onCancel={onClose}>
     <header className="sync-management-heading"><h2 id="sync-management-title">同期設定と転送キャッシュ</h2>
@@ -42,11 +43,11 @@ export function SyncManagementDialog({onClose}: {onClose(): void}) {
     {connection ? <SyncConnectionPanel view={connection} busy={busy}
       onRefresh={refreshConnection}
       onResolve={async requestId => {
-        const action = await window.folio.request<SyncConnectionAction | null>({type: "sync:connectionResolve", requestId});
+        const action = await sync.connectionResolve(requestId);
         if (action) remember(action); return action;
       }}
-      onSave={async input => remember(await window.folio.request<SyncConnectionAction>({type: "sync:connectionConfigure", input}))}
-      onDisable={async (requestId, expectedRevision) => remember(await window.folio.request<SyncConnectionAction>({type: "sync:connectionDisable", requestId, expectedRevision}))} /> :
+      onSave={async input => remember(await sync.connectionConfigure(input))}
+      onDisable={async (requestId, expectedRevision) => remember(await sync.connectionDisable(requestId, expectedRevision))} /> :
       <button type="button" disabled={busy} onClick={() => void refreshConnection().catch(() => setError("接続設定を確認できませんでした。"))}>接続設定を再確認</button>}
     <hr />
     <section aria-label="同期の保持上限"><h2>保持量と上限</h2>
@@ -60,18 +61,18 @@ export function SyncManagementDialog({onClose}: {onClose(): void}) {
         同期記録の上限に達した場合は、完全バックアップを保全してから管理手順で新しい同期先へ移行します。未解決の記録は自動削除しません。</p>
     </section>
     {transfers ? <TransferMaintenancePanel view={transfers} busy={busy} onRefresh={refreshTransfers}
-      onPlan={entryId => window.folio.request<TransferReleasePlanView>({type: "sync:transferPlan", entryId})}
+      onPlan={entryId => sync.transferPlan(entryId)}
       onRelease={async operationId => {
-        const result = await window.folio.request<TransferReleaseResult>({type: "sync:transferRelease", operationId});
+        const result = await sync.transferRelease(operationId);
         if (result.outcome === "released") await refreshTransfers(); return result;
       }}
-      onResolve={operationId => window.folio.request<TransferReleaseResult>({type: "sync:transferResolve", operationId})} /> :
+      onResolve={operationId => sync.transferResolve(operationId)} /> :
       <button type="button" disabled={busy} onClick={() => void refreshTransfers().catch(() => setError("転送キャッシュを確認できませんでした。"))}>転送キャッシュを再確認</button>}
   </dialog>;
 }
 
-export function SyncManagementButton() {
+export function SyncManagementButton({sync}: {sync: SyncControlPort}) {
   const [open, setOpen] = useState(false);
   return <><button type="button" className="sync-management-open" onClick={() => setOpen(true)}>同期設定</button>
-    {open && <SyncManagementDialog onClose={() => setOpen(false)} />}</>;
+    {open && <SyncManagementDialog onClose={() => setOpen(false)} sync={sync} />}</>;
 }

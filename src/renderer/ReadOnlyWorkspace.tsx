@@ -1,18 +1,27 @@
 import { useEffect, useState } from "react";
 import type { StartupStatus } from "../shared/startup-status";
-import type { Page, Snapshot } from "../shared/types";
+import type { ReadOnlyAppApi } from "../shared/app-api";
+import type { Page } from "../shared/types";
 import { textOf } from "../shared/types";
+import { fileExportNotice, rawSalvageNotice } from "./capability-notice";
 
-export function ReadOnlyWorkspace({ status }: { status: StartupStatus }) {
+export function ReadOnlyWorkspace({
+  status,
+  api,
+}: {
+  status: StartupStatus;
+  api: ReadOnlyAppApi;
+}) {
   const [pages, setPages] = useState<Page[]>([]);
   const [selected, setSelected] = useState<Page>();
   const [query, setQuery] = useState("");
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
+  const [capabilityNotice, setCapabilityNotice] = useState("");
   useEffect(() => {
     let active = true;
-    window.folio
-      .request<Snapshot>({ type: "load" })
+    api.workspace
+      .load()
       .then((result) => {
         if (active) {
           setPages(result.pages);
@@ -25,7 +34,25 @@ export function ReadOnlyWorkspace({ status }: { status: StartupStatus }) {
     return () => {
       active = false;
     };
-  }, []);
+  }, [api]);
+  // Independent mount-time capability read behind the same active fence.
+  // The notice is display-only: it is never awaited before an action and
+  // never gates one, and an unreadable table leaves the original text and
+  // the existing error surface untouched.
+  useEffect(() => {
+    let active = true;
+    api.capabilities
+      .read()
+      .then((value) => {
+        if (active) setCapabilityNotice(fileExportNotice(value));
+      })
+      .catch(() => {
+        if (active) setCapabilityNotice(fileExportNotice(null));
+      });
+    return () => {
+      active = false;
+    };
+  }, [api]);
   const filtered = pages.filter(
     (page) =>
       !page.deletedAt &&
@@ -38,15 +65,9 @@ export function ReadOnlyWorkspace({ status }: { status: StartupStatus }) {
     setBusy(true);
     setMessage("");
     try {
-      const source = await window.folio.request<string>({
-        type: "pageSource",
-        id: selected.id,
-      });
-      if (typeof source !== "string") throw new Error("原本を取得できません。");
-      const path = await window.folio.request<string | null>({
-        type: "export",
+      const source = await api.original.readOriginal(selected.id);
+      const path = await api.original.exportOriginal({
         name: selected.title || "page-source",
-        format: "json",
         content: source,
       });
       if (path) setMessage("書き出し先 " + path);
@@ -61,9 +82,7 @@ export function ReadOnlyWorkspace({ status }: { status: StartupStatus }) {
     setBusy(true);
     setMessage("");
     try {
-      const result = await window.folio.request<{ directory: string } | null>({
-        type: "storage:rawSalvage",
-      });
+      const result = await api.recovery.salvageRaw();
       if (result) setMessage("救出先 " + result.directory);
     } catch (error) {
       setMessage(error instanceof Error ? error.message : String(error));
@@ -79,6 +98,7 @@ export function ReadOnlyWorkspace({ status }: { status: StartupStatus }) {
         <button disabled={busy} onClick={() => void salvage()}>
           DB・添付・復旧記録を救出
         </button>
+        <p className="subtle">{rawSalvageNotice()}</p>
       </header>
       <label>
         ページを検索
@@ -106,6 +126,9 @@ export function ReadOnlyWorkspace({ status }: { status: StartupStatus }) {
           <button disabled={busy} onClick={() => void exportPage()}>
             ページの原本JSONを書き出し
           </button>
+          {capabilityNotice !== "" && (
+            <p className="subtle">{capabilityNotice}</p>
+          )}
         </article>
       )}
       {message && <p role="status">{message}</p>}

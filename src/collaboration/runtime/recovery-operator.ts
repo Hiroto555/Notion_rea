@@ -27,10 +27,15 @@ import {
 import { SharedAuthority } from "./authority";
 import { CollaborationError, identifier, wellFormed } from "./contract";
 import {
+  createSharedOperatorContext,
+  readSharedOperatorFile,
+  type SharedOperatorFilePort,
+  type SharedOperatorPorts,
+} from "./operator-files";
+import {
   SHARED_RUNTIME_APPLICATION_ID,
   SHARED_RUNTIME_FILE,
   SHARED_RUNTIME_VERSION,
-  type RuntimeStoreOptions,
 } from "./store";
 
 const VALUES = [
@@ -152,8 +157,15 @@ function readPinned(
 function readPrivate(path: string, maxBytes: number): Buffer {
   return readPinned(path, maxBytes).bytes;
 }
-function keyFromFile(path: string): string {
-  const bytes = readPrivate(path, MAX_SECRET_BYTES);
+function keyFromFile(path: string, files?: SharedOperatorFilePort): string {
+  const bytes = files
+    ? readSharedOperatorFile(
+        files,
+        path,
+        MAX_SECRET_BYTES,
+        "INVALID_PRIVATE_FILE",
+      )
+    : readPrivate(path, MAX_SECRET_BYTES);
   let text: string;
   try {
     text = new TextDecoder("utf-8", { fatal: true }).decode(bytes).trim();
@@ -324,14 +336,128 @@ function publish(
   }
 }
 
+type SharedOperatorContext = ReturnType<typeof createSharedOperatorContext>;
+
+function nativeRecovery(
+  context: SharedOperatorContext,
+  values: Map<string, string>,
+  org: string,
+  device: string,
+  hooks: Hooks,
+): RecoveryOperatorHandle {
+  const files = context.privateFiles!;
+  const sourceOptions = context.storeOptions(
+    absolute(values.get("root")!),
+    true,
+  );
+  const root = files.assertDirectory(absolute(values.get("root")!));
+  const output = files.assertNewFile(
+    absolute(values.get("credentials-output")!),
+    [root],
+  );
+  const recoveryKey = keyFromFile(
+    absolute(values.get("recovery-key-file")!),
+    files,
+  );
+  let authority: SharedAuthority;
+  try {
+    authority = context.openAuthority(root, sourceOptions);
+  } catch (error) {
+    if (
+      error instanceof CollaborationError &&
+      (error.code === "WINDOWS_OPERATOR_ADAPTER_REUSED" ||
+        error.code === "WINDOWS_RECOVERY_OPERATOR_UNSUPPORTED")
+    )
+      throw error;
+    return fail("RECOVERY_OPEN_FAILED");
+  }
+  let publicationAttempted = false,
+    committed = false;
+  let credentials: { token: string; recoveryKey: string } | undefined;
+  let content: Buffer | undefined;
+  try {
+    authority.store.transaction(() => {
+      files.assertDirectory(root);
+      if (files.assertNewFile(output, [root]) !== output)
+        fail("UNSAFE_CREDENTIALS_PATH");
+      const issued = authority.recover(org, recoveryKey, device);
+      credentials = { token: issued.token, recoveryKey: issued.recoveryKey };
+      content = Buffer.from(JSON.stringify(credentials), "utf8");
+      publicationAttempted = true;
+      files.publishNewFile(output, content);
+      if (
+        !readSharedOperatorFile(
+          files,
+          output,
+          MAX_SECRET_BYTES,
+          "CREDENTIALS_PROOF_FAILED",
+        ).equals(content)
+      )
+        fail("CREDENTIALS_PROOF_FAILED");
+      hooks.beforeCommit?.();
+      files.assertDirectory(root);
+      if (
+        !readSharedOperatorFile(
+          files,
+          output,
+          MAX_SECRET_BYTES,
+          "CREDENTIALS_PROOF_FAILED",
+        ).equals(content)
+      )
+        fail("CREDENTIALS_PROOF_FAILED");
+    });
+    committed = true;
+    hooks.afterCommit?.();
+    files.assertDirectory(root);
+    if (
+      !content ||
+      !credentials ||
+      !readSharedOperatorFile(
+        files,
+        output,
+        MAX_SECRET_BYTES,
+        "CREDENTIALS_PROOF_FAILED",
+      ).equals(content)
+    )
+      fail("CREDENTIALS_PROOF_FAILED");
+    authority.recoveryStatus(credentials.token, org);
+    authority.verify();
+  } catch (error) {
+    try {
+      authority.close();
+    } catch {}
+    if (
+      publicationAttempted ||
+      committed ||
+      (error instanceof Error && /UNKNOWN/.test(error.message))
+    )
+      return fail("RECOVERY_UNKNOWN");
+    if ((error as NodeJS.ErrnoException).code === "EEXIST")
+      return fail("CREDENTIALS_EXIST");
+    if (error instanceof CollaborationError) throw error;
+    return fail("RECOVERY_FAILED");
+  }
+  let closed = false;
+  return {
+    state: "recovered",
+    async close() {
+      if (closed) return;
+      closed = true;
+      authority.close();
+    },
+  };
+}
+
 /** Local, headless recovery: publish the rotated secrets before the identity transaction commits. */
 export async function runRecoveryOperator(
   args: string[],
-  options: RuntimeStoreOptions = {},
+  ports: SharedOperatorPorts = {},
   hooks: Hooks = {},
 ): Promise<RecoveryOperatorHandle> {
-  if (process.platform === "win32")
-    fail("WINDOWS_RECOVERY_OPERATOR_UNSUPPORTED");
+  const context = createSharedOperatorContext(
+    ports,
+    "WINDOWS_RECOVERY_OPERATOR_UNSUPPORTED",
+  );
   const values = argumentsMap(args);
   let org: string, device: string;
   try {
@@ -340,10 +466,13 @@ export async function runRecoveryOperator(
   } catch {
     return fail("INVALID_ARGUMENT");
   }
+  if (context.privateFiles !== undefined)
+    return nativeRecovery(context, values, org, device, hooks);
   const source = existingRoot(values.get("root")!);
   const output = target(values.get("credentials-output")!, source.pin);
   const recoveryKey = keyFromFile(absolute(values.get("recovery-key-file")!));
   assertSource(source);
+  const options = context.storeOptions(source.pin.path, true);
   let authority: SharedAuthority;
   try {
     authority = new SharedAuthority(source.pin.path, options);

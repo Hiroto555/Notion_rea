@@ -1,3 +1,4 @@
+import {withNativeSqliteReader} from "./native-sqlite-reader";
 import type { DatabaseSync } from "node:sqlite";
 import { DatabaseSync as SQLite } from "node:sqlite";
 import { createHash, randomUUID } from "node:crypto";
@@ -20,6 +21,7 @@ import type {
 } from "../shared/workspace-backup";
 import { syncPath, writeNewFileDurably } from "./durable-file";
 import { inspectWorkspaceSnapshot, verifyFullBackup } from "./full-backup-verify";
+import { withPrivatePersistence, privatePersistencePort, type NativePrivateFilesystemPort, type PrivatePersistenceOptions } from "../platform/private-persistence";
 
 const MARKER = "FOLIO-RECOVERY-INCOMPLETE";
 const INCOMPLETE_MESSAGE = "Backup incomplete; do not use or open this snapshot.\n";
@@ -71,6 +73,7 @@ function copyAssetTree(
   source: string = sourceRoot,
   output: string = outputRoot,
   copied: Map<string, CopiedAsset> = new Map(),
+  native?: NativePrivateFilesystemPort,
 ): Map<string, CopiedAsset> {
   for (const entry of readdirSync(source, { withFileTypes: true }).sort((a, b) =>
     a.name.localeCompare(b.name),
@@ -84,10 +87,11 @@ function copyAssetTree(
           entry.name,
       );
     if (info.isDirectory()) {
-      mkdirSync(to, { mode: 0o700 });
-      copyAssetTree(sourceRoot, outputRoot, from, to, copied);
+      if (native) native.createDirectory(to);
+      else mkdirSync(to, { mode: 0o700 });
+      copyAssetTree(sourceRoot, outputRoot, from, to, copied, native);
       // Flush child names before their parent directory is flushed.
-      syncPath(to);
+      if (!native) syncPath(to);
       continue;
     }
     if (!info.isFile())
@@ -96,6 +100,13 @@ function copyAssetTree(
       );
     // Read once and write those exact bytes. A concurrent source mutation can
     // therefore never produce a destination assembled from two versions.
+    if (native) {
+      const expected = native.inspectFile(from, 256 * 1024 * 1024);
+      const receipt = native.copyNew(from, to, expected, 256 * 1024 * 1024);
+      copied.set(relative(sourceRoot, from).split(sep).join("/"),
+        { bytes: receipt.identity.bytes, sha256: receipt.identity.sha256 });
+      continue;
+    }
     const bytes = readFileSync(from);
     // Flush the copied body before the containing directory's entry is
     // flushed. The readback below still validates the exact bytes that reached
@@ -118,8 +129,7 @@ function validateRegisteredAssets(
   snapshotPath: string,
   copied: Map<string, CopiedAsset>,
 ): void {
-  const snapshot = new SQLite(snapshotPath, { readOnly: true });
-  try {
+  withNativeSqliteReader(snapshotPath, privatePersistencePort(), snapshot => {
     const checks = snapshot.prepare("PRAGMA integrity_check").all() as Record<
       string,
       unknown
@@ -166,9 +176,7 @@ function validateRegisteredAssets(
       if (file.bytes !== metadata.size || file.sha256 !== metadata.sha256)
         throw new Error("添付ファイルがスナップショットと一致しません: " + row.id);
     }
-  } finally {
-    snapshot.close();
-  }
+  });
 }
 
 function writeManifest(
@@ -196,11 +204,13 @@ function writeManifest(
  * place for diagnosis. Source data and unrelated destinations are never
  * removed or rewritten.
  */
-export function createFullBackup(
+function createFullBackupImpl(
   db: DatabaseSync,
   sourceDir: string,
   destination: string,
+  options?: PrivatePersistenceOptions,
 ): VerifiedWorkspaceBackup {
+  const native = privatePersistencePort(options);
   if (db.isTransaction !== false)
     throw new Error("未確定のトランザクションではバックアップを作成できません");
 
@@ -239,6 +249,39 @@ export function createFullBackup(
     throw new Error("バックアップ元の添付フォルダ内には出力できません");
   if (target === databasePath)
     throw new Error("バックアップ元のSQLiteには出力できません");
+
+  if (native) {
+    const sourceIdentity = native.inspectDirectory(root);
+    const databaseIdentity = native.inspectFileIdentity(databasePath);
+    const main = db.prepare("PRAGMA database_list").all().find(row => row.name === "main");
+    if (typeof main?.file !== "string") throw new Error("バックアップ元のSQLite接続が不正です");
+    const opened = native.inspectFileIdentity(main.file);
+    if (opened.fileId !== databaseIdentity.fileId || opened.volumeId !== databaseIdentity.volumeId)
+      throw new Error("バックアップ元のSQLite接続が指定ワークスペースと一致しません");
+    native.createDirectory(target);
+    const markerPath = join(target, MARKER);
+    const marker = native.writeNew(markerPath, Buffer.from(INCOMPLETE_MESSAGE), 4096).identity;
+    const snapshotPath = join(target, DATABASE), outputAssets = join(target, ASSETS);
+    // The native implementation uses SQLite VACUUM INTO with a protected empty
+    // file and a held no-DELETE lease; never copy a live main DB/WAL pair.
+    const snapshot = native.snapshotSqlite(db, snapshotPath).identity;
+    native.createDirectory(outputAssets);
+    const copied = assetsReal ? copyAssetTree(assetsReal, outputAssets, assetsReal, outputAssets, new Map(), native)
+      : new Map<string, CopiedAsset>();
+    validateRegisteredAssets(snapshotPath, copied);
+    const inspection = inspectWorkspaceSnapshot(target);
+    const manifest: WorkspaceBackupManifest = { ...inspection, format: "folio-workspace-backup", version: 1,
+      createdAt: new Date().toISOString(), database: { path: DATABASE, bytes: snapshot.bytes, sha256: snapshot.sha256 } };
+    native.writeNew(join(target, MANIFEST), Buffer.from(JSON.stringify(manifest, null, 2)), 32 * 1024 * 1024);
+    const verified = verifyFullBackup(target, { allowIncomplete: true });
+    const after = native.inspectDirectory(root);
+    if (after.fileId !== sourceIdentity.fileId || after.volumeId !== sourceIdentity.volumeId)
+      throw new Error("バックアップ元が変更されています");
+    // Only the exact marker created by this attempt may be removed. A missing
+    // receipt is UNKNOWN; retain the independent intent and every output.
+    native.unlinkExact(markerPath, marker, 4096);
+    return verified;
+  }
 
   // Exclusive creation reserves this exact directory. An existing directory,
   // file, dangling symlink, or a racing creator is never reused or replaced.
@@ -305,4 +348,8 @@ export function createFullBackup(
     throw error;
   }
   return verified;
+}
+
+export function createFullBackup(db: DatabaseSync, sourceDir: string, destination: string, options?: PrivatePersistenceOptions): VerifiedWorkspaceBackup {
+  return withPrivatePersistence(options, () => createFullBackupImpl(db, sourceDir, destination, options));
 }

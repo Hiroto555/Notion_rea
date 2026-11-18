@@ -153,6 +153,8 @@ export type SharedRecoveryFilesystemProof = Readonly<{
   assertFile(path: string, root: string): void;
   createIndex(path: string, root: string): void;
   identity(path: string, root: string): SharedRecoveryFileIdentity;
+  /** The host owns this optional factory lifetime, independently of indexes. */
+  close?(): void;
 }>;
 
 export type SharedRecoveryIndexOptions = Readonly<{

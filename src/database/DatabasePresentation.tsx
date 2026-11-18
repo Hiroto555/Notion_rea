@@ -570,18 +570,30 @@ function ReadOnlyDatabasePresentation({
     ))}</div>
   ) : <div className="r3-gallery">{visible.map((record) => card(record))}</div>;
   const dateProperty = ui.calendarProperty(display);
+  const undatedCount = dateProperty
+    ? ui.undatedRecords(display, dateProperty.id).length
+    : 0;
   const calendarView = dateProperty ? (
     <>
       <div className="r3-month-nav">
-        <button type="button" aria-label="前の月" onClick={() => {
-          const date = new Date(month + "-15T12:00:00"); date.setMonth(date.getMonth() - 1);
-          setMonth(date.toLocaleDateString("sv-SE").slice(0, 7));
-        }}><ArrowLeft size={15} aria-hidden="true" /></button>
-        <strong>{month.replace("-", "年 ")}月</strong>
-        <button type="button" aria-label="次の月" onClick={() => {
-          const date = new Date(month + "-15T12:00:00"); date.setMonth(date.getMonth() + 1);
-          setMonth(date.toLocaleDateString("sv-SE").slice(0, 7));
-        }}><ArrowRight size={15} aria-hidden="true" /></button>
+        <p
+          className="r3-month-context"
+          data-calendar-property={dateProperty.id}
+        >
+          <span>対象日付: {dateProperty.name}</span>
+          <span>日付未設定: {undatedCount}件</span>
+        </p>
+        <div className="r3-month-nav-controls">
+          <button type="button" aria-label="前の月" onClick={() => {
+            const date = new Date(month + "-15T12:00:00"); date.setMonth(date.getMonth() - 1);
+            setMonth(date.toLocaleDateString("sv-SE").slice(0, 7));
+          }}><ArrowLeft size={15} aria-hidden="true" /></button>
+          <strong>{month.replace("-", "年 ")}月</strong>
+          <button type="button" aria-label="次の月" onClick={() => {
+            const date = new Date(month + "-15T12:00:00"); date.setMonth(date.getMonth() + 1);
+            setMonth(date.toLocaleDateString("sv-SE").slice(0, 7));
+          }}><ArrowRight size={15} aria-hidden="true" /></button>
+        </div>
       </div>
       <div className="r3-calendar">
         {["日", "月", "火", "水", "木", "金", "土"].map((day) =>
@@ -593,7 +605,6 @@ function ReadOnlyDatabasePresentation({
           </div>
         ))}
       </div>
-      <p className="r3-db-count">日付未設定：{ui.undatedRecords(display, dateProperty.id).length}件</p>
     </>
   ) : <p className="r3-empty">日付型のプロパティがありません。</p>;
   const content = display.view.type === "table" ? tableView :
@@ -1439,32 +1450,39 @@ function EditableDatabasePresentation({
     const property = calendarProperty;
     if (!property)
       return <p className="r3-empty">日付型のプロパティを追加してください。</p>;
+    const undatedCount = ui.undatedRecords(display, property.id).length;
     return (
       <>
         <div className="r3-month-nav">
-          <button
-            type="button"
-            aria-label="前の月"
-            onClick={() => {
-              const date = new Date(month + "-15T12:00:00");
-              date.setMonth(date.getMonth() - 1);
-              setMonth(date.toLocaleDateString("sv-SE").slice(0, 7));
-            }}
-          >
-            <ArrowLeft size={15} aria-hidden="true" />
-          </button>
-          <strong>{month.replace("-", "年 ")}月</strong>
-          <button
-            type="button"
-            aria-label="次の月"
-            onClick={() => {
-              const date = new Date(month + "-15T12:00:00");
-              date.setMonth(date.getMonth() + 1);
-              setMonth(date.toLocaleDateString("sv-SE").slice(0, 7));
-            }}
-          >
-            <ArrowRight size={15} aria-hidden="true" />
-          </button>
+          <p className="r3-month-context" data-calendar-property={property.id}>
+            <span>対象日付: {property.name}</span>
+            <span>日付未設定: {undatedCount}件</span>
+          </p>
+          <div className="r3-month-nav-controls">
+            <button
+              type="button"
+              aria-label="前の月"
+              onClick={() => {
+                const date = new Date(month + "-15T12:00:00");
+                date.setMonth(date.getMonth() - 1);
+                setMonth(date.toLocaleDateString("sv-SE").slice(0, 7));
+              }}
+            >
+              <ArrowLeft size={15} aria-hidden="true" />
+            </button>
+            <strong>{month.replace("-", "年 ")}月</strong>
+            <button
+              type="button"
+              aria-label="次の月"
+              onClick={() => {
+                const date = new Date(month + "-15T12:00:00");
+                date.setMonth(date.getMonth() + 1);
+                setMonth(date.toLocaleDateString("sv-SE").slice(0, 7));
+              }}
+            >
+              <ArrowRight size={15} aria-hidden="true" />
+            </button>
+          </div>
         </div>
         <div className="r3-calendar">
           {["日", "月", "火", "水", "木", "金", "土"].map((day) => (
@@ -1507,11 +1525,6 @@ function EditableDatabasePresentation({
             );
           })}
         </div>
-        <p className="r3-db-count">
-          日付未設定：
-          {ui.undatedRecords(display, property.id).length}
-          件（テーブルで編集できます）
-        </p>
       </>
     );
   };

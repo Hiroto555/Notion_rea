@@ -772,3 +772,21 @@ export class RetentionService {
     });
   }
 }
+
+export type {
+  RetentionNamespaceContract,
+  RetentionObligation,
+  RetentionCoverageStore,
+  RetentionLiveHistory,
+  RetentionReleaseCoverage,
+  RetentionReleaseEnvironment,
+} from "./retention-dependencies";
+export type {
+  RetentionArtifactStore,
+  RetentionHoldSelection,
+  RetentionReleaseArtifactResult,
+  RetentionReleasePreview,
+  RetentionReleaseRequest,
+  RetentionReleaseResult,
+  RetentionStoreSummary,
+} from "./retention-release";

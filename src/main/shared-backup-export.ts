@@ -1,4 +1,4 @@
-import { randomUUID } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 import {
   closeSync,
   constants,
@@ -33,12 +33,25 @@ import {
   assertExternalOutput,
   assertOutsideFolioData,
 } from "../persistence/output-path";
+import {
+  WINDOWS_BACKUP_ARTIFACT_MAX_BYTES,
+  WINDOWS_BACKUP_ARTIFACT_PROFILE,
+  type WindowsBackupArtifactPort,
+} from "../platform/windows/backup-artifact";
+import { validateWindowsPath } from "../platform/windows/path-policy";
 
 type BackupExportOptions = {
   download: () => Promise<BackupDownload>;
   pick: () => Promise<string | null>;
   isAuthorized: () => boolean;
   forbiddenRoots: readonly string[];
+  /** Exclusive artifact publication port for the Windows native branch. An
+   * explicit untrusted-test port is the only non-Windows seam; the option is
+   * never inferred from process.platform. */
+  nativeBackup?: WindowsBackupArtifactPort;
+  /** Authority revalidation run inside the staged beforePublish callback:
+   * second full backup fetch plus authorization fence before commit. */
+  revalidateSource?: (backup: Readonly<BackupDownload>) => Promise<void>;
 };
 
 type CodedError = Error & { code: string };
@@ -47,6 +60,8 @@ type FrozenBackup = { raw: string; head: Cut; hash: string };
 
 const MAX_BACKUP_BYTES = 256 * 1024 * 1024;
 const MAX_PATH_LENGTH = 4096;
+const sha256Hex = (bytes: Uint8Array): string =>
+  createHash("sha256").update(bytes).digest("hex");
 const WINDOWS_RESERVED =
   /^(CON|PRN|AUX|NUL|CLOCK\$|CONIN\$|CONOUT\$|COM[1-9]|LPT[1-9])$/;
 
@@ -284,6 +299,174 @@ function cleanupTemporary(
   } catch {}
 }
 
+/** Strict canonical Windows path for the native artifact branch; the POSIX
+ * parser is never used for a Windows destination. */
+function canonicalWindowsPath(value: unknown, code: string): string {
+  if (
+    typeof value !== "string" ||
+    value.length === 0 ||
+    value.length > MAX_PATH_LENGTH ||
+    value.includes("\0") ||
+    !wellFormed(value) ||
+    !/^[A-Za-z]:[\\/]/.test(value)
+  )
+    fail(code);
+  try {
+    return validateWindowsPath(value, `${value[0].toUpperCase()}:\\`).canonical;
+  } catch (error) {
+    fail(code, error);
+  }
+}
+
+function assertArtifactPort(port: unknown): WindowsBackupArtifactPort {
+  if (typeof port !== "object" || port === null) fail("INVALID_NATIVE_PORT");
+  const candidate = port as WindowsBackupArtifactPort;
+  if (
+    candidate.contractVersion !== 1 ||
+    candidate.profile !== WINDOWS_BACKUP_ARTIFACT_PROFILE ||
+    candidate.platform !== "win32" ||
+    typeof candidate.publishNew !== "function"
+  )
+    fail("INVALID_NATIVE_PORT");
+  // A test port can never pose as the native helper, and the real Windows
+  // path can never be satisfied by a simulation.
+  const expected = process.platform === "win32" ? "native-helper" : "untrusted-test";
+  if (candidate.trust !== expected) fail("INVALID_NATIVE_PORT");
+  return candidate;
+}
+
+/**
+ * Windows exclusive artifact export through the FOLIO_SHARED_BACKUP_ARTIFACT_V1
+ * native port. The frozen canonical backup bytes are staged by the helper, the
+ * asynchronous beforePublish callback re-verifies the staged readback and
+ * re-fetches the remote source for authority authorization/current cut, and
+ * only then is the synchronous commit dispatched. Uncertainty after entering
+ * the port is always UNKNOWN; the stage is retained, never cleaned.
+ */
+async function exportSharedBackupWindows(
+  options: BackupExportOptions,
+  port: WindowsBackupArtifactPort,
+): Promise<BackupExportResult> {
+  const { download, pick, isAuthorized, revalidateSource } = options;
+  const requireAuthorized = (): void => {
+    if (isAuthorized() !== true) fail("UNAUTHORIZED");
+  };
+
+  requireAuthorized();
+  const roots = Object.freeze(options.forbiddenRoots.map((root) =>
+    canonicalWindowsPath(root, "INVALID_FORBIDDEN_ROOT"),
+  ));
+  const downloaded = await download();
+  requireAuthorized();
+  const backup = freezeDownload(downloaded);
+  requireAuthorized();
+
+  const selected = await pick();
+  requireAuthorized();
+  if (selected === null) return { state: "CANCELLED" };
+
+  const destination = canonicalWindowsPath(selected, "INVALID_DESTINATION");
+  const parent = destination.slice(0, destination.lastIndexOf("\\"));
+  const bytes = Buffer.from(backup.raw, "utf8");
+  if (bytes.toString("utf8") !== backup.raw) fail("NON_CANONICAL_BACKUP");
+  if (bytes.byteLength === 0 || bytes.byteLength > WINDOWS_BACKUP_ARTIFACT_MAX_BYTES)
+    fail("INVALID_BACKUP");
+  const artifactSha = sha256Hex(bytes);
+
+  const attemptId = randomUUID().replaceAll("-", "");
+  const stagingPath = `${parent}\\.folio-backup-${attemptId}.tmp`;
+  let approved = false;
+  let approvalStarted = false;
+  const request = Object.freeze({
+    path: destination,
+    stagingPath,
+    attemptId,
+    bytes: Uint8Array.from(bytes),
+    forbiddenRoots: roots,
+    source: Object.freeze({
+      head: Object.freeze({ ...backup.head }),
+      hash: backup.hash,
+    }),
+    assertCurrent: requireAuthorized,
+    beforePublish: async (readback: Uint8Array): Promise<void> => {
+      if (approvalStarted) throw new Error("DUPLICATE_BACKUP_APPROVAL");
+      approvalStarted = true;
+      if (
+        !(readback instanceof Uint8Array) ||
+        !Buffer.from(readback).equals(bytes)
+      )
+        throw new Error("STAGED_READBACK_MISMATCH");
+      await revalidateSource!(Object.freeze({
+        raw: backup.raw,
+        head: Object.freeze({ ...backup.head }),
+        hash: backup.hash,
+      }));
+      requireAuthorized();
+      // Approval is recorded only after the authority callback completed.
+      approved = true;
+    },
+  });
+
+  let receipt: Awaited<ReturnType<WindowsBackupArtifactPort["publishNew"]>>;
+  try {
+    receipt = await port.publishNew(request);
+  } catch {
+    return {
+      state: "UNKNOWN",
+      path: destination,
+      head: backup.head,
+      hash: backup.hash,
+    };
+  }
+  if (receipt === null || typeof receipt !== "object")
+    return { state: "UNKNOWN", path: destination, head: backup.head, hash: backup.hash };
+  if (receipt.state === "UNKNOWN")
+    return { state: "UNKNOWN", path: destination, head: backup.head, hash: backup.hash };
+  if (receipt.contractVersion !== 1 || receipt.profile !== WINDOWS_BACKUP_ARTIFACT_PROFILE ||
+      receipt.path !== destination ||
+      (receipt.state === "EXISTS" &&
+        (receipt.attemptId !== attemptId || receipt.stagingPath !== stagingPath || receipt.preserve !== true)) ||
+      (receipt.state === "REJECTED" && receipt.preserve !== true))
+    return { state: "UNKNOWN", path: destination, head: backup.head, hash: backup.hash };
+  if (receipt.state === "EXISTS") fail("FILE_EXISTS");
+  if (receipt.state === "REJECTED") fail("NATIVE_EXPORT_REJECTED");
+  try {
+    if (
+      receipt.state !== "PUBLISHED" ||
+      !approved ||
+      receipt.contractVersion !== 1 ||
+      receipt.profile !== WINDOWS_BACKUP_ARTIFACT_PROFILE ||
+      receipt.path !== destination ||
+      receipt.stagingPath !== stagingPath ||
+      receipt.attemptId !== attemptId ||
+      receipt.byteLength !== bytes.byteLength ||
+      receipt.sha256 !== artifactSha ||
+      receipt.stagingDisposition !== "RENAMED_TO_FINAL" ||
+      receipt.namespace !== "EXCLUSIVE_NO_REPLACE" ||
+      receipt.contentFlushed !== true ||
+      receipt.durability?.profile !== "WINDOWS_LOCAL_NTFS_FILE_METADATA_FLUSH_V1" ||
+      receipt.durability?.scope !== "PROCESS_CRASH" ||
+      receipt.identity?.canonicalPath !== destination ||
+      !(receipt.readback instanceof Uint8Array) ||
+      !Buffer.from(receipt.readback).equals(bytes)
+    )
+      throw new Error("NATIVE_RECEIPT_MISMATCH");
+    return {
+      state: "EXPORTED",
+      path: destination,
+      head: backup.head,
+      hash: backup.hash,
+    };
+  } catch {
+    return {
+      state: "UNKNOWN",
+      path: destination,
+      head: backup.head,
+      hash: backup.hash,
+    };
+  }
+}
+
 export async function exportSharedBackup(
   options: BackupExportOptions,
 ): Promise<BackupExportResult> {
@@ -296,6 +479,14 @@ export async function exportSharedBackup(
     !Array.isArray(forbiddenRoots)
   )
     fail("INVALID_OPTIONS");
+  // The Windows native branch is selected before POSIX root pinning: on real
+  // Windows a port is mandatory; elsewhere only an explicit untrusted-test
+  // port may enter this branch.
+  if (options.nativeBackup !== undefined) {
+    const port = assertArtifactPort(options.nativeBackup);
+    if (typeof options.revalidateSource !== "function") fail("INVALID_OPTIONS");
+    return exportSharedBackupWindows(options, port);
+  }
   if (process.platform === "win32") fail("WINDOWS_EXPORT_UNSUPPORTED");
 
   const requireAuthorized = (): void => {

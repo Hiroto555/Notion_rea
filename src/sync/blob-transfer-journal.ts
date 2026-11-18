@@ -14,6 +14,9 @@ import { syncPath } from "../persistence/durable-file";
 import { canonicalJson, requireCondition, SyncError } from "./protocol";
 import { SyncSqliteGuard } from "./sqlite-guard";
 import { assertSqliteSidecars } from "./m3-private-root";
+import { synchronousPrivatePlatform, type PrivatePlatform } from "./private-platform";
+import { preflightExistingJournal } from "./journal-preflight";
+import { SqliteConnectionOwner, closeSqlitePlatform } from "./sqlite-connection-owner";
 import type {
   BlobTransferDescriptor,
   BlobTransferLimits,
@@ -50,6 +53,12 @@ function busy(error: unknown): boolean {
     (error instanceof AggregateError && error.errors.some(busy))
   );
 }
+/** The stable locked code keeps the raw primary as its cause. */
+function locked(error: unknown): SyncError {
+  const wrapped = new SyncError("blob-transfer-locked", 409);
+  wrapped.cause = error;
+  return wrapped;
+}
 
 /** A private cache journal, independent of workspace schema and save receipts. */
 export class BlobTransferJournal {
@@ -57,42 +66,73 @@ export class BlobTransferJournal {
   private readonly scopeHash: string;
   private readonly limits: BlobTransferLimits;
   private readonly databasePath: string;
-  private readonly rootPin: { dev: number; ino: number };
-  private readonly databasePin: { dev: number; ino: number };
-  private readonly guard: SyncSqliteGuard;
+  private readonly rootPin?: { dev: number; ino: number };
+  private readonly databasePin?: { dev: number; ino: number };
+  private readonly guard!: SyncSqliteGuard;
+  private readonly owner: SqliteConnectionOwner;
   private closed = false;
+  private closing = false;
+  private uncertain = false;
 
   constructor(
     directory: string,
     scope: BlobTransferScope | Readonly<{ scopeHash: string }>,
     limits: Partial<BlobTransferLimits> = {},
+    private readonly nativePlatform?: PrivatePlatform,
   ) {
-    const maintenance = scope && Object.keys(scope).join() === "scopeHash";
-    if (maintenance) requireCondition(HASH.test((scope as {scopeHash: string}).scopeHash), "invalid-blob-transfer-scope");
-    else requireCondition(
-      scope &&
-        Object.keys(scope).sort().join() ===
-          "baseUrlHash,bindingId,clientId,serverEpoch,workspaceId" &&
-        HASH.test((scope as BlobTransferScope).baseUrlHash) &&
-        [
-          (scope as BlobTransferScope).workspaceId,
-          (scope as BlobTransferScope).clientId,
-          (scope as BlobTransferScope).bindingId,
-          (scope as BlobTransferScope).serverEpoch,
-        ].every((x) => typeof x === "string" && ID.test(x)),
-      "invalid-blob-transfer-scope",
+    const supplied = nativePlatform;
+    let facade: PrivatePlatform | undefined;
+    // A supplied port is owned from the moment the constructor receives it:
+    // reserve the owner before facade wrapping, validation or any
+    // filesystem/native acquisition so every failure owes it the same
+    // synchronous cleanup.
+    this.owner = new SqliteConnectionOwner(() =>
+      closeSqlitePlatform(facade ?? supplied),
     );
-    this.scopeHash = maintenance ? (scope as {scopeHash: string}).scopeHash : digest(canonicalJson(scope));
-    this.limits = { ...defaults, ...limits };
-    requireCondition(
-      Number.isSafeInteger(this.limits.maxEntries) &&
-        this.limits.maxEntries > 0 &&
-        this.limits.maxEntries <= defaults.maxEntries &&
-        Number.isSafeInteger(this.limits.maxBytes) &&
-        this.limits.maxBytes >= 0 &&
-        this.limits.maxBytes <= defaults.maxBytes,
-      "invalid-blob-transfer-limits",
-    );
+    let db!: DatabaseSync;
+    try {
+      if (nativePlatform !== undefined) {
+        nativePlatform = facade = synchronousPrivatePlatform(nativePlatform);
+        this.nativePlatform = nativePlatform;
+      }
+      requireCondition(process.platform !== "win32" || nativePlatform?.kind === "windows", "blob-transfer-native-platform-required", 503);
+      const maintenance = scope && Object.keys(scope).join() === "scopeHash";
+      if (maintenance) requireCondition(HASH.test((scope as {scopeHash: string}).scopeHash), "invalid-blob-transfer-scope");
+      else requireCondition(
+        scope &&
+          Object.keys(scope).sort().join() ===
+            "baseUrlHash,bindingId,clientId,serverEpoch,workspaceId" &&
+          HASH.test((scope as BlobTransferScope).baseUrlHash) &&
+          [
+            (scope as BlobTransferScope).workspaceId,
+            (scope as BlobTransferScope).clientId,
+            (scope as BlobTransferScope).bindingId,
+            (scope as BlobTransferScope).serverEpoch,
+          ].every((x) => typeof x === "string" && ID.test(x)),
+        "invalid-blob-transfer-scope",
+      );
+      this.scopeHash = maintenance ? (scope as {scopeHash: string}).scopeHash : digest(canonicalJson(scope));
+      this.limits = { ...defaults, ...limits };
+      requireCondition(
+        Number.isSafeInteger(this.limits.maxEntries) &&
+          this.limits.maxEntries > 0 &&
+          this.limits.maxEntries <= defaults.maxEntries &&
+          Number.isSafeInteger(this.limits.maxBytes) &&
+          this.limits.maxBytes >= 0 &&
+          this.limits.maxBytes <= defaults.maxBytes,
+        "invalid-blob-transfer-limits",
+      );
+      requireCondition(nativePlatform === undefined || nativePlatform.kind === "windows", "blob-transfer-native-platform-required", 503);
+    if (nativePlatform !== undefined) {
+        this.directory = nativePlatform.bind(directory);
+        this.databasePath = join(this.directory, "state.sqlite");
+        // Positive creation (which acquires a held platform's authority
+        // scope) must precede any proof that requires the hold.
+        nativePlatform.createExclusive(this.databasePath);
+        nativePlatform.assertRoot();
+        nativePlatform.assertFile(this.databasePath);
+        nativePlatform.assertSidecars(this.databasePath);
+    } else {
     const path = resolve(directory);
     mkdirSync(path, { recursive: true, mode: 0o700 });
     const stat = lstatSync(path);
@@ -124,13 +164,16 @@ export class BlobTransferJournal {
     }
     this.databasePin = this.checkDatabase();
     assertSqliteSidecars(this.databasePath, stat.uid);
-    const db = new DatabaseSync(this.databasePath);
-    this.guard = new SyncSqliteGuard(db);
-    try {
+    }
+      if (lstatSync(this.databasePath).size > 0)
+        preflightExistingJournal(this.databasePath, () => this.assertFilesystem(), candidate => this.validateExisting(candidate), this.nativePlatform, this.owner);
+      db = new DatabaseSync(this.databasePath);
+      this.owner.opened(db);
+      this.guard = this.owner.guarded(db);
       db.exec(
         "PRAGMA busy_timeout=0; PRAGMA journal_mode=DELETE; PRAGMA synchronous=FULL; PRAGMA locking_mode=EXCLUSIVE;",
       );
-      this.guard.transaction(() => {
+      this.transaction(() => {
         const tables = db
           .prepare(
             "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'",
@@ -139,10 +182,11 @@ export class BlobTransferJournal {
           .map((row) => row.name);
         if (tables.length === 0) {
           requireCondition(
-            this.databasePin && lstatSync(this.databasePath).size === 0,
+            this.nativePlatform !== undefined || (this.databasePin && lstatSync(this.databasePath).size === 0),
             "blob-transfer-corrupt",
             409,
           );
+          this.nativePlatform?.assertEmptyFile(this.databasePath);
           db.exec(
             "CREATE TABLE transfer_identity (singleton INTEGER PRIMARY KEY CHECK(singleton=1), version INTEGER NOT NULL, scope_hash TEXT NOT NULL); CREATE TABLE blob_transfers (key TEXT PRIMARY KEY,data TEXT NOT NULL)",
           );
@@ -170,11 +214,7 @@ export class BlobTransferJournal {
       this.assertOwned();
       this.inventory();
     } catch (error) {
-      try {
-        this.guard.close();
-      } catch {}
-      if (busy(error)) throw new SyncError("blob-transfer-locked", 409);
-      throw error;
+      this.owner.fail(busy(error) ? locked(error) : error);
     }
   }
   private checkDatabase() {
@@ -192,19 +232,55 @@ export class BlobTransferJournal {
   }
   private assertOwned() {
     requireCondition(!this.closed, "blob-transfer-closed", 409);
+    requireCondition(!this.closing, "blob-transfer-closing", 503);
+    requireCondition(!this.uncertain, "blob-transfer-commit-unknown", 503);
+    this.assertFilesystem();
+    this.guard.assertUsable();
+  }
+  private assertFilesystem() {
+    if (this.nativePlatform !== undefined) {
+      this.nativePlatform.assertRoot();
+      this.nativePlatform.assertFile(this.databasePath);
+      this.nativePlatform.assertSidecars(this.databasePath);
+      return;
+    }
     const root = lstatSync(this.directory),
       db = this.checkDatabase();
     requireCondition(
       root.isDirectory() &&
         !root.isSymbolicLink() &&
-        root.dev === this.rootPin.dev &&
-        root.ino === this.rootPin.ino &&
-        db.dev === this.databasePin.dev &&
-        db.ino === this.databasePin.ino,
+        root.dev === this.rootPin!.dev &&
+        root.ino === this.rootPin!.ino &&
+        db.dev === this.databasePin!.dev &&
+        db.ino === this.databasePin!.ino,
       "blob-transfer-path-changed",
       409,
     );
-    this.guard.assertUsable();
+    assertSqliteSidecars(this.databasePath, root.uid);
+  }
+  private validateExisting(db: DatabaseSync): void {
+    const tables = db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'").all();
+    requireCondition(tables.length === 2 &&
+      tables.some(row => row.name === "transfer_identity") && tables.some(row => row.name === "blob_transfers"), "blob-transfer-corrupt", 409);
+    const identity = db.prepare("SELECT * FROM transfer_identity").all();
+    requireCondition(identity.length === 1 && identity[0].singleton === 1 && identity[0].version === 1 && identity[0].scope_hash === this.scopeHash, "blob-transfer-scope-mismatch", 409);
+    const rows = db.prepare("SELECT key,data FROM blob_transfers LIMIT ?").all(this.limits.maxEntries + 1);
+    requireCondition(rows.length <= this.limits.maxEntries, "blob-transfer-limit", 409);
+    for (const row of rows) requireCondition(this.parse(row.data).key === row.key, "blob-transfer-corrupt", 409);
+  }
+  private transaction<T>(work: () => T): T {
+    this.assertOwned();
+    const result = this.guard.transaction(work);
+    if (this.nativePlatform !== undefined) {
+      try { this.assertOwned(); }
+      catch (cause) {
+        this.uncertain = true;
+        const error = new SyncError("blob-transfer-commit-unknown", 503);
+        error.cause = cause;
+        throw error;
+      }
+    }
+    return result;
   }
   private parse(raw: unknown): BlobTransferRecord {
     let record: BlobTransferRecord;
@@ -315,7 +391,7 @@ export class BlobTransferJournal {
       reason: null,
       updatedAt: Date.now(),
     };
-    this.guard.transaction(() =>
+    this.transaction(() =>
       this.guard.db
         .prepare("INSERT INTO blob_transfers VALUES(?,?)")
         .run(key, canonicalJson(record)),
@@ -328,7 +404,7 @@ export class BlobTransferJournal {
   ) {
     this.assertOwned();
     let result!: BlobTransferRecord;
-    this.guard.transaction(() => {
+    this.transaction(() => {
       const old = this.get(key);
       requireCondition(old, "blob-transfer-missing", 409);
       result = update(old);
@@ -385,7 +461,7 @@ export class BlobTransferJournal {
     this.assertOwned();
     this.inventory();
     let count = 0;
-    this.guard.transaction(() => {
+    this.transaction(() => {
       for (const row of this.inventory())
         if (row.state === "completed")
           count += Number(
@@ -407,7 +483,7 @@ export class BlobTransferJournal {
   }
   finishRelease(key: string, operationId: string): boolean {
     this.assertOwned();
-    return this.guard.transaction(() => {
+    return this.transaction(() => {
       const old = this.get(key);
       if (!old || old.state !== "releasing" || old.reason !== operationId) return false;
       return this.guard.db.prepare("DELETE FROM blob_transfers WHERE key=? AND data=?")
@@ -416,7 +492,8 @@ export class BlobTransferJournal {
   }
   close() {
     if (this.closed) return;
-    this.guard.close();
+    this.closing = true;
+    this.owner.close();
     this.closed = true;
   }
 }

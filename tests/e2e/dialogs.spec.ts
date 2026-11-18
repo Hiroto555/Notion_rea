@@ -1,6 +1,7 @@
 import { writeFileSync } from "node:fs";
 import { test, expect, saved, type Session } from "./next-round-fixture";
 import { editorDoc } from "./drag-observer";
+import { clickPageLink, documentEditor } from "./ui-chrome-controls";
 
 const mod = process.platform === "darwin" ? "Meta" : "Control";
 const lineStart = process.platform === "darwin" ? "Meta+ArrowLeft" : "Home";
@@ -9,9 +10,15 @@ async function openRecord(s: Session) {
     .locator(".page-tree-label")
     .filter({ hasText: "プロジェクト" })
     .click();
-  await s.window
-    .getByRole("button", { name: "ギャラリー", exact: true })
-    .click();
+  const galleryTab = s.window.getByRole("tab", {
+    name: "ビュー: ギャラリー",
+    exact: true,
+  });
+  if (await galleryTab.count()) await galleryTab.click();
+  else
+    await s.window
+      .getByLabel("ビューを追加", { exact: true })
+      .selectOption("gallery");
   const card = s.window.locator(".db-card").first();
   await card.click();
   return card;
@@ -38,7 +45,7 @@ test("R3 search/link/record share initial focus, modal tab cycle, close button a
   for (const mode of ["search", "link", "record"]) {
     if (mode === "record") await openRecord(s);
     else if (mode === "search") await w.keyboard.press(`${mod}+p`);
-    else await w.getByTitle("ページへのリンク", { exact: true }).click();
+    else await clickPageLink(documentEditor(w));
     const dialog = w.getByRole("dialog");
     await expect(dialog).toHaveAttribute("aria-modal", "true");
     await expect(
@@ -183,7 +190,7 @@ test("R3 selected text link cancel/confirm restores exact range, wording and mar
     expect(await s.window.evaluate(() => getSelection()?.toString())).toBe(
       "不動産",
     );
-    await s.window.getByTitle("ページへのリンク", { exact: true }).click();
+    await clickPageLink(documentEditor(s.window));
     await s.window.getByLabel("検索キーワード").fill("アイデアノート");
     await expect(s.window.locator(".search-results button")).toHaveCount(1);
     // Guard against selection drift while the modal is open; use the captured range.
@@ -214,7 +221,7 @@ test("R3 synthetic composition, prevented Escape and inner menus take priority (
   for (const mode of ["search", "link", "record"]) {
     if (mode === "record") await openRecord(s);
     else if (mode === "search") await s.window.keyboard.press(`${mod}+p`);
-    else await s.window.getByTitle("ページへのリンク", { exact: true }).click();
+    else await clickPageLink(documentEditor(s.window));
     const input = s.window.getByLabel(
       mode === "record" ? "アイテムのタイトル" : "検索キーワード",
     );
@@ -329,7 +336,7 @@ test("R3 stale link document is rejected and switching page leaves both pages un
   await expect(s.window.getByRole("dialog")).toHaveCount(0);
   await s.window.getByRole("button", { name: "閉じる", exact: true }).click();
   await saved(s);
-  await s.window.getByTitle("ページへのリンク", { exact: true }).click();
+  await clickPageLink(documentEditor(s.window));
   const state = await s.window.evaluate(() =>
     window.folio.request<any>({ type: "load" }),
   );

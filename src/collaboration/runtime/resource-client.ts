@@ -1,5 +1,10 @@
 import { randomUUID } from "node:crypto";
+import {assertPrivateOperationAuthority} from "../../platform/private-operation-authority";
 import { type RuntimeStoreOptions, RuntimeStore } from "./store";
+import {
+  defaultClientStoreFactory,
+  type ClientStoreHostDeps,
+} from "./client-store-factory";
 import { DurableQueue, type QueueEntry } from "./durable-queue";
 import { canonical } from "./canonical";
 import { parseAttempt, parseCut, parseScope } from "./wire";
@@ -42,10 +47,14 @@ export class SharedResourceClient {
     provider: SharedProvider,
     writerId: string,
     options: RuntimeStoreOptions = {},
+    hostDeps: ClientStoreHostDeps = {},
   ) {
     this.writerId = identifier(writerId);
     this.provider = provider;
-    this.store = new RuntimeStore(directory, options);
+    this.store = (hostDeps.createStore ?? defaultClientStoreFactory)(
+      directory,
+      options,
+    );
     try {
       const role = this.store.get("meta", "role");
       demand(role === null || role === ROLE, "WRONG_STORE_ROLE");
@@ -77,6 +86,7 @@ export class SharedResourceClient {
   }
 
   private active(): void {
+    assertPrivateOperationAuthority();
     demand(!this.closed, "CLIENT_CLOSED");
   }
 
@@ -198,6 +208,9 @@ export class SharedResourceClient {
         command,
       };
       const protocol = await this.provider.protocol?.(checkedScope) ?? 1003;
+      // Main's originating request fence survives this await. Refuse before
+      // creating a durable attempt or sending a command after revocation.
+      this.active();
       const attemptInput: Attempt = {
         ...(protocol === 1004 ? {protocol: 1004 as const} : {}),
         v: 1,

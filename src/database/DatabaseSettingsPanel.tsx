@@ -10,7 +10,13 @@ import {
   Trash2,
   X,
 } from "lucide-react";
-import type { KeyboardEvent, ReactNode } from "react";
+import {
+  useEffect,
+  useRef,
+  useState,
+  type KeyboardEvent,
+  type ReactNode,
+} from "react";
 import type {
   DatabaseSettings,
   DatabaseView,
@@ -55,19 +61,38 @@ export type DatabaseSettingsPanelProps = {
   ) => void;
   /** Parent-owned new-row/schema controls can sit next to the view controls. */
   toolbarActions?: ReactNode;
+  /**
+   * Parent-owned property/schema entry point. Mounted inside the view options
+   * popover so the parent can keep its existing preview/apply dialog and its
+   * current owner/session wiring. Omitted means no schema action is advertised.
+   */
+  schemaActions?: ReactNode;
 };
 
 const statusLabels: Record<DatabaseSettingsStatus, string> = {
   idle: "",
   pending: "設定の保存待ち",
   saving: "設定を保存中…",
-  saved: "設定を保存済み",
+  saved: "保存済み",
   conflict: "設定が競合しています。入力を保持しています。",
   unknown: "設定の保存結果が不明です。入力を保持しています。",
   blocked: "設定を編集できません。",
   error: "設定を保存できません。入力を保持しています。",
   loading: "設定を読み込み中…",
 };
+
+/** Escape handling for the local search disclosure. Composition must never be
+ * interrupted, and any other key is left to the input. The saved filterText is
+ * not part of this decision. */
+export function searchDisclosureAction(event: {
+  key: string;
+  nativeEvent: { isComposing?: boolean; keyCode?: number };
+}): "close" | "ignore" {
+  return event.key === "Escape" && !composing(event.nativeEvent)
+    ? "close"
+    : "ignore";
+}
+
 const titleProperty: Property = { id: "title", name: "名前", type: "text" };
 
 function PanelHeading({
@@ -106,11 +131,29 @@ export function DatabaseSettingsPanel({
   filterInputTexts,
   onFilterInputTextChange,
   toolbarActions,
+  schemaActions,
 }: DatabaseSettingsPanelProps) {
+  // Display-only disclosure state. The saved filterText remains parent-owned:
+  // closing or pressing Escape never writes an empty value through onIntent.
+  const [searchOpen, setSearchOpen] = useState(false);
+  const searchInput = useRef<HTMLInputElement>(null);
+  const searchToggle = useRef<HTMLButtonElement>(null);
+  // Focus only when the user explicitly opened the search. A parent-side view
+  // or filterText refresh must not steal focus back from the editor.
+  useEffect(() => {
+    if (!searchOpen) return;
+    searchInput.current?.focus();
+  }, [searchOpen]);
   const view = settings.views.find(
     (candidate) => candidate.id === settings.activeViewId,
   );
   if (!view) return <p role="alert">表示するビューを確認できません。</p>;
+  const searchVisible = searchOpen || view.filterText.length > 0;
+  const openSearch = () => setSearchOpen(true);
+  const closeSearch = () => {
+    setSearchOpen(false);
+    searchToggle.current?.focus();
+  };
   const locked = [
     "loading",
     "conflict",
@@ -118,6 +161,8 @@ export function DatabaseSettingsPanel({
     "blocked",
     "error",
   ].includes(status);
+  const abnormalStatus =
+    !!error || ["loading", "conflict", "unknown", "blocked", "error"].includes(status);
   const properties = [titleProperty, ...settings.properties];
   const data = { ...settings, rows: [] };
   const summary = summarizeView(view, properties);
@@ -183,26 +228,28 @@ export function DatabaseSettingsPanel({
       data-settings-state={status}
       aria-busy={status === "pending" || status === "saving"}
     >
-      <div className="r5-settings-status">
-        <span
-          role={
-            error || ["conflict", "unknown", "error"].includes(status)
-              ? "alert"
-              : "status"
-          }
-        >
-          {error || statusLabels[status]}
-        </span>
-        {status === "unknown" && onResolve && (
-          <button
-            type="button"
-            onClick={onResolve}
-            aria-label="設定の保存結果を確認"
+      {abnormalStatus && (
+        <div className="r5-settings-status">
+          <span
+            role={
+              error || ["conflict", "unknown", "error"].includes(status)
+                ? "alert"
+                : "status"
+            }
           >
-            <RefreshCw size={14} aria-hidden="true" /> 保存結果を確認
-          </button>
-        )}
-      </div>
+            {error || statusLabels[status]}
+          </span>
+          {status === "unknown" && onResolve && (
+            <button
+              type="button"
+              onClick={onResolve}
+              aria-label="設定の保存結果を確認"
+            >
+              <RefreshCw size={14} aria-hidden="true" /> 保存結果を確認
+            </button>
+          )}
+        </div>
+      )}
       <fieldset disabled={locked} className="r5-settings-controls">
         <legend className="r5-visually-hidden">ビューと表示条件</legend>
         <div className="r7-settings-main">
@@ -259,125 +306,32 @@ export function DatabaseSettingsPanel({
                   ))}
                 </select>
               </label>
-              <SettingsMenu
-                name="view-options"
-                label="ビューのオプション"
-                panelLabel="ビューのオプション"
-                className="r7-view-options"
-                panelClassName="r7-view-options-panel"
-                trigger={
-                  <>
-                    <MoreHorizontal size={16} aria-hidden="true" />
-                    <span className="r7-trigger-text">オプション</span>
-                  </>
-                }
-              >
-                {(close) => (
-                  <>
-                    <PanelHeading
-                      title="ビューのオプション"
-                      closeLabel="ビューのオプションを閉じる"
-                      onClose={close}
-                    />
-                    <div className="r7-option-fields">
-                      <label className="r5-view-name">
-                        ビュー名
-                        <input
-                          aria-label="ビュー名"
-                          value={view.name}
-                          maxLength={200}
-                          onChange={(event) =>
-                            patch({ name: event.target.value })
-                          }
-                        />
-                      </label>
-                      <label>
-                        表示形式
-                        <select
-                          aria-label="ビューの表示形式"
-                          value={view.type}
-                          onChange={(event) =>
-                            patch({
-                              type: event.target.value as DatabaseViewType,
-                            })
-                          }
-                        >
-                          {VIEW_TYPES.map((type) => (
-                            <option value={type} key={type}>
-                              {VIEW_TYPE_LABELS[type]}
-                            </option>
-                          ))}
-                        </select>
-                      </label>
-                    </div>
-                    <div className="r7-option-actions">
-                      <button
-                        type="button"
-                        aria-label="ビューを複製"
-                        title="ビューを複製"
-                        onClick={() => {
-                          onIntent(duplicateViewIntent(settings, view.id));
-                          close(true);
-                        }}
-                      >
-                        <Copy size={15} aria-hidden="true" /> 複製
-                      </button>
-                      <button
-                        type="button"
-                        aria-label="ビューを左へ移動"
-                        title="ビューを左へ移動"
-                        disabled={index === 0}
-                        onClick={() => {
-                          move(-1);
-                          close(true);
-                        }}
-                      >
-                        <ArrowLeft size={15} aria-hidden="true" /> 左へ
-                      </button>
-                      <button
-                        type="button"
-                        aria-label="ビューを右へ移動"
-                        title="ビューを右へ移動"
-                        disabled={index === settings.views.length - 1}
-                        onClick={() => {
-                          move(1);
-                          close(true);
-                        }}
-                      >
-                        <ArrowRight size={15} aria-hidden="true" /> 右へ
-                      </button>
-                      <button
-                        type="button"
-                        className="r7-danger-action"
-                        aria-label="ビューを削除"
-                        title={
-                          settings.views.length <= 1
-                            ? "最後のビューは削除できません"
-                            : "ビューを削除"
-                        }
-                        disabled={settings.views.length <= 1}
-                        onClick={() => {
-                          onIntent({
-                            kind: "deleteView",
-                            base: structuredClone(view),
-                          });
-                          close(true);
-                        }}
-                      >
-                        <Trash2 size={15} aria-hidden="true" /> 削除
-                      </button>
-                    </div>
-                  </>
-                )}
-              </SettingsMenu>
             </div>
           </div>
 
           <div className="r7-condition-row">
-            <label className="r5-view-search r7-view-search">
+            <button
+              ref={searchToggle}
+              type="button"
+              className="r7-search-toggle"
+              aria-label="検索"
+              title="検索"
+              aria-expanded={searchVisible}
+              data-search-toggle="search"
+              onClick={() => (searchOpen ? closeSearch() : openSearch())}
+            >
+              <Search size={15} aria-hidden="true" />
+              <span>検索</span>
+            </button>
+            <label
+              className="r5-view-search r7-view-search"
+              data-search-open={searchVisible ? "true" : "false"}
+              hidden={!searchVisible}
+            >
               <Search size={15} aria-hidden="true" />
               <span className="r5-visually-hidden">検索</span>
               <input
+                ref={searchInput}
                 aria-label="ビュー内検索"
                 value={view.filterText}
                 maxLength={10_000}
@@ -385,7 +339,26 @@ export function DatabaseSettingsPanel({
                 onChange={(event) =>
                   patch({ filterText: event.target.value })
                 }
+                onKeyDown={(event) => {
+                  // Collapse only the local disclosure. The saved parent value
+                  // (including a non-empty query) must remain unchanged.
+                  if (searchDisclosureAction(event) === "ignore") return;
+                  event.preventDefault();
+                  event.stopPropagation();
+                  closeSearch();
+                }}
               />
+              {!view.filterText && (
+                <button
+                  type="button"
+                  className="r7-search-dismiss"
+                  aria-label="検索を閉じる"
+                  title="検索を閉じる"
+                  onClick={closeSearch}
+                >
+                  <X size={14} aria-hidden="true" />
+                </button>
+              )}
             </label>
             <SettingsMenu
               name="filter"
@@ -582,9 +555,143 @@ export function DatabaseSettingsPanel({
                 </>
               )}
             </SettingsMenu>
+            {!abnormalStatus && statusLabels[status] ? (
+              <span
+                className="r7-inline-status"
+                role="status"
+                data-inline-settings-status={status}
+              >
+                {statusLabels[status]}
+              </span>
+            ) : null}
             {toolbarActions ? (
               <div className="r7-toolbar-actions">{toolbarActions}</div>
             ) : null}
+            <SettingsMenu
+              name="view-options"
+              label="ビューのオプション"
+              panelLabel="ビューのオプション"
+              className="r7-view-options"
+              panelClassName="r7-view-options-panel"
+              trigger={
+                <>
+                  <MoreHorizontal size={16} aria-hidden="true" />
+                  <span className="r7-trigger-text">オプション</span>
+                </>
+              }
+            >
+              {(close) => (
+                <>
+                  <PanelHeading
+                    title="ビューのオプション"
+                    closeLabel="ビューのオプションを閉じる"
+                    onClose={close}
+                  />
+                  <div className="r7-option-fields">
+                    <label className="r5-view-name">
+                      ビュー名
+                      <input
+                        aria-label="ビュー名"
+                        value={view.name}
+                        maxLength={200}
+                        onChange={(event) =>
+                          patch({ name: event.target.value })
+                        }
+                      />
+                    </label>
+                    <label>
+                      表示形式
+                      <select
+                        aria-label="ビューの表示形式"
+                        value={view.type}
+                        onChange={(event) =>
+                          patch({
+                            type: event.target.value as DatabaseViewType,
+                          })
+                        }
+                      >
+                        {VIEW_TYPES.map((type) => (
+                          <option value={type} key={type}>
+                            {VIEW_TYPE_LABELS[type]}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                  </div>
+                  <div className="r7-option-actions">
+                    <button
+                      type="button"
+                      aria-label="ビューを複製"
+                      title="ビューを複製"
+                      onClick={() => {
+                        onIntent(duplicateViewIntent(settings, view.id));
+                        close(true);
+                      }}
+                    >
+                      <Copy size={15} aria-hidden="true" /> 複製
+                    </button>
+                    <button
+                      type="button"
+                      aria-label="ビューを左へ移動"
+                      title="ビューを左へ移動"
+                      disabled={index === 0}
+                      onClick={() => {
+                        move(-1);
+                        close(true);
+                      }}
+                    >
+                      <ArrowLeft size={15} aria-hidden="true" /> 左へ
+                    </button>
+                    <button
+                      type="button"
+                      aria-label="ビューを右へ移動"
+                      title="ビューを右へ移動"
+                      disabled={index === settings.views.length - 1}
+                      onClick={() => {
+                        move(1);
+                        close(true);
+                      }}
+                    >
+                      <ArrowRight size={15} aria-hidden="true" /> 右へ
+                    </button>
+                    <button
+                      type="button"
+                      className="r7-danger-action"
+                      aria-label="ビューを削除"
+                      title={
+                        settings.views.length <= 1
+                          ? "最後のビューは削除できません"
+                          : "ビューを削除"
+                      }
+                      disabled={settings.views.length <= 1}
+                      onClick={() => {
+                        onIntent({
+                          kind: "deleteView",
+                          base: structuredClone(view),
+                        });
+                        close(true);
+                      }}
+                    >
+                      <Trash2 size={15} aria-hidden="true" /> 削除
+                    </button>
+                  </div>
+                  {schemaActions ? (
+                    <section
+                      className="r7-schema-section"
+                      aria-label="プロパティを編集"
+                    >
+                      <h4>プロパティを編集</h4>
+                      <div
+                        className="r7-schema-actions"
+                        data-schema-actions="properties"
+                      >
+                        {schemaActions}
+                      </div>
+                    </section>
+                  ) : null}
+                </>
+              )}
+            </SettingsMenu>
           </div>
 
           {summary.activeCount > 0 && (
@@ -594,42 +701,88 @@ export function DatabaseSettingsPanel({
               aria-label="適用中の表示条件"
               title={summary.filterExpression ? `フィルター: ${summary.filterExpression}` : undefined}
             >
-              <span className="r7-active-label" aria-hidden="true">
-                適用中
+            <span className="r7-active-label" aria-hidden="true">
+              条件
+            </span>
+            <span className="r7-condition-count" data-condition-count="filters">
+              フィルター {summary.filters.length}件
+            </span>
+            <span className="r7-condition-count" data-condition-count="sorts">
+              並べ替え {summary.sorts.length}件
+            </span>
+            {summary.group && (
+              <span
+                className="r7-condition-count"
+                data-condition-count="group"
+              >
+                グループ 1件
               </span>
-              <ul>
-                {summary.filters.length > 0 && <li className="r7-summary-chip">
-                  フィルター: {view.filter.conjunction === "and" ? "すべて (AND)" : "いずれか (OR)"}
-                </li>}
-                {summary.filters.map((chip) => (
-                  <li
-                    className="r7-summary-chip r7-summary-chip--filter"
-                    key={`filter:${chip.id}`}
-                  >
-                    {chip.scope && (
-                      <span className="r7-summary-scope">{chip.scope}</span>
-                    )}
-                    {chip.text}
-                  </li>
-                ))}
-                {summary.sorts.map((chip) => (
-                  <li
-                    className="r7-summary-chip r7-summary-chip--sort"
-                    key={`sort:${chip.id}`}
-                  >
-                    <span className="r7-summary-kind">並べ替え</span>
-                    {chip.text}
-                  </li>
-                ))}
-                {summary.group && (
-                  <li className="r7-summary-chip r7-summary-chip--group">
-                    <span className="r7-summary-kind">グループ</span>
-                    {summary.group.text}
-                  </li>
+            )}
+            <details className="r7-condition-details">
+              <summary>条件を確認</summary>
+              <div className="r7-condition-detail-body">
+                {summary.filters.length > 0 && (
+                  <section aria-label="フィルター条件の全文">
+                    <h4>
+                      フィルター（
+                      {view.filter.conjunction === "and"
+                        ? "すべて (AND)"
+                        : "いずれか (OR)"}
+                      ）
+                    </h4>
+                    <p className="r7-condition-expression">
+                      {summary.filterExpression}
+                    </p>
+                    <ol className="r7-condition-list">
+                      {summary.filters.map((chip) => (
+                        <li
+                          className="r7-summary-chip r7-summary-chip--filter"
+                          key={`filter:${chip.id}`}
+                        >
+                          {chip.scope && (
+                            <span className="r7-summary-scope">
+                              {chip.scope}
+                            </span>
+                          )}
+                          <span className="r7-summary-text">{chip.text}</span>
+                        </li>
+                      ))}
+                    </ol>
+                  </section>
                 )}
-              </ul>
-            </div>
-          )}
+                {summary.sorts.length > 0 && (
+                  <section aria-label="並べ替えの全文">
+                    <h4>並べ替え</h4>
+                    <ol className="r7-condition-list">
+                      {summary.sorts.map((chip, at) => (
+                        <li
+                          className="r7-summary-chip r7-summary-chip--sort"
+                          key={`sort:${chip.id}`}
+                        >
+                          <span className="r7-summary-kind">{at + 1}.</span>
+                          <span className="r7-summary-text">{chip.text}</span>
+                        </li>
+                      ))}
+                    </ol>
+                  </section>
+                )}
+                {summary.group && (
+                  <section aria-label="グループ条件の全文">
+                    <h4>グループ</h4>
+                    <ol className="r7-condition-list">
+                      <li className="r7-summary-chip r7-summary-chip--group">
+                        <span className="r7-summary-kind">1.</span>
+                        <span className="r7-summary-text">
+                          {summary.group.text}
+                        </span>
+                      </li>
+                    </ol>
+                  </section>
+                )}
+              </div>
+            </details>
+          </div>
+        )}
         </div>
       </fieldset>
     </section>

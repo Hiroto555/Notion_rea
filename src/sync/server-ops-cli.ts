@@ -8,9 +8,9 @@ import {
   startOperationalServer,
 } from "./operational-server";
 import { acquireServerDirectoryLease } from "./server-directory-lease";
-import { createServerFullBackup, restoreServerFullBackup } from "./server-full-backup";
-import { inspectFullServerBackup } from "./server-full-inspection";
+import { createServerFullBackup, restoreServerFullBackup, inspectOperationalServerFullBackup } from "./server-full-backup";
 import type { ServerOpsConfig } from "./server-ops-config";
+import { createWindowsServerNativeFromEnvironment, type WindowsServerNativeFactory } from "../platform/windows/server-native-host";
 
 export type ServerOpsIo = {
   write(line: string): void;
@@ -195,7 +195,7 @@ async function execute(parsed: Parsed, io: ServerOpsIo): Promise<number> {
       return 0;
     }
     case "inspect": {
-      const manifest = inspectFullServerBackup(value(parsed, "backup"));
+      const manifest = inspectOperationalServerFullBackup(value(parsed, "backup"));
       emit(io, { ok: true, counts: manifest.counts });
       return 0;
     }
@@ -219,6 +219,10 @@ export async function runServerOpsCli(
   args: string[],
   io: ServerOpsIo,
 ): Promise<number> {
+  if (args.length === 1 && ["--help", "-h", "-help"].includes(args[0])) {
+    io.write("Folio sync server: init | serve | issue | revoke | status | backup | inspect | restore");
+    return 0;
+  }
   let parsed: Parsed;
   try {
     parsed = parse(args);
@@ -226,9 +230,24 @@ export async function runServerOpsCli(
     io.error(JSON.stringify({ ok: false, error: "usage" }));
     return 2;
   }
+  let factory: WindowsServerNativeFactory | undefined;
+  let result = 1;
+  const failures: unknown[] = [];
   try {
-    return await execute(parsed, io);
-  } catch (error) {
+    factory = createWindowsServerNativeFromEnvironment(process.env, {
+      enrollExistingSources: parsed.command === "init",
+    });
+    // Includes the complete serve wait, signal handling and server.close().
+    // Every facade and every async continuation sees the same scoped ports.
+    result = await (factory === undefined ? execute(parsed, io) :
+      factory.scope(() => execute(parsed, io)));
+  } catch (error) { failures.push(error); }
+  finally {
+    try { factory?.close(); } catch (error) { failures.push(error); }
+  }
+  if (failures.length) {
+    const error = failures.length === 1 ? failures[0] :
+      new AggregateError(failures, "Server command and native factory close failed");
     if (error instanceof UsageError) {
       io.error(JSON.stringify({ ok: false, error: "usage" }));
       return 2;
@@ -236,6 +255,7 @@ export async function runServerOpsCli(
     io.error(JSON.stringify({ ok: false, error: safeServerOpsError(error) }));
     return 1;
   }
+  return result;
 }
 
 const invokedAs = process.argv[1] ? basename(process.argv[1]) : "";

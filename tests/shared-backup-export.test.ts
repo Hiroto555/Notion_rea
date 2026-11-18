@@ -15,13 +15,22 @@ import {
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { canonical } from "../src/collaboration/runtime/canonical";
 import { digest } from "../src/collaboration/runtime/digest";
 import { exportSharedBackup } from "../src/main/shared-backup-export";
+import { RuntimeStore } from "../src/collaboration/runtime/store";
+import { restoreBackup, validateRuntimeBackup } from "../src/collaboration/runtime/backup";
 import type { BackupDownload } from "../src/collaboration/runtime/backup-port";
+import {
+  WINDOWS_BACKUP_ARTIFACT_PROFILE,
+  type WindowsBackupArtifactPort,
+  type WindowsBackupArtifactReceipt,
+  type WindowsBackupArtifactRequest,
+} from "../src/platform/windows/backup-artifact";
 
 const roots: string[] = [];
+const originalPlatformDescriptor = Object.getOwnPropertyDescriptor(process, "platform")!;
 
 function tempRoot(): string {
   const root = realpathSync(
@@ -32,6 +41,8 @@ function tempRoot(): string {
 }
 
 afterEach(() => {
+  vi.restoreAllMocks();
+  Object.defineProperty(process, "platform", originalPlatformDescriptor);
   for (const root of roots.splice(0))
     rmSync(root, { recursive: true, force: true });
 });
@@ -98,6 +109,24 @@ describe("exportSharedBackup", () => {
     expect(lstatSync(destination).mode & 0o777).toBe(0o600);
     expect(lstatSync(destination).nlink).toBe(1);
     expect(readdirSync(root)).toEqual(["backup.json"]);
+  });
+
+  it("verifies and restores the exported POSIX backup into a fresh runtime store", async () => {
+    const root = tempRoot();
+    const destination = join(root, "backup.json");
+    const value = fixture();
+    await exportSharedBackup(legalOptions(async () => value.download, async () => destination));
+    const parsed = validateRuntimeBackup(JSON.parse(readFileSync(destination, "utf8")));
+    const restored = new RuntimeStore(join(root, "restored"));
+    try {
+      const result = restoreBackup(parsed, restored, "restored-epoch");
+      expect(result.oldCut).toEqual(value.head);
+      expect(result.hash).toBe(value.hash);
+      expect(result.newCut.epoch).toBe("restored-epoch");
+      expect(restored.get("meta", "title")).toEqual({ text: "hello" });
+    } finally {
+      restored.close();
+    }
   });
 
   it("returns CANCELLED without creating any file", async () => {
@@ -424,6 +453,259 @@ describe("exportSharedBackup", () => {
     );
     await expect(promise).rejects.toMatchObject({
       code: "RESERVED_WINDOWS_PREFIX",
+    });
+  });
+});
+
+// Contract-only untrusted-test port for the Windows artifact branch; never a
+// Windows OS/filesystem simulation claim.
+const WIN_TARGET = "C:\\Out\\backup-export.json";
+
+function artifactReceipt(request: WindowsBackupArtifactRequest): WindowsBackupArtifactReceipt {
+  return Object.freeze({
+    contractVersion: 1,
+    profile: WINDOWS_BACKUP_ARTIFACT_PROFILE,
+    state: "PUBLISHED",
+    path: request.path,
+    stagingPath: request.stagingPath,
+    attemptId: request.attemptId,
+    identity: Object.freeze({
+      canonicalPath: request.path,
+      fileId: "9".repeat(32),
+      volumeId: "8".repeat(16),
+    }),
+    byteLength: request.bytes.byteLength,
+    sha256: sha256(Buffer.from(request.bytes)),
+    readback: Uint8Array.from(request.bytes),
+    stagingDisposition: "RENAMED_TO_FINAL",
+    contentFlushed: true,
+    namespace: "EXCLUSIVE_NO_REPLACE",
+    durability: Object.freeze({
+      profile: "WINDOWS_LOCAL_NTFS_FILE_METADATA_FLUSH_V1",
+      scope: "PROCESS_CRASH",
+    }),
+  }) as WindowsBackupArtifactReceipt;
+}
+
+type ArtifactOutcome =
+  | "publish"
+  | "unknown"
+  | "exists"
+  | "rejected"
+  | "throw"
+  | "callback-fails";
+function fakeArtifactPort(
+  outcome: ArtifactOutcome,
+  trust: "native-helper" | "untrusted-test" = "untrusted-test",
+) {
+  const requests: WindowsBackupArtifactRequest[] = [];
+  const port: WindowsBackupArtifactPort = {
+    contractVersion: 1,
+    profile: WINDOWS_BACKUP_ARTIFACT_PROFILE,
+    platform: "win32",
+    trust,
+    async publishNew(request) {
+      requests.push(request);
+      if (outcome === "throw") throw new Error("helper lost");
+      if (outcome === "unknown" || outcome === "callback-fails") {
+        if (outcome === "callback-fails") {
+          try {
+            await request.beforePublish(Uint8Array.from(request.bytes));
+          } catch {
+            // fall through to the preserved UNKNOWN
+          }
+        }
+        return Object.freeze({
+          contractVersion: 1,
+          profile: WINDOWS_BACKUP_ARTIFACT_PROFILE,
+          state: "UNKNOWN" as const,
+          path: request.path,
+          stagingPath: request.stagingPath,
+          attemptId: request.attemptId,
+          reason: "BACKUP_ARTIFACT_UNCONFIRMED",
+          preserve: true as const,
+        });
+      }
+      if (outcome === "exists")
+        return Object.freeze({
+          contractVersion: 1,
+          profile: WINDOWS_BACKUP_ARTIFACT_PROFILE,
+          state: "EXISTS" as const,
+          path: request.path,
+          stagingPath: request.stagingPath,
+          attemptId: request.attemptId,
+          reason: "BACKUP_ARTIFACT_EXISTS",
+          preserve: true as const,
+        });
+      if (outcome === "rejected")
+        return Object.freeze({
+          contractVersion: 1,
+          profile: WINDOWS_BACKUP_ARTIFACT_PROFILE,
+          state: "REJECTED" as const,
+          path: request.path,
+          reason: "BACKUP_ARTIFACT_REJECTED",
+          preserve: true as const,
+        });
+      await request.beforePublish(Uint8Array.from(request.bytes));
+      return artifactReceipt(request);
+    },
+  };
+  return { port, requests };
+}
+
+function nativeOptions(
+  download: () => Promise<BackupDownload>,
+  outcome: ArtifactOutcome = "publish",
+  extra: Record<string, unknown> = {},
+) {
+  const { port, requests } = fakeArtifactPort(outcome);
+  return {
+    options: {
+      download,
+      pick: async () => WIN_TARGET,
+      isAuthorized: () => true,
+      forbiddenRoots: ["C:\\Private\\data"],
+      nativeBackup: port,
+      revalidateSource: async () => {},
+      ...extra,
+    },
+    requests,
+    port,
+  };
+}
+
+describe("exportSharedBackup windows artifact port (untrusted-test seam)", () => {
+  it("exports canonical bytes through the artifact port and revalidates once", async () => {
+    const value = fixture();
+    let revalidated = 0;
+    const { options, requests } = nativeOptions(async () => value.download, "publish", {
+      revalidateSource: async (backup: Readonly<BackupDownload>) => {
+        revalidated++;
+        expect(backup.raw).toBe(value.raw);
+        expect(canonical(backup.head)).toBe(canonical(value.head));
+        expect(backup.hash).toBe(value.hash);
+      },
+    });
+    const result = await exportSharedBackup(options);
+    expect(result).toEqual({
+      state: "EXPORTED",
+      path: WIN_TARGET,
+      head: value.head,
+      hash: value.hash,
+    });
+    expect(revalidated).toBe(1);
+    expect(requests).toHaveLength(1);
+    const request = requests[0];
+    expect(request.path).toBe(WIN_TARGET);
+    expect(request.attemptId).toMatch(/^[0-9a-f]{32}$/);
+    expect(request.stagingPath).toBe(`C:\\Out\\.folio-backup-${request.attemptId}.tmp`);
+    expect(Buffer.from(request.bytes).toString("utf8")).toBe(value.raw);
+    expect(request.source.hash).toBe(value.hash);
+    expect(canonical(request.source.head)).toBe(canonical(value.head));
+    expect(request.forbiddenRoots).toEqual(["C:\\Private\\data"]);
+  });
+
+  it("maps a port UNKNOWN to an UNKNOWN export result", async () => {
+    const value = fixture();
+    const { options } = nativeOptions(async () => value.download, "unknown");
+    const result = await exportSharedBackup(options);
+    expect(result).toEqual({
+      state: "UNKNOWN",
+      path: WIN_TARGET,
+      head: value.head,
+      hash: value.hash,
+    });
+  });
+
+  it("fails FILE_EXISTS when the native commit reports a collision", async () => {
+    const value = fixture();
+    const { options } = nativeOptions(async () => value.download, "exists");
+    await expect(exportSharedBackup(options)).rejects.toMatchObject({
+      code: "FILE_EXISTS",
+    });
+  });
+
+  it("fails closed when the port rejects", async () => {
+    const value = fixture();
+    const { options } = nativeOptions(async () => value.download, "rejected");
+    await expect(exportSharedBackup(options)).rejects.toMatchObject({
+      code: "NATIVE_EXPORT_REJECTED",
+    });
+  });
+
+  it("maps a throwing port to UNKNOWN", async () => {
+    const value = fixture();
+    const { options } = nativeOptions(async () => value.download, "throw");
+    const result = await exportSharedBackup(options);
+    expect(result.state).toBe("UNKNOWN");
+  });
+
+  it("maps a failing revalidateSource callback to UNKNOWN", async () => {
+    const value = fixture();
+    const { options } = nativeOptions(async () => value.download, "callback-fails", {
+      revalidateSource: async () => {
+        throw new Error("stale head");
+      },
+    });
+    const result = await exportSharedBackup(options);
+    expect(result.state).toBe("UNKNOWN");
+  });
+
+  it("maps authorization revoked inside the callback to UNKNOWN", async () => {
+    const value = fixture();
+    let authorized = true;
+    const { options } = nativeOptions(async () => value.download, "callback-fails", {
+      isAuthorized: () => authorized,
+      revalidateSource: async () => {
+        authorized = false;
+      },
+    });
+    const result = await exportSharedBackup(options);
+    expect(result.state).toBe("UNKNOWN");
+  });
+
+  it("requires revalidateSource when a native port is present", async () => {
+    const value = fixture();
+    const { options } = nativeOptions(async () => value.download);
+    delete (options as Record<string, unknown>).revalidateSource;
+    await expect(exportSharedBackup(options)).rejects.toMatchObject({
+      code: "INVALID_OPTIONS",
+    });
+  });
+
+  it("rejects a port claiming native-helper trust off Windows", async () => {
+    const value = fixture();
+    if (process.platform === "win32") return;
+    const { options } = nativeOptions(async () => value.download);
+    const helper = fakeArtifactPort("publish", "native-helper");
+    (options as Record<string, unknown>).nativeBackup = helper.port;
+    await expect(exportSharedBackup(options)).rejects.toMatchObject({
+      code: "INVALID_NATIVE_PORT",
+    });
+  });
+
+  it("fails closed without a port on Windows (simulated platform)", async () => {
+    if (process.platform === "win32") return;
+    Object.defineProperty(process, "platform", { ...originalPlatformDescriptor, value: "win32" });
+    const value = fixture();
+    const promise = exportSharedBackup(
+      legalOptions(
+        async () => value.download,
+        async () => WIN_TARGET,
+      ),
+    );
+    await expect(promise).rejects.toMatchObject({
+      code: "WINDOWS_EXPORT_UNSUPPORTED",
+    });
+  });
+
+  it("rejects an untrusted-test port on real Windows (simulated platform)", async () => {
+    if (process.platform === "win32") return;
+    Object.defineProperty(process, "platform", { ...originalPlatformDescriptor, value: "win32" });
+    const value = fixture();
+    const { options } = nativeOptions(async () => value.download);
+    await expect(exportSharedBackup(options)).rejects.toMatchObject({
+      code: "INVALID_NATIVE_PORT",
     });
   });
 });

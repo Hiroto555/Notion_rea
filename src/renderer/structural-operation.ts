@@ -1,16 +1,21 @@
 import { operationFingerprint } from "../shared/save-contract";
 import type { LegacyMigrationOperation, LegacyMigrationResult } from "../shared/legacy-migration-operation";
 import type { PropertyOperation, PropertyOperationResult } from "../shared/property-operation";
+import type { Request } from "../shared/types";
 
 export type StructuralOperation = {family: "migration"; operation: LegacyMigrationOperation} |
   {family: "property"; operation: PropertyOperation};
 export type StructuralResult = LegacyMigrationResult | PropertyOperationResult;
+export type StructuralTransport = (request: Request) => Promise<unknown>;
 
 /** The ACK only authorizes a fresh reload; never install its arbitrary contents.
  * resolve=true is lookup-only, including receipt absence and transport failure.
- * The caller must durably retain the exact operation before its first exchange. */
+ * The caller must durably retain the exact operation before its first exchange.
+ * The trailing transport is optional: the default keeps the existing window
+ * lane for callers that have not migrated to a purpose injection. */
 export async function exchangeStructural(entry: StructuralOperation, resolve = false,
-  timeoutMs = 30_000): Promise<StructuralResult> {
+  timeoutMs = 30_000,
+  send: StructuralTransport = (request) => window.folio.request(request)): Promise<StructuralResult> {
   const op = entry.operation, fingerprint = await operationFingerprint(op);
   const owner = entry.family === "migration" ? entry.operation.databasePageId : entry.operation.command.databasePageId;
   const revision = entry.family === "migration" ? entry.operation.revision : entry.operation.command.revision;
@@ -22,7 +27,7 @@ export async function exchangeStructural(entry: StructuralOperation, resolve = f
       ? {type: resolve ? "migration:resolve" as const : "migration:commit" as const, operation: entry.operation}
       : {type: resolve ? "property:resolve" as const : "property:commit" as const, operation: entry.operation};
     const result = await Promise.race([
-      window.folio.request<StructuralResult>(request),
+      send(request) as Promise<StructuralResult>,
       new Promise<never>((_, reject) => {timer = setTimeout(() => reject(new Error("結果確認がタイムアウトしました。")), timeoutMs);}),
     ]);
     if (!result || result.operationId !== op.operationId || result.sessionId !== op.sessionId ||

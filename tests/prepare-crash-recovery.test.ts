@@ -131,3 +131,20 @@ it("validates the bound record before returning its raw number text for restorat
     expect(prepared.records[0].base.revision).toBe(0);
   } finally {f.dispose();}
 });
+
+it("refuses a snapshot that smuggles transient diagnostic metadata before any IPC", async () => {
+  const f = saveFixture();
+  try {
+    for (const place of ["entry", "operation", "database-entry"] as const) {
+      const input = pageInput(f);
+      if (place === "entry") (input.pages[0] as unknown as Record<string, unknown>).storageFailure = {kind: "UNCLASSIFIED"};
+      else if (place === "operation") (input.pages[0].operation as unknown as Record<string, unknown>).storageFailure = {kind: "UNCLASSIFIED"};
+      else input.databases.push({sessionId: "s", base: f.owner, projection: {revision: f.owner.revision,
+        settings: f.owner.database!, records: []}, seq: 0, intents: [],
+        storageFailure: {kind: "UNCLASSIFIED"}} as never);
+      const requests: Request[] = [];
+      await expect(prepareCrashRecovery(input, storeApi(f, requests)), place).rejects.toThrow();
+      expect(requests, place).toEqual([]);
+    }
+  } finally {f.dispose();}
+});

@@ -59,13 +59,18 @@ describe("Modal focus contract", () => {
   test("restores focus to the origin, the menu trigger, then the page title", () => {
     expect(compact).toContain('closest?.(".menu-anchor")');
     expect(compact).toContain('querySelector<HTMLElement>(":scope > button")');
-    expect(compact).toContain("if (origin.active?.isConnected) {");
-    expect(compact).toContain("if (origin.fallback?.isConnected) {");
+    expect(compact).toContain('":scope > [data-settings-menu-trigger]"');
+    expect(compact).toContain("captureDialogOrigin(document.activeElement");
+    expect(compact).toContain("restoreDialogFocus([");
+    expect(compact).toContain("origin.active,");
+    expect(compact).toContain("origin.fallback,");
+    expect(compact).toContain("!candidate?.isConnected || !shown(candidate)");
+    expect(compact).toContain("document.activeElement === candidate");
     expect(compact).toContain(
       'document.querySelector<HTMLInputElement>(".page-title")',
     );
-    expect(compact).toContain("if (title && !title.disabled) title.focus");
     expect(compact).toContain("if (dialog.isConnected && dialog.open) return;");
+    expect(compact).toContain("if (restore.current?.()) return;");
   });
 
   test("dismisses only on a real backdrop click", () => {

@@ -33,7 +33,7 @@
  *   are only visible under their final asset ID after hash/length verification
  *   and fsync + exclusive hard-link publication.
  */
-import { createHash, randomBytes } from "node:crypto";
+import { createHash, randomBytes, randomUUID } from "node:crypto";
 import {
   closeSync,
   constants as fsConstants,
@@ -57,6 +57,7 @@ import {
 } from "node:http";
 import { isAbsolute, join, relative, resolve, sep } from "node:path";
 import { pipeline } from "node:stream/promises";
+import { types } from "node:util";
 import { parseAssetURL } from "../shared/assets";
 import { syncPath } from "../persistence/durable-file";
 import {
@@ -66,6 +67,7 @@ import {
   SyncError,
 } from "./protocol";
 import { BlobTransferJournal } from "./blob-transfer-journal";
+import { PrivateLedger } from "./private-ledger";
 import {
   openBlobTransferPartial,
   checkpointBlobTransferPartial,
@@ -79,6 +81,30 @@ import {
 import type { BlobTransferScope } from "./blob-transfer-types";
 import { inspectBlobTransferInventory } from "./blob-transfer-inventory";
 import { inspectWorkspaceTransferBudget } from "./blob-transfer-budget";
+import {
+  createProductPrivatePlatform,
+  type ProductPrivateJournalOptions,
+} from "../platform/product-private-journals";
+import type {
+  NativePrivateFile,
+  NativePrivateFilesystemPort,
+} from "../platform/private-persistence";
+import { NativePrivatePersistenceError } from "../platform/windows/private-persistence";
+import {
+  assertNativeServerBlobAdmission,
+  inspectNativeTransferBudget,
+  inspectNativeTransferInventory,
+  isNativeExists,
+  nativeEnsureDirectory,
+  nativeTransferPort,
+  nativeOptionalFile,
+  nativePathPresent,
+  sameNativeIdentity,
+  requireNativeAppend,
+  withNativeTransferLock,
+  type NativeTransferContext,
+  type NativeTransferOptions,
+} from "../platform/windows/private-transfer";
 import { assertServerBlobAdmission, type ServerBlobRetentionLimits } from "./server-blob-retention";
 
 /** Attachment limit already enforced by `attachFile` in the base application. */
@@ -123,6 +149,10 @@ export type WorkspaceBlobClientOptions = {
     scope: BlobTransferScope;
     workspaceDirectory?: string;
   };
+  /** Per-open private journal port factory; absent keeps POSIX defaults. */
+  privateJournals?: ProductPrivateJournalOptions;
+  /** Native transfer context (K filesystem + append port); absent → POSIX. */
+  nativeTransfer?: NativeTransferOptions;
 };
 
 type NormalizedOptions = {
@@ -135,6 +165,7 @@ type NormalizedOptions = {
   admitBytes?: (bytes: number) => void;
   transferJournal?: BlobTransferJournal;
   assertTransferBudget?: (additionalBytes: number) => void;
+  native?: NativeTransferContext;
 };
 
 type FileState =
@@ -531,12 +562,40 @@ function send(
 export class WorkspaceBlobStore {
   private readonly root: string;
   private readonly activeUploads = new Set<string>();
+  private outcomeLedger(native: NativeTransferContext, directory: string, create: boolean): PrivateLedger | undefined {
+    if (!create && !nativePathPresent(native.filesystem, join(directory, "transfer-outcomes.sqlite"))) return undefined;
+    return new PrivateLedger(directory, "transfer-outcomes.sqlite", "blob-transfer-outcomes", [],
+      createProductPrivatePlatform(directory, "transfer-outcomes.sqlite", this.nativeTransfer?.privateJournals));
+  }
+  private assertNativeOutcome(native: NativeTransferContext, directory: string, sha256: string): void {
+    const ledger = this.outcomeLedger(native, directory, false);
+    if (!ledger) return;
+    try {
+      const row = ledger.read("asset:" + sha256);
+      if (!row) return;
+      const state = JSON.parse(row) as {version?: unknown; attemptId?: unknown};
+      requireCondition(state.version === 1 && typeof state.attemptId === "string" &&
+        /^[a-f0-9-]{36}$/.test(state.attemptId), "native-transfer-publication-unknown", 409);
+      requireCondition(ledger.read("receipt:" + state.attemptId) !== null,
+        "native-transfer-publication-unknown", 409);
+    } finally {ledger.close();}
+  }
 
-  constructor(root: string, private readonly retentionLimits?: ServerBlobRetentionLimits) {
+  constructor(
+    root: string,
+    private readonly retentionLimits?: ServerBlobRetentionLimits,
+    private readonly nativeTransfer?: NativeTransferOptions,
+  ) {
     requireCondition(
       typeof root === "string" && root.length > 0,
       "invalid-root",
     );
+    const native = nativeTransferPort(nativeTransfer);
+    if (native) {
+      this.nativeTransfer = {...nativeTransfer, nativePrivateFilesystem: native.filesystem, nativeTransferIo: native.append};
+      this.root = nativeEnsureDirectory(native.filesystem, resolve(root), true);
+      return;
+    }
     const absolute = ensureDirectory(root, true);
     this.root = realpathSync(absolute);
     const stat = lstatSync(this.root);
@@ -545,18 +604,40 @@ export class WorkspaceBlobStore {
   }
 
   private workspacePath(workspaceId: string, create: boolean): string {
+    const native = nativeTransferPort(this.nativeTransfer);
+    const path = join(this.root, hashText(validateWorkspaceId(workspaceId)));
+    if (native) {
+      return native.filesystem
+        ? nativeEnsureDirectory(native.filesystem, path, create)
+        : path;
+    }
     // Use a digest so distinct authenticated IDs stay distinct even on a
     // case-insensitive filesystem.
-    return ensureDirectory(
-      join(this.root, hashText(validateWorkspaceId(workspaceId))),
-      create,
-    );
+    return ensureDirectory(path, create);
   }
 
   /** True only when the workspace-scoped stored bytes actually match id sha/length. */
   has(workspaceId: string, asset: WorkspaceBlobAsset): boolean {
     const expected = validateAsset(asset);
+    return this.hasStoredAssetBytes(workspaceId, expected);
+  }
+
+  /** Server history retains hash/length requirements independently of a
+   * client-local attachment name. Verify those exact stored bytes directly. */
+  hasStoredAssetBytes(workspaceId: string, expected: {sha256: string; bytes: number}): boolean {
+    requireCondition(HASH.test(expected.sha256) && Number.isSafeInteger(expected.bytes) &&
+      expected.bytes >= 0 && expected.bytes <= WORKSPACE_BLOB_MAX_BYTES, "invalid-asset");
     const directory = this.workspacePath(workspaceId, false);
+    const native = nativeTransferPort(this.nativeTransfer);
+    if (native) {
+      this.assertNativeOutcome(native, directory, expected.sha256);
+      const state = nativeFileState(native, join(directory, expected.sha256));
+      return (
+        state.kind === "file" &&
+        state.file.bytes === expected.bytes &&
+        state.file.sha256 === expected.sha256
+      );
+    }
     const found = openVerified(
       join(directory, expected.sha256),
       expected.sha256,
@@ -595,8 +676,45 @@ export class WorkspaceBlobStore {
           bytes !== undefined && bytes <= WORKSPACE_BLOB_MAX_BYTES,
           "invalid-blob-size",
         );
+        const native = nativeTransferPort(this.nativeTransfer);
         const directory = this.workspacePath(workspaceId, true);
-        await withBlobUploadLock(directory, async () => {
+        const probe = async () => {
+          if (native) {
+            this.assertNativeOutcome(native, directory, sha256);
+            const completed = nativeFileState(
+              native,
+              join(directory, sha256),
+            );
+            if (
+              completed.kind === "file" &&
+              completed.file.bytes === bytes &&
+              completed.file.sha256 === sha256
+            ) {
+              context.assertAuthorized();
+              send(response, 204, {
+                "X-Folio-Blob-Resume": "1",
+                "X-Folio-Blob-Received": String(bytes),
+                "X-Folio-Blob-Prefix-Sha256": sha256,
+              });
+              return;
+            }
+            const partial = nativeFileState(
+              native,
+              join(directory, `.partial-${sha256}`),
+            );
+            context.assertAuthorized();
+            send(response, 204, {
+              "X-Folio-Blob-Resume": "1",
+              "X-Folio-Blob-Received": String(
+                partial.kind === "file" ? partial.file.bytes : 0,
+              ),
+              "X-Folio-Blob-Prefix-Sha256":
+                partial.kind === "file"
+                  ? partial.file.sha256
+                  : createHash("sha256").digest("hex"),
+            });
+            return;
+          }
           const completed = openVerified(
             join(directory, sha256),
             sha256,
@@ -620,7 +738,12 @@ export class WorkspaceBlobStore {
             "X-Folio-Blob-Prefix-Sha256":
               partial?.prefixHash ?? createHash("sha256").digest("hex"),
           });
-        });
+        };
+        if (native) {
+          await withNativeTransferLock(directory, probe, undefined, this.nativeTransfer);
+        } else {
+          await withBlobUploadLock(directory, probe);
+        }
         return;
       }
       await this.get(request, response, workspaceId, sha256, true);
@@ -636,11 +759,44 @@ export class WorkspaceBlobStore {
       this.activeUploads.add(key);
       try {
         const directory = this.workspacePath(workspaceId, true);
+        const native = nativeTransferPort(this.nativeTransfer);
         // A root lease serializes quota admission across ALL workspaces;
         // per-workspace upload ownership also covers resumable HEAD probes.
-        await withBlobUploadLock(this.root, () => withBlobUploadLock(directory, () =>
-          this.put(request, response, workspaceId, sha256, context),
-        ));
+        if (native) {
+          await withNativeTransferLock(this.root, () =>
+            withNativeTransferLock(directory, async () => {
+              const ledger = this.outcomeLedger(native, directory, true)!;
+              try {
+                const key = "asset:" + sha256, previous = ledger.read(key);
+                if (previous) {
+                  const old = JSON.parse(previous) as {version?: unknown; attemptId?: unknown};
+                  requireCondition(old.version === 1 && typeof old.attemptId === "string" &&
+                    /^[a-f0-9-]{36}$/.test(old.attemptId) && ledger.read("receipt:" + old.attemptId) !== null,
+                    "native-transfer-publication-unknown", 409);
+                }
+                const attemptId = randomUUID();
+                // Independent durable dispatch intent. A crash or lost native
+                // result leaves active state, including across process restart.
+                ledger.transaction(() => {
+                  requireCondition(ledger.read("attempt:" + attemptId) === null, "native-transfer-publication-unknown", 409);
+                  ledger.write("attempt:" + attemptId, canonicalJson({version: 1, phase: "active", attemptId, sha256}));
+                  ledger.write(key, canonicalJson({version: 1, attemptId}));
+                });
+                await this.putNative(native, request, response, workspaceId, sha256, context, file => {
+                  ledger.transaction(() => {
+                    requireCondition(ledger.read("receipt:" + attemptId) === null, "native-transfer-publication-unknown", 409);
+                    ledger.write("receipt:" + attemptId, canonicalJson({version: 1, phase: "known", attemptId, file}));
+                  });
+                });
+              } finally {ledger.close();}
+            },
+              undefined, this.nativeTransfer),
+            undefined, this.nativeTransfer);
+        } else {
+          await withBlobUploadLock(this.root, () => withBlobUploadLock(directory, () =>
+            this.put(request, response, workspaceId, sha256, context),
+          ));
+        }
       } finally {
         this.activeUploads.delete(key);
       }
@@ -656,6 +812,8 @@ export class WorkspaceBlobStore {
     sha256: string,
     headOnly: boolean,
   ): Promise<void> {
+    const native = nativeTransferPort(this.nativeTransfer);
+    if (native) return this.getNative(native, request, response, workspaceId, sha256, headOnly);
     const directory = this.workspacePath(workspaceId, false);
     const path = join(directory, sha256);
     const found = openVerified(path, sha256);
@@ -704,6 +862,183 @@ export class WorkspaceBlobStore {
     }
   }
 
+  /** Native bounded read: bounded `read()` + slice — no fd streaming. */
+  private async getNative(
+    native: NativeTransferContext,
+    request: IncomingMessage,
+    response: ServerResponse,
+    workspaceId: string,
+    sha256: string,
+    headOnly: boolean,
+  ): Promise<void> {
+    const directory = this.workspacePath(workspaceId, false);
+    this.assertNativeOutcome(native, directory, sha256);
+    const path = join(directory, sha256);
+    const state = nativeFileState(native, path);
+    if (state.kind !== "file") throw new SyncError("blob-not-found", 404);
+    const found = state.file;
+    requireCondition(found.sha256 === sha256, "blob-hash-mismatch", 422);
+    const range = headOnly
+      ? null
+      : parseByteRangeHeader(request.headers.range, found.bytes);
+    const status = range ? 206 : 200;
+    const headers: Record<string, string | number> = {
+      "Accept-Ranges": "bytes",
+      "Content-Type": "application/octet-stream",
+      "X-Folio-Blob-Sha256": sha256,
+    };
+    if (range) {
+      headers["Content-Range"] =
+        `bytes ${range.start}-${range.end}/${found.bytes}`;
+      headers["Content-Length"] = range.end - range.start + 1;
+    } else {
+      headers["Content-Length"] = found.bytes;
+    }
+    if (response.destroyed || response.writableEnded) return;
+    const bytes =
+      headOnly || found.bytes === 0
+        ? EMPTY_BYTES
+        : native.filesystem.read(path, found, WORKSPACE_BLOB_MAX_BYTES);
+    response.writeHead(status, headers);
+    if (headOnly || found.bytes === 0) {
+      response.end();
+      return;
+    }
+    response.end(
+      Buffer.from(
+        bytes.subarray(
+          range ? range.start : 0,
+          range ? range.end + 1 : found.bytes,
+        ),
+      ),
+    );
+  }
+
+  /**
+   * Native server-side resumable PUT: partial reset is exact-identity
+   * delete+create (never a blind truncate); writes go through the append
+   * port only after header/range/length validation and re-authorization.
+   */
+  private async putNative(
+    native: NativeTransferContext,
+    request: IncomingMessage,
+    response: ServerResponse,
+    workspaceId: string,
+    sha256: string,
+    context: WorkspaceBlobRequestContext,
+    acknowledge?: (file: NativePrivateFile) => void,
+  ): Promise<void> {
+    requireNativeAppend(native);
+    const directory = this.workspacePath(workspaceId, true);
+    const finalPath = join(directory, sha256);
+    const partialPath = join(directory, `.partial-${sha256}`);
+    const range = parseContentRange(request.headers["content-range"]);
+    const declared = contentLengthHeader(request.headers["content-length"]);
+    let start = 0;
+    let expectedChunk: number | undefined;
+    if (range) {
+      start = range.start;
+      expectedChunk = range.end - range.start + 1;
+      requireCondition(declared === expectedChunk, "content-length-mismatch");
+    } else {
+      requireCondition(
+        declared === undefined || declared <= WORKSPACE_BLOB_MAX_BYTES,
+        "blob-too-large",
+        413,
+      );
+    }
+
+    let partial: NativePrivateFile | undefined;
+    {
+      const existing = nativeFileState(native, partialPath);
+      if (existing.kind === "file") partial = existing.file;
+    }
+    const projectedSize = range
+      ? range.end + 1
+      : (declared ?? WORKSPACE_BLOB_MAX_BYTES);
+    assertNativeServerBlobAdmission(
+      native,
+      this.root,
+      Math.max(0, projectedSize - (partial?.bytes ?? 0)),
+      this.retentionLimits,
+      partial ? 0 : 1,
+    );
+    try {
+      // An acknowledged prefix is immutable. Rewinds, tails and UNKNOWN
+      // publication are retained, never deleted to manufacture a retry.
+      requireCondition(
+        start === (partial?.bytes ?? 0),
+        "blob-offset-mismatch",
+        409,
+      );
+
+      const limit = range
+        ? expectedChunk!
+        : (declared ?? WORKSPACE_BLOB_MAX_BYTES);
+      let body: Buffer;
+      try {
+        body = await bufferResponse(request, limit);
+      } catch (error) {
+        if (error instanceof SyncError && error.code === "blob-size-mismatch")
+          throw new SyncError("blob-too-large", 413);
+        throw error;
+      }
+      const received = body.byteLength;
+      if (expectedChunk !== undefined) {
+        if (received !== expectedChunk) {
+          throw new SyncError("blob-size-mismatch", 422);
+        }
+      } else if (declared !== undefined && received !== declared) {
+        throw new SyncError("blob-size-mismatch", 422);
+      }
+
+      // The body is fully asynchronous. Re-check the capability after it has
+      // been consumed and before any durable mutation can happen.
+      context.assertAuthorized();
+      if (!partial)
+        partial = native.filesystem.writeNew(partialPath, EMPTY_BYTES, WORKSPACE_BLOB_MAX_BYTES).identity;
+
+      let current = partial;
+      while (current.bytes < (range ? range.end + 1 : received)) {
+        const take = Math.min(
+          WORKSPACE_BLOB_CHUNK_BYTES,
+          (range ? range.end + 1 : received) - current.bytes,
+        );
+        const offset = current.bytes - start;
+        context.assertAuthorized();
+        current = nativeAppendSlice(native, current, body.subarray(offset, offset + take));
+      }
+
+      const total = range ? range.total : received;
+      if (range && range.end + 1 !== range.total) {
+        acknowledge?.(current);
+        send(response, 204, { "X-Folio-Blob-Received": String(range.end + 1) });
+        return;
+      }
+
+      const verified = native.filesystem.inspectFile(
+        current.path,
+        WORKSPACE_BLOB_MAX_BYTES,
+      );
+      requireCondition(
+        verified.bytes === total &&
+          verified.sha256 === sha256 &&
+          verified.fileId === current.fileId,
+        "blob-hash-mismatch",
+        422,
+      );
+      native.filesystem.proveSync(verified.path, verified);
+      context.assertAuthorized();
+      nativePublish(native, verified, finalPath, {id: sha256, bytes: total, sha256});
+      acknowledge?.(native.filesystem.inspectFile(finalPath, WORKSPACE_BLOB_MAX_BYTES));
+      send(response, 201, {
+        "Content-Length": "0",
+        "X-Folio-Blob-Sha256": sha256,
+        "X-Folio-Blob-Complete": "true",
+      });
+    } catch (error) { throw error; } // All native failure artifacts stay private.
+  }
+
   private async put(
     request: IncomingMessage,
     response: ServerResponse,
@@ -711,6 +1046,9 @@ export class WorkspaceBlobStore {
     sha256: string,
     context: WorkspaceBlobRequestContext,
   ): Promise<void> {
+    const native = nativeTransferPort(this.nativeTransfer);
+    if (native)
+      return this.putNative(native, request, response, workspaceId, sha256, context);
     const directory = this.workspacePath(workspaceId, true);
     syncPath(this.root);
     const finalPath = join(directory, sha256);
@@ -893,6 +1231,7 @@ function publishVerified(
 
 function normalizeClientOptions(
   options: WorkspaceBlobClientOptions,
+  native?: NativeTransferContext,
 ): NormalizedOptions {
   requireCondition(
     options !== null && typeof options === "object",
@@ -935,11 +1274,21 @@ function normalizeClientOptions(
       options.assetsDirectory.length > 0,
     "invalid-directory",
   );
-  const assetsDirectory = ensureDirectory(options.assetsDirectory, true);
-  const canonical = realpathSync(assetsDirectory);
-  const stat = lstatSync(canonical);
-  if (stat.isSymbolicLink() || !stat.isDirectory())
-    throw new SyncError("unsafe-directory", 409);
+  let canonical: string;
+  if (native) {
+    // Directory creation + proof go through the K port; no lstat/realpath.
+    canonical = nativeEnsureDirectory(
+      native.filesystem,
+      resolve(options.assetsDirectory),
+      true,
+    );
+  } else {
+    const assetsDirectory = ensureDirectory(options.assetsDirectory, true);
+    canonical = realpathSync(assetsDirectory);
+    const stat = lstatSync(canonical);
+    if (stat.isSymbolicLink() || !stat.isDirectory())
+      throw new SyncError("unsafe-directory", 409);
+  }
   return {
     baseUrl: url.origin,
     workspaceId,
@@ -948,6 +1297,7 @@ function normalizeClientOptions(
     timeoutMs,
     admitBytes: options.admitBytes,
     assertRequest: options.assertRequest,
+    native,
   };
 }
 
@@ -1052,7 +1402,8 @@ function requestBlob(
   return new Promise((resolve, reject) => {
     let request: ReturnType<typeof httpRequest>;
     try {
-      options.assertRequest?.();
+      if (options.native) assertNativeRequest(options);
+      else options.assertRequest?.();
       request = httpRequest(
         blobUrl(options, asset.sha256),
         {
@@ -1264,11 +1615,504 @@ function isTransient(error: unknown): boolean {
   );
 }
 
+/* ------------------------------------------------------------------ */
+/*  Native (Windows K-port) transfer paths. A resolved                 */
+/*  NativeTransferContext selects these branches; POSIX is unchanged.  */
+/* ------------------------------------------------------------------ */
+
+const EMPTY_BYTES = new Uint8Array(0);
+const EMPTY_SHA256 = createHash("sha256").digest("hex");
+
+/** Existing unsafe files are errors, never a native-to-POSIX/missing fallback. */
+function nativeFileState(
+  native: NativeTransferContext,
+  path: string,
+): { kind: "missing" } | { kind: "file"; file: NativePrivateFile } {
+  const file = nativeOptionalFile(native.filesystem, path, WORKSPACE_BLOB_MAX_BYTES);
+  return file ? {kind: "file", file} : {kind: "missing"};
+}
+
+function nativeAssertLocalFile(
+  native: NativeTransferContext,
+  directory: string,
+  asset: WorkspaceBlobAsset,
+): NativePrivateFile {
+  const state = nativeFileState(native, targetPath(directory, asset));
+  if (state.kind !== "file") throw new SyncError("asset-missing", 404);
+  if (state.file.bytes !== asset.bytes)
+    throw new SyncError("asset-size-mismatch", 422);
+  if (state.file.sha256 !== asset.sha256)
+    throw new SyncError("asset-hash-mismatch", 422);
+  return state.file;
+}
+
+function nativeAssertStagedTarget(
+  native: NativeTransferContext,
+  directory: string,
+  asset: WorkspaceBlobAsset,
+): boolean {
+  const state = nativeFileState(native, targetPath(directory, asset));
+  if (state.kind !== "file") return false;
+  if (state.file.bytes === asset.bytes && state.file.sha256 === asset.sha256) {
+    native.filesystem.proveSync(state.file.path, state.file);
+    return true;
+  }
+  throw new SyncError("asset-id-hash-conflict", 409);
+}
+
+/** Re-prove the source after every await: identity must still hold. */
+function nativeReproveSource(
+  native: NativeTransferContext,
+  expected: NativePrivateFile,
+): void {
+  let current: NativePrivateFile;
+  try {
+    current = native.filesystem.inspectFile(expected.path, WORKSPACE_BLOB_MAX_BYTES);
+  } catch {
+    throw new SyncError("asset-changed", 409);
+  }
+  requireCondition(
+    sameNativeIdentity(current, expected) &&
+      current.bytes === expected.bytes && current.sha256 === expected.sha256,
+    "asset-changed",
+    409,
+  );
+}
+
+function assertNativeRequest(options: NormalizedOptions): void {
+  const check = options.assertRequest;
+  if (check === undefined) return;
+  requireCondition(typeof check === "function" && !types.isAsyncFunction(check) &&
+    !types.isGeneratorFunction(check), "native-transfer-fence-invalid", 503);
+  const result: unknown = check();
+  if (types.isPromise(result)) Promise.prototype.then.call(result, undefined, () => undefined);
+  requireCondition(result === undefined, "native-transfer-fence-unknown", 503);
+}
+
+/**
+ * Open a journal-owned partial under the native contract. A fresh empty
+ * partial is created ONLY at offset 0 and ONLY when truly absent; an existing
+ * partial must have bytes === committed offset AND the recorded prefix hash.
+ * An uncommitted tail is never truncated: refuse while retaining the file.
+ */
+function nativeOpenPartial(
+  native: NativeTransferContext,
+  directory: string,
+  partialName: string,
+  offset: number,
+  prefixHash: string,
+): NativePrivateFile {
+  const path = join(directory, partialName);
+  const file = nativeOptionalFile(native.filesystem, path, WORKSPACE_BLOB_MAX_BYTES);
+  if (!file) {
+    requireCondition(offset === 0, "blob-transfer-partial-missing", 409);
+    return native.filesystem.writeNew(
+      path,
+      EMPTY_BYTES,
+      WORKSPACE_BLOB_MAX_BYTES,
+    ).identity;
+  }
+  requireCondition(
+    file.bytes === offset && file.sha256 === prefixHash,
+    "blob-transfer-prefix-mismatch",
+    409,
+  );
+  return file;
+}
+
+/**
+ * Native no-replace publication: renameNew(partial → target). An EXISTS
+ * outcome is accepted ONLY after the existing target is conclusively verified
+ * to the same bytes; ambiguous outcomes never retry or delete.
+ */
+function nativePublish(
+  native: NativeTransferContext,
+  partial: NativePrivateFile,
+  target: string,
+  asset: WorkspaceBlobAsset,
+): void {
+  requireCondition(
+    partial.bytes === asset.bytes && partial.sha256 === asset.sha256,
+    "blob-hash-mismatch",
+    422,
+  );
+  try {
+    const renamed = native.filesystem.renameNew(
+      partial.path,
+      target,
+      partial,
+      WORKSPACE_BLOB_MAX_BYTES,
+    );
+    const final = native.filesystem.inspectFile(target, WORKSPACE_BLOB_MAX_BYTES);
+    requireCondition(renamed.identity.path === target &&
+      renamed.identity.fileId === partial.fileId && renamed.identity.volumeId === partial.volumeId &&
+      renamed.identity.bytes === asset.bytes && renamed.identity.sha256 === asset.sha256 &&
+      sameNativeIdentity(final, renamed.identity) && final.bytes === asset.bytes &&
+      final.sha256 === asset.sha256, "native-transfer-receipt-unknown", 503);
+    return;
+  } catch (error) {
+    if (!isNativeExists(error)) throw error;
+  }
+  const state = nativeFileState(native, target);
+  requireCondition(
+    state.kind === "file" &&
+      state.file.bytes === asset.bytes &&
+      state.file.sha256 === asset.sha256,
+    "asset-id-hash-conflict",
+    409,
+  );
+  // A name collision is not dispatch permission for an automatic deletion.
+  throw new SyncError("native-transfer-publication-collision", 409);
+}
+
+/** Bounded response body buffering — the whole slice must fit its cap. */
+async function bufferResponse(
+  response: IncomingMessage,
+  limit: number,
+): Promise<Buffer> {
+  const parts: Buffer[] = [];
+  let length = 0;
+  for await (const chunk of response) {
+    const part = chunk as Buffer;
+    length += part.byteLength;
+    if (length > limit) {
+      response.destroy();
+      throw new SyncError("blob-size-mismatch", 422);
+    }
+    parts.push(part);
+  }
+  return Buffer.concat(parts);
+}
+
+/** Append through the append port in ≤1MiB slices, re-deriving `expected`. */
+function nativeAppendSlice(
+  native: NativeTransferContext,
+  expected: NativePrivateFile,
+  bytes: Uint8Array,
+): NativePrivateFile {
+  const append = requireNativeAppend(native);
+  let offset = 0;
+  let current = expected;
+  while (offset < bytes.byteLength) {
+    const end = Math.min(offset + WORKSPACE_BLOB_CHUNK_BYTES, bytes.byteLength);
+    const prefix = native.filesystem.read(current.path, current, WORKSPACE_BLOB_MAX_BYTES);
+    requireCondition(prefix.byteLength === current.bytes &&
+      createHash("sha256").update(prefix).digest("hex") === current.sha256, "asset-changed", 409);
+    const digest = createHash("sha256").update(prefix).update(bytes.subarray(offset, end)).digest("hex");
+    const receipt = append.append(
+      current.path,
+      current,
+      bytes.subarray(offset, end),
+      WORKSPACE_BLOB_MAX_BYTES,
+    );
+    requireCondition(sameNativeIdentity(receipt.identity, current) &&
+      receipt.identity.bytes === current.bytes + end - offset &&
+      receipt.identity.sha256 === digest, "native-transfer-receipt-unknown", 503);
+    const proven = native.filesystem.inspectFile(current.path, WORKSPACE_BLOB_MAX_BYTES);
+    requireCondition(sameNativeIdentity(proven, receipt.identity) &&
+      proven.bytes === receipt.identity.bytes && proven.sha256 === digest,
+      "native-transfer-receipt-unknown", 503);
+    current = proven;
+    offset = end;
+  }
+  return current;
+}
+
+async function uploadOneNative(
+  options: NormalizedOptions,
+  asset: WorkspaceBlobAsset,
+  path: string,
+): Promise<void> {
+  const native = options.native as NativeTransferContext;
+  const expected = nativeAssertLocalFile(native, options.assetsDirectory, asset);
+  const bytes =
+    asset.bytes === 0
+      ? EMPTY_BYTES
+      : native.filesystem.read(path, expected, WORKSPACE_BLOB_MAX_BYTES);
+  requireCondition(bytes.byteLength === asset.bytes, "asset-changed", 409);
+  nativeReproveSource(native, expected);
+  const prefixHash = (received: number): string =>
+    createHash("sha256").update(bytes.subarray(0, received)).digest("hex");
+
+  if (asset.bytes === 0) {
+      try {
+        const response = await requestBlob(options, asset, "PUT", {
+          "Content-Length": "0",
+          "Content-Type": "application/octet-stream",
+        });
+        const status = response.statusCode ?? 0;
+        if (status >= 200 && status < 300) {
+          response.resume();
+          if (await serverHas(options, asset)) return;
+          throw new SyncError("blob-upload-unconfirmed", 502);
+        }
+        const error = await responseError(response, status);
+        throw error;
+      } catch (error) {
+        if (isTransient(error)) throw new SyncError("blob-upload-unconfirmed", 502);
+        throw error;
+      }
+  }
+
+  const resume = async (): Promise<number> => {
+    const response = await requestBlob(options, asset, "HEAD", {
+      "X-Folio-Blob-Resume": "1",
+      "X-Folio-Blob-Bytes": String(asset.bytes),
+    });
+    const status = response.statusCode ?? 0;
+    if (status === 204 && response.headers["x-folio-blob-resume"] === "1") {
+      const received = headerNumber(response.headers["x-folio-blob-received"]);
+      const prefix = response.headers["x-folio-blob-prefix-sha256"];
+      response.resume();
+      requireCondition(
+        received !== undefined &&
+          received <= asset.bytes &&
+          typeof prefix === "string" &&
+          HASH.test(prefix) &&
+          prefixHash(received) === prefix,
+        "blob-resume-mismatch",
+        409,
+      );
+      nativeReproveSource(native, expected);
+      return received;
+    }
+    if ([200, 404, 405, 501].includes(status)) {
+      response.resume();
+      return 0;
+    }
+    throw await responseError(response, status);
+  };
+
+  let offset = options.transferJournal ? await resume() : 0;
+  if (offset === asset.bytes) {
+    requireCondition(await serverHas(options, asset), "blob-upload-unconfirmed", 502);
+    return;
+  }
+  while (offset < asset.bytes) {
+    nativeReproveSource(native, expected);
+    const end = Math.min(offset + WORKSPACE_BLOB_CHUNK_BYTES, asset.bytes);
+    try {
+      const response = await requestBlob(
+        options,
+        asset,
+        "PUT",
+        {
+          "Content-Length": String(end - offset),
+          "Content-Range": `bytes ${offset}-${end - 1}/${asset.bytes}`,
+          "Content-Type": "application/octet-stream",
+        },
+        Buffer.from(bytes.subarray(offset, end)),
+      );
+      const status = response.statusCode ?? 0;
+      if (status >= 200 && status < 300) {
+        const acknowledged = headerNumber(
+          response.headers["x-folio-blob-received"],
+        );
+        response.resume();
+        requireCondition(
+          acknowledged === undefined || acknowledged === end,
+          "blob-offset-mismatch",
+          409,
+        );
+        offset = end;
+        nativeReproveSource(native, expected);
+        continue;
+      }
+      const error = await responseError(response, status);
+      if (
+        status === 409 &&
+        (error.code === "blob-offset-mismatch" ||
+          error.code === "blob-conflict")
+      ) {
+        throw new SyncError("blob-upload-unconfirmed", 502);
+      }
+      throw error;
+    } catch (error) {
+      if (error instanceof SyncError) throw error;
+      if (isTransient(error)) {
+        throw new SyncError("blob-upload-unconfirmed", 502);
+      }
+      throw error;
+    }
+  }
+  if (!(await serverHas(options, asset)))
+    throw new SyncError("blob-upload-unconfirmed", 502);
+}
+
+async function downloadOneNative(
+  options: NormalizedOptions,
+  asset: WorkspaceBlobAsset,
+  directory: string,
+): Promise<void> {
+  const native = options.native as NativeTransferContext;
+  const target = targetPath(directory, asset);
+  const journal = options.transferJournal;
+  let record = journal?.begin({
+    direction: "download",
+    assetId: asset.id,
+    sha256: asset.sha256,
+    bytes: asset.bytes,
+  });
+  if (record)
+    requireCondition(
+      record.state === "active",
+      "blob-transfer-state-conflict",
+      409,
+    );
+  const partialName = record?.partialName ?? `dl-${randomUUID()}.part`;
+  let expected = nativeOpenPartial(
+    native,
+    record ? journal!.directory : directory,
+    partialName,
+    record?.offset ?? 0,
+    record?.prefixHash ?? EMPTY_SHA256,
+  );
+  const checkpoint = (end: number): void => {
+    if (journal && record && end > record.offset)
+      record = journal.checkpoint(record.key, end, expected.sha256);
+  };
+  try {
+    options.assertTransferBudget?.(
+      asset.bytes - expected.bytes + 8 * 1024 * 1024,
+    );
+    let offset = expected.bytes;
+    let failures = 0;
+    if (asset.bytes === 0) {
+      const response = await requestBlob(options, asset, "GET", {});
+      requireCondition(response.statusCode === 200 &&
+        (headerNumber(response.headers["content-length"]) ?? 0) === 0,
+        "blob-size-mismatch", 422);
+      requireCondition((await bufferResponse(response, 0)).byteLength === 0, "blob-size-mismatch", 422);
+      assertNativeRequest(options);
+    }
+    while (offset < asset.bytes) {
+      const end = Math.min(offset + WORKSPACE_BLOB_CHUNK_BYTES, asset.bytes);
+      let response: IncomingMessage;
+      try {
+        response = await requestBlob(options, asset, "GET", {
+          Range: `bytes=${offset}-${end - 1}`,
+        });
+      } catch (error) {
+        if (isTransient(error)) {
+          if (++failures > MAX_ATTEMPTS)
+            throw new SyncError("blob-transfer-failed", 502);
+          continue;
+        }
+        throw error;
+      }
+      const status = response.statusCode ?? 0;
+      if (status === 200) {
+        const length = headerNumber(response.headers["content-length"]);
+        if (
+          offset !== 0 ||
+          (length !== undefined && length !== asset.bytes)
+        ) {
+          response.destroy();
+          throw new SyncError("blob-range-mismatch", 502);
+        }
+        const body = await bufferResponse(response, asset.bytes);
+        if (body.byteLength !== asset.bytes)
+          throw new SyncError("blob-transfer-failed", 502);
+        assertNativeRequest(options);
+        expected = nativeAppendSlice(native, expected, body);
+        offset = asset.bytes;
+        checkpoint(offset);
+        failures = 0;
+        continue;
+      }
+      if (status === 206) {
+        const range = parseResponseRange(response.headers["content-range"]);
+        if (
+          range === null ||
+          range.start !== offset ||
+          range.end !== end - 1 ||
+          range.total !== asset.bytes
+        ) {
+          response.destroy();
+          throw new SyncError("blob-range-mismatch", 502);
+        }
+        const length = headerNumber(response.headers["content-length"]);
+        if (length !== undefined && length !== end - offset) {
+          response.destroy();
+          throw new SyncError("blob-size-mismatch", 422);
+        }
+        const body = await bufferResponse(response, end - offset);
+        if (body.byteLength !== end - offset) {
+          offset = expected.bytes;
+          if (++failures > MAX_ATTEMPTS)
+            throw new SyncError("blob-transfer-failed", 502);
+          continue;
+        }
+        assertNativeRequest(options);
+        expected = nativeAppendSlice(native, expected, body);
+        offset = end;
+        checkpoint(offset);
+        failures = 0;
+        continue;
+      }
+      const error = await responseError(response, status);
+      if (status === 416 && expected.bytes === asset.bytes) break;
+      if (status >= 500) {
+        if (++failures > MAX_ATTEMPTS)
+          throw new SyncError("blob-transfer-failed", 502);
+        continue;
+      }
+      throw error;
+    }
+    // Completion requires full bytes + full hash BEFORE any publication.
+    const completed = native.filesystem.inspectFile(
+      expected.path,
+      WORKSPACE_BLOB_MAX_BYTES,
+    );
+    requireCondition(
+      completed.bytes === asset.bytes &&
+        completed.sha256 === asset.sha256 &&
+        sameNativeIdentity(completed, expected),
+      "blob-hash-mismatch",
+      422,
+    );
+    native.filesystem.proveSync(completed.path, completed);
+    assertNativeRequest(options);
+    nativePublish(native, completed, target, asset);
+    if (journal && record) journal.complete(record.key);
+  } catch (error) {
+    if (journal &&
+      record &&
+      ((error instanceof SyncError &&
+        [
+          "unsafe-blob-transfer-root",
+          "unsafe-blob-transfer-partial",
+          "blob-transfer-partial-changed",
+          "blob-transfer-partial-missing",
+          "blob-transfer-prefix-mismatch",
+          "blob-transfer-state-conflict",
+          "blob-hash-mismatch",
+          "asset-hash-mismatch",
+          "asset-changed",
+          "native-transfer-receipt-unknown",
+          "native-transfer-port-invalid",
+          "native-transfer-port-unknown",
+          "native-transfer-publication-collision",
+        ].includes(error.code)) ||
+        error instanceof NativePrivatePersistenceError)
+    ) {
+      try {
+        journal.block(
+          record.key,
+          error instanceof SyncError ? error.code : "native-transfer-unknown",
+        );
+      } catch {}
+    }
+    throw error;
+  }
+}
+
 async function uploadOne(
   options: NormalizedOptions,
   asset: WorkspaceBlobAsset,
   path: string,
 ): Promise<void> {
+  if (options.native) return uploadOneNative(options, asset, path);
   let descriptor: number | undefined;
   try {
     try {
@@ -1474,6 +2318,7 @@ async function downloadOne(
   asset: WorkspaceBlobAsset,
   directory: string,
 ): Promise<void> {
+  if (options.native) return downloadOneNative(options, asset, directory);
   const target = targetPath(directory, asset);
   const journal = options.transferJournal;
   let record = journal?.begin({
@@ -1710,15 +2555,26 @@ async function withClientTransfer<T>(
   direction: "download" | "upload",
   work: (normalized: NormalizedOptions) => Promise<T>,
 ): Promise<T> {
-  const normalized = normalizeClientOptions(options);
+  const native = nativeTransferPort(options.nativeTransfer);
+  const normalized = normalizeClientOptions(options, native);
   if (options.transfer?.workspaceDirectory) {
-    const workspaceDirectory = realpathSync(
-      assertAssetsDirectory(options.transfer.workspaceDirectory),
-    );
-    const cacheRoot = ensureDirectory(
-      join(workspaceDirectory, ".folio-sync-transfers"),
-      true,
-    );
+    const workspaceDirectory = native
+      ? nativeEnsureDirectory(
+          native.filesystem,
+          resolve(options.transfer.workspaceDirectory),
+          false,
+        )
+      : realpathSync(assertAssetsDirectory(options.transfer.workspaceDirectory));
+    const cacheRoot = native
+      ? nativeEnsureDirectory(
+          native.filesystem,
+          join(workspaceDirectory, ".folio-sync-transfers"),
+          true,
+        )
+      : ensureDirectory(
+          join(workspaceDirectory, ".folio-sync-transfers"),
+          true,
+        );
     const transfer = options.transfer;
     const scopeName = hashText(canonicalJson(transfer.scope));
     const directory = join(cacheRoot, scopeName);
@@ -1733,7 +2589,11 @@ async function withClientTransfer<T>(
       "blob-transfer-scope-mismatch",
       409,
     );
-    return withBlobUploadLock(cacheRoot, () =>
+    const underLock = <R>(work2: () => Promise<R>): Promise<R> =>
+      native
+        ? withNativeTransferLock(cacheRoot, work2, options.privateJournals, options.nativeTransfer)
+        : withBlobUploadLock(cacheRoot, work2);
+    return underLock(() =>
       withClientTransfer(
         {
           ...options,
@@ -1742,7 +2602,9 @@ async function withClientTransfer<T>(
         direction,
         (n) => {
           n.assertTransferBudget = (additionalBytes) => {
-            const budget = inspectWorkspaceTransferBudget(workspaceDirectory);
+            const budget = native
+              ? inspectNativeTransferBudget(native, workspaceDirectory)
+              : inspectWorkspaceTransferBudget(workspaceDirectory);
             requireCondition(
               !budget.overLimit &&
                 Number.isSafeInteger(additionalBytes) &&
@@ -1767,41 +2629,73 @@ async function withClientTransfer<T>(
         "blob-transfer-scope-mismatch",
         409,
       );
+      const journalDirectory = join(
+        options.transfer.directory,
+        direction + "-" + hashText(normalized.assetsDirectory),
+      );
+      if (native) nativeEnsureDirectory(native.filesystem, journalDirectory, true);
       journal = new BlobTransferJournal(
-        join(
-          options.transfer.directory,
-          direction + "-" + hashText(normalized.assetsDirectory),
-        ),
+        journalDirectory,
         options.transfer.scope,
+        {},
+        createProductPrivatePlatform(
+          journalDirectory,
+          "state.sqlite",
+          options.privateJournals ?? options.nativeTransfer?.privateJournals,
+        ),
       );
       normalized.transferJournal = journal;
       requireCondition(!journal.inventory().some(record => record.state === "releasing"), "blob-transfer-release-pending", 409);
-      // Recover the hard-link publication window before rejecting nlink=2 in
-      // the read-only inventory. Only full, verified destination bytes count.
+      // Recover the publication window before rejecting an entry in the
+      // read-only inventory. Only full, verified destination bytes count.
       if (direction === "download") {
         for (const record of journal.inventory()) {
-          if (record.state === "blocked") continue;
+          if (record.state === "blocked") {
+            requireCondition(!native, "blob-transfer-state-conflict", 409);
+            continue;
+          }
           const asset = validateAsset({
             id: record.assetId,
             sha256: record.sha256,
             bytes: record.bytes,
           });
-          if (
-            record.direction === "download" &&
-            assertStagedTarget(normalized.assetsDirectory, asset)
-          ) {
-            reconcilePublishedPartial(
-              journal.directory,
-              record,
-              targetPath(normalized.assetsDirectory, asset),
-            );
+          const published = native
+            ? nativeAssertStagedTarget(
+                native,
+                normalized.assetsDirectory,
+                asset,
+              )
+            : assertStagedTarget(normalized.assetsDirectory, asset);
+          if (record.direction === "download" && published) {
+            if (native) {
+              // A durable completed row follows an acknowledged publication.
+              // Finish its terminal bookkeeping after exact target readback;
+              // never repeat publication or infer completion for ACTIVE rows.
+              if (record.state === "completed") continue;
+              // Target bytes do not establish a missing publication receipt.
+              // A crash in this window needs explicit outcome resolution.
+              throw new SyncError("native-transfer-publication-unknown", 409);
+            } else {
+              reconcilePublishedPartial(
+                journal.directory,
+                record,
+                targetPath(normalized.assetsDirectory, asset),
+              );
+            }
             journal.complete(record.key);
           }
         }
         journal.compactCompleted();
       }
-      const inventory = inspectBlobTransferInventory(
-        journal.directory,
+      const inventory = native
+        ? inspectNativeTransferInventory(
+            native,
+            journal.directory,
+            journal.inventory(),
+            { maxBytes: 100 * 1024 * 1024 },
+          )
+        : inspectBlobTransferInventory(
+            journal.directory,
         journal.inventory(),
         { maxBytes: 100 * 1024 * 1024 },
       );
@@ -1828,7 +2722,16 @@ export async function uploadCheckpointAssets(
     const manifest = normalizeAssets(assets);
     const sources = new Map<string, string>();
     for (const asset of manifest)
-      sources.set(asset.id, assertLocalFile(normalized.assetsDirectory, asset));
+      sources.set(
+        asset.id,
+        normalized.native
+          ? nativeAssertLocalFile(
+              normalized.native,
+              normalized.assetsDirectory,
+              asset,
+            ).path
+          : assertLocalFile(normalized.assetsDirectory, asset),
+      );
     const missing: WorkspaceBlobAsset[] = [];
     for (const asset of manifest) {
       if (!(await serverHas(normalized, asset))) missing.push(asset);
@@ -1857,8 +2760,14 @@ export async function stageCheckpointAssets(
     const manifest = normalizeAssets(assets);
     const missing: WorkspaceBlobAsset[] = [];
     for (const asset of manifest) {
-      if (!assertStagedTarget(normalized.assetsDirectory, asset))
-        missing.push(asset);
+      const present = normalized.native
+        ? nativeAssertStagedTarget(
+            normalized.native,
+            normalized.assetsDirectory,
+            asset,
+          )
+        : assertStagedTarget(normalized.assetsDirectory, asset);
+      if (!present) missing.push(asset);
     }
     if (missing.length)
       normalized.admitBytes?.(
@@ -1876,8 +2785,19 @@ export async function stageCheckpointAssets(
 export function assertWorkspaceAssets(
   assetsDirectory: string,
   assets: readonly WorkspaceBlobAsset[],
+  nativeTransfer?: NativeTransferOptions,
 ): void {
+  const native = nativeTransferPort(nativeTransfer);
   const manifest = normalizeAssets(assets);
+  if (native) {
+    const directory = nativeEnsureDirectory(
+      native.filesystem,
+      resolve(assetsDirectory),
+      false,
+    );
+    for (const asset of manifest) nativeAssertLocalFile(native, directory, asset);
+    return;
+  }
   const directory = assertAssetsDirectory(assetsDirectory);
   for (const asset of manifest) assertLocalFile(directory, asset);
 }
@@ -1894,8 +2814,66 @@ export function publishCheckpointAssetsFromStaging(
   assetsDirectory: string,
   assets: readonly WorkspaceBlobAsset[],
   admitBytes?: (bytes: number) => void,
+  nativeTransfer?: NativeTransferOptions,
 ): void {
+  const native = nativeTransferPort(nativeTransfer);
   const manifest = normalizeAssets(assets);
+  if (native) {
+    const staging = nativeEnsureDirectory(
+      native.filesystem,
+      resolve(stagingDirectory),
+      false,
+    );
+    const active = nativeEnsureDirectory(
+      native.filesystem,
+      resolve(assetsDirectory),
+      false,
+    );
+    requireCondition(
+      staging !== active,
+      "asset-staging-directory-conflict",
+      409,
+    );
+    const missingNative: WorkspaceBlobAsset[] = [];
+    for (const asset of manifest) {
+      if (nativeAssertStagedTarget(native, active, asset)) continue;
+      nativeAssertLocalFile(native, staging, asset);
+      missingNative.push(asset);
+    }
+    if (missingNative.length)
+      admitBytes?.(
+        missingNative.reduce((total, asset) => total + asset.bytes, 0),
+      );
+    for (const asset of missingNative) {
+      const source = native.filesystem.inspectFile(
+        targetPath(staging, asset),
+        WORKSPACE_BLOB_MAX_BYTES,
+      );
+      requireCondition(
+        source.bytes === asset.bytes && source.sha256 === asset.sha256,
+        "asset-changed",
+        409,
+      );
+      const temporary = join(
+        active,
+        `.folio-blob-${randomBytes(16).toString("hex")}.part`,
+      );
+      const copied = native.filesystem.copyNew(
+        source.path,
+        temporary,
+        source,
+        WORKSPACE_BLOB_MAX_BYTES,
+      );
+      nativePublish(
+        native,
+        copied.identity,
+        targetPath(active, asset),
+        asset,
+      );
+    }
+    assertWorkspaceAssets(active, manifest, nativeTransfer);
+    return;
+  }
   const staging = assertAssetsDirectory(stagingDirectory);
   const active = assertAssetsDirectory(assetsDirectory);
   requireCondition(staging !== active, "asset-staging-directory-conflict", 409);
@@ -1957,9 +2935,63 @@ export function reclaimAppliedStaging(
   stagingDirectory: string,
   assetsDirectory: string,
   assets: readonly WorkspaceBlobAsset[],
+  nativeTransfer?: NativeTransferOptions,
 ): { removed: number; held: number } {
   const result = { removed: 0, held: 0 };
+  const native = nativeTransferPort(nativeTransfer);
   let staging: string, active: string;
+  if (native) {
+    try {
+      staging = nativeEnsureDirectory(
+        native.filesystem,
+        resolve(stagingDirectory),
+        false,
+      );
+      active = nativeEnsureDirectory(
+        native.filesystem,
+        resolve(assetsDirectory),
+        false,
+      );
+      requireCondition(
+        staging !== active,
+        "asset-staging-directory-conflict",
+        409,
+      );
+    } catch {
+      return { removed: 0, held: assets.length };
+    }
+    for (const asset of normalizeAssets(assets)) {
+      try {
+        const path = targetPath(staging, asset);
+        const state = nativeFileState(native, path);
+        if (state.kind !== "file") continue;
+        const source = state.file;
+        const target = native.filesystem.inspectFile(
+          targetPath(active, asset),
+          WORKSPACE_BLOB_MAX_BYTES,
+        );
+        requireCondition(
+          source.bytes === asset.bytes &&
+            source.sha256 === asset.sha256 &&
+            target.bytes === asset.bytes &&
+            target.sha256 === asset.sha256 &&
+            (target.fileId !== source.fileId ||
+              target.volumeId !== source.volumeId),
+          "asset-changed",
+          409,
+        );
+        native.filesystem.unlinkExact(
+          source.path,
+          source,
+          WORKSPACE_BLOB_MAX_BYTES,
+        );
+        result.removed++;
+      } catch {
+        result.held++;
+      }
+    }
+    return result;
+  }
   try {
     staging = assertAssetsDirectory(stagingDirectory);
     active = assertAssetsDirectory(assetsDirectory);

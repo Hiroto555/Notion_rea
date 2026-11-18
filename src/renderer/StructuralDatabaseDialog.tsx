@@ -1,18 +1,21 @@
 import { useEffect, useRef, useState } from "react";
 import type { Page } from "../shared/types";
-import type { DatabaseReadSnapshot } from "../shared/database-operation";
+import type { StructurePort, WorkspaceReadPort } from "../shared/app-api";
 import { prepareLegacyMigration, type LegacyMigrationPreview, type LegacyMigrationResult } from "../shared/legacy-migration-operation";
 import { preparePropertyOperation, type PropertyChange, type PropertyPreviewResult } from "../shared/property-operation";
 import { PropertySchemaPanel } from "./PropertySchemaPanel";
 import type { PropertySchemaDraft } from "./property-schema-draft";
 import { LegacyMigrationDialog } from "./LegacyMigrationDialog";
 import { DialogFrame } from "./Modal";
-import { exchangeStructural, type StructuralOperation, type StructuralResult } from "./structural-operation";
+import { exchangeStructural, type StructuralOperation, type StructuralResult, type StructuralTransport } from "./structural-operation";
+import { structuralBridge } from "./purpose-bridge";
 import { validateOwnerPage } from "./settings-save-coordinator";
 import "./r6-structural.css";
 
-export function StructuralDatabaseDialog({family, owner, onClose, retain, onApplied}: {
-  family: "property" | "migration"; owner: Page; onClose: () => void;
+export function StructuralDatabaseDialog({family, owner, workspace, structure, onClose, retain, onApplied}: {
+  family: "property" | "migration"; owner: Page;
+  workspace: WorkspaceReadPort; structure: StructurePort;
+  onClose: () => void;
   retain: (operation: StructuralOperation | null) => Promise<void>;
   onApplied: () => Promise<void>;
 }) {
@@ -26,6 +29,10 @@ export function StructuralDatabaseDialog({family, owner, onClose, retain, onAppl
   const [retentionBlocked, setRetentionBlocked] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const operation = useRef<StructuralOperation | undefined>(undefined);
+  // The structural commit/resolve lane is the purpose bridge over the injected
+  // port; the same instance is reused for every send attempt on this mount.
+  const transport = useRef<StructuralTransport | null>(null);
+  if (transport.current === null) transport.current = structuralBridge(structure);
   // Entering exchange makes the send outcome uncertain. From then on this
   // identity is lookup-only, even if no receipt is found after restart.
   const sent = useRef(false);
@@ -36,16 +43,16 @@ export function StructuralDatabaseDialog({family, owner, onClose, retain, onAppl
     busy.current = true; setError(""); setState("previewing");
     setProperty(undefined); setMigration(undefined);
     try {
-      if (family === "migration") setMigration(await window.folio.request<LegacyMigrationPreview>({type: "migration:preview", databasePageId: owner.id}));
+      if (family === "migration") setMigration(await structure.previewMigration(owner.id));
       else if (change) {
         // A user-requested preview observes a fresh baseline. It does not
         // install into App's existing edit lanes or apply the requested change.
-        const fresh = await window.folio.request<DatabaseReadSnapshot>({type: "database:read", databasePageId: owner.id});
+        const fresh = await workspace.readDatabase(owner.id);
         validateOwnerPage(fresh.page, owner.id, fresh.database.revision, fresh.database.settings);
         if (fresh.database.records.some((record) => record.databasePageId !== owner.id))
           throw new Error("所属が一致しないためプレビューを停止しました。");
         setCurrentOwner(fresh.page);
-        setProperty(await window.folio.request<PropertyPreviewResult>({type: "property:preview", databasePageId: owner.id, revision: fresh.page.revision, change}));
+        setProperty(await structure.previewProperty(owner.id, fresh.page.revision, change));
       }
       setState("ready");
     } catch (error) {setError(String(error)); setState("rejected");}
@@ -87,7 +94,7 @@ export function StructuralDatabaseDialog({family, owner, onClose, retain, onAppl
       }
       const lookupOnly = sent.current;
       sent.current = true;
-      const value = await exchangeStructural(operation.current, lookupOnly);
+      const value = await exchangeStructural(operation.current, lookupOnly, 30_000, transport.current!);
       setResult(value); setError(value.message ?? "");
       if (value.status === "applied") {
         applied.current = true;

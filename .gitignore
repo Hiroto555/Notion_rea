@@ -45,3 +45,8 @@ coverage/
 # Use docs/screenshots/ only for reviewed, synthetic-data captures.
 .idea/
 .vscode/
+
+# Cloud runtime credentials stay outside source control
+.cloud-private/
+cloud/runtime/
+cloud/__pycache__/

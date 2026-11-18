@@ -9,6 +9,7 @@ export function assertReadOnlyRequest(request: Request): void {
     case "recovery:export":
     case "recovery:restore":
     case "startup:status":
+    case "desktop:capabilities":
     case "sync:status":
     case "sync:connectionStatus":
     case "sync:restartStatus":

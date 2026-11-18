@@ -1,3 +1,8 @@
+import * as backupVerifier from "../src/persistence/full-backup-verify";
+import {withNativeSqliteReader} from "../src/persistence/native-sqlite-reader";
+import {createPrivatePersistenceLifecycle} from "../src/main/private-persistence-lifecycle";
+import {DatabaseSync} from "node:sqlite";
+import type {NativePrivateFilesystemPort} from "../src/platform/private-persistence";
 import { createHash, randomUUID } from "node:crypto";
 import fs from "node:fs";
 import { basename, join, resolve, sep } from "node:path";
@@ -105,6 +110,26 @@ function expectedBytes(backup: VerifiedWorkspaceBackup): number {
 }
 
 describe("planBackupArchive", () => {
+  it("propagates a retained independent generation-reader failure into the actual lifecycle instead of skipping it", () => {
+    const f=fixture(),old=f.addBackup(backupName(),OLD),newer=f.addBackup(backupName(),NEW);
+    const before=treeSnapshot(f.workspace),life=createPrivatePersistenceLifecycle(),rawClose=DatabaseSync.prototype.close;
+    let retained: DatabaseSync|undefined,releases=0;
+    const native={inspectFileIdentity:()=>({path:join(newer.directory,"workspace.sqlite"),fileId:"a".repeat(32),volumeId:"b".repeat(16)}),acquireSqliteLease:()=>({assertHeld(){},close(){releases++;}})} as unknown as NativePrivateFilesystemPort;
+    const actual=backupVerifier.verifyFullBackup;
+    const verifier=vi.spyOn(backupVerifier,"verifyFullBackup").mockImplementation((path,...args)=>{
+      if(path!==newer.directory)return actual(path,...args);
+      const verified=actual(path,...args);
+      const close=vi.spyOn(DatabaseSync.prototype,"close").mockImplementationOnce(function(this:DatabaseSync){retained=this;throw new Error("retained generation reader");});
+      try{return withNativeSqliteReader(join(path,"workspace.sqlite"),native,db=>{db.prepare("SELECT name FROM sqlite_master LIMIT 1").get();return verified;});}
+      finally{close.mockRestore();}
+    });
+    try {
+      expect(()=>life.run(()=>planBackupArchive(f.workspace,old.directory,()=>false))).toThrow();
+      expect(life.isUsable()).toBe(false);expect(retained?.isOpen).toBe(true);expect(releases).toBe(0);
+      expect(treeSnapshot(f.workspace)).toEqual(before);
+    } finally {verifier.mockRestore();if(retained?.isOpen)rawClose.call(retained);}
+  });
+
   it("plans a verified generated generation without changing its bytes", () => {
     const f = fixture();
     const older = f.addBackup(backupName(), OLD);

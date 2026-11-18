@@ -1,21 +1,35 @@
+import {lstatSync} from "node:fs";
+import {preflightExistingJournal} from "./journal-preflight";
+import { SqliteConnectionOwner, closeSqlitePlatform } from "./sqlite-connection-owner";
 import { join } from "node:path";
 import { DatabaseSync } from "node:sqlite";
 import { SyncSqliteGuard } from "./sqlite-guard";
-import { requireCondition, SyncError } from "./protocol";
+import { requireCondition } from "./protocol";
 import {
   defaultPrivatePlatform,
   isValidPrivateLedgerName,
+  synchronousPrivatePlatform,
   type PrivatePlatform,
 } from "./private-platform";
+
+
+function validateLedgerIdentity(db: DatabaseSync, role: string): void {
+  const schema = db.prepare("SELECT name,type FROM sqlite_master WHERE name NOT LIKE 'sqlite_%'").all();
+  requireCondition(schema.length === 2 && schema.every(row => row.type === "table" && ["m3_private_identity", "m3_private_records"].includes(String(row.name))), "private-ledger-invalid", 409);
+  const identity = db.prepare("SELECT * FROM m3_private_identity").all();
+  requireCondition(identity.length === 1 && identity[0].singleton === 1 && identity[0].role === role && identity[0].version === 1, "private-ledger-invalid", 409);
+}
 
 const MAX_BYTES = 8 * 1024 * 1024;
 const MAX_ROWS = 4096;
 /** Small main-owned metadata. Credential callers persist ciphertext only. */
 export class PrivateLedger {
-  private readonly platform: PrivatePlatform;
+  private readonly platform!: PrivatePlatform;
   private readonly path!: string;
   private readonly guard!: SyncSqliteGuard;
+  private readonly owner: SqliteConnectionOwner;
   private closed = false;
+  private closing = false;
   /**
    * The optional platform is the final argument so existing POSIX callers keep
    * their default. On win32 the default fails closed unless an explicit native
@@ -32,17 +46,27 @@ export class PrivateLedger {
       isValidPrivateLedgerName(name) && /^[a-z0-9-]{1,64}$/.test(role),
       "private-ledger-invalid",
     );
-    this.platform =
+    const supplied =
       platform ?? defaultPrivatePlatform(process.platform, forbiddenRoots);
+    let facade: PrivatePlatform | undefined;
+    this.owner = new SqliteConnectionOwner(() =>
+      closeSqlitePlatform(facade ?? supplied),
+    );
     try {
+      facade = synchronousPrivatePlatform(supplied);
+      this.platform = facade;
       const root = this.platform.bind(directory);
       this.path = join(root, name);
       this.platform.createExclusive(this.path);
       this.platform.assertFile(this.path);
       this.platform.assertSidecars(this.path);
+      if (lstatSync(this.path).size > 0) preflightExistingJournal(this.path, () => {
+        this.platform.assertRoot(); this.platform.assertFile(this.path); this.platform.assertSidecars(this.path);
+      }, candidate => validateLedgerIdentity(candidate, role), this.platform, this.owner);
       const db = new DatabaseSync(this.path);
-      this.guard = new SyncSqliteGuard(db);
-      try {
+      this.owner.opened(db);
+      this.guard = this.owner.guarded(db);
+      {
         db.exec(
           "PRAGMA busy_timeout=0; PRAGMA journal_mode=DELETE; PRAGMA synchronous=FULL; PRAGMA trusted_schema=OFF;",
         );
@@ -86,21 +110,14 @@ export class PrivateLedger {
           );
           this.assertOwned();
         });
-      } catch (e) {
-        try {
-          this.guard.close();
-        } catch {}
-        throw e;
       }
     } catch (e) {
-      try {
-        this.platform.close();
-      } catch {}
-      throw e;
+      this.owner.fail(e);
     }
   }
   assertOwned() {
     requireCondition(!this.closed, "private-ledger-closed", 409);
+    requireCondition(!this.closing, "private-ledger-closing", 409);
     this.platform.assertRoot();
     this.platform.assertFile(this.path);
     // Sidecars are re-proven at every boundary because SQLite recreates the
@@ -205,27 +222,17 @@ export class PrivateLedger {
       )
       .run(key, value);
   }
+  capacity(): Readonly<{rows: number; bytes: number; maxRows: number; maxBytes: number}> {
+    this.assertOwned();
+    const row = this.guard.db.prepare("SELECT count(*) AS rows,coalesce(sum(length(CAST(value AS BLOB))),0) AS bytes FROM m3_private_records").get()!;
+    return {rows: Number(row.rows), bytes: Number(row.bytes), maxRows: MAX_ROWS, maxBytes: MAX_BYTES};
+  }
   close() {
     if (this.closed) return;
-    let failure: unknown;
-    try {
-      this.guard.close();
-    } catch (error) {
-      failure = error;
-    }
-    try {
-      this.platform.close();
-    } catch (error) {
-      if (failure === undefined) failure = error;
-      else
-        failure = new AggregateError(
-          [failure, error],
-          "private-ledger close failed",
-        );
-    }
-    // Only a fully successful close is final; otherwise a retry may re-attempt
-    // the still-open native/platform side instead of leaking it.
-    if (failure !== undefined) throw failure;
+    // Once an owned close is attempted, reads/mutations stay blocked even if
+    // some handle could not be confirmed closed.
+    this.closing = true;
+    this.owner.close();
     this.closed = true;
   }
 }

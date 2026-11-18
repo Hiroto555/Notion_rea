@@ -1,8 +1,9 @@
+import {withPrivateOperationAuthority} from "../src/platform/private-operation-authority";
 import { canonical } from "../src/collaboration/runtime/canonical";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { SharedAuthority } from "../src/collaboration/runtime/authority";
 import { SharedRuntimeClient } from "../src/collaboration/runtime/client";
 import {
@@ -201,6 +202,48 @@ describe("shared runtime client and service integration", () => {
     activeCleanup = value.cleanup;
     return value;
   }
+
+  for (const revoked of [false, true]) it(`fences accepted-event history continuation while preserving the positive control (revoked=${revoked})`, async () => {
+    const f = await fixture();
+    let release!: () => void, enter!: () => void;
+    const gate = new Promise<void>(resolve => {release = resolve;}), entered = new Promise<void>(resolve => {enter = resolve;});
+    class HistoryGateProvider extends HttpSharedProvider {
+      override async snapshot(scope: Scope, after?: number): Promise<Snapshot> {
+        const snapshot = await super.snapshot(scope, after);
+        return {...snapshot, events: []};
+      }
+      override async acceptedEvent(scope: Scope, attemptId: string) {
+        const event = await super.acceptedEvent(scope, attemptId);
+        enter(); await gate; return event;
+      }
+    }
+    const provider = new HistoryGateProvider(f.url, f.ownerToken);
+    const client = new SharedRuntimeClient(join(f.tmp, "history-gate"), provider, f.scope, f.ownerAuth.writerId);
+    f.clients.push(client); await client.open();
+    const record = vi.spyOn(client.history, "record"), confirm = vi.spyOn(client.history, "confirm");
+    let current = true;
+    const command: TextCommand = {kind: "text", blockId: "p1", from: 5, to: 5, text: "!", before: "Hello"};
+    const before = f.authority.head();
+    const pending = withPrivateOperationAuthority(() => {if (!current) throw new CollaborationError("UNAUTHORIZED_IPC_SENDER");}, () => client.submit(command));
+    try {
+      await entered;
+      const durableBefore = canonical(client.queue.entries());
+      const historyBefore = client.history.retentionRoots();
+      current = !revoked; release();
+      if (revoked) {
+        await expect(pending).rejects.toMatchObject({code: "UNAUTHORIZED_IPC_SENDER"});
+        expect(record).not.toHaveBeenCalled(); expect(confirm).not.toHaveBeenCalled();
+        expect(client.history.retentionRoots()).toEqual(historyBefore);
+        expect(canonical(client.queue.entries())).toBe(durableBefore);
+      } else {
+        expect((await pending).receipt.status).toBe("SERVER_ACCEPTED");
+        expect(record).toHaveBeenCalledTimes(1);
+      }
+      expect(f.authority.head().seq).toBe(before.seq + 1);
+      expect(client.queue.entries()).toHaveLength(1);
+      expect(client.queue.entries()[0].state).toBe("CLIENT_RECEIPT_DURABLE");
+    } finally {current = true; release(); await pending.catch(() => undefined); record.mockRestore(); confirm.mockRestore();}
+  });
 
   it("connects, lists, opens, and submits through the explicit service", async () => {
     const f = await fixture();

@@ -1,5 +1,10 @@
+import {withNativeTransfer, type NativeTransferOptions} from "../platform/windows/private-transfer";
 import { SyncError } from "../sync/protocol";
 import { safeSyncErrorCode } from "./workspace-sync-errors";
+import {
+  withProductPrivateJournals,
+  type ProductPrivateJournalOptions,
+} from "../platform/product-private-journals";
 import type { WorkspaceConflictArchiveSummary, WorkspaceConflictCandidateSnapshot,
   WorkspaceConflictCandidateTarget, WorkspaceConflictInspection } from "../shared/workspace-conflict-view";
 import type { Change } from "../sync/protocol";
@@ -62,6 +67,8 @@ export class WorkspaceSyncService<Status> {
     transport: WorkspaceSyncTransport<Status> | undefined,
     private readonly now: () => Date = () => new Date(),
     private readonly connector?: WorkspaceSyncConnector<Status>,
+    private readonly privateJournals?: ProductPrivateJournalOptions,
+    private readonly nativeTransfer?: NativeTransferOptions,
   ) {
     this.transport = transport;
     transport?.setTransferAllowed?.(() => !this.suspended);
@@ -72,8 +79,10 @@ export class WorkspaceSyncService<Status> {
   static reconnect<Status>(
     connector: WorkspaceSyncConnector<Status>,
     now: () => Date = () => new Date(),
+    privateJournals?: ProductPrivateJournalOptions,
+    nativeTransfer?: NativeTransferOptions,
   ): WorkspaceSyncService<Status> {
-    return new WorkspaceSyncService<Status>(undefined, now, connector);
+    return new WorkspaceSyncService<Status>(undefined, now, connector, privateJournals, nativeTransfer);
   }
 
   status(): WorkspaceSyncServiceStatus<Status> {
@@ -112,20 +121,26 @@ export class WorkspaceSyncService<Status> {
     // Yield once so inFlight is set even if a transport throws synchronously.
     const run = Promise.resolve().then(async () => {
       try {
-        this.assertActive();
-        const transport = await this.transportForPass();
-        this.assertActive();
-        await transport.sendPending();
-        this.assertActive();
-        await transport.receiveAndStage();
-        this.assertActive();
-        if (transport.shouldRecordSuccess?.() !== false) {
-          this.lastSuccessAt = this.now().toISOString();
-          // The transfer already succeeded. A local history write failure must
-          // not turn it into a failed transfer or discard pending data.
-          try {transport.recordLastSuccess?.(this.lastSuccessAt);} catch { /* in-memory time remains */ }
-        }
-        this.lastError = null;
+        // The configured private-journal context covers every journal the
+        // pass opens, including opens inside the connector and transport
+        // callbacks. Scoped-option validation also lands here so a malformed
+        // context maps to lastError instead of stranding inFlight.
+        await withProductPrivateJournals(this.privateJournals, () => withNativeTransfer(this.nativeTransfer, async () => {
+          this.assertActive();
+          const transport = await this.transportForPass();
+          this.assertActive();
+          await transport.sendPending();
+          this.assertActive();
+          await transport.receiveAndStage();
+          this.assertActive();
+          if (transport.shouldRecordSuccess?.() !== false) {
+            this.lastSuccessAt = this.now().toISOString();
+            // The transfer already succeeded. A local history write failure must
+            // not turn it into a failed transfer or discard pending data.
+            try {transport.recordLastSuccess?.(this.lastSuccessAt);} catch { /* in-memory time remains */ }
+          }
+          this.lastError = null;
+        }));
       } catch (error) {
         // Arbitrary errors may contain URLs or secrets; only expose a bounded
         // protocol code, never raw exception text or credentials.

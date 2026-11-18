@@ -40,6 +40,7 @@ const EXPECTED = {
   "workspaceBackup:restore": "read",
   "workspaceBackup:open": "read",
   "startup:status": "read",
+  "desktop:capabilities": "read",
   "sync:status": "read",
     "sync:connectionStatus": "read", "sync:retentionStatus": "read", "sync:connectionConfigure": "checkpoint", "sync:connectionDisable": "checkpoint", "sync:connectionResolve": "read",
     "sync:transferInventory": "read", "sync:transferPlan": "checkpoint", "sync:transferRelease": "maintenance", "sync:transferResolve": "read",
@@ -98,7 +99,7 @@ const ROWS = Object.entries(EXPECTED) as [RequestType, StorageAction][];
 
 describe("request storage policy", () => {
   it("classifies every Request type exactly once", () => {
-    expect(ROWS).toHaveLength(89);
+    expect(ROWS).toHaveLength(90);
     expect(new Set(ROWS.map(([type]) => type)).size).toBe(ROWS.length);
     expect(ROWS.filter(([, action]) => action === "write")).toHaveLength(28);
     expect(ROWS.filter(([, action]) => action === "checkpoint")).toHaveLength(9);

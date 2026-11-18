@@ -6,6 +6,7 @@ import type { DatabaseSync } from "node:sqlite";
 import { assertOutsideFolioData } from "../persistence/output-path";
 import { syncPath } from "../persistence/durable-file";
 import { parseAssetURL } from "../shared/assets";
+import { privatePersistencePort, type NativePrivateFile, type NativePrivateIdentity } from "../platform/private-persistence";
 
 const MAX_BYTES = 20_000_000;
 const MAX_REGISTRY_ROWS = 20_000;
@@ -20,7 +21,7 @@ const RESERVED_NAME = /^(?:con|prn|aux|nul|com[1-9]|lpt[1-9])(?:\..*)?$/i;
 
 type Registry = { exact: Set<string>; folded: Map<string, string> };
 type FileSnapshot = { dev: number; ino: number; size: number; sha256: string };
-type Ticket = FileSnapshot & { name: string; path: string; expiresAt: number };
+type Ticket = FileSnapshot & { name: string; path: string; expiresAt: number; nativeFile?: NativePrivateFile };
 type ExternalParent = { path: string; stat: Stats };
 type Wrapper = { path: string; stat: Stats };
 
@@ -183,6 +184,10 @@ function exdevError(cause: unknown): Error {
  * `clear()` drops unused tickets; no filesystem GC is implicit.
  */
 export class OrphanMaintenance {
+  private readonly baseNative = privatePersistencePort();
+  private get native() {return privatePersistencePort() ?? this.baseNative;}
+  private nativeWorkspace?: NativePrivateIdentity;
+  private nativeAssets?: NativePrivateIdentity;
   private readonly workspace: string;
   private readonly assets: string;
   private readonly workspaceStat: Stats;
@@ -213,6 +218,10 @@ export class OrphanMaintenance {
     this.assetsStat = fs.statSync(this.assets);
     if (!sameNode(assetsInfo, this.assetsStat))
       throw new Error("assetsが検査中に変更されました。");
+    if (this.native) {
+      this.nativeWorkspace = this.native.inspectDirectory(this.workspace);
+      this.nativeAssets = this.native.inspectDirectory(this.assets);
+    }
   }
 
   clear(): void {
@@ -223,6 +232,15 @@ export class OrphanMaintenance {
     this.assertRoots();
     const resolved = this.resolveSource(source);
     assertUnreachableName(resolved.name);
+
+    if (this.native) {
+      const file = this.native.inspectFile(resolved.path, MAX_BYTES);
+      this.assertUnregistered(this.readRegistry(), resolved.name);
+      const ticket = randomUUID();
+      this.tickets.set(ticket, { dev: 0, ino: 0, size: file.bytes, sha256: file.sha256,
+        nativeFile: file, path: resolved.path, name: resolved.name, expiresAt: Date.now() + TICKET_TTL_MS });
+      return { ticket, name: resolved.name, bytes: file.bytes };
+    }
 
     const pinned = openPinned(resolved.path);
     try {
@@ -250,6 +268,31 @@ export class OrphanMaintenance {
 
     this.assertRoots();
     const external = this.readExternalParent(externalParent);
+    if (this.native) {
+      const native = this.native, expected = entry.nativeFile;
+      if (!expected) throw new Error("native orphan identity missing");
+      const parent = native.inspectDirectory(external.path);
+      if (parent.volumeId !== expected.volumeId) throw exdevError(undefined);
+      const wrapper = join(external.path, `folio-orphan-archive-${Date.now()}-${randomUUID()}`);
+      const wrapperIdentity = native.createDirectory(wrapper);
+      const destination = join(wrapper, entry.name);
+      assertUnreachableName(entry.name);
+      this.assertUnregistered(this.readRegistry(), entry.name);
+      this.assertRoots();
+      const currentParent = native.inspectDirectory(external.path);
+      const currentWrapper = native.inspectDirectory(wrapper);
+      if (currentParent.fileId !== parent.fileId || currentParent.volumeId !== parent.volumeId ||
+        currentWrapper.fileId !== wrapperIdentity.fileId || currentWrapper.volumeId !== wrapperIdentity.volumeId)
+        throw new Error("移動先フォルダーが変更されています。");
+      try {
+        // The helper hashes the expected File ID on the same DELETE handle
+        // used for no-replace rename. A failed receipt never permits replay.
+        native.renameNew(entry.path, destination, expected, MAX_BYTES);
+      } catch (error) {
+        throw new Error(`orphan移動結果を確認できません。原本と移動先を保持してください: ${destination}`, { cause: error });
+      }
+      return { destination };
+    }
     const wrapper = this.createWrapper(external);
     const destination = join(wrapper.path, entry.name);
     let fd: number | undefined;
@@ -329,6 +372,15 @@ export class OrphanMaintenance {
   }
 
   private assertRoots(): void {
+    if (this.native) {
+      const workspace = this.native.inspectDirectory(this.workspace), assets = this.native.inspectDirectory(this.assets);
+      const expectedWorkspace = this.nativeWorkspace, expectedAssets = this.nativeAssets;
+      if (!expectedWorkspace || !expectedAssets ||
+        workspace.fileId !== expectedWorkspace.fileId || workspace.volumeId !== expectedWorkspace.volumeId ||
+        assets.fileId !== expectedAssets.fileId || assets.volumeId !== expectedAssets.volumeId)
+        throw new Error("ワークスペースまたはassetsが変更されています。");
+      return;
+    }
     const workspace = fs.lstatSync(this.workspace);
     const assets = fs.lstatSync(this.assets);
     if (

@@ -52,6 +52,9 @@ internal static class OwnedNodeJob
     private const uint SddlRevision1 = 1;
     private const uint DriveFixed = 3;
     private const int ReapDeadlineMs = 5_000;
+    private const int MaxStdinRelayBytes = 64 * 1024;
+    private const string HelperResultFileName = "helper-result.json";
+    private const string ShutdownMonitorMarker = "--shutdown-monitor-stdin-v1";
 
     private static readonly object JobGate = new object();
     private static IntPtr activeJob;
@@ -71,6 +74,7 @@ internal static class OwnedNodeJob
         public string TempRoot = "";
         public string Nonce = "";
         public int TimeoutMs;
+        public bool ShutdownMonitor;
     }
 
     private sealed class Inspected
@@ -140,7 +144,8 @@ internal static class OwnedNodeJob
 
     private static Args ParseAndValidate(string[] rawArgs)
     {
-        if (rawArgs.Length != 5) throw new Reject("ARG_COUNT");
+        if (rawArgs.Length != 5 && rawArgs.Length != 6) throw new Reject("ARG_COUNT");
+        if (rawArgs.Length == 6 && rawArgs[5] != ShutdownMonitorMarker) throw new Reject("MARKER");
 
         var args = new Args
         {
@@ -148,6 +153,7 @@ internal static class OwnedNodeJob
             OwnedScript = CanonicalRegularFile(rawArgs[1], "OWNED_SCRIPT"),
             TempRoot = CanonicalDirectory(rawArgs[2]),
             Nonce = rawArgs[3],
+            ShutdownMonitor = rawArgs.Length == 6,
         };
 
         if (!Regex.IsMatch(args.Nonce, "\\A[A-Za-z0-9_-]{1,128}\\z", RegexOptions.CultureInvariant)) throw new Reject("NONCE");
@@ -291,7 +297,7 @@ internal static class OwnedNodeJob
         IntPtr attributeList = IntPtr.Zero;
         bool attributeInitialized=false;
         SafeFileHandle stdinRead = null, stdinWrite = null, stdoutRead = null, stdoutWrite = null, stderrRead = null, stderrWrite = null;
-        FileStream stdoutStream = null, stderrStream = null;
+        FileStream stdinStream = null, stdoutStream = null, stderrStream = null;
         Task stdoutTask = null, stderrTask = null;
         GCHandle environmentPin = default;
         bool environmentPinned = false;
@@ -370,14 +376,26 @@ internal static class OwnedNodeJob
             process = processInfo.hProcess;
             thread = processInfo.hThread;
 
-            stdinWrite.Dispose();
-            stdinWrite = null;
             stdinRead.Dispose();
             stdinRead = null;
             stdoutWrite.Dispose();
             stdoutWrite = null;
             stderrWrite.Dispose();
             stderrWrite = null;
+            if (args.ShutdownMonitor)
+            {
+                // Monitor mode: keep the owned child stdin open and relay the
+                // caller's own stdin to it asynchronously until parent EOF.
+                // The relay is bounded and never waited on indefinitely once
+                // the child has exited.
+                stdinStream = new FileStream(stdinWrite, FileAccess.Write, 4096, false);
+                _ = Task.Run(() => RelayStandardInput(stdinStream));
+            }
+            else
+            {
+                stdinWrite.Dispose();
+                stdinWrite = null;
+            }
 
             stdoutStream = new FileStream(stdoutRead, FileAccess.Read, 4096, false);
             stderrStream = new FileStream(stderrRead, FileAccess.Read, 4096, false);
@@ -419,7 +437,7 @@ internal static class OwnedNodeJob
             Snapshot stdout = stdoutCapture.Read();
             Snapshot stderr = stderrCapture.Read();
 
-            return WriteOutcome(args.Nonce, exited, processCount, hasExitCode ? exitCode : (uint?)null, timedOut, stdout, stderr);
+            return WriteOutcome(args, exited, processCount, hasExitCode ? exitCode : (uint?)null, timedOut, stdout, stderr);
         }
         finally
         {
@@ -430,6 +448,7 @@ internal static class OwnedNodeJob
             if (job != IntPtr.Zero) CloseHandle(job);
             if (attributeList != IntPtr.Zero){if(attributeInitialized)DeleteProcThreadAttributeList(attributeList);Marshal.FreeHGlobal(attributeList);}
             if (environmentPinned) environmentPin.Free();
+            stdinStream?.Dispose();
             stdinWrite?.Dispose();
             stdinRead?.Dispose();
             stdoutWrite?.Dispose();
@@ -764,6 +783,49 @@ internal static class OwnedNodeJob
         }
     }
 
+    // Shutdown-monitor mode only: copy this process's own stdin to the owned
+    // child's stdin until the parent pipe reaches EOF, then close the child
+    // side so the worker observes the owner exit. Bounded by
+    // MaxStdinRelayBytes; a child that exited early just breaks the copy. The
+    // caller never waits on this task after the child exit is determined.
+    private static readonly byte[] RelayErrorLine =
+        Encoding.ASCII.GetBytes("OWNED_HELPER_STDIN_ERROR\n");
+
+    private static async Task RelayStandardInput(FileStream childStdin)
+    {
+        long total = 0;
+        bool failed = false;
+        try
+        {
+            using Stream parentIn = Console.OpenStandardInput();
+            byte[] buffer = new byte[8192];
+            while (true)
+            {
+                int count = await parentIn.ReadAsync(buffer.AsMemory(0, buffer.Length)).ConfigureAwait(false);
+                if (count <= 0) break;
+                total += count;
+                if (total > MaxStdinRelayBytes) { failed = true; break; }
+                await childStdin.WriteAsync(buffer.AsMemory(0, count)).ConfigureAwait(false);
+                await childStdin.FlushAsync().ConfigureAwait(false);
+            }
+        }
+        catch (IOException) { failed = true; }
+        catch (ObjectDisposedException) { failed = true; }
+        // An overflow or IO failure must NOT look like a clean owner EOF to the
+        // worker: emit a fixed invalid protocol line first so the worker
+        // retains UNKNOWN rather than accepting a truncated stream.
+        if (failed)
+        {
+            try
+            {
+                await childStdin.WriteAsync(RelayErrorLine.AsMemory(0, RelayErrorLine.Length)).ConfigureAwait(false);
+                await childStdin.FlushAsync().ConfigureAwait(false);
+            }
+            catch { }
+        }
+        try { childStdin.Dispose(); } catch { }
+    }
+
     private static uint ReadProcessCount(IntPtr job)
     {
         if (!QueryInformationJobObject(job, JobObjectBasicAccountingInformation, out JOBOBJECT_BASIC_ACCOUNTING_INFORMATION accounting, (uint)Marshal.SizeOf<JOBOBJECT_BASIC_ACCOUNTING_INFORMATION>(), IntPtr.Zero))
@@ -773,7 +835,7 @@ internal static class OwnedNodeJob
         return accounting.ActiveProcesses;
     }
 
-    private static int WriteOutcome(string nonce, bool exited, uint processCount, uint? exitCode, bool timedOut, Snapshot stdout, Snapshot stderr)
+    private static int WriteOutcome(Args args, bool exited, uint processCount, uint? exitCode, bool timedOut, Snapshot stdout, Snapshot stderr)
     {
         using var buffer = new MemoryStream();
         using (var writer = new Utf8JsonWriter(buffer))
@@ -781,8 +843,8 @@ internal static class OwnedNodeJob
             writer.WriteStartObject();
             writer.WriteNumber("v", 1);
             writer.WriteBoolean("owned", true);
-            writer.WriteString("nonce", nonce);
-            writer.WriteString("ownRootNonce", nonce);
+            writer.WriteString("nonce", args.Nonce);
+            writer.WriteString("ownRootNonce", args.Nonce);
             writer.WriteBoolean("exited", exited);
             writer.WriteNumber("processCount", processCount);
             if (exitCode.HasValue) writer.WriteNumber("exitCode", exitCode.Value);
@@ -795,6 +857,22 @@ internal static class OwnedNodeJob
         }
         byte[] json = buffer.ToArray();
         if (json.Length > MaxResultBytes) throw new Reject("RESULT_SIZE");
+        if (args.ShutdownMonitor)
+        {
+            // Monitor mode: the parent usually exits without reading stdout,
+            // so the exact native result is also persisted inside the owned
+            // session root (immutable create-new, read-shared, fsync'd)
+            // BEFORE the stdout write. The collector requires this proof.
+            string path = Path.Combine(args.TempRoot, HelperResultFileName);
+            try
+            {
+                using var persisted = new FileStream(path, FileMode.CreateNew, FileAccess.Write, FileShare.Read);
+                persisted.Write(json, 0, json.Length);
+                persisted.Flush(true);
+            }
+            catch (IOException) { }
+            catch (UnauthorizedAccessException) { }
+        }
         using Stream output = Console.OpenStandardOutput();
         output.Write(json, 0, json.Length);
         output.Flush();

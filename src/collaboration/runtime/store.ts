@@ -1,4 +1,5 @@
 import type { RuntimeStorePlatform } from "../../platform/runtime-store-platform";
+import { synchronousRuntimeStorePlatform } from "../../platform/synchronous-port";
 import { createHash } from "node:crypto";
 import {
   closeSync,
@@ -17,6 +18,10 @@ import {
   type PrivateRootPin,
 } from "../../sync/m3-private-root";
 import { sqliteHeader } from "../../persistence/sqlite-header";
+import {
+  SqliteConnectionOwner,
+  closeSqlitePlatform,
+} from "../../sync/sqlite-connection-owner";
 import { canonical } from "./canonical";
 import { wellFormed } from "./contract";
 import type { StoragePort } from "./storage-port";
@@ -42,6 +47,9 @@ export type RuntimeStoreOptions = {
   platformAdapter?: RuntimeStorePlatform;
   maxBytes?: number;
   maxRows?: number;
+  /** A wrong semantic role must be rejected before writable SQLite recovery. */
+  expectedExistingRole?: "authority" | "client";
+  requiredExistingRole?: "authority" | "client";
 };
 
 type Options = Readonly<{ maxBytes: number; maxRows: number }>;
@@ -165,6 +173,8 @@ export class RuntimeStore implements StoragePort {
   private readonly maxBytes: number;
   private readonly maxRows: number;
   private closed = false;
+  private closing = false;
+  private readonly owner: SqliteConnectionOwner;
   private readonly rootPin: PrivateRootPin | null;
   private readonly platformAdapter: RuntimeStorePlatform | null;
   private filePin: Stats | undefined;
@@ -173,6 +183,8 @@ export class RuntimeStore implements StoragePort {
   constructor(directory: string, options: RuntimeStoreOptions = {}) {
     if (typeof directory !== "string" || directory.length === 0)
       fail("INVALID_SHARED_RUNTIME_DIRECTORY");
+    for (const role of [options.expectedExistingRole, options.requiredExistingRole])
+      if (role !== undefined && role !== "authority" && role !== "client") fail("INVALID_SHARED_RUNTIME_OPTIONS");
     const limits: Options = {
       maxBytes: optionInteger(
         options.maxBytes,
@@ -183,8 +195,16 @@ export class RuntimeStore implements StoragePort {
     this.maxBytes = limits.maxBytes;
     this.maxRows = limits.maxRows;
     this.platformAdapter = options.platformAdapter ?? null;
+    // Reserved before native bind or any SQLite open; the closure reads the
+    // field at cleanup time so a failed facade wrap still closes the raw
+    // supplied adapter.
+    this.owner = new SqliteConnectionOwner(() =>
+      closeSqlitePlatform(this.platformAdapter),
+    );
+    try {
     if (this.platformAdapter) {
       if (process.platform !== "win32") fail("NATIVE_PLATFORM_MISMATCH");
+      this.platformAdapter = synchronousRuntimeStorePlatform(this.platformAdapter);
       directory = this.platformAdapter.bind(directory);
       this.rootPin = null;
     } else {
@@ -209,34 +229,66 @@ export class RuntimeStore implements StoragePort {
         header.applicationId !== SHARED_RUNTIME_APPLICATION_ID
       )
         fail("NOT_SHARED_RUNTIME_FORMAT");
-      const probe = new DatabaseSync(this.path, { readOnly: true });
-      let failure: unknown;
-      try {
-        probe.exec(
+      const preflight = (path: string, readOnly: boolean): void => {
+        const probe = new DatabaseSync(path, {readOnly});
+        let failed = false;
+        let failure: unknown;
+        try {
+          this.owner.opened(probe);
+          probe.exec(
           "PRAGMA query_only=ON; PRAGMA trusted_schema=OFF; PRAGMA busy_timeout=3000",
         );
         this.validate(probe);
-      } catch (error) {
-        failure = error;
-        throw error;
-      } finally {
-        try {
-          probe.close();
-        } catch (closeError) {
-          if (failure !== undefined)
-            throw new AggregateError(
-              [failure, closeError],
-              "UNKNOWN: preflight validation and close failed",
-            );
-          throw closeError;
+        const row = probe.prepare("SELECT raw FROM runtime_records WHERE namespace='meta' AND key='role'").get();
+        const role = row === undefined ? null : JSON.parse(String(row.raw));
+        if ((options.requiredExistingRole !== undefined && role !== options.requiredExistingRole) ||
+            (options.expectedExistingRole !== undefined && role !== null && role !== options.expectedExistingRole)) fail("WRONG_STORE_ROLE");
+        } catch (error) {
+          failed = true;
+          failure = error;
+          throw error;
+        } finally {
+          this.owner.closeConnection(probe, failed ? {error: failure} : undefined);
         }
+      };
+      try {preflight(this.path, true);}
+      catch (error) {
+        const snapshot = this.platformAdapter?.withHotJournalSnapshot;
+        if ((error as {errcode?: number}).errcode !== 776 || !snapshot) throw error;
+        this.platformAdapter!.assertRoot(); this.platformAdapter!.assertDatabase(this.path);
+        let active = true, calls = 0, callbackFailure: unknown;
+        try {
+          snapshot.call(this.platformAdapter, this.path, snapshotPath => {
+            calls++;
+            if (!active || calls !== 1 || typeof snapshotPath !== "string" || !snapshotPath || snapshotPath === this.path)
+              throw new Error("UNKNOWN: invalid RuntimeStore snapshot callback");
+            try {preflight(snapshotPath, false);}
+            catch (cause) {callbackFailure = cause; throw cause;}
+          });
+        } catch (cause) {
+          if (callbackFailure !== undefined && cause !== callbackFailure)
+            throw new AggregateError([callbackFailure, cause], "UNKNOWN: snapshot validation and native proof failed");
+          throw cause;
+        } finally {active = false;}
+        if (callbackFailure !== undefined) throw callbackFailure;
+        if (calls !== 1) throw new Error("UNKNOWN: RuntimeStore snapshot did not validate");
+        this.platformAdapter!.assertRoot(); this.platformAdapter!.assertDatabase(this.path);
       }
     }
 
     if (!this.platformAdapter) mkdirSync(directory, { recursive: true });
     if (!existed) {
-      const descriptor = openSync(this.path, "wx", 0o600);
-      closeSync(descriptor);
+      if (this.platformAdapter) {
+        if (typeof this.platformAdapter.createExclusiveDurably !== "function" ||
+            typeof this.platformAdapter.assertEmptyFile !== "function")
+          fail("WINDOWS_NATIVE_CREATE_REQUIRED");
+        this.platformAdapter.createExclusiveDurably(this.path);
+        this.platformAdapter.assertEmptyFile(this.path);
+        this.platformAdapter.assertDatabase(this.path);
+      } else {
+        const descriptor = openSync(this.path, "wx", 0o600);
+        closeSync(descriptor);
+      }
     }
     const pinned = safeFiles(this.path);
     if (
@@ -248,6 +300,7 @@ export class RuntimeStore implements StoragePort {
 
     this.filePin = pinned;
     const db = new DatabaseSync(this.path);
+    this.owner.opened(db);
     this.db = db;
     try {
       const opened = safeFiles(this.path);
@@ -265,15 +318,19 @@ export class RuntimeStore implements StoragePort {
         });
       }
       this.validate(db);
+      if (existed) {
+        const row = db.prepare("SELECT raw FROM runtime_records WHERE namespace='meta' AND key='role'").get();
+        const role = row === undefined ? null : JSON.parse(String(row.raw));
+        if ((options.requiredExistingRole !== undefined && role !== options.requiredExistingRole) ||
+            (options.expectedExistingRole !== undefined && role !== null && role !== options.expectedExistingRole)) fail("WRONG_STORE_ROLE");
+      }
       db.exec("PRAGMA synchronous=FULL; PRAGMA journal_mode=DELETE");
       if (!existed) this.syncDirectory(directory);
     } catch (error) {
-      try {
-        db.close();
-      } catch (closeError) {
-        throw new AggregateError([error, closeError], "UNKNOWN");
-      }
-      throw error;
+      this.owner.closeConnection(db, {error});
+    }
+    } catch (error) {
+      this.owner.fail(error);
     }
   }
 
@@ -305,6 +362,7 @@ export class RuntimeStore implements StoragePort {
 
   private assertUsable(): void {
     if (this.closed) fail("SHARED_RUNTIME_CLOSED");
+    if (this.closing) fail("SHARED_RUNTIME_CLOSING");
     if (this.poisoned) throw this.poisoned;
     if (this.platformAdapter) {
       this.platformAdapter.assertRoot();
@@ -475,6 +533,10 @@ export class RuntimeStore implements StoragePort {
     } catch (commitError) {
       this.unknown([commitError], "COMMIT outcome unknown");
     }
+    if (this.platformAdapter) {
+      try { this.assertUsable(); }
+      catch (error) { this.unknown([error], "native proof after COMMIT"); }
+    }
     return value;
   }
 
@@ -588,33 +650,8 @@ export class RuntimeStore implements StoragePort {
 
   close(): void {
     if (this.closed) return;
-    try {
-      try {
-        this.db.close();
-        this.closed = true;
-      } catch (closeError) {
-        let open: unknown;
-        try {
-          open = this.db.isOpen;
-        } catch (stateError) {
-          throw new AggregateError(
-            [closeError, stateError],
-            "UNKNOWN: close outcome unknown",
-          );
-        }
-        if (open === false) {
-          this.closed = true;
-          return;
-        }
-        if (typeof open !== "boolean")
-          throw new AggregateError(
-            [closeError, new Error("close state unavailable")],
-            "UNKNOWN: close outcome unknown",
-          );
-        throw closeError;
-      }
-    } finally {
-      this.platformAdapter?.close();
-    }
+    this.closing = true;
+    this.owner.close();
+    this.closed = true;
   }
 }

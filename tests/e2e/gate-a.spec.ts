@@ -17,6 +17,12 @@ import { observeDrag, dragEvidence } from "./drag-observer";
 import { beginRealDrag } from "./real-drag";
 import { fixtureElectronOptions, fixtureRoot } from "./fixture-isolation";
 import { killFixture, launchFixture } from "./recovery-ci-runtime";
+import {
+  clickEditorEditButton,
+  clickPageLink,
+  documentEditor,
+  openInspector,
+} from "./ui-chrome-controls";
 let traceEnabled = false,
   dragObserved = false;
 const dragSession = () => ({ app, window, folder, restart: async () => {} });
@@ -140,18 +146,18 @@ test("F01 same-page sidebar/search reselection keeps editor, attachment, link an
       .locator(".folio-editor")
       .evaluate((el) => el === (globalThis as any).originalEditorDOM),
   ).toBe(true);
-  await window.getByLabel("元に戻す", { exact: true }).click();
+  await clickEditorEditButton(documentEditor(window), "元に戻す");
   await expect(window.locator(".folio-editor")).not.toContainText(
     "Original body",
   );
-  await window.getByLabel("やり直す", { exact: true }).click();
+  await clickEditorEditButton(documentEditor(window), "やり直す");
   await expect(window.locator(".folio-editor")).toContainText("Original body");
   const file = join(inputsDir, "note.txt");
   writeFileSync(file, "attachment");
   await openDialog(file);
   await window.getByRole("button", { name: "添付", exact: true }).click();
   await expect(window.locator(".folio-editor")).toContainText("note.txt");
-  await window.getByTitle("ページへのリンク", { exact: true }).click();
+  await clickPageLink(documentEditor(window));
   await window.getByLabel("検索キーワード").fill("アイデアノート");
   await window.locator(".search-results button").first().click();
   await expect(window.locator(".folio-editor")).toContainText("アイデアノート");
@@ -192,7 +198,7 @@ for (const name of [
 test("F06 synthetic composing Enter does not navigate search or link (not physical IME)", async () => {
   for (const mode of ["search", "link"]) {
     if (mode === "search") await window.keyboard.press(primary("p"));
-    else await window.getByTitle("ページへのリンク", { exact: true }).click();
+    else await clickPageLink(documentEditor(window));
     await window.getByLabel("検索キーワード").fill("アイデアノート");
     await expect(window.locator(".search-results button")).toHaveCount(1);
     await window.getByLabel("検索キーワード").evaluate((el) => {
@@ -383,6 +389,7 @@ test("F02 full-text search, preview, count and in-page selection cross inline ma
   });
   await window.reload();
   await expect(window.locator(".folio-editor strong")).toHaveText("動");
+  await openInspector(window);
   await expect(
     window
       .locator(".inspector dt")
@@ -462,6 +469,9 @@ test("F04 DB delete Undo, restart history restore and property history retain ID
     original.id,
   );
   expect(restored.database).toEqual(original.database);
+  await window
+    .locator('[data-settings-menu-trigger="view-options"]')
+    .click();
   await window
     .getByRole("button", { name: "＋ プロパティ", exact: true })
     .click();

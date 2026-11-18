@@ -3,7 +3,10 @@ import { resolve } from "node:path";
 import { asciiCaseFold, validateWindowsPath } from "../platform/windows/path-policy";
 import { createHash } from "node:crypto";
 import { PrivateLedger } from "./private-ledger";
-import type { PrivatePlatform } from "./private-platform";
+import {
+  createProductPrivatePlatform,
+  type ProductPrivatePlatformFactory,
+} from "../platform/product-private-journals";
 import { requireCondition, SyncError } from "./protocol";
 import {
   MAX_SECRET_RECORD_BYTES,
@@ -20,10 +23,7 @@ export type SecretRecordLedgerOptions = Readonly<{
   directory: string;
   forbiddenRoots?: readonly string[];
   platform?: NodeJS.Platform;
-  privatePlatformFactory?: (
-    directory: string,
-    name: string,
-  ) => PrivatePlatform;
+  privatePlatformFactory?: ProductPrivatePlatformFactory;
 }>;
 
 function invalid(code: string, status = 409): never {
@@ -103,7 +103,13 @@ export class SecretRecordLedgerPersistence implements SecretRecordPersistence {
     const platform = this.options.platform ?? process.platform;
     if (platform === "win32" && typeof factory !== "function")
       invalid("secret-record-ledger-platform-required", 503);
-    const privatePlatform = factory?.(this.options.directory, LEDGER_NAME);
+    // The explicit options object selects only this ledger's own configured
+    // factory; an ambient transfer context must never open secret records.
+    const privatePlatform = createProductPrivatePlatform(
+      this.options.directory,
+      LEDGER_NAME,
+      { privatePlatformFactory: factory },
+    );
     return new PrivateLedger(
       this.options.directory,
       LEDGER_NAME,
@@ -116,11 +122,17 @@ export class SecretRecordLedgerPersistence implements SecretRecordPersistence {
   async read(key: string): Promise<Uint8Array | undefined> {
     const recordKey = ledgerKey(checkKey(key));
     const db = this.open();
+    let failure: unknown;
     try {
       const value = db.read(recordKey);
       return value === null ? undefined : decodeCiphertext(value);
-    } finally {
-      db.close();
+    } catch (error) {failure = error; throw error;}
+    finally {
+      try {db.close();}
+      catch (cleanup) {
+        if (failure !== undefined) throw new AggregateError([failure, cleanup], "Secret ledger read and cleanup failed");
+        throw cleanup;
+      }
     }
   }
 
@@ -143,13 +155,18 @@ export class SecretRecordLedgerPersistence implements SecretRecordPersistence {
         callbackCompleted = true;
       });
     } catch (error) {
-      failure = callbackCompleted ? new SyncError("secret-record-ledger-outcome-unknown",503) : error;
+      failure = callbackCompleted ? Object.assign(new SyncError("secret-record-ledger-outcome-unknown",503), {cause: error}) : error;
       throw failure;
     } finally {
       try { db.close(); }
       catch (error) {
-        if (failure !== undefined) throw failure;
-        if (callbackCompleted) invalid("secret-record-ledger-outcome-unknown", 503);
+        if (failure !== undefined) {
+          const primary = callbackCompleted && failure instanceof Error ? failure.cause : failure;
+          const combined = new AggregateError([primary, error], "Secret ledger write and cleanup failed");
+          if (callbackCompleted) {Object.assign(failure as Error, {cause: combined}); throw failure;}
+          throw combined;
+        }
+        if (callbackCompleted) throw Object.assign(new SyncError("secret-record-ledger-outcome-unknown",503), {cause: error});
         throw error;
       }
     }
@@ -165,10 +182,7 @@ export type SecretRecordPersistenceSelection = Readonly<{
   directory: string;
   forbiddenRoots: readonly string[];
   platform?: NodeJS.Platform;
-  privatePlatformFactory?: (
-    directory: string,
-    name: string,
-  ) => PrivatePlatform;
+  privatePlatformFactory?: ProductPrivatePlatformFactory;
 }>;
 
 export function createSecretRecordPersistence(

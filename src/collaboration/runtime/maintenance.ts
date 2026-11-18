@@ -13,6 +13,19 @@ import type {
   CompactResult,
   RetentionInspection,
 } from "./retention";
+import type {
+  RetentionDependencyLimits,
+  RetentionReclamationPlan,
+  RetentionReleaseEnvironment,
+} from "./retention-dependencies";
+import {
+  SharedRetentionRelease,
+  type RetentionReleaseArtifactResult,
+  type RetentionReleasePreview,
+  type RetentionReleaseRequest,
+  type RetentionReleaseResult,
+  type RetentionArtifactStore,
+} from "./retention-release";
 import type { RuntimeStore } from "./store";
 import type { StoragePort } from "./storage-port";
 
@@ -65,6 +78,7 @@ export interface MaintenanceAuthority {
   readonly store: RuntimeStore;
   readonly operations: {
     overview(auth: AuthContext, orgId: string): Overview;
+    assertWriter(version: number): void;
   };
   readonly policy: {
     authorize(
@@ -76,6 +90,13 @@ export interface MaintenanceAuthority {
   collectAssetPlan(token: string, scope: Scope, cut: Cut, expected: readonly string[]): AssetCollectionResult;
   session(token: string, orgId: string): AuthContext;
   head(): Cut;
+  verify(): void;
+  retentionDependencies(
+    token: string,
+    orgId: string,
+    expectedCut: Cut,
+    limits?: RetentionDependencyLimits,
+  ): RetentionReclamationPlan;
   retention(token: string, orgId: string): {
     inspect(): RetentionInspection;
     verifyBackup(
@@ -362,9 +383,57 @@ function writerFenced(store: RuntimeStore): boolean {
 }
 
 export class SharedMaintenance {
-  constructor(private readonly authority: MaintenanceAuthority) {
+  private readonly releaseBackend: SharedRetentionRelease;
+
+  constructor(
+    private readonly authority: MaintenanceAuthority,
+    environment?: RetentionReleaseEnvironment,
+  ) {
     if (!authority || typeof authority !== "object")
       throw new CollaborationError("INVALID_AUTHORITY");
+    // The trusted coverage port is configured host integration, never a
+    // caller-supplied object. An absent port fails closed inside the
+    // release methods; it never pretends the product surface is covered.
+    this.releaseBackend = new SharedRetentionRelease(authority, environment);
+  }
+
+  retentionReleasePreview(
+    token: string,
+    request: RetentionReleaseRequest,
+  ): RetentionReleasePreview {
+    return this.releaseBackend.preview(token, request);
+  }
+
+  exportRetentionRelease(
+    token: string,
+    request: RetentionReleaseRequest,
+    expectedFingerprint: string,
+    destination: RuntimeStore,
+  ): RetentionReleaseArtifactResult {
+    return this.releaseBackend.exportArtifact(
+      token,
+      request,
+      expectedFingerprint,
+      destination,
+    );
+  }
+
+  releaseRetentionHolds(
+    token: string,
+    request: RetentionReleaseRequest,
+    expectedFingerprint: string,
+    artifactHash: string,
+    acknowledgedArtifactHash: string,
+    destination: RetentionArtifactStore,
+  ): RetentionReleaseResult {
+    return this.releaseBackend.releaseHolds(
+      token,
+      request,
+      expectedFingerprint,
+      artifactHash,
+      acknowledgedArtifactHash,
+      destination,
+    );
   }
 
   preview(token: string, orgId: string): MaintenancePreview {

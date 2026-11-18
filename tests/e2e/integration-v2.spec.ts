@@ -112,10 +112,14 @@ test("integrated editor, attachment, independent database views and theme persis
     .filter({ hasText: "プロジェクト" })
     .click();
   await expect(w.locator("tbody tr")).toHaveCount(3);
+  await w.locator('[data-settings-menu-trigger="view-options"]').click();
   await w.getByLabel("ビュー名").fill("統合一覧");
-  await w.getByRole("button", { name: "ボード", exact: true }).click();
+  await w.getByLabel("ビューを追加", { exact: true }).selectOption("board");
+  await w.locator('[data-settings-menu-trigger="view-options"]').click();
   await w.getByLabel("ビュー名").fill("統合ボード");
-  await w.getByLabel("データベースを絞り込む").fill("完了");
+  if (!(await w.getByLabel("ビュー内検索").isVisible()))
+    await w.locator('[data-search-toggle="search"]').click();
+  await w.getByLabel("ビュー内検索").fill("完了");
   await expect(w.locator(".db-card")).toHaveCount(1);
   await saved(s);
   const beforeRestart = await load();
@@ -138,11 +142,11 @@ test("integrated editor, attachment, independent database views and theme persis
     .filter({ hasText: "プロジェクト" })
     .click();
   await expect(r.getByLabel("ビュー名")).toHaveValue("統合ボード");
-  await expect(r.getByLabel("データベースを絞り込む")).toHaveValue("完了");
+  await expect(r.getByLabel("ビュー内検索")).toHaveValue("完了");
   await r
-    .getByRole("button", { name: "ビュー: 統合一覧", exact: true })
+    .getByRole("tab", { name: "ビュー: 統合一覧", exact: true })
     .click();
-  await expect(r.getByLabel("データベースを絞り込む")).toHaveValue("");
+  await expect(r.getByLabel("ビュー内検索")).toHaveValue("");
   await r
     .locator(".page-tree-label")
     .filter({ hasText: "統合検証ノート" })

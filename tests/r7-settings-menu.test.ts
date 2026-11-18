@@ -154,11 +154,18 @@ describe("compact settings menu summaries", () => {
     expect(html).toContain('aria-busy="true"');
     expect(html).toContain('data-parent-toolbar="new-row"');
     expect(html).toContain("適用中の表示条件");
+    expect(html).toContain("条件を確認");
     expect(html).toContain("名前 含む「Task」");
     expect(html).toContain("期日 降順");
     expect(html).toContain("ステータス 昇順");
-    expect(html.match(/aria-expanded="false"/g)).toHaveLength(3);
+    // The search entry is also a display-only disclosure. It stays collapsed
+    // for an empty query, while every menu panel remains mounted and hidden.
+    expect(html).toContain('data-search-toggle="search"');
     for (const name of ["view-options", "filter", "sort"]) {
+      const trigger = new RegExp(
+        `<button[^>]*data-settings-menu-trigger="${name}"[^>]*>`,
+      ).exec(html)?.[0];
+      expect(trigger).toContain('aria-expanded="false"');
       const panel = new RegExp(
         `<div[^>]*data-settings-menu-panel="${name}"[^>]*>`,
       ).exec(html)?.[0];

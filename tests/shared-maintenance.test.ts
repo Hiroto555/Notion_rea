@@ -3,10 +3,12 @@ import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
+import { SharedAssets } from "../src/collaboration/runtime/assets";
 import { SharedAuthority } from "../src/collaboration/runtime/authority";
 import { SharedMaintenance } from "../src/collaboration/runtime/maintenance";
 import { RuntimeStore } from "../src/collaboration/runtime/store";
 import type { Cut, Scope } from "../src/collaboration/runtime/contract";
+import type { RetentionReleaseEnvironment } from "../src/collaboration/runtime/retention-dependencies";
 import type { Doc } from "../src/shared/types";
 
 const directories: string[] = [];
@@ -216,6 +218,66 @@ describe("SharedMaintenance", () => {
         /BACKUP_NOT_VERIFIED/,
       );
     } finally {
+      authority.close();
+    }
+  });
+
+  it("forwards retention-release calls through the authenticated boundary and fails closed without a trusted port", async () => {
+    const { authority, token, scope } = await setup();
+    const destinationDirectory = await tempDirectory("folio-maintenance-artifact-");
+    const destination = new RuntimeStore(destinationDirectory);
+    try {
+      const hash = publishAsset(
+        authority,
+        token,
+        scope,
+        "upload-held",
+        new TextEncoder().encode("held bytes"),
+      );
+      new SharedAssets(authority.store).hold(scope, hash, "hold-a");
+      const request = {
+        scope,
+        expectedCut: authority.head(),
+        holds: [{ hash, holdId: "hold-a" }],
+      };
+      // No configured environment: preview reports the block, export refuses.
+      const uncovered = new SharedMaintenance(authority);
+      const blocked = uncovered.retentionReleasePreview(token, request);
+      expect(blocked.releasable).toBe(false);
+      expect(blocked.blocks).toContain("RETENTION_COVERAGE_REQUIRED");
+      expect(() =>
+        uncovered.exportRetentionRelease(
+          token,
+          request,
+          blocked.combinedFingerprint ?? "0".repeat(64),
+          destination,
+        ),
+      ).toThrow(/RETENTION_COVERAGE_REQUIRED/);
+      // A configured trusted port forwards to the release backend.
+      const clientDirectory = await tempDirectory("folio-maintenance-client-");
+      const client = new RuntimeStore(clientDirectory);
+      const environment: RetentionReleaseEnvironment = {
+        inspect: () => ({
+          requiredStoreIds: ["authority", "client"],
+          stores: [
+            { id: "authority", store: authority.store },
+            { id: "client", store: client },
+          ],
+          liveHistory: {
+            status: "QUIESCENT",
+            generation: "live-gen",
+            roots: { head: authority.head() },
+          },
+          unaccountedStores: [],
+        }),
+      };
+      const maintenance = new SharedMaintenance(authority, environment);
+      const preview = maintenance.retentionReleasePreview(token, request);
+      expect(preview.releasable).toBe(true);
+      expect(preview.combinedFingerprint).toMatch(/^[a-f0-9]{64}$/);
+      client.close();
+    } finally {
+      destination.close();
       authority.close();
     }
   });
