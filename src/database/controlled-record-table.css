@@ -1,3 +1,23 @@
+/* Keep inline editing but make the normal state read like a light grid:
+ * vertical rules and the usual hover fill are suppressed outside focus. */
+.r4-record-table .r3-table th,
+.r4-record-table .r3-table td {
+  border-left: 0;
+  border-right: 0;
+}
+.r4-record-table .r3-table th:last-child,
+.r4-record-table .r3-table td:last-child {
+  border-right: 0;
+}
+.r4-record-table .r3-table td {
+  border-bottom-color: color-mix(in srgb, var(--line) 72%, transparent);
+}
+.r4-record-table .r3-table tbody tr:hover td {
+  background: transparent;
+}
+.r4-record-table .r3-table tbody tr:focus-within td {
+  background: color-mix(in srgb, var(--panel) 55%, transparent);
+}
 .r4-record-table .r4-record-name {
   display: flex;
   align-items: center;

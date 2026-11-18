@@ -1,0 +1,304 @@
+<div id="folio-lv4-status-1107">
+  <style>
+    #folio-lv4-status-1107 {color:var(--foreground);display:flex;flex-direction:column;gap:calc(var(--font-size-base)*1);overflow-wrap:anywhere;}
+    #folio-lv4-status-1107 .heading {display:flex;flex-direction:column;gap:calc(var(--font-size-base)*.35);padding-right:95px;}
+    #folio-lv4-status-1107 .facts {display:flex;flex-wrap:wrap;align-items:center;gap:calc(var(--font-size-base)*.75);}
+    #folio-lv4-status-1107 .fact {display:inline-flex;align-items:center;gap:calc(var(--font-size-base)*.35);}
+    #folio-lv4-status-1107 .legend {display:flex;flex-wrap:wrap;gap:calc(var(--font-size-base)*1);}
+    #folio-lv4-status-1107 .columns, #folio-lv4-status-1107 summary {display:grid;grid-template-columns:minmax(190px,1fr) 88px 88px 88px;gap:calc(var(--font-size-base)*.6);align-items:center;}
+    #folio-lv4-status-1107 .columns {padding-bottom:calc(var(--font-size-base)*.3);}
+    #folio-lv4-status-1107 details {border-top:1px solid var(--border);}
+    #folio-lv4-status-1107 details:last-child {border-bottom:1px solid var(--border);}
+    #folio-lv4-status-1107 summary {padding:calc(var(--font-size-base)*.8) 0;list-style:none;}
+    #folio-lv4-status-1107 summary::-webkit-details-marker {display:none;}
+    #folio-lv4-status-1107 .gate-name {display:flex;align-items:center;gap:calc(var(--font-size-base)*.5);min-width:0;}
+    #folio-lv4-status-1107 .gate-name strong {font-weight:500;}
+    #folio-lv4-status-1107 .chevron {display:inline-flex;flex-shrink:0;}
+    #folio-lv4-status-1107 details[open] .chevron {transform:rotate(90deg);}
+    #folio-lv4-status-1107 .gate-id {color:var(--muted-foreground);}
+    #folio-lv4-status-1107 .status {display:flex;align-items:center;gap:calc(var(--font-size-base)*.35);white-space:nowrap;}
+    #folio-lv4-status-1107 .signal {display:inline-block;width:9px;height:9px;flex-shrink:0;background:var(--muted-foreground);opacity:.35;}
+    #folio-lv4-status-1107 .signal.done {background:var(--viz-series-1);opacity:1;border-radius:50%;}
+    #folio-lv4-status-1107 .signal.todo {background:var(--viz-series-2);opacity:1;clip-path:polygon(50% 0,100% 100%,0 100%);}
+    #folio-lv4-status-1107 .mobile-label {display:none;}
+    #folio-lv4-status-1107 .detail {display:flex;flex-direction:column;gap:calc(var(--font-size-base)*1);padding:calc(var(--font-size-base)*.25) 0 calc(var(--font-size-base)*1.3);}
+    #folio-lv4-status-1107 .scope {display:flex;flex-wrap:wrap;gap:calc(var(--font-size-base)*.5);}
+    #folio-lv4-status-1107 .detail-grid {display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:calc(var(--font-size-base)*1);}
+    #folio-lv4-status-1107 .detail-grid section {display:flex;flex-direction:column;gap:calc(var(--font-size-base)*.4);min-width:0;}
+    #folio-lv4-status-1107 .detail-grid h3 {display:flex;align-items:center;gap:calc(var(--font-size-base)*.4);}
+    #folio-lv4-status-1107 ul {margin:0;padding-left:calc(var(--font-size-base)*1.2);display:flex;flex-direction:column;gap:calc(var(--font-size-base)*.4);}
+    #folio-lv4-status-1107 .finish {display:grid;grid-template-columns:auto 1fr;gap:calc(var(--font-size-base)*.6);padding-top:calc(var(--font-size-base)*.6);border-top:1px solid var(--border);}
+    #folio-lv4-status-1107 .finish dt {font-weight:500;}
+    #folio-lv4-status-1107 .finish dd {margin:0;}
+    #folio-lv4-status-1107 .footer {display:flex;flex-wrap:wrap;gap:calc(var(--font-size-base)*.5);}
+    @media(max-width:560px) {
+      #folio-lv4-status-1107 .columns {display:none;}
+      #folio-lv4-status-1107 summary {grid-template-columns:repeat(3,minmax(0,1fr));row-gap:calc(var(--font-size-base)*.5);}
+      #folio-lv4-status-1107 .gate-name {grid-column:1/-1;}
+      #folio-lv4-status-1107 .status {flex-wrap:wrap;white-space:normal;}
+      #folio-lv4-status-1107 .mobile-label {display:block;flex-basis:100%;color:var(--muted-foreground);}
+      #folio-lv4-status-1107 .detail-grid {grid-template-columns:1fr;}
+      #folio-lv4-status-1107 .heading {padding-right:90px;}
+      #folio-lv4-status-1107 .finish {grid-template-columns:1fr;}
+    }
+  </style>
+  <div class="heading">
+    <h2>Lv4の到達マップ</h2>
+    <div class="text-small text-muted">2026年11月7日 · 統合候補・未コミット</div>
+  </div>
+  <div class="facts" aria-label="現在の到達段階と直近の試験">
+    <span class="fact"><i data-lucide="check" aria-hidden="true"></i><strong>現在 Lv3</strong></span>
+    <span aria-hidden="true">→</span>
+    <span class="fact"><i data-lucide="flag" aria-hidden="true"></i><strong>Lv4 未達</strong></span>
+    <span class="text-small">直近：型検査・1,509テスト・build PASS</span>
+  </div>
+  <div class="text-small text-muted">初期想定：同じ所有者のMac 2台＋同期サーバー · 機能名で詳細を開閉</div>
+  <div class="columns text-small text-muted" aria-hidden="true"><span>受入条件</span><span>非GUIの証拠</span><span>追加実装</span><span>実物の検証</span></div>
+  <div class="gates">
+    <details data-gate="01" name="folio-lv4-gate">
+      <summary class="cursor-interaction" aria-label="L4-01 ローカル機能の回帰。非GUI PASS、既知の機能追加なし、GUI未実施">
+        <span class="gate-name"><span class="chevron"><i data-lucide="chevron-right" aria-hidden="true"></i></span><span class="gate-id text-small">01</span><strong>既存のローカル機能を守る</strong></span>
+        <span class="status text-small"><span class="mobile-label">非GUI</span><span class="signal done" aria-hidden="true"></span>PASS</span>
+        <span class="status text-small"><span class="mobile-label">追加実装</span><span class="signal" aria-hidden="true"></span>既知残なし</span>
+        <span class="status text-small"><span class="mobile-label">実物検証</span><span class="signal" aria-hidden="true"></span>NOT_RUN</span>
+      </summary>
+      <div class="detail">
+        <div class="scope text-small text-muted">L4-01 · 同じ候補版で保存・復旧・並び順の回帰を確認</div>
+        <div class="detail-grid">
+          <section><h3><span class="signal done" aria-hidden="true"></span>確認済み</h3><ul><li>統合ツリーと元の差分を分けて保全。</li><li>型検査・166ファイル／1,509テスト・buildがPASS。</li><li>今回の変更後も既存の非GUI試験が合格。</li></ul></section>
+          <section><h3><span class="signal" aria-hidden="true"></span>実装側の残り</h3><ul><li>この条件だけの新機能追加は記録上なし。</li><li>受入する候補版と試験設定を最後に固定する。現在は未コミット。</li></ul></section>
+          <section><h3><span class="signal" aria-hidden="true"></span>未確認</h3><ul><li>追加差分を含むElectron・実IPC・画面での保存／再open。</li><li>DnD・復元など既存draftのGUI回帰。</li></ul></section>
+        </div>
+        <dl class="finish"><dt>この条件の終点</dt><dd>同じ候補版で、既存機能の非GUI・GUI回帰が揃う。</dd></dl>
+      </div>
+    </details>
+    <details data-gate="02" name="folio-lv4-gate">
+      <summary class="cursor-interaction" aria-label="L4-02 データを両方向へ同期。部品PASS、製品経路は要確認、実機未実施">
+        <span class="gate-name"><span class="chevron"><i data-lucide="chevron-right" aria-hidden="true"></i></span><span class="gate-id text-small">02</span><strong>本文・DB・添付を両方向へ届ける</strong></span>
+        <span class="status text-small"><span class="mobile-label">非GUI</span><span class="signal done" aria-hidden="true"></span>部品PASS</span>
+        <span class="status text-small"><span class="mobile-label">追加実装</span><span class="signal" aria-hidden="true"></span>要確認</span>
+        <span class="status text-small"><span class="mobile-label">実物検証</span><span class="signal" aria-hidden="true"></span>NOT_RUN</span>
+      </summary>
+      <div class="detail">
+        <div class="scope text-small text-muted">L4-02 · A→B・B→A、全データ種別の一致</div>
+        <div class="detail-grid">
+          <section><h3><span class="signal done" aria-hidden="true"></span>確認済み</h3><ul><li>送信・受信待ち保存・対象を固定した適用を分離。</li><li>一時SQLiteとloopbackで、本文・添付などの同期部品を試験。</li><li>手動の送受信をmainサービス・typed IPCへ接続。</li></ul></section>
+          <section><h3><span class="signal" aria-hidden="true"></span>実装側の残り</h3><ul><li>全データ種別を製品導線で往復した証拠は揃っていない。</li><li>不足が実装か検証かを、全種別の棚卸しで確定する。</li></ul></section>
+          <section><h3><span class="signal" aria-hidden="true"></span>未確認</h3><ul><li>階層・順序・DB定義・record・値・添付・削除／復元・履歴の実機往復。</li><li>ID・内容・revision・添付hashの一致。</li></ul></section>
+        </div>
+        <dl class="finish"><dt>この条件の終点</dt><dd>必要なデータ種別が実機2台の両方向で一致する。</dd></dl>
+      </div>
+    </details>
+    <details data-gate="03" name="folio-lv4-gate">
+      <summary class="cursor-interaction" aria-label="L4-03 再送と中断。故障試験PASS、製品全経路は要確認、実物未実施">
+        <span class="gate-name"><span class="chevron"><i data-lucide="chevron-right" aria-hidden="true"></i></span><span class="gate-id text-small">03</span><strong>再送・通信断で二重適用しない</strong></span>
+        <span class="status text-small"><span class="mobile-label">非GUI</span><span class="signal done" aria-hidden="true"></span>故障PASS</span>
+        <span class="status text-small"><span class="mobile-label">追加実装</span><span class="signal" aria-hidden="true"></span>要確認</span>
+        <span class="status text-small"><span class="mobile-label">実物検証</span><span class="signal" aria-hidden="true"></span>NOT_RUN</span>
+      </summary>
+      <div class="detail">
+        <div class="scope text-small text-muted">L4-03 · 重複・古い受信・ACK喪失・中断後の回収</div>
+        <div class="detail-grid">
+          <section><h3><span class="signal done" aria-hidden="true"></span>確認済み</h3><ul><li>送信待ち・受信位置・同じ操作IDでの再照合。</li><li>ACK喪失後の自端末echoと、新しい未送信編集の保護。</li><li>決定のCOMMIT前失敗・後の応答喪失・再openでの再適用防止。</li></ul></section>
+          <section><h3><span class="signal" aria-hidden="true"></span>実装側の残り</h3><ul><li>新しい製品導線の全中断地点を網羅した故障注入は未完。</li><li>未確認経路で必要になる修正量は未確定。</li></ul></section>
+          <section><h3><span class="signal" aria-hidden="true"></span>未確認</h3><ul><li>実アプリ終了・再起動と実回線の中断。</li><li>実IPCの応答喪失を含む操作全体の回収。</li></ul></section>
+        </div>
+        <dl class="finish"><dt>この条件の終点</dt><dd>固定した中断・再送条件で、変更の欠落と二重適用がない。</dd></dl>
+      </div>
+    </details>
+    <details data-gate="04" name="folio-lv4-gate">
+      <summary class="cursor-interaction" aria-label="L4-04 入力保護。Node PASS、全入力経路は要確認、IME実物未実施">
+        <span class="gate-name"><span class="chevron"><i data-lucide="chevron-right" aria-hidden="true"></i></span><span class="gate-id text-small">04</span><strong>未保存入力・IMEを消さない</strong></span>
+        <span class="status text-small"><span class="mobile-label">非GUI</span><span class="signal done" aria-hidden="true"></span>Node PASS</span>
+        <span class="status text-small"><span class="mobile-label">追加実装</span><span class="signal" aria-hidden="true"></span>要確認</span>
+        <span class="status text-small"><span class="mobile-label">実物検証</span><span class="signal" aria-hidden="true"></span>NOT_RUN</span>
+      </summary>
+      <div class="detail">
+        <div class="scope text-small text-muted">L4-04 · 未保存本文・数値・作成中・復旧入力・Undo</div>
+        <div class="detail-grid">
+          <section><h3><span class="signal done" aria-hidden="true"></span>確認済み</h3><ul><li>復旧入力があれば適用や終了時予約を保留。</li><li>確認・終了の入力保護を共通化し、IME変換中も拒否条件へ追加。</li><li>予約後の保存で対象が変われば停止するNode試験。</li></ul></section>
+          <section><h3><span class="signal" aria-hidden="true"></span>実装側の残り</h3><ul><li>現時点で記録された保護コードは接続済み。</li><li>全入力経路・Undoの製品受入が未完で、追加修正の要否は未確定。</li></ul></section>
+          <section><h3><span class="signal" aria-hidden="true"></span>未確認</h3><ul><li>実IME変換、入力途中の数値、未確定保存・作成・構造変更。</li><li>Cmd+Qとwindow閉鎖での入力・Undoの保持。</li></ul></section>
+        </div>
+        <dl class="finish"><dt>この条件の終点</dt><dd>固定した入力中の条件では適用せず、実操作でも入力を保全する。</dd></dl>
+      </div>
+    </details>
+    <details data-gate="05" name="folio-lv4-gate">
+      <summary class="cursor-interaction" aria-label="L4-05 保存と同期の排他。Node PASS、待機上限は要確認、実物未実施">
+        <span class="gate-name"><span class="chevron"><i data-lucide="chevron-right" aria-hidden="true"></i></span><span class="gate-id text-small">05</span><strong>同期と保存・保守を衝突させない</strong></span>
+        <span class="status text-small"><span class="mobile-label">非GUI</span><span class="signal done" aria-hidden="true"></span>Node PASS</span>
+        <span class="status text-small"><span class="mobile-label">追加実装</span><span class="signal" aria-hidden="true"></span>要確認</span>
+        <span class="status text-small"><span class="mobile-label">実物検証</span><span class="signal" aria-hidden="true"></span>NOT_RUN</span>
+      </summary>
+      <div class="detail">
+        <div class="scope text-small text-muted">L4-05 · 初期方式R1：編集中は本文を置き換えない</div>
+        <div class="detail-grid">
+          <section><h3><span class="signal done" aria-hidden="true"></span>確認済み</h3><ul><li>画面稼働中は送信・受信待ち保存だけ。適用は画面生成前。</li><li>保存・保守・修復と同期をmainのゲートで排他。</li><li>復旧入力の保存は別経路で継続する。</li></ul></section>
+          <section><h3><span class="signal" aria-hidden="true"></span>実装側の残り</h3><ul><li>全ての変更入口の製品経路確認が未完。</li><li>長時間転送中の書込み待ち行列の上限・操作感は未確認。</li></ul></section>
+          <section><h3><span class="signal" aria-hidden="true"></span>未確認</h3><ul><li>実IPCでの保存・添付・修復・バックアップの交差。</li><li>待機・取消し・エラー後の画面復帰。</li></ul></section>
+        </div>
+        <dl class="finish"><dt>この条件の終点</dt><dd>稼働中の本文置換がなく、全変更入口の排他と入力保持を確認する。</dd></dl>
+      </div>
+    </details>
+    <details data-gate="06" name="folio-lv4-gate" open>
+      <summary class="cursor-interaction" aria-label="L4-06 競合の比較・選択・回収。選択導線のNode試験PASS、保全データの回収は未実装、GUI未実施">
+        <span class="gate-name"><span class="chevron"><i data-lucide="chevron-right" aria-hidden="true"></i></span><span class="gate-id text-small">06</span><strong>競合を選び、残したデータを回収する</strong></span>
+        <span class="status text-small"><span class="mobile-label">非GUI</span><span class="signal done" aria-hidden="true"></span>Node PASS</span>
+        <span class="status text-small"><span class="mobile-label">追加実装</span><span class="signal todo" aria-hidden="true"></span>あり</span>
+        <span class="status text-small"><span class="mobile-label">実物検証</span><span class="signal" aria-hidden="true"></span>NOT_RUN</span>
+      </summary>
+      <div class="detail">
+        <div class="scope text-small text-muted">L4-06 · 直近で一区切りにしたのは「確認→予約→終了後の起動時適用」</div>
+        <div class="detail-grid">
+          <section><h3><span class="signal done" aria-hidden="true"></span>確認済み</h3><ul><li>両候補・最新保存内容を固定し、古い選択を拒否。</li><li>本文・移行済みDBレコードの抜粋比較、現在の候補のJSON書出し。</li><li>勝者確認UI・予約・取消し・終了後の適用をコード接続し、Nodeで状態遷移を確認。</li><li>両候補と異なる最新保存内容を、一括で保全して選択する。</li></ul></section>
+          <section><h3><span class="signal todo" aria-hidden="true"></span>実装側の残り</h3><ul><li><strong>選択後の保全archiveを取り出す・復元する画面は未実装。</strong></li><li>JSONは添付本体を含まず、完全バックアップではない。</li><li>旧形式DB行などの比較は未実装。完全diffを必須に広げず、必要な比較範囲を固定する。</li></ul></section>
+          <section><h3><span class="signal" aria-hidden="true"></span>未確認</h3><ul><li>実画面の比較・確認・予約・取消し。</li><li>実終了時の保留・再表示、設定なし起動時の取消しへの到達。</li><li>実機での選択中の相手更新・中断と候補保全。</li></ul></section>
+        </div>
+        <dl class="finish"><dt>この条件の終点</dt><dd>両版を再起動後も保持し、必要な比較・選択・取り出しが実操作でできる。</dd></dl>
+      </div>
+    </details>
+    <details data-gate="07" name="folio-lv4-gate">
+      <summary class="cursor-interaction" aria-label="L4-07 添付の転送。部品PASS、再起動をまたぐ再開と保持上限は未実装、実物未実施">
+        <span class="gate-name"><span class="chevron"><i data-lucide="chevron-right" aria-hidden="true"></i></span><span class="gate-id text-small">07</span><strong>添付を欠損させず、中断から再開する</strong></span>
+        <span class="status text-small"><span class="mobile-label">非GUI</span><span class="signal done" aria-hidden="true"></span>部品PASS</span>
+        <span class="status text-small"><span class="mobile-label">追加実装</span><span class="signal todo" aria-hidden="true"></span>あり</span>
+        <span class="status text-small"><span class="mobile-label">実物検証</span><span class="signal" aria-hidden="true"></span>NOT_RUN</span>
+      </summary>
+      <div class="detail">
+        <div class="scope text-small text-muted">L4-07 · 途中データの再開・hash検査・容量不足時の保全</div>
+        <div class="detail-grid">
+          <section><h3><span class="signal done" aria-hidden="true"></span>確認済み</h3><ul><li>添付を本体とは別のstagingへ取得。</li><li>サイズ・hashを検証し、既存ファイルを上書きせず公開。</li><li>本体とstagingを合算して容量を確認。不明・上限時は保全停止。</li></ul></section>
+          <section><h3><span class="signal todo" aria-hidden="true"></span>実装側の残り</h3><ul><li><strong>プロセス再起動をまたぐ未完転送の再開。</strong></li><li>途中ファイル・公開後の未参照ファイルの安全な整理。</li><li>保持量の上限と回収方式。別コピーの再開案は製品未統合。</li></ul></section>
+          <section><h3><span class="signal" aria-hidden="true"></span>未確認</h3><ul><li>実転送の切断・強制終了・再起動・再開。</li><li>実機の容量不足でも本文が欠けた添付を参照しないこと。</li></ul></section>
+        </div>
+        <dl class="finish"><dt>この条件の終点</dt><dd>中断から再開でき、検証前の添付を公開せず、未完データの保持も有界になる。</dd></dl>
+      </div>
+    </details>
+    <details data-gate="08" name="folio-lv4-gate">
+      <summary class="cursor-interaction" aria-label="L4-08 復元後の同期。部品PASS、実サーバーの復元・排他に残りあり、実物未実施">
+        <span class="gate-name"><span class="chevron"><i data-lucide="chevron-right" aria-hidden="true"></i></span><span class="gate-id text-small">08</span><strong>復元後に古い変更を再送しない</strong></span>
+        <span class="status text-small"><span class="mobile-label">非GUI</span><span class="signal done" aria-hidden="true"></span>部品PASS</span>
+        <span class="status text-small"><span class="mobile-label">追加実装</span><span class="signal todo" aria-hidden="true"></span>あり</span>
+        <span class="status text-small"><span class="mobile-label">実物検証</span><span class="signal" aria-hidden="true"></span>NOT_RUN</span>
+      </summary>
+      <div class="detail">
+        <div class="scope text-small text-muted">L4-08 · 新しい端末識別で再登録、履歴の巻戻りを検知</div>
+        <div class="detail-grid">
+          <section><h3><span class="signal done" aria-hidden="true"></span>確認済み</h3><ul><li>端末・binding・epoch・head・対象hashの不一致を検査。</li><li>復元後の再登録境界、通常の適用予約の取消し・offline適用部品。</li><li>添付を含まないserver catalog snapshotの作成・読取り検査。</li></ul></section>
+          <section><h3><span class="signal todo" aria-hidden="true"></span>実装側の残り</h3><ul><li>実サーバーの完全backup・restore・epoch更新と運用排他。</li><li>通常の適用予約ファイルには、別プロセスの差替え競合が残る。競合選択のSQLite予約とは別経路。</li><li>catalog概要検査は全履歴・復元可能性の証明ではない。</li></ul></section>
+          <section><h3><span class="signal" aria-hidden="true"></span>未確認</h3><ul><li>実バックアップからの復元・再登録。</li><li>旧送信キューを再生せず、実serverの復元・分岐で停止すること。</li></ul></section>
+        </div>
+        <dl class="finish"><dt>この条件の終点</dt><dd>復元先を新しい識別で登録し、古い送信や変わったserver履歴を誤適用しない。</dd></dl>
+      </div>
+    </details>
+    <details data-gate="09" name="folio-lv4-gate">
+      <summary class="cursor-interaction" aria-label="L4-09 端末識別と秘密情報。部品PASS、資格情報の製品接続に残りあり、OS未実施">
+        <span class="gate-name"><span class="chevron"><i data-lucide="chevron-right" aria-hidden="true"></i></span><span class="gate-id text-small">09</span><strong>別端末・旧版・秘密情報を安全に扱う</strong></span>
+        <span class="status text-small"><span class="mobile-label">非GUI</span><span class="signal done" aria-hidden="true"></span>部品PASS</span>
+        <span class="status text-small"><span class="mobile-label">追加実装</span><span class="signal todo" aria-hidden="true"></span>あり</span>
+        <span class="status text-small"><span class="mobile-label">実物検証</span><span class="signal" aria-hidden="true"></span>NOT_RUN</span>
+      </summary>
+      <div class="detail">
+        <div class="scope text-small text-muted">L4-09 · workspace・端末・旧schema/protocol・資格情報</div>
+        <div class="detail-grid">
+          <section><h3><span class="signal done" aria-hidden="true"></span>確認済み</h3><ul><li>端末/binding/schema検査と、fixtureの端末失効。</li><li>暗号化処理を注入するSecretStore境界。</li><li>暗号文の新規作成専用ファイル部品と、権限・symlink等の拒否試験。</li></ul></section>
+          <section><h3><span class="signal todo" aria-hidden="true"></span>実装側の残り</h3><ul><li><strong>資格情報の保存を起動設定・製品サービスへ接続。</strong></li><li>更新・失効・削除の運用導線と保存先の確定。</li><li>Keychain/safeStorageは候補。方式の選択は未確定。</li></ul></section>
+          <section><h3><span class="signal" aria-hidden="true"></span>未確認</h3><ul><li>実OSの秘密情報保存・読出し。</li><li>実端末失効・別workspace・旧版の拒否と、未送信内容の保持。</li></ul></section>
+        </div>
+        <dl class="finish"><dt>この条件の終点</dt><dd>不正・失効・非対応の接続を拒否し、秘密とローカルの未送信内容を守る。</dd></dl>
+      </div>
+    </details>
+    <details data-gate="10" name="folio-lv4-gate">
+      <summary class="cursor-interaction" aria-label="L4-10 容量と性能。一部計測済み、利用規模・予算・保持方式は未確定、実通信計測は未実施">
+        <span class="gate-name"><span class="chevron"><i data-lucide="chevron-right" aria-hidden="true"></i></span><span class="gate-id text-small">10</span><strong>容量・履歴・処理時間を収める</strong></span>
+        <span class="status text-small"><span class="mobile-label">非GUI</span><span class="signal done" aria-hidden="true"></span>一部計測</span>
+        <span class="status text-small"><span class="mobile-label">追加実装</span><span class="signal todo" aria-hidden="true"></span>未確定あり</span>
+        <span class="status text-small"><span class="mobile-label">実物検証</span><span class="signal" aria-hidden="true"></span>NOT_RUN</span>
+      </summary>
+      <div class="detail">
+        <div class="scope text-small text-muted">L4-10 · 対応規模・容量・転送量・起動時間の予算</div>
+        <div class="detail-grid">
+          <section><h3><span class="signal done" aria-hidden="true"></span>確認済み</h3><ul><li>合成ページ・record・添付・revisionのbytesや一部時間を計測。</li><li>容量不明・上限到達で保全停止。</li><li>合成例で既存の1MiB checkpoint上限への到達も確認。</li></ul></section>
+          <section><h3><span class="signal todo" aria-hidden="true"></span>実装側の残り</h3><ul><li><strong>対応するページ・履歴・添付・revision数と時間予算を固定。</strong></li><li>inbox・server履歴・backup・未完添付の保持を有界化。</li><li>bootstrap・差分転送は必要性と方式が未確定。全部を必須追加とはしない。</li></ul></section>
+          <section><h3><span class="signal" aria-hidden="true"></span>未確認</h3><ul><li>定めた利用規模での実HTTP転送量と実端末の所要時間。</li><li>長期利用時のDB・履歴・backupの増加。</li></ul></section>
+        </div>
+        <dl class="finish"><dt>この条件の終点</dt><dd>合意した利用規模で容量と時間の予算を満たす。ページ数の保証はまだ未確定。</dd></dl>
+      </div>
+    </details>
+    <details data-gate="11" name="folio-lv4-gate">
+      <summary class="cursor-interaction" aria-label="L4-11 操作と運用。手動操作のNode試験PASS、接続設定や自動化に残りあり、実物未実施">
+        <span class="gate-name"><span class="chevron"><i data-lucide="chevron-right" aria-hidden="true"></i></span><span class="gate-id text-small">11</span><strong>接続・状態表示・運用を使える形にする</strong></span>
+        <span class="status text-small"><span class="mobile-label">非GUI</span><span class="signal done" aria-hidden="true"></span>Node PASS</span>
+        <span class="status text-small"><span class="mobile-label">追加実装</span><span class="signal todo" aria-hidden="true"></span>あり</span>
+        <span class="status text-small"><span class="mobile-label">実物検証</span><span class="signal" aria-hidden="true"></span>NOT_RUN</span>
+      </summary>
+      <div class="detail">
+        <div class="scope text-small text-muted">L4-11 · 状態を誤解せず、接続・登録・失効・復旧を再現できる</div>
+        <div class="detail-grid">
+          <section><h3><span class="signal done" aria-hidden="true"></span>確認済み</h3><ul><li>手動同期・登録済み端末の手動再接続・状態表示を接続。</li><li>送信待ち・受信済み・適用済み・競合・保留を区別。</li><li>記録された成功時刻を保存。勝者確認・予約・取消しもコード接続済み。</li></ul></section>
+          <section><h3><span class="signal todo" aria-hidden="true"></span>実装側の残り</h3><ul><li>初回接続設定・登録・復元後の再登録の製品導線。</li><li>保存後送信・定期同期は未完成。必須範囲は計画の確定が必要。</li><li>実serverの運用CLI・起動/登録/失効/復旧の手順。</li></ul></section>
+          <section><h3><span class="signal" aria-hidden="true"></span>未確認</h3><ul><li>成功時刻を「全端末の内容一致」と誤解しない表示。</li><li>実画面での設定・再接続・保留・取消し・復旧と運用手順。</li></ul></section>
+        </div>
+        <dl class="finish"><dt>この条件の終点</dt><dd>状態を正しく読めて、接続から失効・復旧まで再現できる。</dd></dl>
+      </div>
+    </details>
+    <details data-gate="12" name="folio-lv4-gate">
+      <summary class="cursor-interaction" aria-label="L4-12 実機2台の受入。代替のNode試験のみ、運用準備待ち、実機未実施">
+        <span class="gate-name"><span class="chevron"><i data-lucide="chevron-right" aria-hidden="true"></i></span><span class="gate-id text-small">12</span><strong>実機2台で最後の受入をする</strong></span>
+        <span class="status text-small"><span class="mobile-label">非GUI</span><span class="signal" aria-hidden="true"></span>代替試験</span>
+        <span class="status text-small"><span class="mobile-label">追加実装</span><span class="signal" aria-hidden="true"></span>準備待ち</span>
+        <span class="status text-small"><span class="mobile-label">実物検証</span><span class="signal" aria-hidden="true"></span>NOT_RUN</span>
+      </summary>
+      <div class="detail">
+        <div class="scope text-small text-muted">L4-12 · 物理Mac 2台・同じ候補版・実トンネル</div>
+        <div class="detail-grid">
+          <section><h3><span class="signal done" aria-hidden="true"></span>用意済み</h3><ul><li>Nodeの2クライアント・一時server・loopbackによる試験。</li><li>GUI・実機の受入待ち項目を文書化。</li><li>これらは実機2台の合格の代替にはしない。</li></ul></section>
+          <section><h3><span class="signal" aria-hidden="true"></span>準備側の残り</h3><ul><li>対応規模・接続/運用手順と候補版の固定。</li><li>先行する残実装とGUI受入の整理。</li><li>Windowsは初期Mac範囲とは別の追加受入。</li></ul></section>
+          <section><h3><span class="signal" aria-hidden="true"></span>未確認</h3><ul><li>物理2台と実トンネルの同期。</li><li>スリープ・回線切替・オフライン分岐・添付・削除／復元・復元先再登録。</li></ul></section>
+        </div>
+        <dl class="finish"><dt>この条件の終点</dt><dd>同じ候補版でL4-01〜12の証拠を揃え、初期の対応範囲についてLv4を判定する。</dd></dl>
+      </div>
+    </details>
+  </div>
+  <div class="legend text-small" aria-label="凡例">
+    <span class="fact"><span class="signal done" aria-hidden="true"></span>確認済みの部分あり</span>
+    <span class="fact"><span class="signal todo" aria-hidden="true"></span>既知の実装残・未確定事項</span>
+    <span class="fact"><span class="signal" aria-hidden="true"></span>要確認・未実施</span>
+  </div>
+  <div class="footer text-small text-muted"><span>根拠：固定L4-01〜12＋最新実装記録</span><span>·</span><span>部品PASS ≠ 条件全体の合格</span><span>·</span><span>全12条件の重みは同じではないため達成率は算出しない</span></div>
+  <script>
+    (function () {
+      const root = document.getElementById('folio-lv4-status-1107');
+      const gates = Array.from(root.querySelectorAll('details[data-gate]'));
+      let userGate = null;
+      function restore(state) {
+        const id = state && state.modelContent && state.modelContent.selectedGate;
+        if (id !== null && !gates.some(function (gate) {return gate.dataset.gate === id;})) return;
+        if (id === undefined) return;
+        userGate = null;
+        gates.forEach(function (gate) {gate.open = gate.dataset.gate === id;});
+      }
+      restore(window.openai && window.openai.widgetState);
+      gates.forEach(function (gate) {
+        const summary = gate.querySelector('summary');
+        summary.addEventListener('pointerdown', function () {userGate = gate.dataset.gate;});
+        summary.addEventListener('keydown', function (event) {
+          if (event.key === 'Enter' || event.key === ' ') userGate = gate.dataset.gate;
+        });
+        gate.addEventListener('toggle', function () {
+          if (gate.open) gates.forEach(function (other) {if (other !== gate) other.open = false;});
+          if (userGate !== gate.dataset.gate) return;
+          userGate = null;
+          const id = gate.open ? gate.dataset.gate : null;
+          if (window.openai && window.openai.setWidgetState) {
+            window.openai.setWidgetState({modelContent: {selectedGate: id}, privateContent: null}).catch(function () {});
+          }
+        });
+      });
+      window.addEventListener('openai:set_globals', function (event) {
+        const globals = event.detail && event.detail.globals;
+        if (globals && Object.prototype.hasOwnProperty.call(globals, 'widgetState')) restore(globals.widgetState);
+      });
+    })();
+  </script>
+</div>

@@ -1,0 +1,100 @@
+{
+  "candidateSourceSha256": "d62db81b1e58c1027484c0820685d54a1b6f769eb3f434cf174ee9fdd5817415",
+  "environment": {
+    "node": "v24.20.0",
+    "platform": "darwin",
+    "arch": "arm64"
+  },
+  "classification": "LOCAL_IMPLEMENTATION_CANDIDATE; NOT_LEVEL6_CERTIFICATION",
+  "typecheck": {
+    "state": "PASS",
+    "command": "npm run check",
+    "log": "logs/final-check.log"
+  },
+  "nonGuiSuite": {
+    "state": "PASS",
+    "command": "npm test -- --maxWorkers=2",
+    "files": 306,
+    "passed": 3214,
+    "failed": 0,
+    "log": "logs/final-tests.log"
+  },
+  "build": {
+    "state": "PASS",
+    "command": "npm run build",
+    "log": "logs/final-build.log",
+    "warnings": [
+      "Vite large chunk warning and static/dynamic import overlap. GUI startup/performance is NOT_RUN."
+    ]
+  },
+  "baselineExperiment": {
+    "state": "PASS",
+    "passed": 48,
+    "warning": "Includes reproducing historical counterexamples, not feature acceptance.",
+    "log": "logs/baseline-final.log"
+  },
+  "nextBindingExperiment": {
+    "state": "FAIL",
+    "passed": 35,
+    "failed": 1,
+    "gate": "R04 C mixed text/structure own Undo leaves Aabc instead of abc",
+    "fullEditorAdoption": "NO_GO",
+    "log": "logs/binding-final.log"
+  },
+  "sharedImageNodeView": {
+    "state": "PASS_NODE_JSDOM_ONLY",
+    "passed": 4,
+    "log": "logs/shared-image-final.log"
+  },
+  "ownedNodeCommitCrash": {
+    "state": "PASS",
+    "cases": [
+      "SIGKILL before commit: rollback, durable UNKNOWN, explicit invalidation",
+      "SIGKILL after commit: durable receipt, exact dedup, no resend"
+    ],
+    "includedIn3214": true
+  },
+  "compiledCliSmoke": {
+    "state": "PASS",
+    "kind": "OWNED_NODE_LOOPBACK_ONLY",
+    "compiledCli": true,
+    "bootstrap": true,
+    "serve": true,
+    "backup": true,
+    "restore": true,
+    "reopen": true,
+    "freshTokenAccepted": true,
+    "oldTokenRejected": true,
+    "gui": "NOT_RUN"
+  },
+  "nativeManagedCompilation": {
+    "state": "PASS",
+    "components": 3,
+    "evidence": "native.json",
+    "windowsExecution": "NOT_RUN"
+  },
+  "ownershipAudit": {
+    "unexplainedForeignCopies": 0,
+    "evidence": "ownership-audit.json"
+  },
+  "levelCertification": "Lv3_UNCHANGED",
+  "gui": "NOT_RUN",
+  "nativeIME": "NOT_RUN",
+  "realKeychainDpapi": "NOT_RUN",
+  "physicalMacWindowsMultipleMachines": "NOT_RUN",
+  "packageExecute": "NOT_RUN",
+  "workflowCreateModifyRun": "NOT_DONE_FORBIDDEN",
+  "push": "NOT_DONE_FORBIDDEN",
+  "masterMerge": "NOT_DONE_FORBIDDEN",
+  "realDataOperation": "NOT_DONE_FORBIDDEN",
+  "billingChange": "NOT_DONE_FORBIDDEN",
+  "workingTree": "UNCOMMITTED_ON_AUTHORIZED_INTEGRATION_BRANCH",
+  "knownCodeHolds": [
+    "Full B/C Editor/history/durable binding adoption",
+    "Record/DB copy and copies beyond initial bounded payload",
+    "Cross-auth-generation recovery of every prior writer via UI",
+    "Operational upgrade needs real migration runner",
+    "Production-facing asset GC/retention control entry",
+    "Full Windows private desktop migration and OS validation"
+  ]
+}

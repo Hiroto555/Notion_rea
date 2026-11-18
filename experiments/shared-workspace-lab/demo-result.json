@@ -1,0 +1,43 @@
+{
+  "result": "PASS_IN_LAB_SCOPE",
+  "actual": [
+    "loopback HTTP",
+    "SQLite server journal and client outbox reopen",
+    "role revocation",
+    "CAS delete/restore",
+    "audit chain consistency"
+  ],
+  "simulations": [
+    "received ACK deliberately discarded on client"
+  ],
+  "memoryOnly": [],
+  "persistedResources": [
+    "typed DB record mutation",
+    "hashed asset bytes"
+  ],
+  "metadataOnly": [
+    "shared copy preview",
+    "backup restore plan"
+  ],
+  "server": {
+    "ok": true,
+    "scope": {
+      "orgId": "org1",
+      "spaceId": "space1",
+      "epoch": "epoch1"
+    },
+    "memberCount": 2,
+    "eventCount": 7,
+    "storedPayloadBytes": 2403,
+    "audit": {
+      "ok": true
+    },
+    "writeBlockedReason": null,
+    "authentication": "TRUSTED_HARNESS_ONLY"
+  },
+  "clientStage": "server",
+  "engineAdoption": "UNDECIDED",
+  "productAcceptance": "NOT_RUN",
+  "gui": "NOT_RUN",
+  "physicalDevices": "NOT_RUN"
+}

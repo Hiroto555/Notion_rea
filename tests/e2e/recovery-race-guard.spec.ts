@@ -1,6 +1,8 @@
-import { test, expect, _electron as electron, type ElectronApplication, type Page, type TestInfo } from "@playwright/test";
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
-import { join, resolve } from "node:path";
+import { fixtureRoot } from "./fixture-isolation";
+import { launchFixture, killFixture } from "./recovery-ci-runtime";
+import { test, expect, type ElectronApplication, type Page, type TestInfo } from "@playwright/test";
+import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { join } from "node:path";
 import { Store } from "../../src/persistence/store";
 
 /** Only isolated synthetic workspaces and dialogs stubbed in the test process.
@@ -15,7 +17,7 @@ type Fixture = {
 };
 
 async function fixture(): Promise<Fixture> {
-  const root = mkdtempSync(resolve("output/recovery-race-guard-"));
+  const root = fixtureRoot("recovery-race-guard-");
   const workspace = join(root, "workspace"), exports = join(root, "exports");
   mkdirSync(workspace); mkdirSync(exports);
   const store = new Store(join(workspace, "workspace.sqlite"));
@@ -27,7 +29,7 @@ async function fixture(): Promise<Fixture> {
   store.close();
   let app: ElectronApplication | undefined;
   try {
-    app = await electron.launch({ args: [resolve("dist/main.cjs")], env: { ...process.env, FOLIO_DATA_DIR: workspace } });
+    app = await launchFixture(workspace);
     const window = await app.firstWindow();
     const title = window.getByLabel("ページタイトル", { exact: true });
     await expect(title).toHaveValue("Synthetic race source");
@@ -55,12 +57,7 @@ async function fixture(): Promise<Fixture> {
     await expect(window.getByRole("alert")).toContainText("安全に再試行できません");
     return { app, window, root, exports, source, stored };
   } catch (error) {
-    if (app) {
-      const child = app.process();
-      if (child && child.exitCode === null && child.signalCode === null) {
-        await new Promise<void>((done) => { child.once("exit", () => done()); child.kill("SIGKILL"); });
-      }
-    }
+    await killFixture(app);
     rmSync(root, { recursive: true, force: true });
     throw error;
   }
@@ -70,9 +67,7 @@ async function closeFixture(f: Fixture) {
   // This child and its disposable workspace are test-owned. Pending input is
   // deliberately retained until journal evidence is read; do not close or kill
   // any other Electron process or use a real user workspace.
-  const child = f.app.process();
-  if (child && child.exitCode === null && child.signalCode === null)
-    await new Promise<void>((done) => { child.once("exit", () => done()); child.kill("SIGKILL"); });
+  await killFixture(f.app);
   rmSync(f.root, { recursive: true, force: true });
 }
 

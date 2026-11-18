@@ -28,6 +28,17 @@ import { isLosslessDatabaseData } from "../database/strict-database";
 import { Store } from "./store";
 import { RecordRepository } from "./record-repository";
 import { markRecordStoreVersion } from "./record-version";
+import { privatePersistencePort, type NativePrivateSqliteLease, type NativePrivateFile,
+  type NativePrivateIdentity } from "../platform/private-persistence";
+
+// Deliberately retained cleanup owners on UNKNOWN, with no retry API. These
+// references do not replace the durable incomplete marker/original evidence.
+const retainedPortableOwners: { store?: Store; lease: NativePrivateSqliteLease; failure?: unknown }[] = [];
+function assertPortableIdentity(expected: NativePrivateIdentity, actual: NativePrivateIdentity): void {
+  if (expected.path !== actual.path || expected.fileId.toLowerCase() !== actual.fileId.toLowerCase() ||
+    expected.volumeId.toLowerCase() !== actual.volumeId.toLowerCase())
+    throw new Error("native portable identity changed");
+}
 
 const idSchema = z.string().min(1).max(500);
 const valuesSchema = z.custom<Record<string, FilterValue>>((value) => {
@@ -967,37 +978,70 @@ export function restorePortableRecordRecoveryToNewWorkspace(
   pageIds: Record<string, string>;
   assetIds: Record<string, string>;
 } {
+  const native = privatePersistencePort();
+  if (native && !native.acquireSqliteLease) throw new Error("native-sqlite-lease-required");
   const bundle = parsePortableRecordRecovery(content);
+  const wireCap = 32 * 1024 * 1024 + 4096;
+  if (native && Buffer.byteLength(content, "utf8") > wireCap)
+    throw new Error("native-portable-evidence-too-large");
   if (!isAbsolute(destination) || existsSync(destination))
     throw new Error("復旧先には存在しない絶対パスを指定してください。");
-  mkdirSync(destination, { mode: 0o700 });
+  if (native) native.createDirectory(destination);
+  else mkdirSync(destination, { mode: 0o700 });
   const incomplete = join(destination, "FOLIO-RECOVERY-INCOMPLETE");
-  writeFileSync(
+  const markerText = "Recovery incomplete; do not open this workspace.\n";
+  const marker = native?.writeNew(incomplete, Buffer.from(markerText), wireCap).identity;
+  if (!native) {
+    writeFileSync(
     incomplete,
-    "Recovery incomplete; do not open this workspace.\n",
+    markerText,
     { flag: "wx", mode: 0o600 },
   );
   syncPath(incomplete);
   syncPath(destination);
+  } else {
+    native.writeNew(join(destination, "FOLIO-RECOVERY-ORIGINAL.json"), Buffer.from(content, "utf8"), wireCap);
+  }
   const assetsDir = join(destination, "assets");
-  mkdirSync(assetsDir, { mode: 0o700 });
+  if (native) native.createDirectory(assetsDir);
+  else mkdirSync(assetsDir, { mode: 0o700 });
   const assetIds = new Map<string, string>(),
     pageIds = new Map<string, string>();
   let store: Store | undefined;
+  let lease: NativePrivateSqliteLease | undefined;
+  let originalDatabase: NativePrivateFile | undefined;
+  const writtenAssets: NativePrivateFile[] = [];
+  let constructorAttempted = false, closeAttempted = false;
+  let primary: unknown;
+  const phase = (name: "assets" | "database" | "before-complete"): void => {
+    lease?.assertHeld(); onPhase?.(name); lease?.assertHeld();
+  };
   try {
+    if (native) {
+      const path = join(destination, "workspace.sqlite");
+      originalDatabase = native.writeNew(path, new Uint8Array(), 0).identity;
+      lease = native.acquireSqliteLease!(path, originalDatabase);
+      lease.assertHeld();
+    }
     for (const asset of bundle.assets) {
       const bytes = Buffer.from(asset.base64, "base64"),
         id = randomUUID();
       const path = join(assetsDir, id);
-      writeFileSync(path, bytes, { flag: "wx", mode: 0o600 });
-      syncPath(path);
+      if (native) writtenAssets.push(native.writeNew(path, bytes, 20_000_000).identity);
+      else {
+        writeFileSync(path, bytes, { flag: "wx", mode: 0o600 });
+        syncPath(path);
+      }
       assetIds.set(asset.id, id);
     }
-    syncPath(assetsDir);
-    onPhase?.("assets");
+    if (!native) syncPath(assetsDir);
+    phase("assets");
+    constructorAttempted = true;
     store = new Store(join(destination, "workspace.sqlite"), {
       allowIncompleteRecovery: true,
+      ...(native ? { nativePrivateFilesystem: native, nativeLease: lease } : {}),
     });
+    lease?.assertHeld();
     store.transaction(() => {
       const reserved = new Set<string>();
       for (const page of bundle.pages)
@@ -1052,38 +1096,69 @@ export function restorePortableRecordRecoveryToNewWorkspace(
           row.values,
         );
       markRecordStoreVersion(store!.db);
-      onPhase?.("database");
+      phase("database");
     });
+    lease?.assertHeld();
     const integrity = store.db.prepare("PRAGMA integrity_check").get();
     if (integrity?.integrity_check !== "ok")
       throw new Error("復旧先の整合性を検証できません。");
     store.db.exec("PRAGMA wal_checkpoint(TRUNCATE)");
-    store.close();
-    store = undefined;
-    syncPath(join(destination, "workspace.sqlite"));
-    syncPath(assetsDir);
-    syncPath(destination);
-    onPhase?.("before-complete");
-    writeFileSync(
-      join(destination, "FOLIO-RECOVERY-COMPLETE"),
-      JSON.stringify({
+    if (native) {
+      phase("before-complete");
+      if (store.db.prepare("PRAGMA integrity_check").get()?.integrity_check !== "ok")
+        throw new Error("復旧先の整合性を検証できません。");
+      for (const expected of writtenAssets) {
+        const actual = native.inspectFile(expected.path, 20_000_000);
+        assertPortableIdentity(expected, actual);
+        if (expected.bytes !== actual.bytes || expected.sha256 !== actual.sha256)
+          throw new Error("native portable asset changed");
+      }
+    }
+    lease?.assertHeld();
+    closeAttempted = true;
+    store.close(); // Store owns/releases the lease only after SQLite is closed.
+    store = undefined; lease = undefined;
+    if (native) {
+      const path = join(destination, "workspace.sqlite");
+      const file = native.inspectFile(path, 256 * 1024 * 1024);
+      assertPortableIdentity(originalDatabase!, file);
+      native.proveSync(path, file);
+    } else {
+      syncPath(join(destination, "workspace.sqlite"));
+      syncPath(assetsDir); syncPath(destination); onPhase?.("before-complete");
+    }
+    const complete = JSON.stringify({
         format: "folio-portable-recovery",
         schemaVersion: bundle.schemaVersion,
-      }),
-      { flag: "wx", mode: 0o600 },
-    );
-    syncPath(join(destination, "FOLIO-RECOVERY-COMPLETE"));
+      });
+    if (native) native.writeNew(join(destination, "FOLIO-RECOVERY-COMPLETE"), Buffer.from(complete), wireCap);
+    else {
+      writeFileSync(join(destination, "FOLIO-RECOVERY-COMPLETE"), complete, { flag: "wx", mode: 0o600 });
+      syncPath(join(destination, "FOLIO-RECOVERY-COMPLETE"));
+    }
     // Store checks the marker, but this is not a completed crash journal and
     // remains an isolated API rather than a production recovery path.
-    unlinkSync(incomplete);
-    syncPath(destination);
+    if (native) native.unlinkExact(incomplete, marker!, wireCap);
+    else { unlinkSync(incomplete); syncPath(destination); }
     return {
       path: destination,
       pageIds: Object.fromEntries(pageIds),
       assetIds: Object.fromEntries(assetIds),
     };
+  } catch (error) { primary = error; throw error;
   } finally {
-    store?.close();
+    const failures: unknown[] = [];
+    if (store && !closeAttempted) {
+      closeAttempted = true;
+      try { store.close(); store = undefined; lease = undefined; }
+      catch (error) { failures.push(error); }
+    }
+    if (lease && !constructorAttempted) {
+      try { lease.close(); lease = undefined; } catch (error) { failures.push(error); }
+    }
+    if (native && lease) retainedPortableOwners.push({ store, lease, failure: primary ?? failures[0] });
+    if (failures.length) throw new AggregateError(
+      primary === undefined ? failures : [primary, ...failures], "portable recovery SQLite lifetime UNKNOWN");
   }
 }
 

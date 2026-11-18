@@ -1,11 +1,8 @@
-import {
-  expect,
-  _electron as electron,
-  type ElectronApplication,
-  type Page,
-} from "@playwright/test";
-import { mkdirSync, mkdtempSync, rmSync } from "node:fs";
-import { join, resolve } from "node:path";
+import { fixtureRoot } from "./fixture-isolation";
+import { launchFixture, killFixture } from "./recovery-ci-runtime";
+import { expect, type ElectronApplication, type Page } from "@playwright/test";
+import { rmSync } from "node:fs";
+import { join } from "node:path";
 import { Store } from "../../src/persistence/store";
 import { RecordRepository } from "../../src/persistence/record-repository";
 import { markRecordStoreVersion } from "../../src/persistence/record-version";
@@ -23,8 +20,7 @@ export const r4Doc = (text: string): Doc => ({
   ],
 });
 export function r4Data() {
-  mkdirSync(resolve("output"), { recursive: true });
-  const root = mkdtempSync(resolve("output/r4-app-"));
+  const root = fixtureRoot("r4-app-");
   const store = new Store(join(root, "workspace.sqlite"));
   const home = store.create(null, "page", "R4 Home");
   const historic = store.update(home.id, home.revision, {
@@ -86,32 +82,34 @@ export function r4Data() {
 }
 export type R4Data = ReturnType<typeof r4Data>;
 export async function launchR4(data: R4Data) {
-  const app = await electron.launch({
-    args: [resolve("dist/main.cjs")],
-    env: { ...process.env, FOLIO_DATA_DIR: data.root },
-  });
-  const window = await app.firstWindow();
-  await expect(window.locator(".page-title")).toBeVisible();
-  // Let Editor setup/normalization transactions reach App before identifying
-  // the baseline used by fault injection; launch-time fixture revisions are
-  // not proof of the revision installed in the live Editor.
-  await window.evaluate(
-    () =>
-      new Promise<void>((done) =>
-        requestAnimationFrame(() => requestAnimationFrame(() => done())),
-      ),
-  );
-  await r4Saved(window);
-  await app.evaluate(({ BrowserWindow }) => {
-    (globalThis as any).r4PreventedUnload = 0;
-    BrowserWindow.getAllWindows()[0].webContents.on(
-      "will-prevent-unload",
-      () => {
-        (globalThis as any).r4PreventedUnload++;
-      },
+  const app = await launchFixture(data.root);
+  try {
+    const window = await app.firstWindow();
+    await expect(window.locator(".page-title")).toBeVisible();
+    // Let Editor setup/normalization transactions reach App before identifying
+    // the baseline used by fault injection; launch-time fixture revisions are
+    // not proof of the revision installed in the live Editor.
+    await window.evaluate(
+      () =>
+        new Promise<void>((done) =>
+          requestAnimationFrame(() => requestAnimationFrame(() => done())),
+        ),
     );
-  });
-  return { app, window };
+    await r4Saved(window);
+    await app.evaluate(({ BrowserWindow }) => {
+      (globalThis as any).r4PreventedUnload = 0;
+      BrowserWindow.getAllWindows()[0].webContents.on(
+        "will-prevent-unload",
+        () => {
+          (globalThis as any).r4PreventedUnload++;
+        },
+      );
+    });
+    return { app, window };
+  } catch (error) {
+    await killFixture(app);
+    throw error;
+  }
 }
 export async function openR4Database(window: Page) {
   await window.getByTitle("R4 Tasks", { exact: true }).click();
@@ -129,7 +127,9 @@ export async function openR4Record(window: Page, title = "R4 Alpha") {
   await expect(window.locator(".r3-record-page .folio-editor")).toBeVisible();
 }
 export async function r4Saved(window: Page) {
-  await expect(window.locator(".save-state")).toHaveText("保存済み");
+  await expect(window.locator(".save-state[data-state]")).toHaveText(
+    "保存済み",
+  );
 }
 export async function readR4Record(window: Page, pageId: string) {
   return window.evaluate(
@@ -141,11 +141,6 @@ export async function readR4Record(window: Page, pageId: string) {
 export async function disposeR4(data: R4Data, app?: ElectronApplication) {
   // Pending/unknown are intentionally retained by several cases. Terminate
   // only this test-owned Electron child, never any pre-existing user process.
-  const child = app?.process();
-  if (child && child.exitCode === null && child.signalCode === null)
-    await new Promise<void>((done) => {
-      child.once("exit", () => done());
-      child.kill("SIGKILL");
-    });
+  await killFixture(app);
   rmSync(data.root, { recursive: true, force: true });
 }

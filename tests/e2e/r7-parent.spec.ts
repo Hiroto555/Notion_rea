@@ -2,6 +2,9 @@ import { expect, test, type ElectronApplication } from '@playwright/test';
 import { r4Data, launchR4, disposeR4, openR4Database, openR4Record, r4Saved } from './r4-fixture';
 import { createR5Database, disposeR5, launchR5, openR7Settings, r5Data, r5Settings } from './r5-fixture';
 
+const isMac = process.platform === 'darwin';
+const modKey = isMac ? 'Meta' : 'Control';
+
 test('DB popovers stay visible outside the scroller at desktop and narrow widths', async () => {
   const data = r5Data(); let app: ElectronApplication | undefined;
   try {
@@ -33,15 +36,15 @@ test('immediate link shortcut captures the visible range before delayed selectio
     const body = w.locator('.folio-editor');
     await body.fill('リンク対象');
     await r4Saved(w);
-    await body.evaluate(el => {
+    await body.evaluate((el, mac) => {
       const editor = (el as any).editor;
       editor.commands.setTextSelection(1);
       const text = el.querySelector('p')!.firstChild!;
       // Same task: native range is current but ProseMirror has not received
       // the browser's asynchronous selectionchange notification yet.
       getSelection()!.setBaseAndExtent(text, 0, text, 5);
-      el.dispatchEvent(new KeyboardEvent('keydown',{key:'k',code:'KeyK',metaKey:true,bubbles:true,cancelable:true}));
-    });
+      el.dispatchEvent(new KeyboardEvent('keydown',{key:'k',code:'KeyK',metaKey:mac,ctrlKey:!mac,bubbles:true,cancelable:true}));
+    }, isMac);
     const link = w.getByRole('dialog',{name:'ページリンク',exact:true});
     await expect(link).toBeVisible();
     await w.keyboard.press('Escape');
@@ -64,7 +67,7 @@ test('DB menu Escape survives removing its focused control and yields to search 
     await expect(trigger).toHaveAttribute('aria-expanded','false');
     await expect(trigger).toBeFocused();
     await trigger.click();
-    await w.keyboard.press('Meta+p');
+    await w.keyboard.press(`${modKey}+p`);
     const search = w.getByRole('dialog',{name:'ワークスペース検索',exact:true});
     await expect(search).toBeVisible();
     await expect(trigger).toHaveAttribute('aria-expanded','false');
@@ -88,7 +91,7 @@ test('page menus close with Escape to their trigger and never follow search navi
     await expect(w.locator('.icon-picker')).toHaveCount(0);
     await icon.click(); await trigger.click(); await expect(w.locator('.icon-picker')).toHaveCount(0);
     await w.keyboard.press('Escape');
-    await w.keyboard.press('Meta+p'); await w.getByLabel('検索キーワード').fill('R4 Alpha');
+    await w.keyboard.press(`${modKey}+p`); await w.getByLabel('検索キーワード').fill('R4 Alpha');
     await w.locator('.search-results button').first().click();
     await expect(w.getByLabel('レコードのタイトル', {exact:true})).toBeFocused();
     await expect(w.locator('.dropdown,.icon-picker')).toHaveCount(0);

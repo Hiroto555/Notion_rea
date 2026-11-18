@@ -1,0 +1,209 @@
+{
+  "runs": 15,
+  "usageReported": {
+    "input": 1233763,
+    "output": 126913,
+    "reasoning": 315082,
+    "cacheRead": 19563904,
+    "cacheWrite": 0
+  },
+  "rows": [
+    {
+      "job": "D02",
+      "model": "opencode-go/deepseek-v4-pro",
+      "exit": 0,
+      "seconds": 1009.4,
+      "usage": {
+        "input": 136179,
+        "output": 16420,
+        "reasoning": 48529,
+        "cacheRead": 2463744,
+        "cacheWrite": 0
+      }
+    },
+    {
+      "job": "D03",
+      "model": "opencode-go/deepseek-v4.1-flash",
+      "exit": 0,
+      "seconds": 378.0,
+      "usage": {
+        "input": 88747,
+        "output": 11982,
+        "reasoning": 16066,
+        "cacheRead": 1942912,
+        "cacheWrite": 0
+      }
+    },
+    {
+      "job": "D04",
+      "model": "opencode-go/deepseek-v4.1-flash",
+      "exit": 0,
+      "seconds": 287.5,
+      "usage": {
+        "input": 65811,
+        "output": 9261,
+        "reasoning": 12974,
+        "cacheRead": 1112192,
+        "cacheWrite": 0
+      }
+    },
+    {
+      "job": "D05",
+      "model": "opencode-go/deepseek-v4.1-flash",
+      "exit": 0,
+      "seconds": 166.9,
+      "usage": {
+        "input": 55898,
+        "output": 5382,
+        "reasoning": 7911,
+        "cacheRead": 550400,
+        "cacheWrite": 0
+      }
+    },
+    {
+      "job": "D06",
+      "model": "opencode-go/deepseek-v4.1-flash",
+      "exit": 0,
+      "seconds": 277.2,
+      "usage": {
+        "input": 58292,
+        "output": 9123,
+        "reasoning": 15015,
+        "cacheRead": 770304,
+        "cacheWrite": 0
+      }
+    },
+    {
+      "job": "D07",
+      "model": "opencode-go/deepseek-v4-pro",
+      "exit": -2,
+      "seconds": 741.9,
+      "usage": {
+        "input": 130860,
+        "output": 8893,
+        "reasoning": 29384,
+        "cacheRead": 2155520,
+        "cacheWrite": 0
+      }
+    },
+    {
+      "job": "D07R1",
+      "model": "opencode-go/deepseek-v4.1-flash",
+      "exit": -2,
+      "seconds": 269.6,
+      "usage": {
+        "input": 42052,
+        "output": 5249,
+        "reasoning": 19579,
+        "cacheRead": 330880,
+        "cacheWrite": 0
+      }
+    },
+    {
+      "job": "D07R2",
+      "model": "opencode-go/deepseek-v4.1-flash",
+      "exit": 0,
+      "seconds": 255.6,
+      "usage": {
+        "input": 60827,
+        "output": 5026,
+        "reasoning": 8237,
+        "cacheRead": 1420800,
+        "cacheWrite": 0
+      }
+    },
+    {
+      "job": "D08",
+      "model": "opencode-go/deepseek-v4.1-flash",
+      "exit": 0,
+      "seconds": 350.3,
+      "usage": {
+        "input": 40643,
+        "output": 13296,
+        "reasoning": 15636,
+        "cacheRead": 532736,
+        "cacheWrite": 0
+      }
+    },
+    {
+      "job": "D09",
+      "model": "opencode-go/deepseek-v4.1-flash",
+      "exit": 0,
+      "seconds": 85.0,
+      "usage": {
+        "input": 28245,
+        "output": 1333,
+        "reasoning": 12523,
+        "cacheRead": 185856,
+        "cacheWrite": 0
+      }
+    },
+    {
+      "job": "D09R1",
+      "model": "opencode-go/deepseek-v4.1-flash",
+      "exit": 0,
+      "seconds": 574.9,
+      "usage": {
+        "input": 70878,
+        "output": 11751,
+        "reasoning": 27756,
+        "cacheRead": 2307840,
+        "cacheWrite": 0
+      }
+    },
+    {
+      "job": "D10",
+      "model": "opencode-go/deepseek-v4.1-flash",
+      "exit": 0,
+      "seconds": 231.0,
+      "usage": {
+        "input": 58295,
+        "output": 8037,
+        "reasoning": 16439,
+        "cacheRead": 789632,
+        "cacheWrite": 0
+      }
+    },
+    {
+      "job": "D11",
+      "model": "opencode-go/deepseek-v4.1-flash",
+      "exit": 0,
+      "seconds": 153.4,
+      "usage": {
+        "input": 18812,
+        "output": 1278,
+        "reasoning": 11383,
+        "cacheRead": 123264,
+        "cacheWrite": 0
+      }
+    },
+    {
+      "job": "D11R1",
+      "model": "opencode-go/deepseek-v4.1-flash",
+      "exit": 0,
+      "seconds": 881.5,
+      "usage": {
+        "input": 230034,
+        "output": 11005,
+        "reasoning": 49500,
+        "cacheRead": 3853056,
+        "cacheWrite": 0
+      }
+    },
+    {
+      "job": "D12",
+      "model": "opencode-go/deepseek-v4.1-flash",
+      "exit": 0,
+      "seconds": 434.5,
+      "usage": {
+        "input": 148190,
+        "output": 8877,
+        "reasoning": 24150,
+        "cacheRead": 1024768,
+        "cacheWrite": 0
+      }
+    }
+  ],
+  "scope": "Implementation runs only; excludes prior planning runs and a small permission probe. Provider fields are separate, not a bill or total context tokens.",
+  "actualMaxParallel": 4
+}

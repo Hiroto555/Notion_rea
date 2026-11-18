@@ -5,7 +5,29 @@ import {
   type ServerResponse,
 } from "node:http";
 import { DatabaseSync } from "node:sqlite";
+import { lstatSync } from "node:fs";
+import { dirname } from "node:path";
+import { types } from "node:util";
+import {
+  privatePersistencePort,
+  type NativePrivateFilesystemPort,
+  type NativePrivateIdentity,
+} from "../platform/private-persistence";
+import { isAuthorityLeasePlatform } from "../platform/windows/authority-lease";
+import type { PrivatePlatform } from "./private-platform";
+import { preflightExistingJournal } from "./journal-preflight";
+import { SqliteConnectionOwner, closeSqlitePlatform } from "./sqlite-connection-owner";
+import { inspectServerHistory } from "./server-history-validation";
 import { SyncSqliteGuard, SyncStorageUnavailable } from "./sqlite-guard";
+import {
+  assertSyncRetentionAdmission,
+  inspectSyncRetention,
+  type SyncRetentionLimits,
+} from "./sync-retention";
+import {
+  createCheckpointServerBackup,
+  type CheckpointServerBackup,
+} from "./server-backup";
 import {
   canonicalJson,
   fingerprintCommit,
@@ -43,6 +65,9 @@ export type DeviceRegistration = {
 
 export type CheckpointBlobAdapter = {
   has(workspaceId: string, asset: AssetManifest): boolean;
+  /** Existing native server history has hash/length requirements, without
+   * a client-local asset name. Required for native history with attachments. */
+  hasStoredAssetBytes?(workspaceId: string, asset: {sha256: string; bytes: number}): boolean;
   handle(
     request: IncomingMessage,
     response: ServerResponse,
@@ -66,6 +91,15 @@ export type CheckpointValidator = (
   previous: Checkpoint | null,
 ) => boolean;
 
+/** Host-owned native resources outlive every SQLite and HTTP callback. */
+export type CheckpointServerNativeLifetime = Readonly<{
+  platform: PrivatePlatform;
+  validateCurrent(): void;
+  scope<T>(work: () => T): T;
+  backup(db: DatabaseSync, destination: string, serverEpoch: string): CheckpointServerBackup;
+  close(): void;
+}>;
+
 export type CheckpointServerOptions = {
   databasePath: string;
   capabilities: Capability[];
@@ -78,8 +112,15 @@ export type CheckpointServerOptions = {
   validateCheckpoint: CheckpointValidator;
   /** Optional attachment transport owned by the host/asset lane. */
   blobs?: CheckpointBlobAdapter;
+  /**
+   * Optional lower retention caps for this server. The shared admission helper
+   * rejects values above the server defaults (1024 rows, 64 MiB).
+   */
+  retentionLimits?: SyncRetentionLimits;
   host?: "127.0.0.1";
   port?: number;
+  nativePrivateFilesystem?: NativePrivateFilesystemPort;
+  nativeLifetime?: CheckpointServerNativeLifetime;
 };
 
 export type CheckpointServerHandle = {
@@ -92,6 +133,12 @@ export type CheckpointServerHandle = {
    */
   registerDevice(registration: DeviceRegistration): void;
   revokeDevice(workspaceId: string, clientId: string): void;
+  /**
+   * Administrative catalog snapshot. It is intentionally not an HTTP route.
+   * The backup runs synchronously through the server's guarded connection, so
+   * it blocks request handling while the snapshot is copied.
+   */
+  backup(destination: string): CheckpointServerBackup;
   close(): Promise<void>;
 };
 
@@ -162,9 +209,78 @@ function requireToken(token: unknown): string {
   return token;
 }
 
+/** SQLite/native release chain for one server lifetime: the owner tracks every
+ * DatabaseSync; its cleanup callback runs the post-DB native proof and the
+ * lifetime close inside `lifetime.scope`, only after all handles are proven
+ * closed. `beforeNativeRelease` is the post-DB pre-native proof. */
+type CheckpointSqliteOwnership = {
+  owner: SqliteConnectionOwner;
+  beforeNativeRelease?: () => void;
+  nativeClosed: boolean;
+  /** Proof/operation diagnostics observed inside the release callback while
+   * the actual lifetime-close result is decided separately. Drained at the
+   * public caller boundaries so a known-complete cleanup is never surfaced
+   * to the owner as uncertainty; a real close failure still throws through
+   * the callback itself. */
+  releaseProofErrors: unknown[];
+};
+
 /** Local fixture/reference server, never a public deployment entrypoint. */
 export async function startCheckpointServer(
   options: CheckpointServerOptions,
+): Promise<CheckpointServerHandle> {
+  const lifetime = options.nativeLifetime;
+  requireCondition(
+    (lifetime === undefined) === (options.nativePrivateFilesystem === undefined),
+    "server-native-capability-required", 503,
+  );
+  requireCondition(process.platform !== "win32" || lifetime !== undefined,
+    "server-native-capability-required", 503);
+  if (lifetime !== undefined)
+    requireCondition(lifetime !== null && typeof lifetime === "object" &&
+      typeof lifetime.validateCurrent === "function" &&
+      !types.isAsyncFunction(lifetime.validateCurrent) && !types.isGeneratorFunction(lifetime.validateCurrent) &&
+      typeof lifetime.close === "function" && !types.isAsyncFunction(lifetime.close) &&
+      !types.isGeneratorFunction(lifetime.close) &&
+      typeof lifetime.scope === "function" && typeof lifetime.backup === "function" &&
+      lifetime.platform?.kind === "windows" &&
+      (process.platform !== "win32" || isAuthorityLeasePlatform(lifetime.platform)),
+    "server-native-capability-required", 503);
+  // One owner for every SQLite handle plus the native lifetime. The cleanup
+  // callback runs the post-DB native proof inside lifetime.scope and closes
+  // the lifetime exactly once — after all handles are proven closed.
+  let ownership!: CheckpointSqliteOwnership;
+  const owner = new SqliteConnectionOwner(() => {
+    if (lifetime === undefined || ownership.nativeClosed) return;
+    lifetime.scope(() => {
+      // The post-DB proof is a diagnostic kept for the caller boundary; only
+      // the actual lifetime close decides this callback's acknowledgement.
+      try { ownership.beforeNativeRelease?.(); }
+      catch (error) { ownership.releaseProofErrors.push(error); }
+      closeSqlitePlatform(lifetime);
+      ownership.nativeClosed = true;
+    });
+  });
+  ownership = { owner, nativeClosed: false, releaseProofErrors: [] };
+  try {
+    return await (lifetime === undefined
+      ? startCheckpointServerInScope(options, ownership)
+      : lifetime.scope(() => startCheckpointServerInScope(options, ownership)));
+  } catch (error) {
+    // owner.fail sees the primary failure and the real cleanup result only;
+    // deferred proof diagnostics attach here, outside the owner.
+    const failures: unknown[] = [];
+    try { owner.fail(error); } catch (failure) { failures.push(failure); }
+    failures.push(...ownership.releaseProofErrors.splice(0));
+    if (failures.length === 1) throw failures[0];
+    throw new AggregateError(failures,
+      "Server startup, native cleanup and release proof failed");
+  }
+}
+
+async function startCheckpointServerInScope(
+  options: CheckpointServerOptions,
+  ownership: CheckpointSqliteOwnership,
 ): Promise<CheckpointServerHandle> {
   requireCondition(
     options.host === undefined || options.host === "127.0.0.1",
@@ -210,9 +326,112 @@ export async function startCheckpointServer(
     deviceWorkspaces.add(workspace.workspaceId);
   }
 
-  const storage = new SyncSqliteGuard(new DatabaseSync(options.databasePath));
+  const native = options.nativeLifetime;
+  const filesystem = options.nativePrivateFilesystem === undefined ? undefined :
+    privatePersistencePort({ nativePrivateFilesystem: options.nativePrivateFilesystem });
+  const scope = <T>(work: () => T): T => native === undefined ? work() : native.scope(work);
+  let nativeFailure: unknown;
+  let nativeFailed = false;
+  let directoryIdentity: NativePrivateIdentity | undefined;
+  let databaseIdentity: NativePrivateIdentity | undefined;
+  const sameIdentity = (a: NativePrivateIdentity, b: NativePrivateIdentity): boolean =>
+    a.path.toLowerCase() === b.path.toLowerCase() &&
+    a.fileId.toLowerCase() === b.fileId.toLowerCase() &&
+    a.volumeId.toLowerCase() === b.volumeId.toLowerCase();
+  const assertNativeCurrent = (): void => {
+    if (native === undefined) return;
+    if (nativeFailed) throw nativeFailure;
+    try {
+      const ack: unknown = native.validateCurrent();
+      if (types.isPromise(ack)) void Promise.prototype.then.call(ack, undefined, () => undefined);
+      requireCondition(ack === undefined, "server-native-current-invalid", 503);
+      native.platform.assertRoot();
+      native.platform.assertFile(options.databasePath);
+      native.platform.assertSidecars(options.databasePath);
+      requireCondition(filesystem !== undefined && directoryIdentity !== undefined &&
+        databaseIdentity !== undefined &&
+        sameIdentity(directoryIdentity, filesystem.inspectDirectory(dirname(options.databasePath))) &&
+        sameIdentity(databaseIdentity, filesystem.inspectFileIdentity(options.databasePath)),
+      "server-native-identity-changed", 503);
+    } catch (error) {
+      nativeFailed = true;
+      nativeFailure = error;
+      throw error;
+    }
+  };
+  // Post-DB-closed, pre-native-release proof — invoked inside lifetime.scope
+  // by the owner cleanup callback once every connection is proven closed.
+  ownership.beforeNativeRelease = assertNativeCurrent;
+  if (native !== undefined) {
+    requireCondition(filesystem !== undefined, "server-native-capability-required", 503);
+    const initial: unknown = native.validateCurrent();
+    if (types.isPromise(initial)) void Promise.prototype.then.call(initial, undefined, () => undefined);
+    requireCondition(initial === undefined, "server-native-current-invalid", 503);
+    directoryIdentity = filesystem.inspectDirectory(dirname(options.databasePath));
+    databaseIdentity = filesystem.inspectFileIdentity(options.databasePath);
+    // The host bound this platform; its original C acquirer takes a held lease
+    // before any writable SQLite open, including an empty new database.
+    native.platform.createExclusive(options.databasePath);
+    assertNativeCurrent();
+    const size = lstatSync(options.databasePath).size; // size hint, never identity
+    requireCondition(Number.isSafeInteger(size) && size >= 0 && size <= 256 * 1024 * 1024,
+      "server-native-database-size", 409);
+    if (size === 0) native.platform.assertEmptyFile(options.databasePath);
+    else preflightExistingJournal(options.databasePath, assertNativeCurrent, (db) => {
+      const inventory = inspectServerHistory(db);
+      requireCondition(inventory.workspaces.length === owners.size &&
+        inventory.workspaces.every(w => owners.get(w.workspaceId) === w.ownerId),
+      "workspace-owner-mismatch", 409);
+      for (const asset of inventory.assets) {
+        requireCondition(options.blobs?.hasStoredAssetBytes?.(asset.workspaceId, asset), "server-asset-missing-or-corrupt", 422);
+        assertNativeCurrent();
+      }
+      const registered = db.prepare("SELECT workspace_id FROM checkpoint_device_workspaces").all();
+      requireCondition(registered.length === deviceWorkspaces.size &&
+        registered.every(row => deviceWorkspaces.has(String(row.workspace_id))),
+      "workspace-device-mode-required", 409);
+      inspectSyncRetention(db, "server", options.retentionLimits);
+    }, native.platform, ownership.owner);
+    assertNativeCurrent();
+  }
+  const connection = new DatabaseSync(options.databasePath);
+  ownership.owner.opened(connection);
+  const storage: SyncSqliteGuard = ownership.owner.guarded(connection);
+  const assertUsable = (): void => {
+    assertNativeCurrent();
+    storage.assertUsable();
+  };
+  const transaction = <T>(work: () => T): T => {
+    assertUsable();
+    const value = storage.transaction(() => {
+      assertNativeCurrent();
+      const result = work();
+      assertNativeCurrent();
+      return result;
+    });
+    assertUsable();
+    return value;
+  };
+  const closeStorage = (): void => {
+    const errors: unknown[] = [];
+    // A released native lifetime is never re-probed: the lease is gone, so
+    // assertNativeCurrent would only poison the retry path.
+    if (!ownership.nativeClosed) {
+      try { assertNativeCurrent(); } catch (error) { errors.push(error); }
+    }
+    // owner.close() proves every connection closed, then runs the native
+    // release callback (post-DB proof + lifetime.close inside lifetime.scope).
+    try { ownership.owner.close(); } catch (error) { errors.push(error); }
+    // Deferred proof diagnostics surface here, never inside the owner, so a
+    // confirmed cleanup cannot be branded uncertain. splice(0) also keeps a
+    // confirmed-closed retry from replaying already-reported diagnostics.
+    errors.push(...ownership.releaseProofErrors.splice(0));
+    if (errors.length) throw errors.length === 1 ? errors[0] :
+      new AggregateError(errors, "Server storage and native lifetime close failed");
+  };
   let serverEpoch!: string;
   try {
+    assertUsable();
     const tables = storage.db
       .prepare(
         "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'",
@@ -226,7 +445,7 @@ export async function startCheckpointServer(
     storage.db.exec(
       "PRAGMA journal_mode=WAL; PRAGMA synchronous=FULL; PRAGMA busy_timeout=5000;",
     );
-    storage.transaction(() => {
+    transaction(() => {
       storage.db.exec(`
       CREATE TABLE IF NOT EXISTS checkpoint_server_identity(singleton INTEGER PRIMARY KEY CHECK(singleton=1), version INTEGER NOT NULL, epoch TEXT NOT NULL);
       CREATE TABLE IF NOT EXISTS checkpoint_heads(workspace_id TEXT PRIMARY KEY, owner_id TEXT NOT NULL, revision INTEGER NOT NULL, checkpoint_hash TEXT, checkpoint_json TEXT);
@@ -279,17 +498,12 @@ export async function startCheckpointServer(
       }
     });
   } catch (error) {
-    try {
-      storage.close();
-    } catch (closeError) {
-      throw new AggregateError(
-        [error, closeError],
-        "Server initialization and close failed",
-      );
-    }
+    // SQLite/native cleanup belongs to the public owner.fail path — running
+    // closeStorage here would burn the single allowed close attempt early.
     throw error;
   }
   const readHead = (workspaceId: string): CheckpointHead => {
+    assertUsable();
     const row = storage.db
       .prepare("SELECT * FROM checkpoint_heads WHERE workspace_id=?")
       .get(workspaceId)!;
@@ -308,6 +522,7 @@ export async function startCheckpointServer(
     request: IncomingMessage,
     workspaceId: string,
   ): Authorization => {
+    assertUsable();
     const supplied = request.headers.authorization;
     const digest = createHash("sha256")
       .update(
@@ -387,7 +602,7 @@ export async function startCheckpointServer(
     const ownerId = identifier(registration.ownerId);
     const clientId = identifier(registration.clientId);
     const digest = tokenDigest(requireToken(registration.token));
-    storage.transaction(() => {
+    transaction(() => {
       authorizeDeviceWorkspace(workspaceId, ownerId);
       const existing = storage.db
         .prepare(
@@ -423,6 +638,8 @@ export async function startCheckpointServer(
         .prepare("SELECT 1 FROM checkpoint_devices WHERE token_hash=?")
         .get(digest);
       requireCondition(collision === undefined, "token-in-use", 409);
+      const deviceCount = Number(storage.db.prepare("SELECT COUNT(*) AS n FROM checkpoint_devices").get()!.n);
+      requireCondition(Number.isSafeInteger(deviceCount) && deviceCount < 512, "server-device-retention-held", 409);
       storage.db
         .prepare(
           "INSERT INTO checkpoint_devices(workspace_id,client_id,owner_id,token_hash,revoked) VALUES(?,?,?,?,0)",
@@ -434,7 +651,7 @@ export async function startCheckpointServer(
   const revokeDevice = (workspaceIdInput: string, clientIdInput: string): void => {
     const workspaceId = identifier(workspaceIdInput);
     const clientId = identifier(clientIdInput);
-    storage.transaction(() => {
+    transaction(() => {
       const existing = storage.db
         .prepare(
           "SELECT 1 FROM checkpoint_devices WHERE workspace_id=? AND client_id=?",
@@ -451,7 +668,7 @@ export async function startCheckpointServer(
 
   const commit = (operation: Commit): CommitResult => {
     const fingerprint = fingerprintCommit(operation);
-    return storage.transaction(() => {
+    return transaction(() => {
       const previous = storage.db
         .prepare(
           "SELECT * FROM checkpoint_operations WHERE workspace_id=? AND client_id=? AND operation_id=?",
@@ -516,45 +733,82 @@ export async function startCheckpointServer(
         serverEpoch,
         fingerprint,
       };
-      let result: CommitResult;
+      const commitJson = canonicalJson(operation);
       if (!baseIsHead) {
-        result = { ...identity, status: "conflict", head };
-      } else {
-        requireCondition(
-          head.revision < Number.MAX_SAFE_INTEGER,
-          "revision-exhausted",
-          409,
+        const result: CommitResult = { ...identity, status: "conflict", head };
+        const resultJson = canonicalJson(result);
+        assertSyncRetentionAdmission(
+          storage.db,
+          "server",
+          {
+            rows: 1,
+            bytes:
+              Buffer.byteLength(commitJson) + Buffer.byteLength(resultJson),
+          },
+          options.retentionLimits,
         );
-        const revision = head.revision + 1;
-        const change = {
-          revision,
-          clientId: operation.clientId,
-          operationId: operation.operationId,
-          fingerprint,
-          checkpointHash: operation.checkpointHash,
-          checkpoint: operation.checkpoint,
-        };
+        // The losing operation and the competing head remain in the same durable receipt.
         storage.db
-          .prepare(
-            "UPDATE checkpoint_heads SET revision=?,checkpoint_hash=?,checkpoint_json=? WHERE workspace_id=?",
-          )
+          .prepare("INSERT INTO checkpoint_operations VALUES(?,?,?,?,?,?)")
           .run(
-            revision,
-            operation.checkpointHash,
-            canonicalJson(operation.checkpoint),
             operation.workspaceId,
+            operation.clientId,
+            operation.operationId,
+            fingerprint,
+            commitJson,
+            resultJson,
           );
-        storage.db
-          .prepare("INSERT INTO checkpoint_changes VALUES(?,?,?)")
-          .run(operation.workspaceId, revision, canonicalJson(change));
-        result = {
-          ...identity,
-          status: "applied",
-          revision,
-          checkpointHash: operation.checkpointHash,
-        };
+        return result;
       }
-      // The losing operation and the competing head remain in the same durable receipt.
+      requireCondition(
+        head.revision < Number.MAX_SAFE_INTEGER,
+        "revision-exhausted",
+        409,
+      );
+      const revision = head.revision + 1;
+      const change = {
+        revision,
+        clientId: operation.clientId,
+        operationId: operation.operationId,
+        fingerprint,
+        checkpointHash: operation.checkpointHash,
+        checkpoint: operation.checkpoint,
+      };
+      const changeJson = canonicalJson(change);
+      const result: CommitResult = {
+        ...identity,
+        status: "applied",
+        revision,
+        checkpointHash: operation.checkpointHash,
+      };
+      const resultJson = canonicalJson(result);
+      // Admit the change row and the operation receipt together before the head
+      // update; a held transaction leaves no partial revision behind.
+      assertSyncRetentionAdmission(
+        storage.db,
+        "server",
+        {
+          rows: 2,
+          bytes:
+            Buffer.byteLength(changeJson) +
+            Buffer.byteLength(commitJson) +
+            Buffer.byteLength(resultJson),
+        },
+        options.retentionLimits,
+      );
+      storage.db
+        .prepare(
+          "UPDATE checkpoint_heads SET revision=?,checkpoint_hash=?,checkpoint_json=? WHERE workspace_id=?",
+        )
+        .run(
+          revision,
+          operation.checkpointHash,
+          canonicalJson(operation.checkpoint),
+          operation.workspaceId,
+        );
+      storage.db
+        .prepare("INSERT INTO checkpoint_changes VALUES(?,?,?)")
+        .run(operation.workspaceId, revision, changeJson);
       storage.db
         .prepare("INSERT INTO checkpoint_operations VALUES(?,?,?,?,?,?)")
         .run(
@@ -562,15 +816,16 @@ export async function startCheckpointServer(
           operation.clientId,
           operation.operationId,
           fingerprint,
-          canonicalJson(operation),
-          canonicalJson(result),
+          commitJson,
+          resultJson,
         );
       return result;
     });
   };
 
+  const requests = new Set<Promise<void>>();
   const server = createServer((request, response) => {
-    void (async () => {
+    const active = scope(async () => {
       const url = new URL(request.url || "/", "http://127.0.0.1");
       const match =
         /^\/v1\/workspaces\/([A-Za-z0-9_-]+)\/(head|commits|changes|operations\/([A-Za-z0-9_-]+)\/([A-Za-z0-9_-]+)|blobs\/([a-f0-9]{64}))$/.exec(
@@ -580,7 +835,7 @@ export async function startCheckpointServer(
       const workspaceId = identifier(match[1]);
       const route = match[2];
       const authorization = authorize(request, workspaceId);
-      storage.assertUsable();
+      assertUsable();
       if (route.startsWith("blobs/")) {
         requireCondition(url.search === "", "unexpected-query");
         requireCondition(options.blobs !== undefined, "not-found", 404);
@@ -596,7 +851,7 @@ export async function startCheckpointServer(
           sha256: match[5],
           assertAuthorized: () => {
             authorize(request, workspaceId);
-            storage.assertUsable();
+            assertUsable();
           },
         });
         return;
@@ -668,7 +923,7 @@ export async function startCheckpointServer(
         const operation = parseCommit(await body(request));
         // A device can be rotated/revoked while its body is in flight.
         const current = authorize(request, workspaceId);
-        storage.assertUsable();
+        assertUsable();
         requireCondition(
           operation.workspaceId === workspaceId,
           "workspace-mismatch",
@@ -688,16 +943,19 @@ export async function startCheckpointServer(
         return send(response, 200, commit(operation));
       }
       throw new SyncError("method-not-allowed", 405);
-    })().catch((error) => {
+    }).catch((error) => scope(() => {
       const known =
         error instanceof SyncError || error instanceof SyncStorageUnavailable;
       send(response, known ? error.status : 500, {
         error: known ? error.code : "internal-error",
       });
-    });
+    }));
+    requests.add(active);
+    void active.then(() => requests.delete(active), () => requests.delete(active));
   });
   server.requestTimeout = 15_000;
   server.headersTimeout = 10_000;
+  let port!: number;
   try {
     await new Promise<void>((resolve, reject) => {
       server.once("error", reject);
@@ -706,9 +964,22 @@ export async function startCheckpointServer(
         resolve();
       });
     });
+    assertUsable();
+    const address = server.address();
+    requireCondition(
+      address && typeof address !== "string",
+      "server-address-unavailable",
+    );
+    port = address.port;
   } catch (error) {
+    // HTTP is released here; SQLite/native cleanup propagates to the public
+    // owner.fail — closeStorage must not run inside startup catches.
     try {
-      storage.close();
+      if (server.listening) await new Promise<void>((resolve, reject) => {
+        server.close(error => error ? reject(error) : resolve());
+        server.closeAllConnections();
+      });
+      await Promise.allSettled([...requests]);
     } catch (closeError) {
       throw new AggregateError(
         [error, closeError],
@@ -717,18 +988,31 @@ export async function startCheckpointServer(
     }
     throw error;
   }
-  const address = server.address();
-  requireCondition(
-    address && typeof address !== "string",
-    "server-address-unavailable",
-  );
   let httpClosed = false;
+  let closeResult: Promise<void> | undefined;
   return {
-    url: `http://127.0.0.1:${address.port}`,
+    url: `http://127.0.0.1:${port}`,
     serverEpoch,
-    registerDevice,
-    revokeDevice,
-    async close() {
+    registerDevice: registration => scope(() => registerDevice(registration)),
+    revokeDevice: (workspaceId, clientId) => scope(() => revokeDevice(workspaceId, clientId)),
+    backup(destination: string) {
+      return scope(() => {
+      assertUsable();
+      const result = native !== undefined
+        ? native.backup(storage.db, destination, serverEpoch)
+        : createCheckpointServerBackup({
+        db: storage.db,
+        databasePath: options.databasePath,
+        destination,
+        serverEpoch,
+      });
+      assertUsable();
+      return result;
+      });
+    },
+    close() {
+      const closeOwned = async () => {
+      const errors: unknown[] = [];
       if (!httpClosed) {
         await new Promise<void>((resolve, reject) => {
           server.close((error) => (error ? reject(error) : resolve()));
@@ -736,7 +1020,24 @@ export async function startCheckpointServer(
         });
         httpClosed = true;
       }
-      storage.close();
+      // HTTP close does not by itself await asynchronous blob-lock cleanup.
+      // Retain SQLite, C leases and the factory until every handler settled.
+      await Promise.allSettled([...requests]);
+      try { closeStorage(); } catch (error) { errors.push(error); }
+      if (errors.length) throw errors.length === 1 ? errors[0] :
+        new AggregateError(errors, "Server close failed");
+      };
+      // After the native lifetime has been released once, its scope may be
+      // disposed — a rejected-then-retried close must not re-enter it. The
+      // owner never replays the native close itself.
+      closeResult ??= (ownership.nativeClosed ? closeOwned() : scope(closeOwned)).catch(error => {
+        // A rejected close is not an acknowledgement that SQLite closed.
+        // Retain its protector and allow the owner to retry cleanup once the
+        // original close fault has been removed. No request or mutation runs.
+        closeResult = undefined;
+        throw error;
+      });
+      return closeResult;
     },
   };
 }

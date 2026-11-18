@@ -1,0 +1,45 @@
+{
+  "stats": {
+    "startTime": "2026-11-08T04:32:06.787Z",
+    "duration": 156505.74200000003,
+    "expected": 69,
+    "skipped": 0,
+    "unexpected": 0,
+    "flaky": 0
+  },
+  "tests": 69,
+  "files": {
+    "linux-ci/m1-recovery.spec.ts": 10,
+    "output-boundary.spec.ts": 1,
+    "page-move.spec.ts": 3,
+    "page-order-repair.spec.ts": 3,
+    "pending-journal.spec.ts": 2,
+    "queued-failure-guard.spec.ts": 1,
+    "r4-page-save.spec.ts": 4,
+    "r6-recovery.spec.ts": 8,
+    "r7-data-safety/raw-input.spec.ts": 1,
+    "r7-data-safety/restart.spec.ts": 1,
+    "r7-data-safety/save-ack.spec.ts": 2,
+    "r7-data-safety/side-full-editor.spec.ts": 1,
+    "recovery-race-guard.spec.ts": 4,
+    "lv4-sync-presentation.spec.ts": 2,
+    "db-ui-legacy.spec.ts": 1,
+    "db-ui-readonly.spec.ts": 3,
+    "db-ui.spec.ts": 22
+  },
+  "resultStatuses": {
+    "passed": 69
+  },
+  "retryValues": {
+    "0": 69
+  },
+  "traceCount": 35,
+  "ipcJournalCount": 35,
+  "diagnosticsCount": 45,
+  "dbFiles": 0,
+  "candidate": "6b078061670cab27617dedb1c615ea9b246a61eb",
+  "runId": 42447102289,
+  "artifactId": 13604225980,
+  "artifactSha256": "82b689a91405782fc95e1e1f16c6dcc6e1318395e2a22020ab974c5007364ab4",
+  "scope": "Synthetic Linux CI only; local Mac GUI NOT_RUN; no A3 or master merge"
+}

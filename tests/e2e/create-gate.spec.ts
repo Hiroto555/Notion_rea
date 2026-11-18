@@ -1,5 +1,12 @@
 import { test, expect, saved } from "./next-round-fixture";
 
+const primary = (key: string) =>
+  process.platform === "darwin"
+    ? `Meta+${key}`
+    : key === "ArrowLeft"
+      ? "Home"
+      : `Control+${key}`;
+
 test("delayed page creation cannot redirect immediate input into the previous page", async ({
   folio: s,
 }) => {
@@ -27,7 +34,7 @@ test("delayed page creation cannot redirect immediate input into the previous pa
     });
   });
   try {
-    await w.keyboard.press("Meta+n");
+    await w.keyboard.press(primary("n"));
     await expect
       .poll(() => s.app.evaluate(() => (globalThis as any).heldCreate))
       .toBe(true);
@@ -80,7 +87,7 @@ test("a delayed create does not override a later explicit navigation", async ({
     });
   });
   try {
-    await w.keyboard.press("Meta+n");
+    await w.keyboard.press(primary("n"));
     await expect
       .poll(() => s.app.evaluate(() => (globalThis as any).heldCreate))
       .toBe(true);
@@ -124,7 +131,7 @@ test("a failed create restores the same Editor and its saved content", async ({
     });
   });
   try {
-    await w.keyboard.press("Meta+n");
+    await w.keyboard.press(primary("n"));
     await expect
       .poll(() => s.app.evaluate(() => (globalThis as any).heldCreate))
       .toBe(true);
@@ -171,11 +178,11 @@ test("a second create is refused while the first is pending", async ({
     });
   });
   try {
-    await w.keyboard.press("Meta+n");
+    await w.keyboard.press(primary("n"));
     await expect
       .poll(() => s.app.evaluate(() => (globalThis as any).heldCreate))
       .toBe(true);
-    await w.keyboard.press("Meta+n");
+    await w.keyboard.press(primary("n"));
     await expect(w.getByRole("alert")).toContainText("ページを作成中");
     expect(await s.app.evaluate(() => (globalThis as any).createCount)).toBe(1);
     await s.app.evaluate(() => (globalThis as any).releaseCreate());

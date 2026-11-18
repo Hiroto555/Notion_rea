@@ -1,20 +1,17 @@
+import { fixtureRoot } from "./fixture-isolation";
+import { launchFixture, killFixture } from "./recovery-ci-runtime";
 import {
   test,
   expect,
-  _electron as electron,
   type ElectronApplication,
 } from "@playwright/test";
-import { mkdtempSync, rmSync } from "node:fs";
-import { resolve } from "node:path";
+import { rmSync } from "node:fs";
 
 test("a failed first save blocks later queued input without discarding it", async () => {
-  const root = mkdtempSync(resolve("output/queued-failure-guard-"));
+  const root = fixtureRoot("queued-failure-guard-");
   let app: ElectronApplication | undefined;
   try {
-    app = await electron.launch({
-      args: [resolve("dist/main.cjs")],
-      env: { ...process.env, FOLIO_DATA_DIR: root },
-    });
+    app = await launchFixture(root);
     const window = await app.firstWindow();
     const title = window.getByLabel("ページタイトル", { exact: true });
     await expect(title).toBeVisible();
@@ -68,15 +65,7 @@ test("a failed first save blocks later queued input without discarding it", asyn
       window.getByRole("button", { name: "未保存の変更を別ファイルに記録" }),
     ).toBeVisible();
   } finally {
-    if (app) {
-      const child = app.process();
-      if (child && child.exitCode === null && child.signalCode === null) {
-        await new Promise<void>((done) => {
-          child.once("exit", () => done());
-          child.kill("SIGKILL");
-        });
-      }
-    }
+    await killFixture(app);
     rmSync(root, { recursive: true, force: true });
   }
 });

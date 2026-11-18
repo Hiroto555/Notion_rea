@@ -9,7 +9,10 @@ const dialog = (window: Page) => window.getByRole("dialog", {name: "列の設定
 const panel = (window: Page) => dialog(window).getByRole("region", {name: "列の設定", exact: true});
 async function openSchema(window: Page) {
   await r5Saved(window);
-  await window.getByRole("button", {name: "列の設定", exact: true}).click();
+  await openR7Settings(window, "view-options");
+  await r5Settings(window)
+    .getByRole("button", {name: "プロパティを編集", exact: true})
+    .click();
   await expect(dialog(window)).toBeVisible();
 }
 async function preview(window: Page) {
@@ -152,6 +155,9 @@ test("nonconvertible values and dependent view filters reject visibly without ch
     await expect(dialog(window).getByRole("button", {name: "この変更を適用", exact: true})).toBeDisabled();
     expect(await r5Database(window, owner.id)).toEqual(before);
     await dialog(window).getByRole("button", {name: "列の設定を閉じる", exact: true}).click();
+    await expect(
+      r5Settings(window).locator('[data-settings-menu-trigger="view-options"]'),
+    ).toBeFocused();
     await window.locator(`tr[data-record-id="${record.pageId}"]`).getByLabel("メモ Invalid value row", {exact: true}).fill("12");
     await r5Saved(window);
     const settings = r5Settings(window);

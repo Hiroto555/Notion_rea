@@ -466,7 +466,7 @@ export async function startLevel4Server(options: {
   const ownerId = options.ownerId ?? identifier("owner");
   const serverDatabase = join(options.root, "server.sqlite");
   const blobs = join(options.root, "server-blobs");
-  mkdirSync(blobs, { recursive: true });
+  mkdirSync(blobs, { recursive: true, mode: 0o700 });
   const server = await options.api.startCheckpointServer({
     databasePath: serverDatabase,
     capabilities: [],

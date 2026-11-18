@@ -1,0 +1,388 @@
+{
+  "sourceCandidate": "0305999fe6ee346f3e7c11a6760d70e193b413aa",
+  "specs": {
+    "nodes": {
+      "paragraph": {
+        "content": "inline*",
+        "group": "block",
+        "attrs": {
+          "id": {
+            "default": null
+          }
+        }
+      },
+      "callout": {
+        "content": "block+",
+        "group": "block",
+        "defining": true,
+        "attrs": {
+          "id": {
+            "default": null
+          },
+          "tone": {
+            "default": "note"
+          }
+        }
+      },
+      "table": {
+        "tableRole": "table",
+        "content": "tableRow+",
+        "group": "block",
+        "isolating": true,
+        "attrs": {
+          "id": {
+            "default": null
+          }
+        }
+      },
+      "tableRow": {
+        "tableRole": "row",
+        "content": "(tableCell | tableHeader)+",
+        "attrs": {
+          "id": {
+            "default": null
+          }
+        }
+      },
+      "tableCell": {
+        "tableRole": "cell",
+        "content": "paragraph+",
+        "isolating": true,
+        "attrs": {
+          "id": {
+            "default": null
+          },
+          "colspan": {
+            "default": 1
+          },
+          "rowspan": {
+            "default": 1
+          },
+          "colwidth": {
+            "default": null
+          }
+        }
+      },
+      "tableHeader": {
+        "tableRole": "header_cell",
+        "content": "paragraph+",
+        "isolating": true,
+        "attrs": {
+          "id": {
+            "default": null
+          },
+          "colspan": {
+            "default": 1
+          },
+          "rowspan": {
+            "default": 1
+          },
+          "colwidth": {
+            "default": null
+          }
+        }
+      },
+      "bulletList": {
+        "content": "listItem+",
+        "group": "block list",
+        "attrs": {
+          "id": {
+            "default": null
+          }
+        }
+      },
+      "codeBlock": {
+        "content": "text*",
+        "marks": "",
+        "group": "block",
+        "code": true,
+        "defining": true,
+        "attrs": {
+          "id": {
+            "default": null
+          },
+          "language": {
+            "default": null
+          }
+        }
+      },
+      "doc": {
+        "content": "block+"
+      },
+      "hardBreak": {
+        "group": "inline",
+        "inline": true,
+        "selectable": false,
+        "linebreakReplacement": true
+      },
+      "horizontalRule": {
+        "group": "block",
+        "attrs": {
+          "id": {
+            "default": null
+          }
+        }
+      },
+      "listItem": {
+        "content": "paragraph block*",
+        "defining": true,
+        "attrs": {
+          "id": {
+            "default": null
+          }
+        }
+      },
+      "orderedList": {
+        "content": "listItem+",
+        "group": "block list",
+        "attrs": {
+          "id": {
+            "default": null
+          },
+          "start": {
+            "default": 1
+          },
+          "type": {
+            "default": null
+          }
+        }
+      },
+      "text": {
+        "group": "inline"
+      },
+      "heading": {
+        "content": "inline*",
+        "group": "block",
+        "defining": true,
+        "attrs": {
+          "id": {
+            "default": null
+          },
+          "level": {
+            "default": 1
+          }
+        }
+      },
+      "taskList": {
+        "content": "taskItem+",
+        "group": "block list",
+        "attrs": {
+          "id": {
+            "default": null
+          }
+        }
+      },
+      "taskItem": {
+        "content": "paragraph block*",
+        "defining": true,
+        "attrs": {
+          "id": {
+            "default": null
+          },
+          "checked": {
+            "default": false
+          }
+        }
+      },
+      "blockquote": {
+        "content": "block+",
+        "group": "block",
+        "defining": true,
+        "attrs": {
+          "id": {
+            "default": null
+          }
+        }
+      },
+      "details": {
+        "allowGapCursor": false,
+        "content": "detailsSummary detailsContent",
+        "group": "block",
+        "defining": true,
+        "isolating": true,
+        "attrs": {
+          "id": {
+            "default": null
+          },
+          "open": {
+            "default": false
+          }
+        }
+      },
+      "detailsContent": {
+        "content": "block+",
+        "selectable": false,
+        "defining": true,
+        "attrs": {
+          "id": {
+            "default": null
+          }
+        }
+      },
+      "detailsSummary": {
+        "content": "text*",
+        "selectable": false,
+        "defining": true,
+        "isolating": true,
+        "attrs": {
+          "id": {
+            "default": null
+          }
+        }
+      },
+      "image": {
+        "group": "block",
+        "inline": false,
+        "draggable": true,
+        "attrs": {
+          "id": {
+            "default": null
+          },
+          "src": {
+            "default": null
+          },
+          "alt": {
+            "default": null
+          },
+          "title": {
+            "default": null
+          },
+          "width": {
+            "default": null
+          },
+          "height": {
+            "default": null
+          }
+        }
+      }
+    },
+    "marks": {
+      "link": {
+        "inclusive": true,
+        "attrs": {
+          "href": {
+            "default": null
+          },
+          "target": {
+            "default": "_blank"
+          },
+          "rel": {
+            "default": "noopener noreferrer nofollow"
+          },
+          "class": {
+            "default": null
+          },
+          "title": {
+            "default": null
+          }
+        }
+      },
+      "bold": {},
+      "code": {
+        "excludes": "_",
+        "code": true
+      },
+      "italic": {},
+      "strike": {},
+      "underline": {}
+    }
+  },
+  "doc": {
+    "type": "doc",
+    "content": [
+      {
+        "type": "heading",
+        "attrs": {
+          "id": "real-heading",
+          "level": 2
+        },
+        "content": [
+          {
+            "type": "text",
+            "text": "実Folio schema"
+          }
+        ]
+      },
+      {
+        "type": "paragraph",
+        "attrs": {
+          "id": "real-paragraph"
+        },
+        "content": [
+          {
+            "type": "text",
+            "marks": [
+              {
+                "type": "bold"
+              }
+            ],
+            "text": "共同編集abcdef"
+          }
+        ]
+      },
+      {
+        "type": "table",
+        "attrs": {
+          "id": "real-table"
+        },
+        "content": [
+          {
+            "type": "tableRow",
+            "attrs": {
+              "id": "real-row"
+            },
+            "content": [
+              {
+                "type": "tableCell",
+                "attrs": {
+                  "id": "real-cell-a",
+                  "colspan": 1,
+                  "rowspan": 1,
+                  "colwidth": null
+                },
+                "content": [
+                  {
+                    "type": "paragraph",
+                    "attrs": {
+                      "id": "real-cell-text-a"
+                    },
+                    "content": [
+                      {
+                        "type": "text",
+                        "text": "値A"
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "type": "tableCell",
+                "attrs": {
+                  "id": "real-cell-b",
+                  "colspan": 1,
+                  "rowspan": 1,
+                  "colwidth": null
+                },
+                "content": [
+                  {
+                    "type": "paragraph",
+                    "attrs": {
+                      "id": "real-cell-text-b"
+                    },
+                    "content": [
+                      {
+                        "type": "text",
+                        "text": "値B"
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "limitation": "JSON schema reflection only; does not execute editor plugins, IME, rich guards or prove binding compatibility"
+}

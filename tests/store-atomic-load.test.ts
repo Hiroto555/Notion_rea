@@ -49,9 +49,15 @@ it("rejects unavailable SQLite state APIs without assuming a closed connection o
     expect(close).not.toHaveBeenCalled();
     open.mockRestore();
     close.mockRestore();
-    expect(f.store.load().pages.some((page) => page.id === f.record.id)).toBe(
-      true,
-    );
+    // An attempted explicit close ends this Store's usable lifetime even
+    // while the missing state proof leaves the actual handle open.
+    expect(() => f.store.load()).toThrow("connection is unusable");
+    expect(db.isOpen).toBe(true);
+    f.store.close();
+    expect(db.isOpen).toBe(false);
+    const reopened = new Store(f.store.path);
+    try {expect(reopened.load().pages.some(page => page.id === f.record.id)).toBe(true);}
+    finally {reopened.close();}
   } finally {
     f.dispose();
   }

@@ -4,13 +4,13 @@
   margin: 0;
   padding: 0;
   border: 0;
-  color: var(--text, #2f322b);
+  color: var(--text, #2b2d31);
   font-size: 11px;
 }
 .page-layout-legend {
   margin: 0 0 6px;
   padding: 0;
-  color: var(--muted, #71746a);
+  color: var(--muted, #6d7076);
   font-size: 11px;
   font-weight: 600;
 }
@@ -30,24 +30,24 @@
   min-height: var(--control-height, 32px);
   padding: 6px 8px;
   text-align: left;
-  color: var(--text-soft, #565a4f);
+  color: var(--text-soft, #55585e);
   background: var(--surface, #fff);
-  border: 1px solid var(--line, #e5e5db);
+  border: 1px solid var(--line, #e6e6e8);
   border-radius: var(--radius-sm, 6px);
   box-shadow: none;
 }
 .page-layout-option:hover:not(:disabled) {
-  color: var(--text, #2f322b);
-  background: var(--hover, #e9ebe1);
+  color: var(--text, #2b2d31);
+  background: var(--hover, #f0f1f3);
 }
 .page-layout-option[aria-pressed="true"] {
-  color: var(--text, #2f322b);
-  background: var(--selected, #e3e9dd);
-  border-color: var(--accent, #4c6a52);
-  box-shadow: inset 0 0 0 1px var(--accent, #4c6a52);
+  color: var(--text, #2b2d31);
+  background: var(--selected, #e9eef5);
+  border-color: var(--accent, #3f6ea5);
+  box-shadow: inset 0 0 0 1px var(--accent, #3f6ea5);
 }
 .page-layout-option:focus-visible {
-  outline: 2px solid var(--focus, #55775d);
+  outline: 2px solid var(--focus, #2f6db0);
   outline-offset: 2px;
 }
 .page-layout-option:disabled {
@@ -63,23 +63,23 @@
 .page-layout-option-description {
   min-width: 0;
   overflow-wrap: anywhere;
-  color: var(--muted, #71746a);
+  color: var(--muted, #6d7076);
   font-size: 9.5px;
   line-height: 1.35;
 }
 .page-layout-option[aria-pressed="true"] .page-layout-option-description {
-  color: var(--text-soft, #565a4f);
+  color: var(--text-soft, #55585e);
 }
 
 /* Dark theme keeps the same selected affordance without touching global CSS. */
 :root[data-theme="dark"] .page-layout-option {
-  background: var(--surface, #262a23);
-  border-color: var(--line, #343830);
+  background: var(--surface, #26272b);
+  border-color: var(--line, #34363a);
 }
 :root[data-theme="dark"] .page-layout-option[aria-pressed="true"] {
-  background: var(--selected, #35402f);
-  border-color: var(--accent, #a9c29b);
-  box-shadow: inset 0 0 0 1px var(--accent, #a9c29b);
+  background: var(--selected, #2b3644);
+  border-color: var(--accent, #8fb6df);
+  box-shadow: inset 0 0 0 1px var(--accent, #8fb6df);
 }
 
 @media (max-width: 360px) {

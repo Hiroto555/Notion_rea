@@ -1,0 +1,140 @@
+
+ RUN  v3.2.7 <LOCAL_HOME>/Documents/ChatGPT/Folio-lv4-implementation-20261107.3qXBLqRk/integration
+
+ ❯ tests/shared-runtime-connected-final.test.ts (7 tests | 6 failed) 678ms
+   × main connected copy and asset operations > commits a previewed private copy through the real resource client with remapped ids, assets and history 264ms
+     → expected '' to be 'alpha-private-body' // Object.is equality
+   ✓ main connected copy and asset operations > rejects a source mutation after preview with COPY_SOURCE_CHANGED before any queue or head movement 82ms
+   × main connected copy and asset operations > stages small bytes, publishes a resource and reads back the exact sha through the main service 77ms
+     → STAGE_UNSUPPORTED
+   × main connected copy and asset operations > reports no mutation when the sender becomes stale during an awaited resource submit 82ms
+     → expected { …(3) } to deeply equal { …(3) }
+   × root normalization and genesis restore > rejects rewritten immutable attempt and intent base hashes after reopen 33ms
+     → expected null to be 'STATE_ROOT_MISMATCH' // Object.is equality
+   × root normalization and genesis restore > rejects a changed current receipt cut hash even when normalization blanks that hash 35ms
+     → expected null to be 'CORRUPT_CUT_POINTER' // Object.is equality
+   × root normalization and genesis restore > restores an old backup under a later current owner and requires the freshly returned key 104ms
+     → RECOVERY_NO_OWNER
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 6 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/shared-runtime-connected-final.test.ts > main connected copy and asset operations > commits a previewed private copy through the real resource client with remapped ids, assets and history
+AssertionError: expected '' to be 'alpha-private-body' // Object.is equality
+
+- Expected
++ Received
+
+- alpha-private-body
+
+ ❯ tests/shared-runtime-connected-final.test.ts:444:43
+    442|       const documentA = f.authority.snapshot(f.token, scopeA).state.do…
+    443|       const documentB = f.authority.snapshot(f.token, scopeB).state.do…
+    444|       expect(inlineText(documentA, "a1")).toBe("alpha-private-body");
+       |                                           ^
+    445|       expect(inlineText(documentB, "b1")).toBe("beta-private-body");
+    446| 
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/6]⎯
+
+ FAIL  tests/shared-runtime-connected-final.test.ts > main connected copy and asset operations > stages small bytes, publishes a resource and reads back the exact sha through the main service
+CollaborationError: STAGE_UNSUPPORTED
+ ❯ fail src/collaboration/runtime/asset-provider.ts:32:9
+     30| 
+     31| function fail(code: string): never {
+     32|   throw new CollaborationError(code);
+       |         ^
+     33| }
+     34| 
+ ❯ parseError src/collaboration/runtime/asset-provider.ts:106:3
+ ❯ SharedAssetProvider.stage src/collaboration/runtime/asset-provider.ts:229:7
+ ❯ SharedRuntimeService.handle src/main/shared-runtime-service.ts:300:22
+ ❯ tests/shared-runtime-connected-final.test.ts:596:23
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/6]⎯
+
+ FAIL  tests/shared-runtime-connected-final.test.ts > main connected copy and asset operations > reports no mutation when the sender becomes stale during an awaited resource submit
+AssertionError: expected { …(3) } to deeply equal { …(3) }
+
+- Expected
++ Received
+
+  {
+    "epoch": "e261f1bd-f766-49a7-bf67-8bf48cc3d908",
+-   "hash": "ae3a1e9fe9760b4750087952aa7e7f488c00bc05fe50bc787d5dc5f54878f3bc",
+-   "seq": 1,
++   "hash": "ae61253045eb0d595beb614f9a3012ea49c452e9a2ddcaa2d19dbcef9789a465",
++   "seq": 2,
+  }
+
+ ❯ tests/shared-runtime-connected-final.test.ts:666:36
+    664|       } else {
+    665|         expect(outcome.error).toMatchObject({ code: "UNAUTHORIZED_IPC_…
+    666|         expect(f.authority.head()).toEqual(before);
+       |                                    ^
+    667|       }
+    668|     },
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/6]⎯
+
+ FAIL  tests/shared-runtime-connected-final.test.ts > root normalization and genesis restore > rejects rewritten immutable attempt and intent base hashes after reopen
+AssertionError: expected null to be 'STATE_ROOT_MISMATCH' // Object.is equality
+
+- Expected: 
+"STATE_ROOT_MISMATCH"
+
++ Received: 
+null
+
+ ❯ tests/shared-runtime-connected-final.test.ts:697:33
+    695|       );
+    696|       h.authority.close();
+    697|       expect(reopenCode(h.dir)).toBe("STATE_ROOT_MISMATCH");
+       |                                 ^
+    698|     }
+    699|   });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/6]⎯
+
+ FAIL  tests/shared-runtime-connected-final.test.ts > root normalization and genesis restore > rejects a changed current receipt cut hash even when normalization blanks that hash
+AssertionError: expected null to be 'CORRUPT_CUT_POINTER' // Object.is equality
+
+- Expected: 
+"CORRUPT_CUT_POINTER"
+
++ Received: 
+null
+
+ ❯ tests/shared-runtime-connected-final.test.ts:724:31
+    722|     });
+    723|     h.authority.close();
+    724|     expect(reopenCode(h.dir)).toBe("CORRUPT_CUT_POINTER");
+       |                               ^
+    725|   });
+    726| 
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/6]⎯
+
+ FAIL  tests/shared-runtime-connected-final.test.ts > root normalization and genesis restore > restores an old backup under a later current owner and requires the freshly returned key
+CollaborationError: RECOVERY_NO_OWNER
+ ❯ src/collaboration/runtime/identity.ts:716:15
+    714|       }
+    715|       if (ownerId === undefined)
+    716|         throw new CollaborationError("RECOVERY_NO_OWNER");
+       |               ^
+    717| 
+    718|       const newDeviceKey = deviceKey(orgId, newDeviceId);
+ ❯ IdentityAuthority.run src/collaboration/runtime/identity.ts:782:45
+ ❯ IdentityAuthority.recover src/collaboration/runtime/identity.ts:690:17
+ ❯ src/collaboration/runtime/authority.ts:1238:36
+ ❯ RuntimeStore.transaction src/collaboration/runtime/store.ts:452:15
+ ❯ SharedAuthority.recover src/collaboration/runtime/authority.ts:1237:23
+ ❯ tests/shared-runtime-connected-final.test.ts:798:34
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[6/6]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  6 failed | 1 passed (7)
+   Start at  19:48:05
+   Duration  2.49s (transform 1.12s, setup 0ms, collect 1.66s, tests 678ms, environment 0ms, prepare 50ms)
+

@@ -29,6 +29,7 @@ import type {
   WorkspaceBackupManifest,
 } from "../shared/workspace-backup";
 import { verifyFullBackup } from "./full-backup-verify";
+import { withPrivatePersistence, privatePersistencePort, type NativePrivateFilesystemPort, type PrivatePersistenceOptions } from "../platform/private-persistence";
 
 const INCOMPLETE_MARKER = "FOLIO-RECOVERY-INCOMPLETE";
 const MANIFEST_FILE = "manifest.json";
@@ -182,7 +183,7 @@ function readRegularFile(root: string, value: string, maxBytes: number): Buffer 
   }
 }
 
-function ensureDirectoryChain(root: string, target: string): void {
+function ensureDirectoryChain(root: string, target: string, native?: NativePrivateFilesystemPort): void {
   const rel = relative(root, target);
   if (rel === "") return;
   if (rel === ".." || rel.startsWith(".." + sep) || isAbsolute(rel))
@@ -194,8 +195,10 @@ function ensureDirectoryChain(root: string, target: string): void {
       const stat = lstatSync(cursor);
       if (stat.isSymbolicLink() || !stat.isDirectory())
         throw new Error("復元先のパスが不正です。");
+      native?.inspectDirectory(cursor);
     } else {
-      mkdirSync(cursor, { mode: 0o700 });
+      if (native) native.createDirectory(cursor);
+      else mkdirSync(cursor, { mode: 0o700 });
       const stat = lstatSync(cursor);
       if (stat.isSymbolicLink() || !stat.isDirectory())
         throw new Error("復元先のパスが不正です。");
@@ -290,11 +293,13 @@ function assertRestoreDestination(source: string, destination: string): void {
  * A failure leaves the destination marked incomplete for diagnosis, never
  * deletes it, and never modifies the source backup.
  */
-export function restoreFullBackup(
+function restoreFullBackupImpl(
   sourceBackup: string,
   destination: string,
   expectedFingerprint?: string,
+  options?: PrivatePersistenceOptions,
 ): RestoredWorkspace {
+  const native = privatePersistencePort(options);
   if (
     typeof sourceBackup !== "string" ||
     sourceBackup.length === 0 ||
@@ -339,6 +344,38 @@ export function restoreFullBackup(
     throw new Error("バックアップのmanifestが検証時と異なります。");
 
   assertRestoreDestination(sourceRoot, target);
+
+  if (native) {
+    const sourceIdentity = native.inspectDirectory(sourceRoot);
+    const manifestIdentity = native.inspectFile(join(sourceRoot, MANIFEST_FILE), 32 * 1024 * 1024);
+    if (!Buffer.from(native.read(manifestIdentity.path, manifestIdentity, 32 * 1024 * 1024)).equals(manifestBytes))
+      throw new Error("バックアップのmanifestが検証時と異なります。");
+    native.createDirectory(target);
+    const markerPath = join(target, INCOMPLETE_MARKER);
+    const marker = native.writeNew(markerPath, Buffer.from(MARKER_TEXT), 4096).identity;
+    for (const file of [sourceVerified.manifest.database, ...sourceVerified.manifest.assets]) {
+      const from = resolveInside(sourceRoot, file.path), to = resolveInside(target, file.path);
+      ensureDirectoryChain(target, dirname(to), native);
+      const expected = native.inspectFile(from, 256 * 1024 * 1024);
+      if (expected.bytes !== file.bytes || expected.sha256 !== file.sha256)
+        throw new Error("バックアップのファイルが検証時と異なります。");
+      native.copyNew(from, to, expected, 256 * 1024 * 1024);
+    }
+    // Empty workspaces still require an assets directory.
+    if (!entryExists(join(target, "assets"))) native.createDirectory(join(target, "assets"));
+    native.writeNew(join(target, MANIFEST_FILE), manifestBytes, 32 * 1024 * 1024);
+    const after = native.inspectDirectory(sourceRoot), sourceAfter = verifyFullBackup(sourceRoot);
+    if (after.fileId !== sourceIdentity.fileId || after.volumeId !== sourceIdentity.volumeId ||
+      sourceAfter.fingerprint !== sourceVerified.fingerprint ||
+      !isDeepStrictEqual(sourceAfter.manifest, sourceVerified.manifest))
+      throw new Error("バックアップがコピー中に変更されました。");
+    const verified = verifyFullBackup(target, { allowIncomplete: true });
+    if (verified.fingerprint !== sourceVerified.fingerprint ||
+      !isDeepStrictEqual(verified.manifest, sourceVerified.manifest))
+      throw new Error("復元先の検証に失敗しました。");
+    native.unlinkExact(markerPath, marker, 4096);
+    return { directory: target, sourceFingerprint: sourceAfter.fingerprint, manifest: verified.manifest };
+  }
 
   // mkdir without recursive mode is the exclusive reservation. Any existing
   // file, folder or symlink (including a dangling link) was rejected above.
@@ -391,4 +428,8 @@ export function restoreFullBackup(
     sourceFingerprint: sourceAfterCopy.fingerprint,
     manifest: destinationVerified.manifest,
   };
+}
+
+export function restoreFullBackup(sourceBackup: string, destination: string, expectedFingerprint?: string, options?: PrivatePersistenceOptions): RestoredWorkspace {
+  return withPrivatePersistence(options, () => restoreFullBackupImpl(sourceBackup, destination, expectedFingerprint, options));
 }

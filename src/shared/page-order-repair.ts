@@ -4,7 +4,7 @@ import type { WorkspaceInventory } from "./workspace-backup";
  * Explicit repair of sibling positions that the previous duplicate
  * implementation left equal. Nothing here runs automatically: a caller must
  * request a read-only preview, show every entry below to the user, and then
- * apply that exact preview. No IPC/GUI wiring is provided by this contract.
+ * apply that exact preview.
  *
  * Preview guarantees:
  * - only raw values are read; the workspace is not written;
@@ -83,6 +83,8 @@ export type PageOrderRepairResult = {
 };
 
 export type PageOrderRepairOptions = {
+  /** Main-process capacity and configured backup limits, checked before mkdir. */
+  beforeBackup?: () => void;
   /**
    * Parent directory for the verified full backup. Defaults to
    * `<workspace>/backups`, matching WorkspaceBackupService. The final backup

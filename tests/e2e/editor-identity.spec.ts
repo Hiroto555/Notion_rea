@@ -9,6 +9,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { editorDoc } from "./drag-observer";
 import { realDrag } from "./real-drag";
+import { clickEditorEditButton, documentEditor } from "./ui-chrome-controls";
 
 test("Editor 2.0: legacy document obtains IDs on edit, survives restart and copy paste", async ({
   folio: s,
@@ -204,9 +205,9 @@ test("Editor 2.0: nested sibling move, duplicate, undo/redo and restart", async 
   expect(duplicated[2].content[0].content[0].marks).toContainEqual({
     type: "bold",
   });
-  await w.getByLabel("元に戻す", { exact: true }).click();
+  await clickEditorEditButton(documentEditor(w), "元に戻す");
   await expect.poll(async () => (await current()).length).toBe(2);
-  await w.getByLabel("やり直す", { exact: true }).click();
+  await clickEditorEditButton(documentEditor(w), "やり直す");
   await expect
     .poll(async () => (await current()).map((n: any) => n.attrs.id))
     .toEqual(duplicated.map((n: any) => n.attrs.id));
@@ -223,15 +224,18 @@ test("Editor 2.0: nested sibling move, duplicate, undo/redo and restart", async 
       duplicated[1].attrs.id,
     ]);
   await w.locator(".folio-editor ul > li").first().locator("p").first().click();
-  await w.getByLabel("カーソルのネストブロックを選択", { exact: true }).click();
+  await clickEditorEditButton(
+    documentEditor(w),
+    "カーソルのネストブロックを選択",
+  );
   await w.getByLabel("ネストブロックを複製", { exact: true }).click();
   await expect.poll(async () => (await current())[0].content.length).toBe(2);
   const paragraphs = (await current())[0].content;
   expect(paragraphs[0].attrs.id).not.toBe(paragraphs[1].attrs.id);
   expect(paragraphs[1].content[0].marks).toContainEqual({ type: "bold" });
-  await w.getByLabel("元に戻す", { exact: true }).click();
+  await clickEditorEditButton(documentEditor(w), "元に戻す");
   await expect.poll(async () => (await current())[0].content.length).toBe(1);
-  await w.getByLabel("やり直す", { exact: true }).click();
+  await clickEditorEditButton(documentEditor(w), "やり直す");
   await expect
     .poll(async () => (await current())[0].content.map((n: any) => n.attrs.id))
     .toEqual(paragraphs.map((n: any) => n.attrs.id));
@@ -307,11 +311,11 @@ test("Editor 2.0: drag a nested item between lists without changing identity", a
     ]);
   expect((await read())[0].content).toHaveLength(1);
   expect((await read())[2].content[0].content[0].attrs.id).toBe(childId);
-  await w.getByLabel("元に戻す", { exact: true }).click();
+  await clickEditorEditButton(documentEditor(w), "元に戻す");
   await expect
     .poll(async () => (await read())[0].content.map((n: any) => n.attrs.id))
     .toEqual(before[0].content.map((n: any) => n.attrs.id));
-  await w.getByLabel("やり直す", { exact: true }).click();
+  await clickEditorEditButton(documentEditor(w), "やり直す");
   await expect
     .poll(async () => (await read())[2].content[0].attrs.id)
     .toBe(movedId);

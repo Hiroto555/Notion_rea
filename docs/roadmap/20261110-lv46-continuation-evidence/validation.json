@@ -1,0 +1,135 @@
+{
+  "recordedAt": "2026-11-10T14:29:04.059280+00:00",
+  "candidateSourceSha256": "bd4fa1fd02f4c689ea703b76be05fc9d60edc341745a73c1c55e0da4fbc2afe0",
+  "environment": {
+    "node": "v24.20.0",
+    "platform": "darwin",
+    "arch": "arm64"
+  },
+  "classification": "LOCAL_BOUNDED_IMPLEMENTATION_CANDIDATE; LEVEL_REMAINS_3",
+  "typecheck": {
+    "state": "PASS",
+    "command": "npm run check",
+    "log": "logs/final-check.log"
+  },
+  "build": {
+    "state": "PASS",
+    "command": "npm run build",
+    "log": "logs/final-build.log",
+    "warnings": [
+      "Vite large chunk; static/dynamic import overlap; GUI/performance NOT_RUN"
+    ]
+  },
+  "nonGuiSuite": {
+    "state": "PASS",
+    "command": "FOLIO_WINDOWS_HELPER_BUILD_ROOT=<owned temporary single-file build> npm test -- --maxWorkers=2 --reporter=json",
+    "files": 336,
+    "passed": 3458,
+    "failed": 0,
+    "skipped": 0,
+    "nativeArtifactTests": {
+      "count": 2,
+      "kind": "PE_AND_EMBEDDED_ASSEMBLY_INSPECTION_ONLY",
+      "windowsExecution": "NOT_RUN"
+    }
+  },
+  "comparison": {
+    "bindingTests": {
+      "passed": 20,
+      "failed": 0,
+      "log": "logs/comparative-bindings-final.log"
+    },
+    "independentAndImageTests": {
+      "passed": 20,
+      "failed": 0,
+      "log": "logs/comparative-final.log"
+    },
+    "warning": "Includes R05 unsupported-delivery diagnostic; actual durable HTTP/SQLite/crash/receipt evidence is in product Node suite. Historical baseline counterexample reproduction is not adoption proof."
+  },
+  "compiledCli": {
+    "state": "PASS",
+    "kind": "COMPILED_CLI_OWNED_NODE_SQLITE_LOOPBACK",
+    "bootstrap": true,
+    "serve": true,
+    "currentStateRpc": true,
+    "backup": true,
+    "recovery": true,
+    "oldTokenRevoked": true,
+    "historicalArtifactVerify": true,
+    "compactAfterFence": true,
+    "protocol1004": true,
+    "stagingPreview": true,
+    "collectPreview": true,
+    "restore": true,
+    "reopen": true,
+    "restoredProtocol1004": true,
+    "secretsInOutput": false,
+    "gui": "NOT_RUN",
+    "physical": "NOT_RUN"
+  },
+  "native": {
+    "crossPublish": [
+      {
+        "component": "probe",
+        "runtime": "win-x64",
+        "status": "PASS",
+        "exit": 0,
+        "seconds": 27.61,
+        "windowsExecution": "NOT_RUN"
+      },
+      {
+        "component": "owned",
+        "runtime": "win-x64",
+        "status": "PASS",
+        "exit": 0,
+        "seconds": 1.14,
+        "windowsExecution": "NOT_RUN"
+      }
+    ],
+    "artifacts": [
+      {
+        "component": "probe",
+        "runtime": "win-x64",
+        "exe": "PrivateRootProbe.exe",
+        "bytes": 210435,
+        "sha256": "bbb3c0f97ef05e4bfa057b53312addd1ce1ae4c85dc78bb9554e2d473863e4ae",
+        "PEMachine": "0x8664",
+        "outputFiles": [
+          "PrivateRootProbe.exe"
+        ],
+        "embeddedAppDllVerifiedByArtifactTest": true,
+        "managedAssemblyOrigin": "owned temp obj",
+        "windowsExecution": "NOT_RUN",
+        "systemDotNetRuntime": "prerequisite, not bundled"
+      },
+      {
+        "component": "owned",
+        "runtime": "win-x64",
+        "exe": "OwnedNodeJob.exe",
+        "bytes": 207339,
+        "sha256": "c35e9c6cfc15dbaceda6c167df2f42c4be95862202374254d797ee3db3958baa",
+        "PEMachine": "0x8664",
+        "outputFiles": [
+          "OwnedNodeJob.exe"
+        ],
+        "embeddedAppDllVerifiedByArtifactTest": true,
+        "managedAssemblyOrigin": "owned temp obj",
+        "windowsExecution": "NOT_RUN",
+        "systemDotNetRuntime": "prerequisite, not bundled"
+      }
+    ],
+    "managedProbeCompile": {
+      "exit": 0,
+      "seconds": 1.95,
+      "physical": "NOT_RUN"
+    },
+    "windowsArm64Publish": "NOT_RUN",
+    "windowsOS": "NOT_RUN",
+    "dpapi": "NOT_RUN",
+    "appPackaging": "NOT_RUN",
+    "signing": "NOT_RUN"
+  },
+  "gui": "NOT_RUN",
+  "physicalMacs": "NOT_RUN",
+  "physicalWindows": "NOT_RUN"
+}

@@ -1,0 +1,1695 @@
+{
+  "state": "PASS",
+  "command": "FOLIO_WINDOWS_HELPER_BUILD_ROOT=<owned temporary single-file build> npm test -- --maxWorkers=2 --reporter=json",
+  "files": 336,
+  "passed": 3458,
+  "failed": 0,
+  "skipped": 0,
+  "nativeArtifactTests": {
+    "count": 2,
+    "kind": "PE_AND_EMBEDDED_ASSEMBLY_INSPECTION_ONLY",
+    "windowsExecution": "NOT_RUN"
+  },
+  "tests": [
+    {
+      "path": "tests/backup-maintenance.test.ts",
+      "passed": 12,
+      "failed": 0
+    },
+    {
+      "path": "tests/bulk-storage-budget.test.ts",
+      "passed": 6,
+      "failed": 0
+    },
+    {
+      "path": "tests/collaboration-crash.test.ts",
+      "passed": 2,
+      "failed": 0
+    },
+    {
+      "path": "tests/collaboration-preparation.test.ts",
+      "passed": 35,
+      "failed": 0
+    },
+    {
+      "path": "tests/corrupt-page-isolation.test.ts",
+      "passed": 13,
+      "failed": 0
+    },
+    {
+      "path": "tests/crash-recovery.test.ts",
+      "passed": 13,
+      "failed": 0
+    },
+    {
+      "path": "tests/database-input-guard.test.ts",
+      "passed": 11,
+      "failed": 0
+    },
+    {
+      "path": "tests/database-operations-r5.test.ts",
+      "passed": 9,
+      "failed": 0
+    },
+    {
+      "path": "tests/database-read-snapshot.test.ts",
+      "passed": 21,
+      "failed": 0
+    },
+    {
+      "path": "tests/database-session-r5.test.ts",
+      "passed": 6,
+      "failed": 0
+    },
+    {
+      "path": "tests/database-settings-pending.test.ts",
+      "passed": 6,
+      "failed": 0
+    },
+    {
+      "path": "tests/database-ui.test.ts",
+      "passed": 34,
+      "failed": 0
+    },
+    {
+      "path": "tests/database-v2.test.ts",
+      "passed": 19,
+      "failed": 0
+    },
+    {
+      "path": "tests/dsh-integration-regressions.test.ts",
+      "passed": 7,
+      "failed": 0
+    },
+    {
+      "path": "tests/dsh-r2-integration-regressions.test.ts",
+      "passed": 6,
+      "failed": 0
+    },
+    {
+      "path": "tests/dsh-r3-integration-regressions.test.ts",
+      "passed": 8,
+      "failed": 0
+    },
+    {
+      "path": "tests/dsh-r4-storage-integration.test.ts",
+      "passed": 14,
+      "failed": 0
+    },
+    {
+      "path": "tests/durability-attachment-backup.test.ts",
+      "passed": 12,
+      "failed": 0
+    },
+    {
+      "path": "tests/edit-session-coordinator.test.ts",
+      "passed": 6,
+      "failed": 0
+    },
+    {
+      "path": "tests/editor-identity.test.ts",
+      "passed": 5,
+      "failed": 0
+    },
+    {
+      "path": "tests/editor-legacy-compat.test.ts",
+      "passed": 1,
+      "failed": 0
+    },
+    {
+      "path": "tests/editor-r3-clipboard.test.ts",
+      "passed": 9,
+      "failed": 0
+    },
+    {
+      "path": "tests/editor-r3-selection.test.ts",
+      "passed": 3,
+      "failed": 0
+    },
+    {
+      "path": "tests/fidelity-display-contract.test.ts",
+      "passed": 8,
+      "failed": 0
+    },
+    {
+      "path": "tests/fidelity-evidence.test.ts",
+      "passed": 10,
+      "failed": 0
+    },
+    {
+      "path": "tests/fidelity-modal-contract.test.ts",
+      "passed": 8,
+      "failed": 0
+    },
+    {
+      "path": "tests/gate-a.test.ts",
+      "passed": 11,
+      "failed": 0
+    },
+    {
+      "path": "tests/gui-fixture-isolation.test.ts",
+      "passed": 3,
+      "failed": 0
+    },
+    {
+      "path": "tests/gui-test-policy.test.ts",
+      "passed": 17,
+      "failed": 0
+    },
+    {
+      "path": "tests/integration-migration.test.ts",
+      "passed": 3,
+      "failed": 0
+    },
+    {
+      "path": "tests/l3-crash-boundaries.test.ts",
+      "passed": 9,
+      "failed": 0
+    },
+    {
+      "path": "tests/l3-durability-backup.test.ts",
+      "passed": 2,
+      "failed": 0
+    },
+    {
+      "path": "tests/l3-durability-corrupt.test.ts",
+      "passed": 2,
+      "failed": 0
+    },
+    {
+      "path": "tests/l3-page-initial-doc.test.ts",
+      "passed": 11,
+      "failed": 0
+    },
+    {
+      "path": "tests/l3-page-recovery-retry.test.ts",
+      "passed": 9,
+      "failed": 0
+    },
+    {
+      "path": "tests/l3-storage-usage-files.test.ts",
+      "passed": 13,
+      "failed": 0
+    },
+    {
+      "path": "tests/l3-storage-usage.test.ts",
+      "passed": 15,
+      "failed": 0
+    },
+    {
+      "path": "tests/legacy-migration-operation.test.ts",
+      "passed": 8,
+      "failed": 0
+    },
+    {
+      "path": "tests/legacy-record-map.test.ts",
+      "passed": 5,
+      "failed": 0
+    },
+    {
+      "path": "tests/legacy-record-plan.test.ts",
+      "passed": 3,
+      "failed": 0
+    },
+    {
+      "path": "tests/linux-gui-ci-policy.test.ts",
+      "passed": 5,
+      "failed": 0
+    },
+    {
+      "path": "tests/local-gui-fixture.test.ts",
+      "passed": 6,
+      "failed": 0
+    },
+    {
+      "path": "tests/local-integrity-regressions.test.ts",
+      "passed": 12,
+      "failed": 0
+    },
+    {
+      "path": "tests/lv4-conflict-decision-ui.test.ts",
+      "passed": 21,
+      "failed": 0
+    },
+    {
+      "path": "tests/lv4-conflict-export.test.ts",
+      "passed": 2,
+      "failed": 0
+    },
+    {
+      "path": "tests/lv4-conflict-page-comparison.test.ts",
+      "passed": 3,
+      "failed": 0
+    },
+    {
+      "path": "tests/lv4-conflict-record-comparison.test.ts",
+      "passed": 6,
+      "failed": 0
+    },
+    {
+      "path": "tests/lv4-conflict-resolution.test.ts",
+      "passed": 34,
+      "failed": 0
+    },
+    {
+      "path": "tests/lv4-connection-binding-preflight.test.ts",
+      "passed": 5,
+      "failed": 0
+    },
+    {
+      "path": "tests/lv4-core-echo-offline.test.ts",
+      "passed": 1,
+      "failed": 0
+    },
+    {
+      "path": "tests/lv4-core-split.test.ts",
+      "passed": 6,
+      "failed": 0
+    },
+    {
+      "path": "tests/lv4-fixture-ops.test.ts",
+      "passed": 3,
+      "failed": 0
+    },
+    {
+      "path": "tests/lv4-go-capacity.test.ts",
+      "passed": 3,
+      "failed": 0
+    },
+    {
+      "path": "tests/lv4-go-core-echo-dirty.test.ts",
+      "passed": 1,
+      "failed": 0
+    },
+    {
+      "path": "tests/lv4-go-ops.test.ts",
+      "passed": 5,
+      "failed": 0
+    },
+    {
+      "path": "tests/lv4-normal-journal-cancel-fault.test.ts",
+      "passed": 5,
+      "failed": 0
+    },
+    {
+      "path": "tests/lv4-restart-cancel.test.ts",
+      "passed": 1,
+      "failed": 0
+    },
+    {
+      "path": "tests/lv4-restart-faults.test.ts",
+      "passed": 2,
+      "failed": 0
+    },
+    {
+      "path": "tests/lv4-restart-identity-faults.test.ts",
+      "passed": 3,
+      "failed": 0
+    },
+    {
+      "path": "tests/lv4-restart-product-path.test.ts",
+      "passed": 1,
+      "failed": 0
+    },
+    {
+      "path": "tests/lv4-secret-record-file-failure.test.ts",
+      "passed": 1,
+      "failed": 0
+    },
+    {
+      "path": "tests/lv4-secret-record-file.test.ts",
+      "passed": 14,
+      "failed": 0
+    },
+    {
+      "path": "tests/lv4-secret-store.test.ts",
+      "passed": 18,
+      "failed": 0
+    },
+    {
+      "path": "tests/lv4-server-backup-inspection-product.test.ts",
+      "passed": 3,
+      "failed": 0
+    },
+    {
+      "path": "tests/lv4-server-backup-inspection-race.test.ts",
+      "passed": 1,
+      "failed": 0
+    },
+    {
+      "path": "tests/lv4-server-backup-inspection.test.ts",
+      "passed": 9,
+      "failed": 0
+    },
+    {
+      "path": "tests/lv4-server-backup.test.ts",
+      "passed": 9,
+      "failed": 0
+    },
+    {
+      "path": "tests/lv4-staged-assets.test.ts",
+      "passed": 3,
+      "failed": 0
+    },
+    {
+      "path": "tests/lv4-sync-apply-guard.test.ts",
+      "passed": 2,
+      "failed": 0
+    },
+    {
+      "path": "tests/lv4-sync-control.test.ts",
+      "passed": 6,
+      "failed": 0
+    },
+    {
+      "path": "tests/lv4-sync-gate.test.ts",
+      "passed": 4,
+      "failed": 0
+    },
+    {
+      "path": "tests/lv4-sync-history.test.ts",
+      "passed": 1,
+      "failed": 0
+    },
+    {
+      "path": "tests/lv4-sync-intent.test.ts",
+      "passed": 4,
+      "failed": 0
+    },
+    {
+      "path": "tests/lv4-sync-reconnect-startup.test.ts",
+      "passed": 1,
+      "failed": 0
+    },
+    {
+      "path": "tests/lv4-sync-restart-coordinator.test.ts",
+      "passed": 10,
+      "failed": 0
+    },
+    {
+      "path": "tests/lv4-sync-restart-request.test.ts",
+      "passed": 5,
+      "failed": 0
+    },
+    {
+      "path": "tests/lv4-sync-service.test.ts",
+      "passed": 9,
+      "failed": 0
+    },
+    {
+      "path": "tests/lv4-sync-status-text.test.ts",
+      "passed": 2,
+      "failed": 0
+    },
+    {
+      "path": "tests/lv4-workspace-quit.test.ts",
+      "passed": 3,
+      "failed": 0
+    },
+    {
+      "path": "tests/m1-conflict-archive-catalog.test.ts",
+      "passed": 9,
+      "failed": 0
+    },
+    {
+      "path": "tests/m1-conflict-recovery-acceptance.test.ts",
+      "passed": 10,
+      "failed": 0
+    },
+    {
+      "path": "tests/m1-conflict-recovery-adversarial.test.ts",
+      "passed": 14,
+      "failed": 0
+    },
+    {
+      "path": "tests/m1-conflict-recovery-assets.test.ts",
+      "passed": 12,
+      "failed": 0
+    },
+    {
+      "path": "tests/m1-conflict-recovery-export.test.ts",
+      "passed": 12,
+      "failed": 0
+    },
+    {
+      "path": "tests/m1-conflict-recovery-import.test.ts",
+      "passed": 6,
+      "failed": 0
+    },
+    {
+      "path": "tests/m1-conflict-recovery-model.test.ts",
+      "passed": 27,
+      "failed": 0
+    },
+    {
+      "path": "tests/m1-conflict-recovery-verify.test.ts",
+      "passed": 9,
+      "failed": 0
+    },
+    {
+      "path": "tests/m1-normal-apply-faults.test.ts",
+      "passed": 12,
+      "failed": 0
+    },
+    {
+      "path": "tests/m1-normal-apply-journal.test.ts",
+      "passed": 29,
+      "failed": 0
+    },
+    {
+      "path": "tests/m1-recovery-flow.test.ts",
+      "passed": 6,
+      "failed": 0
+    },
+    {
+      "path": "tests/m1-recovery-io-faults.test.ts",
+      "passed": 4,
+      "failed": 0
+    },
+    {
+      "path": "tests/m1-recovery-response-loss.test.ts",
+      "passed": 11,
+      "failed": 0
+    },
+    {
+      "path": "tests/m1-recovery-routing.test.ts",
+      "passed": 3,
+      "failed": 0
+    },
+    {
+      "path": "tests/m2-blob-budget-isolation.test.ts",
+      "passed": 1,
+      "failed": 0
+    },
+    {
+      "path": "tests/m2-blob-journal-adversarial.test.ts",
+      "passed": 12,
+      "failed": 0
+    },
+    {
+      "path": "tests/m2-blob-partial-adversarial.test.ts",
+      "passed": 14,
+      "failed": 0
+    },
+    {
+      "path": "tests/m2-blob-resume-integration.test.ts",
+      "passed": 11,
+      "failed": 0
+    },
+    {
+      "path": "tests/m2-blob-transfer-budget.test.ts",
+      "passed": 8,
+      "failed": 0
+    },
+    {
+      "path": "tests/m2-blob-transfer-inventory.test.ts",
+      "passed": 8,
+      "failed": 0
+    },
+    {
+      "path": "tests/m2-blob-upload-resume.test.ts",
+      "passed": 18,
+      "failed": 0
+    },
+    {
+      "path": "tests/m2-staging-product.test.ts",
+      "passed": 2,
+      "failed": 0
+    },
+    {
+      "path": "tests/m2-staging-reclaim.test.ts",
+      "passed": 5,
+      "failed": 0
+    },
+    {
+      "path": "tests/m3-backup-admission.test.ts",
+      "passed": 6,
+      "failed": 0
+    },
+    {
+      "path": "tests/m3-backup-retention.test.ts",
+      "passed": 16,
+      "failed": 0
+    },
+    {
+      "path": "tests/m3-bundled-schema.test.ts",
+      "passed": 3,
+      "failed": 0
+    },
+    {
+      "path": "tests/m3-cache-release-file.test.ts",
+      "passed": 9,
+      "failed": 0
+    },
+    {
+      "path": "tests/m3-catalog-counter.test.ts",
+      "passed": 3,
+      "failed": 0
+    },
+    {
+      "path": "tests/m3-client-retention-admission.test.ts",
+      "passed": 8,
+      "failed": 0
+    },
+    {
+      "path": "tests/m3-conflict-readiness.test.ts",
+      "passed": 4,
+      "failed": 0
+    },
+    {
+      "path": "tests/m3-connection-panel.test.ts",
+      "passed": 11,
+      "failed": 0
+    },
+    {
+      "path": "tests/m3-connection-ui.test.ts",
+      "passed": 8,
+      "failed": 0
+    },
+    {
+      "path": "tests/m3-connection-vault.test.ts",
+      "passed": 8,
+      "failed": 0
+    },
+    {
+      "path": "tests/m3-credential-codec.test.ts",
+      "passed": 10,
+      "failed": 0
+    },
+    {
+      "path": "tests/m3-credential-reuse.test.ts",
+      "passed": 4,
+      "failed": 0
+    },
+    {
+      "path": "tests/m3-full-backup-adversarial.test.ts",
+      "passed": 6,
+      "failed": 0
+    },
+    {
+      "path": "tests/m3-full-directory-sync.test.ts",
+      "passed": 2,
+      "failed": 0
+    },
+    {
+      "path": "tests/m3-management-control.test.ts",
+      "passed": 8,
+      "failed": 0
+    },
+    {
+      "path": "tests/m3-private-ledger.test.ts",
+      "passed": 12,
+      "failed": 0
+    },
+    {
+      "path": "tests/m3-private-root.test.ts",
+      "passed": 6,
+      "failed": 0
+    },
+    {
+      "path": "tests/m3-product-lifecycle.test.ts",
+      "passed": 1,
+      "failed": 0
+    },
+    {
+      "path": "tests/m3-server-blob-admission.test.ts",
+      "passed": 7,
+      "failed": 0
+    },
+    {
+      "path": "tests/m3-server-blob-retention.test.ts",
+      "passed": 17,
+      "failed": 0
+    },
+    {
+      "path": "tests/m3-server-cli.test.ts",
+      "passed": 5,
+      "failed": 0
+    },
+    {
+      "path": "tests/m3-server-directory-lease.test.ts",
+      "passed": 5,
+      "failed": 0
+    },
+    {
+      "path": "tests/m3-server-full-backup.test.ts",
+      "passed": 1,
+      "failed": 0
+    },
+    {
+      "path": "tests/m3-server-full-inspection.test.ts",
+      "passed": 16,
+      "failed": 0
+    },
+    {
+      "path": "tests/m3-server-history-adversarial.test.ts",
+      "passed": 12,
+      "failed": 0
+    },
+    {
+      "path": "tests/m3-server-history.test.ts",
+      "passed": 8,
+      "failed": 0
+    },
+    {
+      "path": "tests/m3-server-hot-recovery.test.ts",
+      "passed": 3,
+      "failed": 0
+    },
+    {
+      "path": "tests/m3-server-ops-config.test.ts",
+      "passed": 20,
+      "failed": 0
+    },
+    {
+      "path": "tests/m3-server-retention-admission.test.ts",
+      "passed": 6,
+      "failed": 0
+    },
+    {
+      "path": "tests/m3-server-verified-file.test.ts",
+      "passed": 13,
+      "failed": 0
+    },
+    {
+      "path": "tests/m3-service-suspend.test.ts",
+      "passed": 5,
+      "failed": 0
+    },
+    {
+      "path": "tests/m3-sync-retention.test.ts",
+      "passed": 11,
+      "failed": 0
+    },
+    {
+      "path": "tests/m3-transfer-catalog.test.ts",
+      "passed": 11,
+      "failed": 0
+    },
+    {
+      "path": "tests/m3-transfer-maintenance.test.ts",
+      "passed": 21,
+      "failed": 0
+    },
+    {
+      "path": "tests/m3-transfer-panel.test.ts",
+      "passed": 19,
+      "failed": 0
+    },
+    {
+      "path": "tests/m3-transfer-suspension.test.ts",
+      "passed": 3,
+      "failed": 0
+    },
+    {
+      "path": "tests/m3-transfer-ui.test.ts",
+      "passed": 10,
+      "failed": 0
+    },
+    {
+      "path": "tests/mac-remote-batch.test.ts",
+      "passed": 3,
+      "failed": 0
+    },
+    {
+      "path": "tests/migration-snapshot.test.ts",
+      "passed": 7,
+      "failed": 0
+    },
+    {
+      "path": "tests/move-record-isolation.test.ts",
+      "passed": 17,
+      "failed": 0
+    },
+    {
+      "path": "tests/orphan-maintenance.test.ts",
+      "passed": 13,
+      "failed": 0
+    },
+    {
+      "path": "tests/output-path.test.ts",
+      "passed": 1,
+      "failed": 0
+    },
+    {
+      "path": "tests/package-target.test.ts",
+      "passed": 20,
+      "failed": 0
+    },
+    {
+      "path": "tests/page-operation-coordinator.test.ts",
+      "passed": 8,
+      "failed": 0
+    },
+    {
+      "path": "tests/page-operation-receipts.test.ts",
+      "passed": 7,
+      "failed": 0
+    },
+    {
+      "path": "tests/page-order-repair-routing.test.ts",
+      "passed": 6,
+      "failed": 0
+    },
+    {
+      "path": "tests/page-order-repair.test.ts",
+      "passed": 20,
+      "failed": 0
+    },
+    {
+      "path": "tests/page-restore-order.test.ts",
+      "passed": 28,
+      "failed": 0
+    },
+    {
+      "path": "tests/page-tree-move.test.ts",
+      "passed": 24,
+      "failed": 0
+    },
+    {
+      "path": "tests/page-tree.test.ts",
+      "passed": 4,
+      "failed": 0
+    },
+    {
+      "path": "tests/pending-edits.test.ts",
+      "passed": 3,
+      "failed": 0
+    },
+    {
+      "path": "tests/pending-journal-file.test.ts",
+      "passed": 10,
+      "failed": 0
+    },
+    {
+      "path": "tests/pending-journal.test.ts",
+      "passed": 7,
+      "failed": 0
+    },
+    {
+      "path": "tests/pending-record-overlay.test.ts",
+      "passed": 2,
+      "failed": 0
+    },
+    {
+      "path": "tests/platform-credential-provider.test.ts",
+      "passed": 20,
+      "failed": 0
+    },
+    {
+      "path": "tests/portable-recovery-mixed.test.ts",
+      "passed": 35,
+      "failed": 0
+    },
+    {
+      "path": "tests/portable-recovery.test.ts",
+      "passed": 12,
+      "failed": 0
+    },
+    {
+      "path": "tests/prepare-crash-recovery.test.ts",
+      "passed": 11,
+      "failed": 0
+    },
+    {
+      "path": "tests/property-number-input.test.ts",
+      "passed": 3,
+      "failed": 0
+    },
+    {
+      "path": "tests/property-operation-r6.test.ts",
+      "passed": 33,
+      "failed": 0
+    },
+    {
+      "path": "tests/quiet-runner.test.ts",
+      "passed": 16,
+      "failed": 0
+    },
+    {
+      "path": "tests/r5-local-assets.test.ts",
+      "passed": 1,
+      "failed": 0
+    },
+    {
+      "path": "tests/r5-offline-lifecycle.test.ts",
+      "passed": 1,
+      "failed": 0
+    },
+    {
+      "path": "tests/r5-parent-regressions.test.ts",
+      "passed": 1,
+      "failed": 0
+    },
+    {
+      "path": "tests/r5-raw-rescue-cli.test.ts",
+      "passed": 7,
+      "failed": 0
+    },
+    {
+      "path": "tests/r5-schema-startup.test.ts",
+      "passed": 18,
+      "failed": 0
+    },
+    {
+      "path": "tests/r5-source-readers.test.ts",
+      "passed": 2,
+      "failed": 0
+    },
+    {
+      "path": "tests/r5-startup-integration.test.ts",
+      "passed": 4,
+      "failed": 0
+    },
+    {
+      "path": "tests/r5-workspace-import.test.ts",
+      "passed": 13,
+      "failed": 0
+    },
+    {
+      "path": "tests/r7-card-excerpt.test.ts",
+      "passed": 10,
+      "failed": 0
+    },
+    {
+      "path": "tests/r7-markdown.test.ts",
+      "passed": 26,
+      "failed": 0
+    },
+    {
+      "path": "tests/r7-search.test.ts",
+      "passed": 14,
+      "failed": 0
+    },
+    {
+      "path": "tests/r7-settings-menu.test.ts",
+      "passed": 4,
+      "failed": 0
+    },
+    {
+      "path": "tests/r8-backlinks.test.ts",
+      "passed": 12,
+      "failed": 0
+    },
+    {
+      "path": "tests/r8-backup-create.test.ts",
+      "passed": 6,
+      "failed": 0
+    },
+    {
+      "path": "tests/r8-backup-independent.test.ts",
+      "passed": 5,
+      "failed": 0
+    },
+    {
+      "path": "tests/r8-backup-restore.test.ts",
+      "passed": 5,
+      "failed": 0
+    },
+    {
+      "path": "tests/r8-backup-service.test.ts",
+      "passed": 2,
+      "failed": 0
+    },
+    {
+      "path": "tests/r8-backup-verify.test.ts",
+      "passed": 9,
+      "failed": 0
+    },
+    {
+      "path": "tests/r8-page-layout.test.ts",
+      "passed": 6,
+      "failed": 0
+    },
+    {
+      "path": "tests/r8-perf-seed.test.ts",
+      "passed": 3,
+      "failed": 0
+    },
+    {
+      "path": "tests/r8-width-persistence.test.ts",
+      "passed": 3,
+      "failed": 0
+    },
+    {
+      "path": "tests/r8-workspace-backup-ui.test.ts",
+      "passed": 11,
+      "failed": 0
+    },
+    {
+      "path": "tests/r9-callout.test.ts",
+      "passed": 11,
+      "failed": 0
+    },
+    {
+      "path": "tests/r9-rich-block-html.test.ts",
+      "passed": 18,
+      "failed": 0
+    },
+    {
+      "path": "tests/r9-rich-persistence.test.ts",
+      "passed": 13,
+      "failed": 0
+    },
+    {
+      "path": "tests/r9-rich-recovery.test.ts",
+      "passed": 3,
+      "failed": 0
+    },
+    {
+      "path": "tests/r9-simple-table.test.ts",
+      "passed": 23,
+      "failed": 0
+    },
+    {
+      "path": "tests/raw-workspace-salvage.test.ts",
+      "passed": 5,
+      "failed": 0
+    },
+    {
+      "path": "tests/record-lifecycle.test.ts",
+      "passed": 8,
+      "failed": 0
+    },
+    {
+      "path": "tests/record-list-binding.test.ts",
+      "passed": 12,
+      "failed": 0
+    },
+    {
+      "path": "tests/record-migration.test.ts",
+      "passed": 10,
+      "failed": 0
+    },
+    {
+      "path": "tests/record-owner-invalidation.test.ts",
+      "passed": 8,
+      "failed": 0
+    },
+    {
+      "path": "tests/record-page-owner-update.test.ts",
+      "passed": 11,
+      "failed": 0
+    },
+    {
+      "path": "tests/record-page-schema-guard.test.ts",
+      "passed": 6,
+      "failed": 0
+    },
+    {
+      "path": "tests/record-pending-edits.test.ts",
+      "passed": 7,
+      "failed": 0
+    },
+    {
+      "path": "tests/record-projection.test.ts",
+      "passed": 2,
+      "failed": 0
+    },
+    {
+      "path": "tests/record-read-snapshot.test.ts",
+      "passed": 2,
+      "failed": 0
+    },
+    {
+      "path": "tests/record-repository.test.ts",
+      "passed": 16,
+      "failed": 0
+    },
+    {
+      "path": "tests/record-save-coordinator.test.ts",
+      "passed": 48,
+      "failed": 0
+    },
+    {
+      "path": "tests/record-scale.test.ts",
+      "passed": 1,
+      "failed": 0
+    },
+    {
+      "path": "tests/record-version.test.ts",
+      "passed": 2,
+      "failed": 0
+    },
+    {
+      "path": "tests/recovery-checkpoint.test.ts",
+      "passed": 9,
+      "failed": 0
+    },
+    {
+      "path": "tests/recovery-file-ownership.test.ts",
+      "passed": 1,
+      "failed": 0
+    },
+    {
+      "path": "tests/recovery.test.ts",
+      "passed": 16,
+      "failed": 0
+    },
+    {
+      "path": "tests/reliable-page-order-repair.test.ts",
+      "passed": 5,
+      "failed": 0
+    },
+    {
+      "path": "tests/save-receipts.test.ts",
+      "passed": 8,
+      "failed": 0
+    },
+    {
+      "path": "tests/settings-owner-lineage.test.ts",
+      "passed": 16,
+      "failed": 0
+    },
+    {
+      "path": "tests/settings-panel-intents.test.ts",
+      "passed": 4,
+      "failed": 0
+    },
+    {
+      "path": "tests/settings-save-coordinator.test.ts",
+      "passed": 9,
+      "failed": 0
+    },
+    {
+      "path": "tests/shared-backup-export.test.ts",
+      "passed": 16,
+      "failed": 0
+    },
+    {
+      "path": "tests/shared-common-acceptance.test.ts",
+      "passed": 17,
+      "failed": 0
+    },
+    {
+      "path": "tests/shared-common-actual.test.ts",
+      "passed": 6,
+      "failed": 0
+    },
+    {
+      "path": "tests/shared-compact-inline.test.ts",
+      "passed": 12,
+      "failed": 0
+    },
+    {
+      "path": "tests/shared-continuation-main.test.ts",
+      "passed": 3,
+      "failed": 0
+    },
+    {
+      "path": "tests/shared-copy-abandon-main.test.ts",
+      "passed": 4,
+      "failed": 0
+    },
+    {
+      "path": "tests/shared-copy-records.test.ts",
+      "passed": 8,
+      "failed": 0
+    },
+    {
+      "path": "tests/shared-copy-source.test.ts",
+      "passed": 5,
+      "failed": 0
+    },
+    {
+      "path": "tests/shared-copy-staging.test.ts",
+      "passed": 8,
+      "failed": 0
+    },
+    {
+      "path": "tests/shared-editor-connection.test.ts",
+      "passed": 9,
+      "failed": 0
+    },
+    {
+      "path": "tests/shared-editor-frame-view.test.ts",
+      "passed": 6,
+      "failed": 0
+    },
+    {
+      "path": "tests/shared-editor-frame.test.ts",
+      "passed": 11,
+      "failed": 0
+    },
+    {
+      "path": "tests/shared-editor-plan.test.ts",
+      "passed": 11,
+      "failed": 0
+    },
+    {
+      "path": "tests/shared-editor-projection.test.ts",
+      "passed": 4,
+      "failed": 0
+    },
+    {
+      "path": "tests/shared-frame-existing-shell.test.ts",
+      "passed": 8,
+      "failed": 0
+    },
+    {
+      "path": "tests/shared-inline-position.test.ts",
+      "passed": 9,
+      "failed": 0
+    },
+    {
+      "path": "tests/shared-maintenance-operator.test.ts",
+      "passed": 10,
+      "failed": 0
+    },
+    {
+      "path": "tests/shared-maintenance.test.ts",
+      "passed": 4,
+      "failed": 0
+    },
+    {
+      "path": "tests/shared-owner-recovery-operator.test.ts",
+      "passed": 10,
+      "failed": 0
+    },
+    {
+      "path": "tests/shared-pm-move.test.ts",
+      "passed": 8,
+      "failed": 0
+    },
+    {
+      "path": "tests/shared-protocol-migration.test.ts",
+      "passed": 5,
+      "failed": 0
+    },
+    {
+      "path": "tests/shared-recovery-index.test.ts",
+      "passed": 8,
+      "failed": 0
+    },
+    {
+      "path": "tests/shared-recovery-native.test.ts",
+      "passed": 7,
+      "failed": 0
+    },
+    {
+      "path": "tests/shared-rich-inline.test.ts",
+      "passed": 17,
+      "failed": 0
+    },
+    {
+      "path": "tests/shared-runtime-admin.test.ts",
+      "passed": 5,
+      "failed": 0
+    },
+    {
+      "path": "tests/shared-runtime-asset-http.test.ts",
+      "passed": 8,
+      "failed": 0
+    },
+    {
+      "path": "tests/shared-runtime-assets.test.ts",
+      "passed": 16,
+      "failed": 0
+    },
+    {
+      "path": "tests/shared-runtime-authority-adversarial.test.ts",
+      "passed": 27,
+      "failed": 0
+    },
+    {
+      "path": "tests/shared-runtime-backup-http.test.ts",
+      "passed": 10,
+      "failed": 0
+    },
+    {
+      "path": "tests/shared-runtime-backup.test.ts",
+      "passed": 8,
+      "failed": 0
+    },
+    {
+      "path": "tests/shared-runtime-block.test.ts",
+      "passed": 20,
+      "failed": 0
+    },
+    {
+      "path": "tests/shared-runtime-client-service.test.ts",
+      "passed": 9,
+      "failed": 0
+    },
+    {
+      "path": "tests/shared-runtime-connected-final.test.ts",
+      "passed": 11,
+      "failed": 0
+    },
+    {
+      "path": "tests/shared-runtime-contract-adversarial.test.ts",
+      "passed": 32,
+      "failed": 0
+    },
+    {
+      "path": "tests/shared-runtime-copy-command.test.ts",
+      "passed": 7,
+      "failed": 0
+    },
+    {
+      "path": "tests/shared-runtime-copy.test.ts",
+      "passed": 11,
+      "failed": 0
+    },
+    {
+      "path": "tests/shared-runtime-final-review.test.ts",
+      "passed": 12,
+      "failed": 0
+    },
+    {
+      "path": "tests/shared-runtime-history.test.ts",
+      "passed": 17,
+      "failed": 0
+    },
+    {
+      "path": "tests/shared-runtime-http.test.ts",
+      "passed": 10,
+      "failed": 0
+    },
+    {
+      "path": "tests/shared-runtime-identity-handoff.test.ts",
+      "passed": 8,
+      "failed": 0
+    },
+    {
+      "path": "tests/shared-runtime-identity.test.ts",
+      "passed": 7,
+      "failed": 0
+    },
+    {
+      "path": "tests/shared-runtime-integration.test.ts",
+      "passed": 1,
+      "failed": 0
+    },
+    {
+      "path": "tests/shared-runtime-lifecycle.test.ts",
+      "passed": 8,
+      "failed": 0
+    },
+    {
+      "path": "tests/shared-runtime-main-actual.test.ts",
+      "passed": 7,
+      "failed": 0
+    },
+    {
+      "path": "tests/shared-runtime-main-fence.test.ts",
+      "passed": 6,
+      "failed": 0
+    },
+    {
+      "path": "tests/shared-runtime-operations.test.ts",
+      "passed": 10,
+      "failed": 0
+    },
+    {
+      "path": "tests/shared-runtime-organization.test.ts",
+      "passed": 12,
+      "failed": 0
+    },
+    {
+      "path": "tests/shared-runtime-policy.test.ts",
+      "passed": 12,
+      "failed": 0
+    },
+    {
+      "path": "tests/shared-runtime-process-crash.test.ts",
+      "passed": 2,
+      "failed": 0
+    },
+    {
+      "path": "tests/shared-runtime-projection.test.ts",
+      "passed": 8,
+      "failed": 0
+    },
+    {
+      "path": "tests/shared-runtime-queue.test.ts",
+      "passed": 13,
+      "failed": 0
+    },
+    {
+      "path": "tests/shared-runtime-records.test.ts",
+      "passed": 9,
+      "failed": 0
+    },
+    {
+      "path": "tests/shared-runtime-rekey-admin.test.ts",
+      "passed": 2,
+      "failed": 0
+    },
+    {
+      "path": "tests/shared-runtime-resource-client.test.ts",
+      "passed": 5,
+      "failed": 0
+    },
+    {
+      "path": "tests/shared-runtime-resources-integration.test.ts",
+      "passed": 9,
+      "failed": 0
+    },
+    {
+      "path": "tests/shared-runtime-restore-operator.test.ts",
+      "passed": 15,
+      "failed": 0
+    },
+    {
+      "path": "tests/shared-runtime-retention-live.test.ts",
+      "passed": 9,
+      "failed": 0
+    },
+    {
+      "path": "tests/shared-runtime-retention.test.ts",
+      "passed": 15,
+      "failed": 0
+    },
+    {
+      "path": "tests/shared-runtime-root-integration.test.ts",
+      "passed": 16,
+      "failed": 0
+    },
+    {
+      "path": "tests/shared-runtime-server-entry.test.ts",
+      "passed": 13,
+      "failed": 0
+    },
+    {
+      "path": "tests/shared-runtime-state-root.test.ts",
+      "passed": 14,
+      "failed": 0
+    },
+    {
+      "path": "tests/shared-runtime-store.test.ts",
+      "passed": 18,
+      "failed": 0
+    },
+    {
+      "path": "tests/shared-runtime-structure-adversarial.test.ts",
+      "passed": 36,
+      "failed": 0
+    },
+    {
+      "path": "tests/shared-runtime-table-restore.test.ts",
+      "passed": 13,
+      "failed": 0
+    },
+    {
+      "path": "tests/shared-runtime-table.test.ts",
+      "passed": 21,
+      "failed": 0
+    },
+    {
+      "path": "tests/shared-runtime-text-adversarial.test.ts",
+      "passed": 52,
+      "failed": 0
+    },
+    {
+      "path": "tests/shared-runtime-text.test.ts",
+      "passed": 14,
+      "failed": 0
+    },
+    {
+      "path": "tests/shared-runtime-tls-policy.test.ts",
+      "passed": 11,
+      "failed": 0
+    },
+    {
+      "path": "tests/shared-runtime-tls.test.ts",
+      "passed": 1,
+      "failed": 0
+    },
+    {
+      "path": "tests/shared-runtime-ui-state.test.ts",
+      "passed": 15,
+      "failed": 0
+    },
+    {
+      "path": "tests/shared-runtime-undo-proof.test.ts",
+      "passed": 16,
+      "failed": 0
+    },
+    {
+      "path": "tests/shared-snapshot-bounds.test.ts",
+      "passed": 4,
+      "failed": 0
+    },
+    {
+      "path": "tests/shared-staging-maintenance.test.ts",
+      "passed": 6,
+      "failed": 0
+    },
+    {
+      "path": "tests/storage-overview-sync-staging.test.ts",
+      "passed": 5,
+      "failed": 0
+    },
+    {
+      "path": "tests/storage-pressure-integration.test.ts",
+      "passed": 4,
+      "failed": 0
+    },
+    {
+      "path": "tests/storage-pressure.test.ts",
+      "passed": 18,
+      "failed": 0
+    },
+    {
+      "path": "tests/storage-write-policy.test.ts",
+      "passed": 7,
+      "failed": 0
+    },
+    {
+      "path": "tests/store-atomic-load.test.ts",
+      "passed": 15,
+      "failed": 0
+    },
+    {
+      "path": "tests/store-raw-database-guard.test.ts",
+      "passed": 7,
+      "failed": 0
+    },
+    {
+      "path": "tests/store.test.ts",
+      "passed": 13,
+      "failed": 0
+    },
+    {
+      "path": "tests/sync-checkpoint.test.ts",
+      "passed": 39,
+      "failed": 0
+    },
+    {
+      "path": "tests/sync-conflict-inspection.test.ts",
+      "passed": 16,
+      "failed": 0
+    },
+    {
+      "path": "tests/sync-device-auth.test.ts",
+      "passed": 7,
+      "failed": 0
+    },
+    {
+      "path": "tests/sync-device-blobs.test.ts",
+      "passed": 3,
+      "failed": 0
+    },
+    {
+      "path": "tests/sync-device-remote.test.ts",
+      "passed": 5,
+      "failed": 0
+    },
+    {
+      "path": "tests/sync-level4-transport.test.ts",
+      "passed": 5,
+      "failed": 0
+    },
+    {
+      "path": "tests/sync-level4.test.ts",
+      "passed": 14,
+      "failed": 0
+    },
+    {
+      "path": "tests/sync-workspace-blobs-transfer.test.ts",
+      "passed": 9,
+      "failed": 0
+    },
+    {
+      "path": "tests/sync-workspace-blobs.test.ts",
+      "passed": 8,
+      "failed": 0
+    },
+    {
+      "path": "tests/sync-workspace-startup.test.ts",
+      "passed": 1,
+      "failed": 0
+    },
+    {
+      "path": "tests/sync-workspace-store.test.ts",
+      "passed": 18,
+      "failed": 0
+    },
+    {
+      "path": "tests/v4-database-create.test.ts",
+      "passed": 6,
+      "failed": 0
+    },
+    {
+      "path": "tests/windows-candidate.test.ts",
+      "passed": 13,
+      "failed": 0
+    },
+    {
+      "path": "tests/windows-helper-package.test.ts",
+      "passed": 2,
+      "failed": 0
+    },
+    {
+      "path": "tests/windows-native-directory.test.ts",
+      "passed": 9,
+      "failed": 0
+    },
+    {
+      "path": "tests/windows-native-probe-contract.test.ts",
+      "passed": 14,
+      "failed": 0
+    },
+    {
+      "path": "tests/windows-native-review-regression.test.ts",
+      "passed": 14,
+      "failed": 0
+    },
+    {
+      "path": "tests/windows-owned-executor.test.ts",
+      "passed": 23,
+      "failed": 0
+    },
+    {
+      "path": "tests/windows-owned-node-contract.test.ts",
+      "passed": 49,
+      "failed": 0
+    },
+    {
+      "path": "tests/windows-path-policy.test.ts",
+      "passed": 34,
+      "failed": 0
+    },
+    {
+      "path": "tests/windows-private-ledger.test.ts",
+      "passed": 11,
+      "failed": 0
+    },
+    {
+      "path": "tests/windows-private-native.test.ts",
+      "passed": 12,
+      "failed": 0
+    },
+    {
+      "path": "tests/windows-private-root-contract.test.ts",
+      "passed": 17,
+      "failed": 0
+    },
+    {
+      "path": "tests/windows-root-setup-source.test.ts",
+      "passed": 13,
+      "failed": 0
+    },
+    {
+      "path": "tests/windows-runtime-platform.test.ts",
+      "passed": 37,
+      "failed": 0
+    },
+    {
+      "path": "tests/windows-secret-ledger-final-review.test.ts",
+      "passed": 5,
+      "failed": 0
+    },
+    {
+      "path": "tests/windows-vault-connection.test.ts",
+      "passed": 8,
+      "failed": 0
+    },
+    {
+      "path": "tests/windows-vault-final-review.test.ts",
+      "passed": 11,
+      "failed": 0
+    },
+    {
+      "path": "tests/workspace-growth.test.ts",
+      "passed": 15,
+      "failed": 0
+    },
+    {
+      "path": "tests/workspace-limit-settings.test.ts",
+      "passed": 8,
+      "failed": 0
+    },
+    {
+      "path": "tests/workspace.test.ts",
+      "passed": 7,
+      "failed": 0
+    },
+    {
+      "path": "tests/acceptance-metadata/mac-artifacts.test.ts",
+      "passed": 18,
+      "failed": 0
+    },
+    {
+      "path": "tests/acceptance-metadata/mac-evidence.test.ts",
+      "passed": 63,
+      "failed": 0
+    },
+    {
+      "path": "tests/acceptance-metadata/mac-gate-ledger.test.ts",
+      "passed": 23,
+      "failed": 0
+    },
+    {
+      "path": "tests/acceptance-metadata/mac-keychain-preflight.test.ts",
+      "passed": 33,
+      "failed": 0
+    },
+    {
+      "path": "tests/acceptance-metadata/mac-native-observations.test.ts",
+      "passed": 15,
+      "failed": 0
+    },
+    {
+      "path": "tests/acceptance-metadata/mac-owned-process.test.ts",
+      "passed": 13,
+      "failed": 0
+    },
+    {
+      "path": "tests/acceptance-metadata/mac-policy.test.ts",
+      "passed": 7,
+      "failed": 0
+    },
+    {
+      "path": "tests/acceptance-metadata/mac-remote-h1-preflight.test.ts",
+      "passed": 8,
+      "failed": 0
+    },
+    {
+      "path": "tests/acceptance-metadata/mac-supervisor-binding.test.ts",
+      "passed": 2,
+      "failed": 0
+    },
+    {
+      "path": "tests/acceptance-metadata/mac-supervisor-temp-root.test.ts",
+      "passed": 2,
+      "failed": 0
+    },
+    {
+      "path": "tests/acceptance-metadata/mac-watchdog.test.ts",
+      "passed": 11,
+      "failed": 0
+    },
+    {
+      "path": "tests/research/parity-docs.test.ts",
+      "passed": 10,
+      "failed": 0
+    },
+    {
+      "path": "tests/fixtures/r7/r7-demo-seed.test.ts",
+      "passed": 1,
+      "failed": 0
+    }
+  ]
+}

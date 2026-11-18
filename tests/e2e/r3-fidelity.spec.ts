@@ -1,5 +1,6 @@
 import { writeFileSync } from "node:fs";
 import { test, expect, saved, type Session } from "./next-round-fixture";
+import { openInspector } from "./ui-chrome-controls";
 
 // Round 3 Fidelity lane acceptance. These tests observe the display layer in
 // a real Electron window: responsive geometry, popover bounds, keyboard and
@@ -96,8 +97,15 @@ test("R3 fidelity responsive: 1440/1024/960, inspector footprint, popovers and t
   const w = s.window;
   await focusWindow(s);
   await expect(w.locator(".page-title")).toBeVisible();
+  // The inspector is closed initially; the topbar toggle opens it explicitly.
+  await expect(w.getByLabel("ページ情報", { exact: true })).toHaveAttribute(
+    "aria-pressed",
+    "false",
+  );
+  await expect(w.locator(".inspector")).toBeHidden();
   await w.getByLabel("アイデアノート を展開").click();
   await expect(w.locator(".page-tree-children .page-tree-row")).toHaveCount(1);
+  await openInspector(w);
   const readings: unknown[] = [];
 
   for (const size of sizes) {
@@ -208,7 +216,7 @@ test("R3 fidelity responsive: 1440/1024/960, inspector footprint, popovers and t
   // Slash menu at 960: it opens at the paragraph start, inside the reduced
   // editing column, and adds no horizontal overflow to the scroll container.
   await resize(s, sizes[2]);
-  await w.keyboard.press("Meta+n");
+  await w.keyboard.press(process.platform === "darwin" ? "Meta+n" : "Control+n");
   await expect(w.locator(".page-title")).toHaveValue("無題");
   await w.locator(".folio-editor").click();
   await w.keyboard.type("/heading");
@@ -267,7 +275,7 @@ test("R3 fidelity responsive: 1440/1024/960, inspector footprint, popovers and t
         theme: document.documentElement.dataset.theme,
         title: ratio(color(".page-title"), background(".main-pane")),
         editor: ratio(color(".folio-editor"), background(".main-pane")),
-        muted: ratio(color(".page-subtitle"), background(".main-pane")),
+        muted: ratio(color(".inspector dt"), background(".inspector")),
         inspector: ratio(color(".inspector dd"), background(".inspector")),
         sidebar: ratio(color(".page-tree-title"), background(".sidebar")),
       };
@@ -319,6 +327,17 @@ test("R3 fidelity DB display: board/calendar/gallery record dialog is modal, bou
   );
   await saved(s);
   const readings: unknown[] = [];
+  const showView = async (name: string) => {
+    const tab = w.getByRole("tab", {
+      name: `ビュー: ${name}`,
+      exact: true,
+    });
+    if (await tab.count()) await tab.click();
+    else
+      await w
+        .getByLabel("ビューを追加", { exact: true })
+        .selectOption({ label: name });
+  };
 
   for (const size of sizes) {
     await resize(s, size);
@@ -327,7 +346,7 @@ test("R3 fidelity DB display: board/calendar/gallery record dialog is modal, bou
       height: innerHeight,
     }));
     for (const view of ["ギャラリー", "ボード", "カレンダー"]) {
-      await w.getByRole("button", { name: view, exact: true }).click();
+      await showView(view);
       const card = w.locator(".db-card").first();
       await expect(card).toBeVisible();
       await card.click();
@@ -391,7 +410,7 @@ test("R3 fidelity DB display: board/calendar/gallery record dialog is modal, bou
   // Table view in this branch still edits rows inline. The contract's full-page
   // record from every view is Core/DB UI work and remains NOT_IMPLEMENTED here.
   await resize(s, sizes[2]);
-  await w.getByRole("button", { name: "テーブル", exact: true }).click();
+  await w.getByRole("tab", { name: "ビュー: テーブル", exact: true }).click();
   await expect(w.locator("tbody tr")).toHaveCount(3);
   const tableObserved = await w.evaluate(() => ({
     inlineTitleInputs: document.querySelectorAll(
@@ -405,7 +424,9 @@ test("R3 fidelity DB display: board/calendar/gallery record dialog is modal, bou
   await saved(s);
 
   // Fixture write path: edit a record title, close, restart, reopen the record.
-  await w.getByRole("button", { name: "ギャラリー", exact: true }).click();
+  await w
+    .getByRole("tab", { name: "ビュー: ギャラリー", exact: true })
+    .click();
   const longTitle =
     "日本語の長いレコード名" +
     "を同じ画面で確認するための文章".repeat(4) +
@@ -422,7 +443,7 @@ test("R3 fidelity DB display: board/calendar/gallery record dialog is modal, bou
     .filter({ hasText: "プロジェクト" })
     .click();
   await reopened
-    .getByRole("button", { name: "ギャラリー", exact: true })
+    .getByRole("tab", { name: "ビュー: ギャラリー", exact: true })
     .click();
   await reopened.locator(".db-card").first().click();
   await expect(
@@ -451,7 +472,7 @@ test("R3 fidelity keyboard contract: search/link/record and older dialogs share 
   await focusWindow(s);
 
   // Search: initial focus, arrow selection, Escape, documented focus return.
-  await w.keyboard.press("Meta+p");
+  await w.keyboard.press(process.platform === "darwin" ? "Meta+p" : "Control+p");
   const search = w.getByRole("dialog", {
     name: "ワークスペース検索",
     exact: true,
@@ -470,16 +491,16 @@ test("R3 fidelity keyboard contract: search/link/record and older dialogs share 
   await expect(w.getByLabel("ページタイトル", { exact: true })).toBeFocused();
 
   // Link: Escape restores the exact editor selection and focus.
-  await w.keyboard.press("Meta+n");
+  await w.keyboard.press(process.platform === "darwin" ? "Meta+n" : "Control+n");
   await expect(w.getByLabel("ページタイトル", { exact: true })).toHaveValue(
     "無題",
   );
   await w.locator(".folio-editor").click();
   await w.keyboard.type("リンク対象");
-  await w.keyboard.press("Meta+ArrowLeft");
+  await w.keyboard.press(process.platform === "darwin" ? "Meta+ArrowLeft" : "Home");
   for (let i = 0; i < 5; i++) await w.keyboard.press("Shift+ArrowRight");
   expect(await w.evaluate(() => getSelection()?.toString())).toBe("リンク対象");
-  await w.keyboard.press("Meta+k");
+  await w.keyboard.press(process.platform === "darwin" ? "Meta+k" : "Control+k");
   const link = w.getByRole("dialog", { name: "ページリンク", exact: true });
   await expect(link).toBeVisible();
   await expect(w.getByLabel("検索キーワード")).toBeFocused();
@@ -492,7 +513,7 @@ test("R3 fidelity keyboard contract: search/link/record and older dialogs share 
   expect(selectionAfterCancel).toBe("リンク対象");
 
   // Synthetic composition only: Escape is ignored during composition.
-  await w.keyboard.press("Meta+p");
+  await w.keyboard.press(process.platform === "darwin" ? "Meta+p" : "Control+p");
   const compositionInput = w.getByLabel("検索キーワード");
   await compositionInput.focus();
   await compositionInput.evaluate((el) =>
@@ -584,6 +605,7 @@ test("R3 fidelity keyboard contract: search/link/record and older dialogs share 
     .locator(".page-tree-label")
     .filter({ hasText: "ようこそ、Folioへ" })
     .click();
+  await openInspector(w);
   const historyLink = w.getByRole("button", {
     name: "変更履歴を見る",
     exact: true,
@@ -606,7 +628,7 @@ test("R3 fidelity keyboard contract: search/link/record and older dialogs share 
   expect(afterHistoryDismiss.pages).toEqual(beforeHistoryDismiss.pages);
 
   // Older DialogFrame: trash. Trash the current page, then open the list.
-  await w.keyboard.press("Meta+n");
+  await w.keyboard.press(process.platform === "darwin" ? "Meta+n" : "Control+n");
   await expect(w.getByLabel("ページタイトル", { exact: true })).toHaveValue(
     "無題",
   );
@@ -677,6 +699,7 @@ test("R3 fidelity long title, visible focus, sidebar width and reduced motion at
     " UNBROKEN-SEGMENT-0123456789";
   await w.getByLabel("ページタイトル", { exact: true }).fill(longTitle);
   await saved(s);
+  await openInspector(w);
 
   const long = await w.evaluate(() => {
     const measure = (selector: string) => {

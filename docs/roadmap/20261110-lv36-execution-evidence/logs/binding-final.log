@@ -1,0 +1,69 @@
+✔ R02 move and concurrent insert preserve KEEP, marks, IDs and p2 (71.310583ms)
+✔ R02 adversarial move onto itself is rejected without mutating either peer (16.752334ms)
+✔ legal block insert and delete use the semantic server and actual binding (12.951459ms)
+✔ R03 concurrent row and column inserts both succeed as a 3x3 table (66.768083ms)
+✔ R03 adversarial duplicate table ID is rejected without changing the table (18.235708ms)
+✔ R04 each peer undo removes only its own insert and keeps the remote KEEP (27.129459ms)
+✔ repeated delivery and order replay are idempotent (12.434375ms)
+✔ pending concurrent text intents are rebased and both survive (13.071917ms)
+✔ rich table fixture is a 2x2 baseline for the structure probes (22.545583ms)
+✔ R02 move after p2 with concurrent pending KEEP keeps text, marks and IDs (15.836125ms)
+✔ R02 replay: move delivered before the pending KEEP still converges (3.470416ms)
+✔ R03 row and column inserts both succeed and preserve old 2x2 cells (12.86275ms)
+✔ R03 replay with column intent first also produces the same 3x3 table (8.455958ms)
+✔ R04 local undo removes only the local insert and preserves remote KEEP (3.304417ms)
+✔ pending concurrent text inserts converge once, then repeated sync is inert (2.374ms)
+✔ replayed edits in opposite client order reach the same document (2.315584ms)
+✔ rejected structure intent retains the original input and does not corrupt state (1.0615ms)
+✔ duplicate table row id is rejected while a later legal column insert succeeds (4.998125ms)
+✔ invalid text ranges and raw structural transactions fail without mutation (2.97075ms)
+✔ text-only local() transactions remain supported (2.771625ms)
+✔ R01 B: duplicate concurrent block identity is allocated once and the rejected intent keeps its raw command (84.435166ms)
+✔ R02 B: move alongside unsynced marked KEEP keeps the original block text, ID and marks (50.15175ms)
+✔ R02 B: delete of a block with unsynced KEEP is refused with the raw delete intent retained (19.368334ms)
+✔ R03 B: row/column insert orders yield identical final IDs, content and marks (70.861125ms)
+✔ R04 B: structural move undo restores order and keeps the remote KEEP (14.556208ms)
+✔ R04 B: per-user table insertion undo removes only its dimension (30.83175ms)
+✔ R04 B: mixed text and structure undo follows the author's reverse operation order (17.237209ms)
+✔ R05 B: repeat and reorder transport delivery cannot be proven by the in-memory adapter (8.323375ms)
+ℹ B: sync() is an in-process fixed-point drain with no delivery-order or retry hook, so repeated and reordered transport delivery, missing receipts and redelivery are not provable here.
+✔ R01 C: duplicate concurrent block identity is allocated once and the rejected intent keeps its raw command (5.389ms)
+✔ R02 C: move alongside unsynced marked KEEP keeps the original block text, ID and marks (3.431375ms)
+✔ R02 C: delete of a block with unsynced KEEP is refused with the raw delete intent retained (4.149584ms)
+✔ R03 C: row/column insert orders yield identical final IDs, content and marks (16.946125ms)
+✔ R04 C: structural move undo restores order and keeps the remote KEEP (1.461584ms)
+✔ R04 C: per-user table insertion undo removes only its dimension (6.073834ms)
+✖ R04 C: mixed text and structure undo follows the author's reverse operation order (2.403417ms)
+✔ R05 C: repeat and reorder transport delivery cannot be proven by the in-memory adapter (0.432625ms)
+ℹ C: sync() is an in-process fixed-point drain with no delivery-order or retry hook, so repeated and reordered transport delivery, missing receipts and redelivery are not provable here.
+ℹ tests 36
+ℹ suites 0
+ℹ pass 35
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 966.1465
+
+✖ failing tests:
+
+test at experiments/collaboration-comparison/next/independent-gates.test.mjs:644:3
+✖ R04 C: mixed text and structure undo follows the author's reverse operation order (2.403417ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  'Aabc' !== 'abc'
+  
+      at TestContext.<anonymous> (file://<LOCAL_HOME>/Documents/ChatGPT/Folio-lv4-implementation-20261107.3qXBLqRk/integration/experiments/collaboration-comparison/next/independent-gates.test.mjs:695:16)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1397:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:969:18)
+      at Test.postRun (node:internal/test_runner/test:1537:19)
+      at Test.run (node:internal/test_runner/test:1462:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:969:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 'Aabc',
+    expected: 'abc',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }

@@ -11,6 +11,7 @@ type StorageAction = "read" | "checkpoint" | "write" | "maintenance";
 // Independent, exhaustive expectations from the Round 3 contract. The
 // satisfies clause makes a new Request type a type error here as well.
 const EXPECTED = {
+  "recovery:list":"read", "recovery:status":"read", "recovery:export":"read", "recovery:restore":"read",
   load: "read",
   search: "read",
   versions: "read",
@@ -26,6 +27,8 @@ const EXPECTED = {
   "migration:resolve": "read",
   "property:preview": "read",
   "migration:preview": "read",
+  "pageOrder:preview": "read",
+  "pageOrder:apply": "write",
   "recovery:read": "read",
   import: "read",
   export: "read",
@@ -37,6 +40,21 @@ const EXPECTED = {
   "workspaceBackup:restore": "read",
   "workspaceBackup:open": "read",
   "startup:status": "read",
+  "desktop:capabilities": "read",
+  "sync:status": "read",
+    "sync:connectionStatus": "read", "sync:retentionStatus": "read", "sync:connectionConfigure": "checkpoint", "sync:connectionDisable": "checkpoint", "sync:connectionResolve": "read",
+    "sync:transferInventory": "read", "sync:transferPlan": "checkpoint", "sync:transferRelease": "maintenance", "sync:transferResolve": "read",
+  "sync:run": "write",
+  "sync:restartStatus": "read",
+  "sync:restartRequest": "checkpoint",
+  "sync:restartCancel": "checkpoint",
+  "sync:conflict": "read",
+  "sync:conflictDecisionStatus": "read",
+  "sync:conflictPreview": "checkpoint",
+  "sync:conflictConfirm": "checkpoint",
+  "sync:conflictCancel": "checkpoint",
+  "sync:conflictCandidate": "read",
+  "sync:conflictExport": "read",
   "storage:pressure": "read",
   "storage:readLimits": "read",
   "storage:applyLimits": "write",
@@ -81,10 +99,10 @@ const ROWS = Object.entries(EXPECTED) as [RequestType, StorageAction][];
 
 describe("request storage policy", () => {
   it("classifies every Request type exactly once", () => {
-    expect(ROWS).toHaveLength(62);
+    expect(ROWS).toHaveLength(90);
     expect(new Set(ROWS.map(([type]) => type)).size).toBe(ROWS.length);
-    expect(ROWS.filter(([, action]) => action === "write")).toHaveLength(26);
-    expect(ROWS.filter(([, action]) => action === "checkpoint")).toHaveLength(1);
+    expect(ROWS.filter(([, action]) => action === "write")).toHaveLength(28);
+    expect(ROWS.filter(([, action]) => action === "checkpoint")).toHaveLength(9);
     for (const [type, action] of ROWS)
       expect(storageActionForRequest(type)).toBe(action);
   });

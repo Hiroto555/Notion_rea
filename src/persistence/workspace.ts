@@ -27,6 +27,8 @@ import {
 import { createHash, randomUUID } from "node:crypto";
 import { estimateBackupBytes } from "../main/bulk-storage-budget";
 import { durableFs, syncPath, writeNewFileDurably } from "./durable-file";
+import { privatePersistencePort, type NativePrivateFile, type NativePrivateIdentity,
+  type NativePrivateFilesystemPort, type NativePrivateSqliteLease } from "../platform/private-persistence";
 
 export function workspacePath(userData: string, override?: string) {
   return resolve(override || join(userData, "workspace"));
@@ -44,6 +46,7 @@ const CHUNK_BYTES = 1024 * 1024;
 const MAX_ASSET_ENTRIES = 100_000;
 const MAX_TREE_ENTRIES = MAX_ASSET_ENTRIES + 8;
 const MAX_TREE_DEPTH = 64;
+const NATIVE_FILE_MAX = 256 * 1024 * 1024;
 
 type FileRecord = { bytes: number; sha256: string };
 type Sidecar = (typeof TRACKED_SIDECARS)[number];
@@ -52,8 +55,9 @@ type AssetFile = {
   absolutePath: string;
   bytes: number;
   stat: Stats;
+  native?: NativePrivateFile;
 };
-type AssetTree = { directories: string[]; files: AssetFile[] };
+type AssetTree = { directories: string[]; files: AssetFile[]; pins?: NativePrivateIdentity[] };
 type SourceState = {
   root: string;
   rootStat: Stats;
@@ -62,6 +66,9 @@ type SourceState = {
   sidecars: Partial<Record<Sidecar, Stats>>;
   assetsRoot?: string;
   assets: AssetTree;
+  native?: NativePrivateFilesystemPort;
+  rootPin?: NativePrivateIdentity;
+  databasePin?: NativePrivateIdentity;
 };
 export type WorkspaceMigrationOptions = {
   beforeCopy?: (targetParent: string, additionalBytes: number) => void;
@@ -88,6 +95,28 @@ function inside(root: string, target: string): boolean {
 
 function sameIdentity(left: Stats, right: Stats): boolean {
   return left.dev === right.dev && left.ino === right.ino;
+}
+
+function assertNativeIdentity(expected: NativePrivateIdentity, actual: NativePrivateIdentity): void {
+  if (expected.path !== actual.path || expected.fileId.toLowerCase() !== actual.fileId.toLowerCase() ||
+    expected.volumeId.toLowerCase() !== actual.volumeId.toLowerCase())
+    throw new Error("native workspace identity changed");
+}
+
+function requireNativeFeatures(migration = true): NativePrivateFilesystemPort | undefined {
+  const native = privatePersistencePort();
+  if (native && (!native.acquireSqliteLease || (migration && (!native.inspectTree || !native.renameDirectoryNew))))
+    throw new Error("native workspace tree/rename/SQLite lease required");
+  return native;
+}
+
+function createPrivateDirectory(path: string, parents = false): void {
+  const native = privatePersistencePort();
+  if (!native) { mkdirSync(path, { recursive: parents, mode: 0o700 }); return; }
+  if (parents && lstatOptional(path)) { native.inspectDirectory(path); return; }
+  if (parents) createPrivateDirectory(dirname(path), true);
+  const created = native.createDirectory(path);
+  assertNativeIdentity(created, native.inspectDirectory(path));
 }
 
 function sameFileState(left: Stats, right: Stats): boolean {
@@ -163,6 +192,8 @@ function openRegularFile(path: string, label: string) {
 }
 
 function hashRegularFile(path: string, label: string): FileRecord {
+  const native = privatePersistencePort();
+  if (native) return native.inspectFile(path, NATIVE_FILE_MAX);
   const { descriptor, opened } = openRegularFile(path, label);
   try {
     const hash = createHash("sha256");
@@ -194,7 +225,18 @@ function copyRegularFile(
   source: string,
   destination: string,
   label: string,
+  pinned?: NativePrivateFile,
 ): FileRecord {
+  const native = privatePersistencePort();
+  if (native) {
+    const expected = pinned ?? native.inspectFile(source, NATIVE_FILE_MAX);
+    const copied = native.copyNew(source, destination, expected, NATIVE_FILE_MAX).identity;
+    const after = native.inspectFile(destination, NATIVE_FILE_MAX);
+    assertNativeIdentity(copied, after);
+    if (after.bytes !== expected.bytes || after.sha256 !== expected.sha256 ||
+      copied.bytes !== expected.bytes || copied.sha256 !== expected.sha256) throw new Error("native copy changed");
+    return after;
+  }
   const { descriptor: input, opened } = openRegularFile(source, label);
   let output: number | undefined;
   let created = false;
@@ -264,11 +306,14 @@ function compareNames(left: { name: string }, right: { name: string }): number {
 
 function scanAssetTree(root: string): AssetTree {
   const tree: AssetTree = { directories: [], files: [] };
+  const native = privatePersistencePort();
+  if (native) tree.pins = [];
   let entries = 0;
   const walk = (directory: string, prefix: string, depth: number): void => {
     const info = lstatSync(directory);
     if (info.isSymbolicLink() || !info.isDirectory())
       throw new Error("移行元のassetsが安全なディレクトリではありません");
+    if (native) tree.pins!.push(native.inspectDirectory(directory));
     for (const entry of readdirSync(directory, {
       withFileTypes: true,
     }).sort(compareNames)) {
@@ -299,6 +344,7 @@ function scanAssetTree(root: string): AssetTree {
         absolutePath: path,
         bytes: child.size,
         stat: child,
+        ...(native ? { native: native.inspectFile(path, 20_000_000) } : {}),
       });
     }
   };
@@ -315,6 +361,10 @@ function assertAssetTreeUnchanged(state: SourceState): void {
   if (realpathSync(state.assetsRoot) !== state.assetsRoot)
     throw new Error("移行元にシンボリックリンクがあります: assets");
   const current = scanAssetTree(state.assetsRoot);
+  if (state.native) {
+    if (current.pins!.length !== state.assets.pins!.length) throw new Error("native assets changed");
+    current.pins!.forEach((pin, i) => assertNativeIdentity(state.assets.pins![i], pin));
+  }
   if (
     current.directories.length !== state.assets.directories.length ||
     current.files.length !== state.assets.files.length
@@ -326,6 +376,11 @@ function assertAssetTreeUnchanged(state: SourceState): void {
   for (let index = 0; index < current.files.length; index++) {
     const before = state.assets.files[index];
     const after = current.files[index];
+    if (state.native) {
+      assertNativeIdentity(before.native!, after.native!);
+      if (before.native!.bytes !== after.native!.bytes || before.native!.sha256 !== after.native!.sha256)
+        throw new Error("native assets changed");
+    }
     if (
       after.relativePath !== before.relativePath ||
       after.bytes !== before.bytes ||
@@ -336,6 +391,10 @@ function assertAssetTreeUnchanged(state: SourceState): void {
 }
 
 function assertSourceUnchanged(state: SourceState): void {
+  if (state.native) {
+    assertNativeIdentity(state.rootPin!, state.native.inspectDirectory(state.root));
+    assertNativeIdentity(state.databasePin!, state.native.inspectFileIdentity(state.databasePath));
+  }
   const root = lstatOptional(state.root);
   if (
     !root ||
@@ -385,7 +444,7 @@ function assertSidecarTypes(state: SourceState): void {
   }
 }
 
-function validateSource(source: string): SourceState {
+function validateSource(source: string, native?: NativePrivateFilesystemPort): SourceState {
   const requested = resolve(source);
   const rootInfo = lstatOptional(requested);
   if (!rootInfo) throw new Error("移行元が見つかりません");
@@ -438,6 +497,9 @@ function validateSource(source: string): SourceState {
     sidecars,
     assetsRoot,
     assets,
+    native,
+    rootPin: native?.inspectDirectory(root),
+    databasePin: native?.inspectFileIdentity(databasePath),
   };
 }
 
@@ -450,20 +512,66 @@ function assertDatabaseIntegrity(db: DatabaseSync, label: string): void {
     throw new Error(label + "のSQLite整合性エラー");
 }
 
-function assertDatabaseIntegrityPath(path: string, label: string): void {
-  const snapshot = new DatabaseSync(path, { readOnly: true });
-  try {
-    assertDatabaseIntegrity(snapshot, label);
-  } finally {
-    snapshot.close();
+// Deliberately retained cleanup owners on UNKNOWN, no automatic retry API.
+// These references protect leases; they are not durable intent/OS evidence.
+const retainedWorkspaceOwners: { db?: DatabaseSync; lease: NativePrivateSqliteLease }[] = [];
+function releaseClosedDatabase(db: DatabaseSync | undefined, lease: NativePrivateSqliteLease,
+  errors: unknown[]): boolean {
+  let closed = false;
+  try { closed = db?.isOpen === false; } catch (error) { errors.push(error); }
+  if (!closed) {
+    retainedWorkspaceOwners.push({ db, lease });
+    errors.push(new Error("workspace SQLite close UNKNOWN; native lease retained"));
+    return false;
   }
+  try { lease.close(); return true; }
+  catch (error) {
+    retainedWorkspaceOwners.push({ db, lease }); errors.push(error); return false;
+  }
+}
+
+function assertDatabaseIntegrityPath(path: string, label: string): void {
+  const native = privatePersistencePort();
+  const lease = native?.acquireSqliteLease!(path, native.inspectFileIdentity(path));
+  let snapshot: DatabaseSync | undefined;
+  const errors: unknown[] = [];
+  try {
+    lease?.assertHeld();
+    snapshot = new DatabaseSync(path, { readOnly: true });
+    assertDatabaseIntegrity(snapshot, label);
+    lease?.assertHeld();
+  } catch (error) { errors.push(error);
+  } finally {
+    try { snapshot?.close(); } catch (error) { errors.push(error); }
+    if (lease) releaseClosedDatabase(snapshot, lease, errors);
+  }
+  if (errors.length) throw new AggregateError(errors, "workspace SQLite inspection failed");
+}
+
+const sourceLeases = new WeakMap<DatabaseSync, NativePrivateSqliteLease>();
+function closeSourceDatabase(db: DatabaseSync): void {
+  const errors: unknown[] = [];
+  try { db.close(); } catch (error) { errors.push(error); }
+  const lease = sourceLeases.get(db);
+  if (!lease || releaseClosedDatabase(db, lease, errors)) sourceLeases.delete(db);
+  if (errors.length) throw new AggregateError(errors, "workspace SQLite close UNKNOWN");
 }
 
 function openSourceDatabase(state: SourceState): DatabaseSync {
   if (realpathSync(state.databasePath) !== state.databasePath)
     throw new Error("移行元にシンボリックリンクがあります: " + DATABASE);
   assertSidecarTypes(state);
-  const db = new DatabaseSync(state.databasePath, { readOnly: true });
+  const lease = state.native?.acquireSqliteLease!(state.databasePath, state.databasePin!);
+  let db: DatabaseSync;
+  try { lease?.assertHeld(); db = new DatabaseSync(state.databasePath, { readOnly: true }); }
+  catch (error) {
+    if (lease) {
+      retainedWorkspaceOwners.push({ lease });
+      throw new AggregateError([error], "workspace SQLite constructor UNKNOWN; native lease retained");
+    }
+    throw error;
+  }
+  if (lease) sourceLeases.set(db, lease);
   try {
     db.exec("PRAGMA busy_timeout=5000");
     const main = db
@@ -476,11 +584,14 @@ function openSourceDatabase(state: SourceState): DatabaseSync {
     )
       throw new Error("移行元のSQLiteが指定ワークスペースと一致しません");
     assertDatabaseIntegrity(db, "移行元");
+    lease?.assertHeld();
     return db;
   } catch (error) {
     try {
-      db.close();
-    } catch {}
+      closeSourceDatabase(db);
+    } catch (close) {
+      if (state.native) throw new AggregateError([error, close], "workspace SQLite open UNKNOWN");
+    }
     throw error;
   }
 }
@@ -499,14 +610,23 @@ function estimateMigrationBytes(db: DatabaseSync, state: SourceState): number {
   return oneCopy * 2;
 }
 
-function writeIncompleteMarker(directory: string): void {
+function writeIncompleteMarker(directory: string): NativePrivateFile | undefined {
+  const native = privatePersistencePort();
+  if (native) return native.writeNew(join(directory, MARKER), Buffer.from(MARKER_TEXT), 8192).identity;
   writeNewFileDurably(join(directory, MARKER), MARKER_TEXT, { mode: 0o600 });
 }
 
 /** Remove the guard only after the completed directory and its parent have
  * been flushed. If the final flush fails, put the guard back before surfacing
  * the original failure. */
-function removeIncompleteMarker(directory: string): void {
+function removeIncompleteMarker(directory: string, marker?: NativePrivateFile): void {
+  const native = privatePersistencePort();
+  if (native) {
+    if (!marker) throw new Error("native original marker identity required");
+    const path = join(directory, MARKER);
+    native.unlinkExact(path, { ...marker, path }, 8192);
+    return;
+  }
   unlinkSync(join(directory, MARKER));
   try {
     syncPath(directory);
@@ -524,6 +644,8 @@ function copyTree(
   sourceRoot: string,
   destinationRoot: string,
 ): Map<string, FileRecord> {
+  const native = privatePersistencePort();
+  const inventory = native?.inspectTree!(sourceRoot);
   const records = new Map<string, FileRecord>();
   let entries = 0;
   const walk = (
@@ -551,10 +673,10 @@ function copyTree(
       if (child.isDirectory()) {
         if (depth >= MAX_TREE_DEPTH)
           throw new Error("コピー元の階層が深すぎます");
-        mkdirSync(to, { mode: 0o700 });
+        createPrivateDirectory(to);
         walk(from, to, relativePath, depth + 1);
         // Flush child names before their containing directory.
-        syncPath(to);
+        if (!native) syncPath(to);
         continue;
       }
       if (!child.isFile())
@@ -568,7 +690,12 @@ function copyTree(
     }
   };
   walk(sourceRoot, destinationRoot, "", 0);
-  syncPath(destinationRoot);
+  if (native) {
+    const after = native.inspectTree!(sourceRoot);
+    assertNativeIdentity(inventory!, after);
+    if (inventory!.sha256 !== after.sha256 || inventory!.bytes !== after.bytes || inventory!.entries !== after.entries)
+      throw new Error("native source tree changed");
+  } else syncPath(destinationRoot);
   return records;
 }
 
@@ -626,6 +753,7 @@ function verifyTree(
 }
 
 function syncTree(root: string): void {
+  const native = privatePersistencePort();
   let entries = 0;
   const walk = (directory: string, depth: number): void => {
     for (const entry of readdirSync(directory, {
@@ -645,8 +773,9 @@ function syncTree(root: string): void {
       }
       if (!info.isFile())
         throw new Error("同期先に通常ファイル以外の項目があります: " + path);
+      if (native) native.proveSync(path, native.inspectFile(path, NATIVE_FILE_MAX));
     }
-    syncPath(directory);
+    if (!native) syncPath(directory);
   };
   walk(root, 0);
 }
@@ -656,16 +785,18 @@ function createSnapshot(
   db: DatabaseSync,
   target: string,
 ): Map<string, FileRecord> {
+  const native = state.native;
+  sourceLeases.get(db)?.assertHeld();
   if (lstatOptional(target))
     throw new Error("移行先は未作成のフォルダを指定してください");
   const parent = dirname(target);
   assertDisjoint(state.root, target);
-  mkdirSync(parent, { recursive: true, mode: 0o700 });
+  createPrivateDirectory(parent, true);
   const actualParent = realpathSync(parent);
   if (actualParent !== parent)
     throw new Error("移行先の親フォルダを安全に解決できません");
   try {
-    mkdirSync(target, { mode: 0o700 });
+    createPrivateDirectory(target);
   } catch (error) {
     if ((error as NodeJS.ErrnoException).code === "EEXIST")
       throw new Error("移行先は未作成のフォルダを指定してください");
@@ -674,24 +805,26 @@ function createSnapshot(
   if (realpathSync(target) !== target)
     throw new Error("移行先を安全に解決できません");
 
-  writeIncompleteMarker(target);
-  syncPath(target);
-  syncPath(parent);
+  const marker = writeIncompleteMarker(target);
+  if (!native) { syncPath(target); syncPath(parent); }
 
   const databasePath = join(target, DATABASE);
-  db.prepare("VACUUM INTO ?").run(databasePath);
+  if (native) native.snapshotSqlite(db, databasePath);
+  else db.prepare("VACUUM INTO ?").run(databasePath);
+  sourceLeases.get(db)?.assertHeld();
   assertDatabaseIntegrityPath(databasePath, "移行先");
-  syncPath(databasePath);
+  if (native) native.proveSync(databasePath, native.inspectFile(databasePath, NATIVE_FILE_MAX));
+  else syncPath(databasePath);
   const records = new Map<string, FileRecord>();
   records.set(DATABASE, hashRegularFile(databasePath, "移行先のSQLite"));
 
   const outputAssets = join(target, ASSETS);
-  mkdirSync(outputAssets, { mode: 0o700 });
+  createPrivateDirectory(outputAssets);
   for (const directory of state.assets.directories) {
     const path = join(outputAssets, ...directory.split("/"));
     if (!inside(outputAssets, path))
       throw new Error("添付ファイルの移行先が不正です");
-    mkdirSync(path, { mode: 0o700 });
+    createPrivateDirectory(path);
   }
   for (const file of state.assets.files) {
     const sourceParent = dirname(file.absolutePath);
@@ -708,32 +841,30 @@ function createSnapshot(
         file.absolutePath,
         destination,
         "添付ファイル: " + file.relativePath,
+        file.native,
       ),
     );
   }
   syncTree(outputAssets);
-  syncPath(outputAssets);
-  syncPath(target);
+  if (!native) { syncPath(outputAssets); syncPath(target); }
 
   assertSourceUnchanged(state);
   assertSidecarTypes(state);
   assertAssetTreeUnchanged(state);
 
-  writeNewFileDurably(
-    join(target, MANIFEST),
-    JSON.stringify(
+  const manifest = JSON.stringify(
       { app: "Folio", format: 1, createdAt: new Date().toISOString() },
       null,
       2,
-    ),
-    { mode: 0o600 },
-  );
+    );
+  if (native) native.writeNew(join(target, MANIFEST), Buffer.from(manifest), 8192);
+  else writeNewFileDurably(join(target, MANIFEST), manifest, { mode: 0o600 });
   records.set(MANIFEST, hashRegularFile(join(target, MANIFEST), "manifest"));
-  syncPath(target);
+  if (!native) syncPath(target);
 
   verifyTree(target, records, true);
-  syncPath(target);
-  removeIncompleteMarker(target);
+  if (!native) syncPath(target);
+  removeIncompleteMarker(target, marker);
   return records;
 }
 
@@ -742,19 +873,20 @@ function createStage(
   source: string,
   target: string,
   expected: Map<string, FileRecord>,
-): void {
+): NativePrivateFile | undefined {
+  const native = state.native;
   if (lstatOptional(join(source, MARKER)))
     throw new Error("バックアップが未完了のため移行できません");
   if (lstatOptional(target))
     throw new Error("移行先は未作成のフォルダを指定してください");
   const parent = dirname(target);
   assertDisjoint(state.root, target);
-  mkdirSync(parent, { recursive: true, mode: 0o700 });
+  createPrivateDirectory(parent, true);
   const actualParent = realpathSync(parent);
   if (actualParent !== parent)
     throw new Error("移行先の親フォルダを安全に解決できません");
   try {
-    mkdirSync(target, { mode: 0o700 });
+    createPrivateDirectory(target);
   } catch (error) {
     if ((error as NodeJS.ErrnoException).code === "EEXIST")
       throw new Error("移行先は未作成のフォルダを指定してください");
@@ -763,9 +895,8 @@ function createStage(
   if (realpathSync(target) !== target)
     throw new Error("移行先を安全に解決できません");
 
-  writeIncompleteMarker(target);
-  syncPath(target);
-  syncPath(parent);
+  const marker = writeIncompleteMarker(target);
+  if (!native) { syncPath(target); syncPath(parent); }
 
   const copied = copyTree(source, target);
   if (copied.size !== expected.size)
@@ -784,7 +915,8 @@ function createStage(
   // created by that inspection must fail verification, not be published.
   verifyTree(target, expected, true);
   syncTree(target);
-  syncPath(target);
+  if (!native) syncPath(target);
+  return marker;
 }
 
 function publishStage(
@@ -792,7 +924,29 @@ function publishStage(
   staging: string,
   destination: string,
   expected: Map<string, FileRecord>,
+  marker?: NativePrivateFile,
 ): void {
+  const native = state.native;
+  if (native) {
+    if (!marker) throw new Error("native original marker identity required");
+    assertDisjoint(state.root, destination);
+    const parent = native.inspectDirectory(dirname(destination));
+    const stageParent = native.inspectDirectory(dirname(staging));
+    verifyTree(staging, expected, true);
+    const tree = native.inspectTree!(staging);
+    native.renameDirectoryNew!(staging, destination, tree, phase => {
+      assertNativeIdentity(parent, native.inspectDirectory(parent.path));
+      assertNativeIdentity(stageParent, native.inspectDirectory(stageParent.path));
+      assertSourceUnchanged(state); assertAssetTreeUnchanged(state);
+      if (phase !== "success") {
+        if (lstatOptional(destination)) throw new Error("移行先は未作成のフォルダを指定してください");
+        verifyTree(staging, expected, true);
+      } else verifyTree(destination, expected, true);
+    });
+    verifyTree(destination, expected, true);
+    removeIncompleteMarker(destination, marker);
+    return;
+  }
   if (lstatOptional(join(staging, MARKER)) === undefined)
     throw new Error("未完了マーカーがない移行内容は公開できません");
   if (lstatOptional(destination))
@@ -884,6 +1038,7 @@ export function migrateWorkspace(
   destination: string,
   options: WorkspaceMigrationOptions = {},
 ): { destination: string; backup: string } {
+  const native = requireNativeFeatures();
   if (options === null || typeof options !== "object" || Array.isArray(options))
     throw new TypeError("Migration options must be an object");
   if (
@@ -896,7 +1051,7 @@ export function migrateWorkspace(
   if (lstatOptional(requestedDestination))
     throw new Error("移行先は未作成のフォルダを指定してください");
 
-  const state = validateSource(source);
+  const state = validateSource(source, native);
   const target = actualPath(requestedDestination);
   if (lstatOptional(target))
     throw new Error("移行先は未作成のフォルダを指定してください");
@@ -906,9 +1061,11 @@ export function migrateWorkspace(
   const db = openSourceDatabase(state);
   let completed = false;
   let failed = false;
+  let primary: unknown;
   try {
     const additionalBytes = estimateMigrationBytes(db, state);
     options.beforeCopy?.(targetParent, additionalBytes);
+    sourceLeases.get(db)?.assertHeld();
 
     // Admission must not leave any output. Recheck the target and source after
     // the hook before creating the first directory or file.
@@ -934,23 +1091,26 @@ export function migrateWorkspace(
     assertSourceUnchanged(state);
     assertAssetTreeUnchanged(state);
 
-    createStage(state, backupTarget, stagingTarget, backupRecords);
+    const marker = createStage(state, backupTarget, stagingTarget, backupRecords);
     assertSourceUnchanged(state);
     assertAssetTreeUnchanged(state);
 
-    publishStage(state, stagingTarget, target, backupRecords);
+    publishStage(state, stagingTarget, target, backupRecords, marker);
     completed = true;
     return { destination: requestedDestination, backup };
   } catch (error) {
     failed = true;
+    primary = error;
     throw error;
   } finally {
     let closeError: unknown;
     try {
-      db.close();
+      closeSourceDatabase(db);
     } catch (error) {
       closeError = error;
     }
+    if (native && closeError !== undefined)
+      throw new AggregateError(primary === undefined ? [closeError] : [primary, closeError], "workspace source lease close UNKNOWN");
     // SQLite owns the source WAL/SHM lifecycle; another reader can still
     // have an index open after our connection closes.
     // Preserve the operation's own failure. A close failure after a completed
@@ -960,11 +1120,12 @@ export function migrateWorkspace(
 }
 
 export function backupWorkspace(source: string, destination: string) {
+  const native = requireNativeFeatures(false);
   const requestedDestination = resolve(destination);
   if (lstatOptional(requestedDestination))
     throw new Error("バックアップ先が既に存在します");
 
-  const state = validateSource(source);
+  const state = validateSource(source, native);
   const target = actualPath(requestedDestination);
   if (lstatOptional(target)) throw new Error("バックアップ先が既に存在します");
   assertDisjoint(state.root, target);
@@ -972,20 +1133,24 @@ export function backupWorkspace(source: string, destination: string) {
   const db = openSourceDatabase(state);
   let completed = false;
   let failed = false;
+  let primary: unknown;
   try {
     createSnapshot(state, db, target);
     completed = true;
     return requestedDestination;
   } catch (error) {
     failed = true;
+    primary = error;
     throw error;
   } finally {
     let closeError: unknown;
     try {
-      db.close();
+      closeSourceDatabase(db);
     } catch (error) {
       closeError = error;
     }
+    if (native && closeError !== undefined)
+      throw new AggregateError(primary === undefined ? [closeError] : [primary, closeError], "workspace source lease close UNKNOWN");
     if (closeError !== undefined && !failed && !completed) throw closeError;
   }
 }

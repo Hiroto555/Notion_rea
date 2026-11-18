@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Modal } from "../renderer/Modal";
 import {
   Table2,
@@ -9,6 +9,10 @@ import {
   Trash2,
   ArrowLeft,
   ArrowRight,
+  ArrowUpDown,
+  Filter,
+  MoreHorizontal,
+  X,
 } from "lucide-react";
 import type {
   DatabaseData,
@@ -24,7 +28,6 @@ import {
   addView,
   deleteView,
   duplicateView,
-  filterConditions,
   groupRows,
   monthDays,
   moveView,
@@ -35,9 +38,12 @@ import {
   renameView,
   setActiveView,
   updateView,
-  legacySortValue,
 } from "./model";
 import { FilterBuilder } from "./FilterBuilder";
+import { SettingsMenu } from "./settings-menu/SettingsMenu";
+import { summarizeView } from "./settings-menu/summaries";
+import { searchDisclosureAction } from "./DatabaseSettingsPanel";
+import "./database-settings-panel.css";
 // Round 3 entry points. App.tsx still imports `Database` (legacy props) until
 // Core connects DatabasePresentationProps, so the new contract surface is
 // exported alongside it rather than silently changing App's props.
@@ -63,6 +69,7 @@ const VIEW_TYPES: readonly DatabaseViewType[] = [
   "calendar",
   "gallery",
 ];
+const titleProperty: Property = { id: "title", name: "名前", type: "text" };
 
 /**
  * @deprecated Legacy v2 whole-database editor, still mounted by App.tsx until
@@ -91,11 +98,23 @@ export function Database({
       new Date().toLocaleDateString("sv-SE").slice(0, 7),
     ),
     [editing, setEditing] = useState<string | null>(null),
-    [filterOpen, setFilterOpen] = useState(false),
-    [newViewType, setNewViewType] = useState<DatabaseViewType>("table");
+    [searchOpen, setSearchOpen] = useState(false);
+  const searchInput = useRef<HTMLInputElement>(null);
+  const searchToggle = useRef<HTMLButtonElement>(null);
+  useEffect(() => {
+    if (!searchOpen) return;
+    searchInput.current?.focus();
+  }, [searchOpen]);
 
   const view = activeView(value);
   const rows = queryRows(value);
+  const summary = summarizeView(view, [titleProperty, ...value.properties]);
+  const searchVisible = searchOpen || view.filterText.length > 0;
+  const openSearch = () => setSearchOpen(true);
+  const closeSearch = () => {
+    setSearchOpen(false);
+    searchToggle.current?.focus();
+  };
   const status = value.properties.find((p) => p.type === "select"),
     date = value.properties.find((p) => p.type === "date");
   const boardPropertyId = view.groupBy?.propertyId ?? status?.id ?? null;
@@ -118,7 +137,6 @@ export function Database({
   const groupedRows = view.groupBy
     ? groupRows(value, view, rows)
     : [{ key: "", label: "", propertyId: "", value: undefined, rows }];
-  const filterCount = [...filterConditions(view.filter)].length;
   const changeView = (patch: Partial<Omit<DatabaseView, "id">>) =>
     onChange(updateView(value, view.id, patch));
   const update = (id: string, patch: Partial<RecordRow>) =>
@@ -218,30 +236,6 @@ export function Database({
     </button>
   );
   const active = value.rows.find((r) => r.id === editing);
-  const switchType = (type: DatabaseViewType) => {
-    if (view.type === type) return;
-    const existing = value.views.find((candidate) => candidate.type === type);
-    onChange(
-      existing
-        ? setActiveView(value, existing.id)
-        : addView(value, type, { copyActive: true }),
-    );
-  };
-  const mainSort = legacySortValue(view.sorts[0]);
-  const setMainSort = (text: string) => {
-    if (!text) {
-      changeView({ sorts: view.sorts.slice(1) });
-      return;
-    }
-    const desc = text.startsWith("-");
-    const propertyId = desc ? text.slice(1) : text;
-    const first: SortRule = {
-      id: view.sorts[0]?.id ?? newId(),
-      propertyId,
-      direction: desc ? "desc" : "asc",
-    };
-    changeView({ sorts: [first, ...view.sorts.slice(1)] });
-  };
   const addSort = () => {
     const used = new Set(view.sorts.map((sort) => sort.propertyId));
     const property =
@@ -316,13 +310,16 @@ export function Database({
   );
 
   return (
-    <div className="database">
-      <div className="db-tabs">
+    <div className="database legacy-database" data-legacy-database="true">
+      <div className="db-tabs" role="tablist" aria-label="保存するビュー">
         {value.views.map((candidate) => {
           const Icon = VIEW_ICONS[candidate.type];
           return (
             <button
               key={candidate.id}
+              type="button"
+              role="tab"
+              aria-selected={candidate.id === view.id}
               aria-label={
                 "ビュー: " + (candidate.name || VIEW_TYPE_LABELS[candidate.type])
               }
@@ -334,22 +331,32 @@ export function Database({
             </button>
           );
         })}
-        {VIEW_TYPES.map((type) => {
-          const Icon = VIEW_ICONS[type];
-          return (
-            <button
-              key={type}
-              className={view.type === type ? "active" : ""}
-              onClick={() => switchType(type)}
-            >
-              <Icon size={15} />
-              {VIEW_TYPE_LABELS[type]}
-            </button>
-          );
-        })}
+        <label className="r7-add-view db-add-view">
+          <span className="r5-visually-hidden">新しいビュー</span>
+          <select
+            aria-label="ビューを追加"
+            title="ビューを追加"
+            value=""
+            onChange={(e) => {
+              const type = e.target.value as DatabaseViewType;
+              if (VIEW_TYPES.includes(type))
+                onChange(addView(value, type, { copyActive: true }));
+            }}
+          >
+            <option value="" disabled>
+              ＋ ビュー
+            </option>
+            {VIEW_TYPES.map((type) => (
+              <option value={type} key={type}>
+                {VIEW_TYPE_LABELS[type]}
+              </option>
+            ))}
+          </select>
+        </label>
       </div>
-      <div className="db-toolbar">
+      <div className="db-command-row r7-condition-row">
         <button
+          type="button"
           disabled={!undoStack.current.length}
           onClick={() => {
             const previous = undoStack.current.pop();
@@ -358,257 +365,493 @@ export function Database({
         >
           DB変更を元に戻す
         </button>
-        <input
-          aria-label="データベースを絞り込む"
-          placeholder="絞り込み…"
-          value={view.filterText}
-          onChange={(e) => changeView({ filterText: e.target.value })}
-        />
-        <select
-          aria-label="並べ替え"
-          value={mainSort}
-          onChange={(e) => setMainSort(e.target.value)}
-        >
-          <option value="">並べ替え</option>
-          {[{ id: "title", name: "名前" }, ...value.properties].flatMap((p) => [
-            <option key={p.id} value={p.id}>
-              {p.name} ↑
-            </option>,
-            <option key={"-" + p.id} value={"-" + p.id}>
-              {p.name} ↓
-            </option>,
-          ])}
-        </select>
         <button
-          aria-label="複数並べ替えを追加"
-          onClick={addSort}
-          title="複数並べ替えを追加"
+          ref={searchToggle}
+          type="button"
+          className="r7-search-toggle"
+          aria-label="検索"
+          title="検索"
+          aria-expanded={searchVisible}
+          data-search-toggle="search"
+          onClick={() => (searchOpen ? closeSearch() : openSearch())}
         >
-          ＋ 並べ替え
+          <span>検索</span>
         </button>
-        <button
-          aria-expanded={filterOpen}
-          onClick={() => setFilterOpen((open) => !open)}
+        <label
+          className="r5-view-search r7-view-search"
+          data-search-open={searchVisible ? "true" : "false"}
+          hidden={!searchVisible}
         >
-          フィルター{filterCount ? ` (${filterCount})` : ""}
-        </button>
-        <select
-          aria-label="グループ化"
-          value={view.groupBy?.propertyId ?? ""}
-          onChange={(e) =>
-            changeView({
-              groupBy: e.target.value
-                ? { propertyId: e.target.value, direction: "asc" }
-                : null,
-            })
-          }
-        >
-          <option value="">グループ化なし</option>
-          <option value="title">名前</option>
-          {value.properties.map((p) => (
-            <option key={p.id} value={p.id}>
-              {p.name}
-            </option>
-          ))}
-        </select>
-        <div className="spacer" />
-        <button onClick={() => setPropertyForm(!propertyForm)}>
-          ＋ プロパティ
-        </button>
-        <button className="primary" onClick={() => add()}>
-          <Plus size={14} />
-          新規
-        </button>
-      </div>
-      <div className="db-toolbar">
-        <input
-          aria-label="ビュー名"
-          value={view.name}
-          onChange={(e) => onChange(renameView(value, view.id, e.target.value))}
-          placeholder="ビュー名"
-        />
-        <select
-          aria-label="ビューの種類"
-          value={view.type}
-          onChange={(e) =>
-            changeView({ type: e.target.value as DatabaseViewType })
-          }
-        >
-          {VIEW_TYPES.map((type) => (
-            <option key={type} value={type}>
-              {VIEW_TYPE_LABELS[type]}
-            </option>
-          ))}
-        </select>
-        <button
-          aria-label="ビューを複製"
-          disabled={value.views.length >= 100}
-          onClick={() => onChange(duplicateView(value, view.id))}
-        >
-          複製
-        </button>
-        <button
-          aria-label="ビューを削除"
-          disabled={value.views.length <= 1}
-          onClick={() => onChange(deleteView(value, view.id))}
-        >
-          削除
-        </button>
-        <button
-          aria-label="ビューを左へ移動"
-          disabled={value.views[0]?.id === view.id}
-          onClick={() => onChange(moveView(value, view.id, -1))}
-        >
-          ←
-        </button>
-        <button
-          aria-label="ビューを右へ移動"
-          disabled={value.views.at(-1)?.id === view.id}
-          onClick={() => onChange(moveView(value, view.id, 1))}
-        >
-          →
-        </button>
-        <select
-          aria-label="追加するビューの種類"
-          value={newViewType}
-          onChange={(e) => setNewViewType(e.target.value as DatabaseViewType)}
-        >
-          {VIEW_TYPES.map((type) => (
-            <option key={type} value={type}>
-              {VIEW_TYPE_LABELS[type]}
-            </option>
-          ))}
-        </select>
-        <button
-          aria-label="ビューを追加"
-          onClick={() =>
-            onChange(addView(value, newViewType, { copyActive: true }))
-          }
-        >
-          ＋ ビュー
-        </button>
-      </div>
-      {view.sorts.length > 1 && (
-        <div className="db-sort-rules" style={{ padding: "0 16px" }}>
-          {view.sorts.slice(1).map((sort, index) => (
-            <div
-              key={sort.id}
-              style={{ display: "flex", gap: 6, alignItems: "center" }}
-            >
-              <span>並べ替え {index + 2}</span>
-              <select
-                aria-label={`並べ替え対象 ${index + 2}`}
-                value={sort.propertyId}
-                onChange={(e) =>
-                  updateSort(sort.id, { propertyId: e.target.value })
-                }
-              >
-                <option value="title">名前</option>
-                {value.properties.map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {p.name}
-                  </option>
-                ))}
-              </select>
-              <select
-                aria-label={`並べ替え順 ${index + 2}`}
-                value={sort.direction}
-                onChange={(e) =>
-                  updateSort(sort.id, {
-                    direction: e.target.value as "asc" | "desc",
-                  })
-                }
-              >
-                <option value="asc">昇順</option>
-                <option value="desc">降順</option>
-              </select>
-              <button
-                aria-label={`並べ替えを削除 ${index + 2}`}
-                onClick={() => removeSort(sort.id)}
-              >
-                ×
-              </button>
-            </div>
-          ))}
-        </div>
-      )}
-      {filterOpen && (
-        <div
-          className="db-filter-panel"
-          style={{
-            padding: "8px 16px",
-            borderTop: "1px solid rgba(128,128,128,.2)",
-          }}
-        >
-          <FilterBuilder
-            data={value}
-            view={view}
-            onChange={(filter) => changeView({ filter })}
-          />
-        </div>
-      )}
-      {propertyForm && (
-        <form
-          className="property-form"
-          onSubmit={(e) => {
-            e.preventDefault();
-            if (!propertyName.trim()) return;
-            onChange({
-              ...value,
-              properties: [
-                ...value.properties,
-                {
-                  id: crypto.randomUUID(),
-                  name: propertyName.trim(),
-                  type: propertyType,
-                  ...(propertyType === "select"
-                    ? {
-                        options: options
-                          .split(",")
-                          .map((s) => s.trim())
-                          .filter(Boolean),
-                      }
-                    : {}),
-                },
-              ],
-            });
-            setPropertyForm(false);
-            setPropertyName("");
-          }}
-        >
+          <span className="r5-visually-hidden">検索</span>
           <input
-            aria-label="プロパティ名"
-            placeholder="プロパティ名"
-            value={propertyName}
-            onChange={(e) => setPropertyName(e.target.value)}
-            autoFocus
+            ref={searchInput}
+            aria-label="ビュー内検索"
+            value={view.filterText}
+            maxLength={10_000}
+            placeholder="名前・プロパティから絞り込む"
+            onChange={(e) => changeView({ filterText: e.target.value })}
+            onKeyDown={(e) => {
+              if (searchDisclosureAction(e) === "ignore") return;
+              e.preventDefault();
+              e.stopPropagation();
+              closeSearch();
+            }}
           />
-          <select
-            aria-label="プロパティの種類"
-            value={propertyType}
-            onChange={(e) =>
-              setPropertyType(e.target.value as Property["type"])
-            }
-          >
-            <option value="text">テキスト</option>
-            <option value="number">数値</option>
-            <option value="select">セレクト</option>
-            <option value="date">日付</option>
-            <option value="checkbox">チェックボックス</option>
-          </select>
-          {propertyType === "select" && (
-            <input
-              aria-label="選択肢"
-              value={options}
-              onChange={(e) => setOptions(e.target.value)}
-              placeholder="選択肢をカンマ区切り"
-            />
+          {!view.filterText && (
+            <button
+              type="button"
+              className="r7-search-dismiss"
+              aria-label="検索を閉じる"
+              title="検索を閉じる"
+              onClick={closeSearch}
+            >
+              <X size={14} aria-hidden="true" />
+            </button>
           )}
-          <button type="submit" className="primary">
-            追加
-          </button>
-        </form>
+        </label>
+        <SettingsMenu
+          name="filter"
+          label={
+            summary.filters.length
+              ? `フィルター（${summary.filters.length}件の条件）`
+              : "フィルター"
+          }
+          panelLabel="ビューのフィルター"
+          className="r7-menu--filter"
+          panelClassName="r7-filter-panel"
+          trigger={
+            <>
+              <Filter size={15} aria-hidden="true" />
+              <span>フィルター</span>
+              {summary.filters.length > 0 && (
+                <span className="r7-menu-count" aria-hidden="true">
+                  {summary.filters.length}
+                </span>
+              )}
+            </>
+          }
+        >
+          {(close) => (
+            <>
+              <div className="r7-panel-heading">
+                <h4>フィルター</h4>
+                <button
+                  type="button"
+                  className="r7-panel-close"
+                  aria-label="フィルターを閉じる"
+                  title="閉じる"
+                  onClick={() => close(true)}
+                >
+                  <X size={15} aria-hidden="true" />
+                </button>
+              </div>
+              <FilterBuilder
+                data={value}
+                view={view}
+                onChange={(filter) => changeView({ filter })}
+              />
+            </>
+          )}
+        </SettingsMenu>
+        <SettingsMenu
+          name="sort"
+          label={
+            summary.sorts.length
+              ? `並べ替えとグループ（${summary.sorts.length}件の並べ替え${summary.group ? "・グループあり" : ""}）`
+              : "並べ替えとグループ"
+          }
+          panelLabel="ビューの並べ替えとグループ"
+          className="r7-menu--sort"
+          panelClassName="r7-sort-panel"
+          trigger={
+            <>
+              <ArrowUpDown size={15} aria-hidden="true" />
+              <span>並べ替え</span>
+              {summary.sorts.length > 0 && (
+                <span className="r7-menu-count" aria-hidden="true">
+                  {summary.sorts.length}
+                </span>
+              )}
+              {summary.group && (
+                <span className="r7-menu-group-mark" aria-hidden="true">
+                  グループ
+                </span>
+              )}
+            </>
+          }
+        >
+          {(close) => (
+            <>
+              <div className="r7-panel-heading">
+                <h4>並べ替えとグループ</h4>
+                <button
+                  type="button"
+                  className="r7-panel-close"
+                  aria-label="並べ替えとグループを閉じる"
+                  title="閉じる"
+                  onClick={() => close(true)}
+                >
+                  <X size={15} aria-hidden="true" />
+                </button>
+              </div>
+              <section aria-label="ビューの並べ替え">
+                <h4>並べ替え</h4>
+                {view.sorts.map((sort, at) => (
+                  <div className="r5-sort-row" key={sort.id}>
+                    <span>{at + 1}</span>
+                    <select
+                      aria-label={`並べ替え対象 ${at + 1}`}
+                      value={sort.propertyId}
+                      onChange={(e) =>
+                        updateSort(sort.id, { propertyId: e.target.value })
+                      }
+                    >
+                      <option value="title">名前</option>
+                      {value.properties.map((p) => (
+                        <option key={p.id} value={p.id}>
+                          {p.name}
+                        </option>
+                      ))}
+                    </select>
+                    <select
+                      aria-label={`並べ替え方向 ${at + 1}`}
+                      value={sort.direction}
+                      onChange={(e) =>
+                        updateSort(sort.id, {
+                          direction: e.target.value as "asc" | "desc",
+                        })
+                      }
+                    >
+                      <option value="asc">昇順</option>
+                      <option value="desc">降順</option>
+                    </select>
+                    <button
+                      type="button"
+                      aria-label={`並べ替えを削除 ${at + 1}`}
+                      onClick={() => removeSort(sort.id)}
+                    >
+                      削除
+                    </button>
+                  </div>
+                ))}
+                <button
+                  type="button"
+                  aria-label="並べ替えを追加"
+                  onClick={addSort}
+                >
+                  ＋ 並べ替えを追加
+                </button>
+              </section>
+              <section aria-label="ビューのグループ">
+                <h4>グループ</h4>
+                <div className="r5-group-row">
+                  <select
+                    aria-label="グループの対象"
+                    value={view.groupBy?.propertyId ?? ""}
+                    onChange={(e) =>
+                      changeView({
+                        groupBy: e.target.value
+                          ? { propertyId: e.target.value, direction: "asc" }
+                          : null,
+                      })
+                    }
+                  >
+                    <option value="">グループなし</option>
+                    <option value="title">名前</option>
+                    {value.properties.map((p) => (
+                      <option key={p.id} value={p.id}>
+                        {p.name}
+                      </option>
+                    ))}
+                  </select>
+                  {view.groupBy && (
+                    <select
+                      aria-label="グループの順序"
+                      value={view.groupBy.direction}
+                      onChange={(e) =>
+                        changeView({
+                          groupBy: {
+                            ...view.groupBy!,
+                            direction: e.target.value as "asc" | "desc",
+                          },
+                        })
+                      }
+                    >
+                      <option value="asc">昇順</option>
+                      <option value="desc">降順</option>
+                    </select>
+                  )}
+                </div>
+              </section>
+            </>
+          )}
+        </SettingsMenu>
+        <button
+          type="button"
+          className="primary"
+          aria-label="新規行"
+          onClick={() => add()}
+        >
+          <Plus size={14} aria-hidden="true" />
+          新規行
+        </button>
+        <SettingsMenu
+          name="view-options"
+          label="ビューのオプション"
+          panelLabel="ビューのオプション"
+          className="r7-view-options"
+          panelClassName="r7-view-options-panel"
+          trigger={
+            <>
+              <MoreHorizontal size={16} aria-hidden="true" />
+              <span className="r7-trigger-text">オプション</span>
+            </>
+          }
+        >
+          {(close) => (
+            <>
+              <div className="r7-panel-heading">
+                <h4>ビューのオプション</h4>
+                <button
+                  type="button"
+                  className="r7-panel-close"
+                  aria-label="ビューのオプションを閉じる"
+                  title="閉じる"
+                  onClick={() => close(true)}
+                >
+                  <X size={15} aria-hidden="true" />
+                </button>
+              </div>
+              <div className="r7-option-fields">
+                <label className="r5-view-name">
+                  ビュー名
+                  <input
+                    aria-label="ビュー名"
+                    value={view.name}
+                    maxLength={200}
+                    onChange={(e) =>
+                      onChange(renameView(value, view.id, e.target.value))
+                    }
+                  />
+                </label>
+                <label>
+                  表示形式
+                  <select
+                    aria-label="ビューの表示形式"
+                    value={view.type}
+                    onChange={(e) =>
+                      changeView({
+                        type: e.target.value as DatabaseViewType,
+                      })
+                    }
+                  >
+                    {VIEW_TYPES.map((type) => (
+                      <option key={type} value={type}>
+                        {VIEW_TYPE_LABELS[type]}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              </div>
+              <div className="r7-option-actions">
+                <button
+                  type="button"
+                  aria-label="ビューを複製"
+                  disabled={value.views.length >= 100}
+                  onClick={() => onChange(duplicateView(value, view.id))}
+                >
+                  複製
+                </button>
+                <button
+                  type="button"
+                  aria-label="ビューを左へ移動"
+                  disabled={value.views[0]?.id === view.id}
+                  onClick={() => onChange(moveView(value, view.id, -1))}
+                >
+                  左へ
+                </button>
+                <button
+                  type="button"
+                  aria-label="ビューを右へ移動"
+                  disabled={value.views.at(-1)?.id === view.id}
+                  onClick={() => onChange(moveView(value, view.id, 1))}
+                >
+                  右へ
+                </button>
+                <button
+                  type="button"
+                  aria-label="ビューを削除"
+                  disabled={value.views.length <= 1}
+                  onClick={() => onChange(deleteView(value, view.id))}
+                >
+                  削除
+                </button>
+              </div>
+              <section className="r7-schema-section" aria-label="プロパティを編集">
+                <h4>プロパティを編集</h4>
+                <button
+                  type="button"
+                  aria-expanded={propertyForm}
+                  onClick={() => setPropertyForm(!propertyForm)}
+                >
+                  ＋ プロパティ
+                </button>
+                <form
+                  className="property-form"
+                  hidden={!propertyForm}
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    if (!propertyName.trim()) return;
+                    onChange({
+                      ...value,
+                      properties: [
+                        ...value.properties,
+                        {
+                          id: crypto.randomUUID(),
+                          name: propertyName.trim(),
+                          type: propertyType,
+                          ...(propertyType === "select"
+                            ? {
+                                options: options
+                                  .split(",")
+                                  .map((s) => s.trim())
+                                  .filter(Boolean),
+                              }
+                            : {}),
+                        },
+                      ],
+                    });
+                    setPropertyForm(false);
+                    setPropertyName("");
+                  }}
+                >
+                  <input
+                    aria-label="プロパティ名"
+                    placeholder="プロパティ名"
+                    value={propertyName}
+                    onChange={(e) => setPropertyName(e.target.value)}
+                  />
+                  <select
+                    aria-label="プロパティの種類"
+                    value={propertyType}
+                    onChange={(e) =>
+                      setPropertyType(e.target.value as Property["type"])
+                    }
+                  >
+                    <option value="text">テキスト</option>
+                    <option value="number">数値</option>
+                    <option value="select">セレクト</option>
+                    <option value="date">日付</option>
+                    <option value="checkbox">チェックボックス</option>
+                  </select>
+                  {propertyType === "select" && (
+                    <input
+                      aria-label="選択肢"
+                      value={options}
+                      onChange={(e) => setOptions(e.target.value)}
+                      placeholder="選択肢をカンマ区切り"
+                    />
+                  )}
+                  <button type="submit" className="primary">
+                    追加
+                  </button>
+                </form>
+              </section>
+            </>
+          )}
+        </SettingsMenu>
+      </div>
+      {summary.activeCount > 0 && (
+        <div
+          className="r7-active-conditions"
+          role="group"
+          aria-label="適用中の表示条件"
+          title={
+            summary.filterExpression
+              ? `フィルター: ${summary.filterExpression}`
+              : undefined
+          }
+        >
+          <span className="r7-active-label" aria-hidden="true">
+            条件
+          </span>
+          <span className="r7-condition-count" data-condition-count="filters">
+            フィルター {summary.filters.length}件
+          </span>
+          <span className="r7-condition-count" data-condition-count="sorts">
+            並べ替え {summary.sorts.length}件
+          </span>
+          {summary.group && (
+            <span className="r7-condition-count" data-condition-count="group">
+              グループ 1件
+            </span>
+          )}
+          <details className="r7-condition-details">
+            <summary>条件を確認</summary>
+            <div className="r7-condition-detail-body">
+              {summary.filters.length > 0 && (
+                <section aria-label="フィルター条件の全文">
+                  <h4>
+                    フィルター（
+                    {view.filter.conjunction === "and"
+                      ? "すべて (AND)"
+                      : "いずれか (OR)"}
+                    ）
+                  </h4>
+                  <p className="r7-condition-expression">
+                    {summary.filterExpression}
+                  </p>
+                  <ol className="r7-condition-list">
+                    {summary.filters.map((chip) => (
+                      <li
+                        className="r7-summary-chip r7-summary-chip--filter"
+                        key={`filter:${chip.id}`}
+                      >
+                        {chip.scope && (
+                          <span className="r7-summary-scope">
+                            {chip.scope}
+                          </span>
+                        )}
+                        <span className="r7-summary-text">{chip.text}</span>
+                      </li>
+                    ))}
+                  </ol>
+                </section>
+              )}
+              {summary.sorts.length > 0 && (
+                <section aria-label="並べ替えの全文">
+                  <h4>並べ替え</h4>
+                  <ol className="r7-condition-list">
+                    {summary.sorts.map((chip, at) => (
+                      <li
+                        className="r7-summary-chip r7-summary-chip--sort"
+                        key={`sort:${chip.id}`}
+                      >
+                        <span className="r7-summary-kind">{at + 1}.</span>
+                        <span className="r7-summary-text">{chip.text}</span>
+                      </li>
+                    ))}
+                  </ol>
+                </section>
+              )}
+              {summary.group && (
+                <section aria-label="グループ条件の全文">
+                  <h4>グループ</h4>
+                  <ol className="r7-condition-list">
+                    <li className="r7-summary-chip r7-summary-chip--group">
+                      <span className="r7-summary-kind">1.</span>
+                      <span className="r7-summary-text">
+                        {summary.group.text}
+                      </span>
+                    </li>
+                  </ol>
+                </section>
+              )}
+            </div>
+          </details>
+        </div>
       )}
+
       {view.type === "table" &&
         (view.groupBy ? (
           <div className="db-groups">

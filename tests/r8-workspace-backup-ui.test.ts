@@ -13,6 +13,7 @@ import {
   WorkspaceBackupView,
   type WorkspaceBackupViewProps,
 } from "../src/renderer/workspace-backup/WorkspaceBackupDialog";
+import { createBackupWriteHold } from "../src/renderer/workspace-backup/backup-write-hold";
 
 const inventory: WorkspaceInventory = {
   pages: 12,
@@ -123,6 +124,25 @@ describe("WorkspaceBackupView", () => {
     expect(html).toContain("復元先を作成できません");
     expect(html).toContain(preview.directory);
     expect(html).toContain(">新しいフォルダーへ復元</button>");
+  });
+
+  it("a held backup write disables mutations and shows fixed stop text over any kept preview", () => {
+    const hold = createBackupWriteHold();
+    hold.latch(new Error("raw transport /Users/alice/secret"), "workspaceBackup:create");
+    const html = render({preview, backupHold: hold});
+    expect(html).toContain('role="alert"');
+    expect(html).toContain("未確認");
+    expect(html).toContain("再送");
+    expect(html).toContain("新しい保存");
+    expect(html).not.toContain("secret");
+    // The earlier selected preview may remain, but its restore action is
+    // disabled: only create and restore are disabled while held.
+    expect(html).toContain(preview.directory);
+    expect(html).toContain(">新しいフォルダーへ復元</button>");
+    expect(html.match(/disabled=""/g)?.length).toBe(2);
+    // Choose and close keep their existing enabled meaning.
+    expect(html).toContain(">バックアップを選んで検証</button>");
+    expect(html).toContain(">閉じる</button>");
   });
 
   it("formats byte sizes and invalid dates without throwing", () => {

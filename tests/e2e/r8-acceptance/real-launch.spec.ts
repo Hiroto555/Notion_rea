@@ -13,9 +13,12 @@ test('restore open starts the actual compiled child app on the restored workspac
   // Observe and retain the real child, adding only a loopback CDP port for read-only assertions.
   await app.evaluate((_electron,port)=>{
    const childProcess=process.getBuiltinModule('child_process');const original=childProcess.spawn;
+   // Electron's Linux CI sandbox flag is test-runtime only; the product's own
+   // spawn arguments stay untouched for the real-child assertions below.
+   const sandbox=process.platform==='linux'&&process.env.FOLIO_LINUX_GUI_CI==='1'?['--no-sandbox']:[];
    (globalThis as any).__r8RealChildren=[];(globalThis as any).__r8RealLaunches=[];
    childProcess.spawn=((executable:string,args:string[],options:any)=>{
-    const child=original(executable,[`--remote-debugging-port=${port}`,...args],options);
+    const child=original(executable,[`--remote-debugging-port=${port}`,...sandbox,...args],options);
     (globalThis as any).__r8RealChildren.push(child);
     (globalThis as any).__r8RealLaunches.push({pid:child.pid,args,directory:options.env.FOLIO_DATA_DIR});return child;
    }) as typeof childProcess.spawn;

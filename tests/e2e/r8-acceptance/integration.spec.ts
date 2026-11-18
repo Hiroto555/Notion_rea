@@ -9,6 +9,7 @@ test("record width preserves numeric draft, Editor identity and focus across sid
     const surface=window.locator(".r3-record-page");const number=surface.getByLabel("見積",{exact:true});
     await number.fill("-");
     await surface.locator(".folio-editor").evaluate(element=>{(window as any).__r8RecordEditor=element;});
+    await surface.locator('[data-settings-menu-trigger="record-display"]').click();
     await surface.getByRole("button",{name:"ワイド",exact:true}).click();
     await expect(number).toHaveValue("-");await expect(number).toBeFocused();
     await expect.poll(()=>r8PageWidth(window,data.records.alpha.pageId)).toBe("wide");

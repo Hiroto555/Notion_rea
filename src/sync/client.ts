@@ -23,6 +23,8 @@ export class CheckpointRemote {
   private readonly workspaceId: string;
   private readonly token: string;
   private readonly timeoutMs: number;
+  private assertRequest: () => void = () => {};
+  setRequestGuard(guard: () => void): void { this.assertRequest = guard; }
 
   constructor(options: CheckpointRemoteOptions) {
     const url = new URL(options.baseUrl);
@@ -40,6 +42,7 @@ export class CheckpointRemote {
   }
 
   private async request(route: string, operation?: Commit, missingIsNull = false): Promise<unknown> {
+    this.assertRequest();
     const response = await fetch(this.route(route), {
       method: operation ? 'POST' : 'GET',
       headers: { Authorization: `Bearer ${this.token}`, Accept: 'application/json', ...(operation ? { 'Content-Type': 'application/json' } : {}) },

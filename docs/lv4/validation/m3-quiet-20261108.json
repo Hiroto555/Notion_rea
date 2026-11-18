@@ -1,0 +1,20 @@
+{
+  "candidate": "9ddb60c6f13e8cb3c771f276205bc929fb056919",
+  "node": "v24.20.0",
+  "platform": "Darwin",
+  "command": "npm run verify:quiet",
+  "typecheck": "PASS",
+  "vitest": {
+    "files": 228,
+    "passed": 2078,
+    "failed": 0,
+    "skipped": 0
+  },
+  "build": "PASS",
+  "seconds": 109.0,
+  "gui": "NOT_RUN locally; separate GitHub Actions evidence",
+  "warnings": [
+    "Existing dynamic/static Editor import",
+    "Existing renderer chunk >500kB"
+  ]
+}

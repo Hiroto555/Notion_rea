@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Plus } from 'lucide-react';
-import type { DatabaseCallbacks, Doc, Page, RecordProjection } from '../shared/types';
-import type { DatabaseReadSnapshot } from '../shared/database-operation';
+import type { DatabaseCallbacks, Doc, RecordProjection } from '../shared/types';
+import type { WorkspaceReadPort } from '../shared/app-api';
 import { DatabasePresentation } from '../database/DatabasePresentation';
 import { ControlledRecordTable, type RecordTableState } from '../database/ControlledRecordTable';
 import { DatabaseSettingsPanel } from '../database/DatabaseSettingsPanel';
@@ -12,9 +12,10 @@ import { validateRecordReadSnapshot } from './record-save-coordinator';
 import './r5-database.css';
 
 /** The App owns settings, creation operations, record sessions and raw inputs. */
-export function LiveRecordDatabase({ databasePageId, databases, sessions, numberDrafts, onNumberDraft,
+export function LiveRecordDatabase({ databasePageId, workspace, databases, sessions, numberDrafts, onNumberDraft,
   filterInputTexts, onFilterInputTextChange, creatingRecord, onCreateRecord, onOpenRecord, onOpenProperties, onError }: {
   databasePageId: string;
+  workspace: WorkspaceReadPort;
   databases: DatabaseSessionCoordinator;
   sessions: EditSessionCoordinator;
   numberDrafts: Record<string, Record<string, string>>;
@@ -32,14 +33,14 @@ export function LiveRecordDatabase({ databasePageId, databases, sessions, number
   useEffect(() => {
     let cancelled = false;
     setError('');
-    if (!databases.get(databasePageId)) void window.folio.request<DatabaseReadSnapshot>({ type: 'database:read', databasePageId })
+    if (!databases.get(databasePageId)) void workspace.readDatabase(databasePageId)
       .then((value) => {
         if (cancelled) return;
         if (value.page.id !== databasePageId) throw new Error('所属を確認できません。');
         databases.attach(value.page, value.database);
       }).catch((error: unknown) => { if (!cancelled) setError(error instanceof Error ? error.message : String(error)); });
     return () => { cancelled = true; };
-  }, [databasePageId, databases]);
+  }, [databasePageId, workspace, databases]);
   const database = databases.get(databasePageId);
   const projection = database?.projection;
   const ids = projection?.records.filter((record) => record.deletedAt === null).map((record) => record.pageId).join('|') ?? '';
@@ -48,14 +49,14 @@ export function LiveRecordDatabase({ databasePageId, databases, sessions, number
     void (async () => {
       for (const record of databases.get(databasePageId)?.projection.records ?? []) {
         if (record.deletedAt !== null || sessions.get(record.pageId)) continue;
-        const read = await window.folio.request<{page: Page; record: RecordProjection}>({type: 'record:read', pageId: record.pageId});
+        const read = await workspace.readRecord(record.pageId);
         if (cancelled) return;
         const pair = validateRecordReadSnapshot(read, record.pageId, databasePageId);
         sessions.attach(pair.page, pair.record);
       }
     })().catch((error: unknown) => { if (!cancelled) setError(error instanceof Error ? error.message : String(error)); });
     return () => { cancelled = true; };
-  }, [databasePageId, databases, sessions, ids]);
+  }, [databasePageId, workspace, databases, sessions, ids]);
   if (!database || !projection) return <section aria-label="レコード一覧">{error ? <p role="alert">{error}</p> : <p role="status">読み込み中…</p>}</section>;
   const recordSessions = new Map(projection.records.map((record) => [record.pageId, sessions.get(record.pageId)]));
   const records = projection.records.map((record) => recordSessions.get(record.pageId)?.record ?? record);
@@ -99,10 +100,12 @@ export function LiveRecordDatabase({ databasePageId, databases, sessions, number
       filterInputTexts={filterInputTexts} onFilterInputTextChange={onFilterInputTextChange}
       onIntent={(intent) => {try {databases.editSettings(database.handle, intent); void databases.flush(databasePageId);} catch (error) {onError(error);}}}
       onResolve={() => void databases.resolve(databasePageId)}
-      toolbarActions={<>
-        <button type="button" onClick={onOpenProperties}>列の設定</button>
+      schemaActions={
+        <button type="button" onClick={onOpenProperties}>プロパティを編集</button>
+      }
+      toolbarActions={
         <button type="button" className="r7-new-record" onClick={onCreateRecord} disabled={creatingRecord || ['unknown','conflict','blocked'].includes(database.state)}><Plus size={15} />新規行</button>
-      </>} />
+      } />
     {(creatingRecord || latestCreated) && <div className="r5-database-actions">
       {creatingRecord && <p role="status">行を追加中…</p>}
       {latestCreated && <button type="button" onClick={() => onOpenRecord(latestCreated)}>追加したページを開く</button>}

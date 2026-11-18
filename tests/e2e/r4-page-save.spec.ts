@@ -19,33 +19,47 @@ for (const phase of ["restore-ack", "post-restore-load"] as const) {
         data.home.id,
       );
       await app.evaluate(({ ipcMain }, holdPhase) => {
-        const ipc = ipcMain as any,
-          original = ipc._invokeHandlers.get("folio:request");
+        const ipc = ipcMain as any;
         const gate: any = ((globalThis as any).r4Restore = { writes: [] });
-        ipc.removeHandler("folio:request");
-        ipc.handle("folio:request", async (event: any, request: any) => {
-          if (request.type === "save:commit")
-            gate.writes.push(request.operation);
-          const result = await original(event, request);
-          if (request.type === "restoreVersion") {
-            gate.saved = result;
-            if (holdPhase === "restore-ack")
+        const unwrap = (result: any) =>
+          result &&
+          result.tag === "folio-request-result" &&
+          result.ok === true &&
+          result.valueSlot &&
+          result.valueSlot.present === true
+            ? result.valueSlot.value
+            : result;
+        for (const channel of [
+          "folio:request",
+          "folio:request:diagnostic-v1",
+        ]) {
+          const original = ipc._invokeHandlers.get(channel);
+          if (!original) continue;
+          ipc.removeHandler(channel);
+          ipc.handle(channel, async (event: any, request: any) => {
+            if (request.type === "save:commit")
+              gate.writes.push(request.operation);
+            const result = await original(event, request);
+            if (request.type === "restoreVersion") {
+              gate.saved = unwrap(result);
+              if (holdPhase === "restore-ack")
+                await new Promise<void>((release) => {
+                  gate.release = release;
+                });
+            } else if (
+              request.type === "load" &&
+              gate.saved &&
+              !gate.loadHeld &&
+              holdPhase === "post-restore-load"
+            ) {
+              gate.loadHeld = true;
               await new Promise<void>((release) => {
                 gate.release = release;
               });
-          } else if (
-            request.type === "load" &&
-            gate.saved &&
-            !gate.loadHeld &&
-            holdPhase === "post-restore-load"
-          ) {
-            gate.loadHeld = true;
-            await new Promise<void>((release) => {
-              gate.release = release;
-            });
-          }
-          return result;
-        });
+            }
+            return result;
+          });
+        }
       }, phase);
       await window.getByRole("button", { name: "ページメニュー" }).click();
       await window
@@ -174,29 +188,43 @@ test("ordinary Page delayed ACK keeps later input and does not replace another s
     app = running.app;
     const window = running.window;
     await app.evaluate(({ ipcMain }, pageId) => {
-      const ipc = ipcMain as any,
-        original = ipc._invokeHandlers.get("folio:request");
+      const ipc = ipcMain as any;
       const gate: any = ((globalThis as any).r4PageAck = {
         operations: [],
         held: false,
       });
-      ipc.removeHandler("folio:request");
-      ipc.handle("folio:request", async (event: any, request: any) => {
-        const result = await original(event, request);
-        if (
-          request.type === "save:commit" &&
-          request.operation.pageId === pageId
-        ) {
-          gate.operations.push(request.operation);
-          if (!gate.held) {
-            gate.held = true;
-            await new Promise<void>((release) => {
-              gate.release = release;
-            });
+      const unwrap = (result: any) =>
+        result &&
+        result.tag === "folio-request-result" &&
+        result.ok === true &&
+        result.valueSlot &&
+        result.valueSlot.present === true
+          ? result.valueSlot.value
+          : result;
+      for (const channel of [
+        "folio:request",
+        "folio:request:diagnostic-v1",
+      ]) {
+        const original = ipc._invokeHandlers.get(channel);
+        if (!original) continue;
+        ipc.removeHandler(channel);
+        ipc.handle(channel, async (event: any, request: any) => {
+          const result = await original(event, request);
+          if (
+            request.type === "save:commit" &&
+            request.operation.pageId === pageId
+          ) {
+            gate.operations.push(request.operation);
+            if (!gate.held && unwrap(result)?.status === "applied") {
+              gate.held = true;
+              await new Promise<void>((release) => {
+                gate.release = release;
+              });
+            }
           }
-        }
-        return result;
-      });
+          return result;
+        });
+      }
     }, data.home.id);
     await window
       .getByLabel("ページタイトル", { exact: true })

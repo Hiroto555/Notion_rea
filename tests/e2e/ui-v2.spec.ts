@@ -1,6 +1,10 @@
 import { writeFileSync } from "node:fs";
 import type { Locator } from "@playwright/test";
 import { test, expect, type Session } from "./next-round-fixture";
+import { openInspector } from "./ui-chrome-controls";
+
+const shortcut = (key: string) =>
+  `${process.platform === "darwin" ? "Meta" : "Control"}+${key}`;
 
 // UI 2.0 evidence suite. Everything here observes the display layer through
 // real Electron: geometry, computed tokens, hover/focus affordances, menu
@@ -102,7 +106,7 @@ async function measure(s: Session): Promise<Reading> {
         titleSize: css(".page-title", "font-size"),
         titleWeight: css(".page-title", "font-weight"),
         titleColor: css(".page-title", "color"),
-        subtitleColor: css(".page-subtitle", "color"),
+        metaColor: css(".inspector dt", "color"),
         contentPaddingLeft: css(".document-content", "padding-left"),
         inspectorPosition: css(".inspector", "position"),
         inspectorBackground: css(".inspector", "background-color"),
@@ -231,9 +235,16 @@ test("UI 2.0 light: hierarchy, hover reveal, menu bounds and contrast", async ({
   await focusWindow(s);
   await expect(w.locator(".page-title")).toBeVisible();
   await expect(w.locator("html")).toHaveAttribute("data-theme", "light");
+  // The inspector starts closed; the explicit topbar toggle opens it.
+  await expect(w.getByLabel("ページ情報", { exact: true })).toHaveAttribute(
+    "aria-pressed",
+    "false",
+  );
+  await expect(w.locator(".inspector")).toBeHidden();
   // Expand one nested page so indentation and guides are measurable.
   await w.getByLabel("アイデアノート を展開").click();
   await expect(w.locator(".page-tree-children .page-tree-row")).toHaveCount(1);
+  await openInspector(w);
   const light = await measure(s);
 
   expect(light.viewport.width).toBeGreaterThanOrEqual(1400);
@@ -304,7 +315,8 @@ test("UI 2.0 light: hierarchy, hover reveal, menu bounds and contrast", async ({
   const rowBox = await activeRow.boundingBox();
   expect(rowBox!.height).toBeGreaterThanOrEqual(30);
 
-  // Body text, title and secondary metadata meet AA contrast on the page.
+  // Body text, title and the inspector's secondary metadata (moved out of the
+  // removed page subtitle) meet AA contrast on their real backgrounds.
   const bodyContrast = contrast(
     light.styles.bodyColor,
     light.styles.bodyBackground,
@@ -314,8 +326,8 @@ test("UI 2.0 light: hierarchy, hover reveal, menu bounds and contrast", async ({
     light.styles.bodyBackground,
   );
   const metaContrast = contrast(
-    light.styles.subtitleColor,
-    light.styles.bodyBackground,
+    light.styles.metaColor,
+    light.styles.inspectorBackground,
   );
   expect(bodyContrast).toBeGreaterThanOrEqual(7);
   expect(titleContrast).toBeGreaterThanOrEqual(10);
@@ -390,6 +402,7 @@ test("UI 2.0 dark: theme tokens, menu surface and contrast", async ({
   const w = s.window;
   await focusWindow(s);
   await expect(w.locator("html")).toHaveAttribute("data-theme", "light");
+  await openInspector(w);
   const before = await measure(s);
   await w.getByLabel("テーマを切り替え").click();
   await expect(w.locator("html")).toHaveAttribute("data-theme", "dark");
@@ -413,8 +426,8 @@ test("UI 2.0 dark: theme tokens, menu surface and contrast", async ({
     dark.styles.bodyBackground,
   );
   const metaContrast = contrast(
-    dark.styles.subtitleColor,
-    dark.styles.bodyBackground,
+    dark.styles.metaColor,
+    dark.styles.inspectorBackground,
   );
   expect(bodyContrast).toBeGreaterThanOrEqual(7);
   expect(titleContrast).toBeGreaterThanOrEqual(10);
@@ -448,6 +461,7 @@ test("UI 2.0 dark: theme tokens, menu surface and contrast", async ({
   await w.reload();
   await w.waitForSelector(".page-title");
   await expect(w.locator("html")).toHaveAttribute("data-theme", "dark");
+  await openInspector(w);
   const reopened = await measure(s);
   expect(reopened.theme).toBe("dark");
   await w.screenshot({ path: info.outputPath("ui-dark-1440x960.png") });
@@ -477,6 +491,7 @@ test("UI 2.0 responsive: 1024 and 960 keep panels usable without overflow", asyn
     { width: 960, height: 700, panel: "absolute", sidebar: 208, title: 30, gutter: 28 },
   ] as const) {
     await resize(s, size.width, size.height);
+    await openInspector(w);
     const reading = await measure(s);
     const viewport = reading.viewport;
     expect(Math.abs(viewport.width - size.width)).toBeLessThanOrEqual(1);
@@ -578,7 +593,7 @@ test("UI 2.0 keyboard: focus visibility, shortcuts and menu Escape", async ({
   expect(parseFloat(focus!.outlineWidth)).toBeGreaterThanOrEqual(2);
 
   // Existing shortcut still opens the shared search dialog; Escape closes it.
-  await w.keyboard.press("Meta+p");
+  await w.keyboard.press(shortcut("p"));
   const dialog = w.getByRole("dialog", {
     name: "ワークスペース検索",
     exact: true,
@@ -611,7 +626,7 @@ test("UI 2.0 keyboard: focus visibility, shortcuts and menu Escape", async ({
   ).toBe("ページメニュー");
 
   // Arrow keys still navigate the search result list.
-  await w.keyboard.press("Meta+p");
+  await w.keyboard.press(shortcut("p"));
   const results = w.locator(".search-results button");
   await expect(results.first()).toBeVisible();
   const count = await results.count();

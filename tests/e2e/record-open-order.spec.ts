@@ -1,19 +1,18 @@
-import {
-  test,
-  expect,
-  _electron as electron,
-  type ElectronApplication,
-} from "@playwright/test";
-import { mkdtempSync, rmSync } from "node:fs";
-import { join, resolve } from "node:path";
+import { test, expect, type ElectronApplication } from "@playwright/test";
+import { rmSync } from "node:fs";
+import { join } from "node:path";
+import { fixtureRoot } from "./fixture-isolation";
+import { launchFixture, killFixture } from "./recovery-ci-runtime";
 import { Store } from "../../src/persistence/store";
 import { RecordRepository } from "../../src/persistence/record-repository";
 import { RecordLifecycle } from "../../src/persistence/record-lifecycle";
 import { markRecordStoreVersion } from "../../src/persistence/record-version";
 
+const mod = process.platform === "darwin" ? "Meta" : "Control";
+
 for (const order of ["older-first", "newer-first"] as const) {
   test(`last requested record wins when ${order} response is released`, async () => {
-    const root = mkdtempSync(resolve("output/record-open-order-"));
+    const root = fixtureRoot("record-open-order-");
     const store = new Store(join(root, "workspace.sqlite"));
     const owner = store.create(null, "database", "Order DB");
     const repository = new RecordRepository(store);
@@ -27,10 +26,7 @@ for (const order of ["older-first", "newer-first"] as const) {
     store.close();
     let app: ElectronApplication | undefined;
     try {
-      app = await electron.launch({
-        args: [resolve("dist/main.cjs")],
-        env: { ...process.env, FOLIO_DATA_DIR: root },
-      });
+      app = await launchFixture(root);
       const window = await app.firstWindow();
       await window.waitForSelector(".page-title");
       await window
@@ -119,14 +115,14 @@ for (const order of ["older-first", "newer-first"] as const) {
         window.getByLabel("レコードのタイトル", { exact: true }),
       ).toBeEnabled();
     } finally {
-      if (app) await app.close();
+      await killFixture(app);
       rmSync(root, { recursive: true, force: true });
     }
   });
 }
 
 test("a delayed record read cannot supersede a committed database creation", async () => {
-  const root = mkdtempSync(resolve("output/record-create-race-"));
+  const root = fixtureRoot("record-create-race-");
   const store = new Store(join(root, "workspace.sqlite"));
   const owner = store.create(null, "database", "Race owner");
   const repository = new RecordRepository(store);
@@ -139,10 +135,7 @@ test("a delayed record read cannot supersede a committed database creation", asy
   store.close();
   let app: ElectronApplication | undefined;
   try {
-    app = await electron.launch({
-      args: [resolve("dist/main.cjs")],
-      env: { ...process.env, FOLIO_DATA_DIR: root },
-    });
+    app = await launchFixture(root);
     const window = await app.firstWindow();
     await window.waitForSelector(".page-title");
     await window
@@ -187,7 +180,7 @@ test("a delayed record read cannot supersede a committed database creation", asy
         ),
       )
       .toBe("function");
-    await window.keyboard.press("Meta+p");
+    await window.keyboard.press(`${mod}+p`);
     await window.getByTitle("新しいデータベース", { exact: true }).click();
     await expect
       .poll(() =>
@@ -249,14 +242,14 @@ test("a delayed record read cannot supersede a committed database creation", asy
           race?.releaseLoad?.();
         })
         .catch(() => {});
-      await app.close();
+      await killFixture(app);
     }
     rmSync(root, { recursive: true, force: true });
   }
 });
 
 test("a trashed registered record cannot be restored through the generic UI", async () => {
-  const root = mkdtempSync(resolve("output/record-trash-guard-"));
+  const root = fixtureRoot("record-trash-guard-");
   const store = new Store(join(root, "workspace.sqlite"));
   const owner = store.create(null, "database", "Protected owner");
   const repository = new RecordRepository(store);
@@ -270,10 +263,7 @@ test("a trashed registered record cannot be restored through the generic UI", as
   store.close();
   let app: ElectronApplication | undefined;
   try {
-    app = await electron.launch({
-      args: [resolve("dist/main.cjs")],
-      env: { ...process.env, FOLIO_DATA_DIR: root },
-    });
+    app = await launchFixture(root);
     const window = await app.firstWindow();
     await window.waitForSelector(".page-title");
     await window.getByRole("button", { name: /^ゴミ箱 / }).click();
@@ -290,7 +280,7 @@ test("a trashed registered record cannot be restored through the generic UI", as
     expect(after.deletedAt).not.toBeNull();
     expect(after.databasePageId).toBe(owner.id);
   } finally {
-    if (app) await app.close();
+    await killFixture(app);
     rmSync(root, { recursive: true, force: true });
   }
 });

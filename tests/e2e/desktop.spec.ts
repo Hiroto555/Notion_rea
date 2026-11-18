@@ -5,17 +5,25 @@ import {
   type ElectronApplication,
   type Page,
 } from "@playwright/test";
-import { mkdtempSync, mkdirSync, rmSync } from "node:fs";
-import { join, resolve } from "node:path";
+import { mkdirSync, rmSync } from "node:fs";
+import { join } from "node:path";
 import { realDrag } from "./real-drag";
 import { observeDrag, dragEvidence } from "./drag-observer";
+import { fixtureElectronOptions, fixtureRoot } from "./fixture-isolation";
+import {
+  clickEditorEditButton,
+  clickPageLink,
+  documentEditor,
+  openInspector,
+} from "./ui-chrome-controls";
 let dragObserved = false;
 const dragSession = () => ({ app, window, folder, restart: async () => {} });
+const shortcut = (key: string) =>
+  `${process.platform === "darwin" ? "Meta" : "Control"}+${key}`;
 let app: ElectronApplication, window: Page, folder: string, root: string, exportsDir: string, inputsDir: string;
 async function launch() {
   app = await electron.launch({
-    args: [resolve("dist/main.cjs")],
-    env: { ...process.env, FOLIO_DATA_DIR: folder },
+    ...fixtureElectronOptions(folder),
     timeout: 30000,
   });
   window = await app.firstWindow();
@@ -26,7 +34,7 @@ async function launch() {
 }
 test.beforeEach(async () => {
   dragObserved = false;
-  root = mkdtempSync(resolve("output/e2e-"));
+  root = fixtureRoot("e2e-");
   folder = join(root, "workspace");
   exportsDir = join(root, "exports");
   inputsDir = join(root, "inputs");
@@ -51,7 +59,7 @@ test("real Electron: page edit, slash, undo, blocks, search, clone, trash and re
     window.getByLabel("ページタイトル", { exact: true }),
   ).toHaveValue("ようこそ、Folioへ");
   await window.screenshot({ path: info.outputPath("folio-light.png") });
-  await window.keyboard.press("Meta+n");
+  await window.keyboard.press(shortcut("n"));
   await expect(
     window.getByLabel("ページタイトル", { exact: true }),
   ).toHaveValue("無題");
@@ -94,12 +102,12 @@ test("real Electron: page edit, slash, undo, blocks, search, clone, trash and re
   await expect(window.locator(".block-actions")).toContainText("2 ブロック");
   await window.getByLabel("ブロックを複製", { exact: true }).click();
   await expect(window.locator(".folio-editor h1")).toHaveCount(2);
-  await window.getByLabel("元に戻す", { exact: true }).click();
+  await clickEditorEditButton(documentEditor(window), "元に戻す");
   await expect(window.locator(".folio-editor h1")).toHaveCount(1);
-  await window.getByLabel("やり直す", { exact: true }).click();
+  await clickEditorEditButton(documentEditor(window), "やり直す");
   await expect(window.locator(".folio-editor h1")).toHaveCount(2);
   await expect(window.locator(".save-state")).toHaveText("保存済み");
-  await window.keyboard.press("Meta+k");
+  await window.keyboard.press(shortcut("k"));
   await window.getByLabel("検索キーワード").fill("日本語とEnglish");
   await expect(window.locator(".search-results")).toContainText(
     "検証ノート English",
@@ -120,7 +128,7 @@ test("real Electron: page edit, slash, undo, blocks, search, clone, trash and re
   );
   await window.getByRole("button", { name: "復元", exact: true }).click();
   await window.getByRole("button", { name: "閉じる", exact: true }).click();
-  await window.keyboard.press("Meta+k");
+  await window.keyboard.press(shortcut("k"));
   await window.getByLabel("検索キーワード").fill("検証ノート English");
   await window.locator(".search-results button").first().click();
   await expect(window.locator(".save-state")).toHaveText("保存済み");
@@ -155,11 +163,19 @@ test("database table edits, filters, sorts, board drop and calendar persistence"
     .getByRole("button", { name: "◈ プロジェクト", exact: true })
     .click();
   await expect(window.locator("tbody tr")).toHaveCount(3);
-  await window.getByLabel("データベースを絞り込む").fill("進行中");
+  if (!(await window.getByLabel("ビュー内検索").isVisible()))
+    await window.locator('[data-search-toggle="search"]').click();
+  await window.getByLabel("ビュー内検索").fill("進行中");
   await expect(window.locator("tbody tr")).toHaveCount(1);
-  await window.getByLabel("データベースを絞り込む").fill("");
-  await window.getByLabel("並べ替え", { exact: true }).selectOption("title");
-  await window.getByRole("button", { name: "ボード", exact: true }).click();
+  await window.getByLabel("ビュー内検索").fill("");
+  await window.locator('[data-settings-menu-trigger="sort"]').click();
+  await window
+    .getByRole("button", { name: "並べ替えを追加", exact: true })
+    .click();
+  await window
+    .getByLabel("並べ替え対象 1", { exact: true })
+    .selectOption("title");
+  await window.getByLabel("ビューを追加", { exact: true }).selectOption("board");
   await expect(window.locator(".board-column")).toHaveCount(4);
   const card = window
     .locator(".db-card")
@@ -172,11 +188,15 @@ test("database table edits, filters, sorts, board drop and calendar persistence"
   await realDrag(window, card, target);
   await expect(target).toContainText("次のアイデアを見つける");
   await window.screenshot({ path: "output/playwright/folio-board.png" });
-  await window.getByRole("button", { name: "カレンダー", exact: true }).click();
+  await window
+    .getByLabel("ビューを追加", { exact: true })
+    .selectOption("calendar");
   await expect(window.locator(".day")).toHaveCount(42);
-  await window.getByRole("button", { name: "ギャラリー", exact: true }).click();
+  await window
+    .getByLabel("ビューを追加", { exact: true })
+    .selectOption("gallery");
   await expect(window.locator(".gallery .db-card")).toHaveCount(3);
-  await window.getByRole("button", { name: "テーブル", exact: true }).click();
+  await window.getByRole("tab", { name: "ビュー: テーブル", exact: true }).click();
   await window.getByLabel("アイテム名").first().fill("変更を保存");
   await expect(window.locator(".save-state")).toHaveText("保存済み");
   if (dragObserved) {
@@ -241,7 +261,7 @@ test("security boundary, page hierarchy, cycle error and versions", async () => 
   await window.locator(".folio-editor").click();
   await window.keyboard.insertText("Version one");
   await expect(window.locator(".save-state")).toHaveText("保存済み");
-  await window.keyboard.press("Meta+a");
+  await window.keyboard.press(shortcut("a"));
   await window.keyboard.insertText("Version two");
   await expect(window.locator(".save-state")).toHaveText("保存済み");
   await window.getByRole("button", { name: "変更履歴を見る" }).click();
@@ -254,7 +274,7 @@ test("security boundary, page hierarchy, cycle error and versions", async () => 
   await expect(window.locator(".folio-editor")).toHaveText("Version one");
 });
 test("native rich HTML paste, Markdown shortcuts, toggle, links and block drag", async () => {
-  await window.keyboard.press("Meta+n");
+  await window.keyboard.press(shortcut("n"));
   await window
     .getByLabel("ページタイトル", { exact: true })
     .fill("貼り付けテスト");
@@ -290,7 +310,7 @@ test("native rich HTML paste, Markdown shortcuts, toggle, links and block drag",
   });
   try {
     await window.locator(".folio-editor").click();
-    await window.keyboard.press("Meta+v");
+    await window.keyboard.press(shortcut("v"));
     await expect(window.locator(".folio-editor strong")).toHaveText(
       "太字の日本語",
     );
@@ -305,7 +325,7 @@ test("native rich HTML paste, Markdown shortcuts, toggle, links and block drag",
       else clipboard.clear();
     });
   }
-  await window.keyboard.press("Meta+End");
+  await window.keyboard.press(shortcut("End"));
   await window.keyboard.press("ArrowDown");
   await window.keyboard.press("Enter");
   await window.keyboard.type("> ");
@@ -313,7 +333,7 @@ test("native rich HTML paste, Markdown shortcuts, toggle, links and block drag",
   await expect(window.locator("[data-type=details]")).toHaveCount(1);
   await window.locator("[data-type=details]>button").click();
   await expect(window.locator("[data-type=details]")).toHaveClass(/is-open/);
-  await window.getByTitle("ページへのリンク", { exact: true }).click();
+  await clickPageLink(documentEditor(window));
   await window.getByLabel("検索キーワード").fill("アイデアノート");
   await expect(window.locator(".search-results button")).toHaveCount(1);
   await window.keyboard.press("Enter");
@@ -324,6 +344,7 @@ test("native rich HTML paste, Markdown shortcuts, toggle, links and block drag",
   await window
     .getByRole("button", { name: "💡 アイデアノート", exact: true })
     .click();
+  await openInspector(window);
   await expect(window.locator(".inspector")).toContainText("貼り付けテスト");
 });
 test("real import/export, image/file attachments and complete backup", async () => {

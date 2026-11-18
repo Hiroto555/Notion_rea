@@ -282,6 +282,7 @@ describe("quiet runner GUI refusal", () => {
   const forbiddenStages = [
     { id: "e2e", script: "test:e2e", args: [] },
     { id: "e2e-batch", script: "test:e2e:batch", args: [] },
+    { id: "e2e-linux-ci", script: "test:e2e:linux-ci", args: [] },
     { id: "dev", script: "dev", args: [] },
     { id: "start", script: "start", args: [] },
     { id: "package", script: "package", args: [] },

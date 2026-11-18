@@ -1,0 +1,1212 @@
+{
+  "date": "2026-11-08",
+  "deepseek": {
+    "jobCount": 56,
+    "totalsAsReported": {
+      "input": 3635155,
+      "output": 372810,
+      "reasoning": 776465,
+      "cacheRead": 38312828,
+      "cacheWrite": 0,
+      "reportedTotal": 43097258
+    },
+    "missingStepTokenRecords": 0,
+    "peakOverlappingEventIntervals": 10,
+    "worktreeChangeJobs": 43,
+    "jobs": [
+      {
+        "name": "D01-private-root",
+        "model": "opencode-go/deepseek-v4.1-flash",
+        "variant": "high",
+        "exit": 0,
+        "seconds": 149.5,
+        "worktreeChanges": [
+          "src/sync/m3-private-root.ts",
+          "tests/m3-private-root.test.ts"
+        ],
+        "reportedTokens": {
+          "input": 43883,
+          "output": 4004,
+          "reasoning": 6518,
+          "cacheRead": 186496,
+          "cacheWrite": 0,
+          "reportedTotal": 240901
+        },
+        "stepBudgetMessage": false,
+        "toolErrors": 6
+      },
+      {
+        "name": "D02-server-history",
+        "model": "opencode-go/deepseek-v4.1-flash",
+        "variant": "high",
+        "exit": 0,
+        "seconds": 356.8,
+        "worktreeChanges": [
+          "src/sync/server-history-validation.ts",
+          "tests/m3-server-history.test.ts"
+        ],
+        "reportedTokens": {
+          "input": 60325,
+          "output": 7789,
+          "reasoning": 26411,
+          "cacheRead": 419200,
+          "cacheWrite": 0,
+          "reportedTotal": 513725
+        },
+        "stepBudgetMessage": false,
+        "toolErrors": 3
+      },
+      {
+        "name": "D03-verified-file",
+        "model": "opencode-go/deepseek-v4.1-flash",
+        "variant": "high",
+        "exit": -2,
+        "seconds": 437.9,
+        "worktreeChanges": [],
+        "reportedTokens": {
+          "input": 27484,
+          "output": 4019,
+          "reasoning": 28797,
+          "cacheRead": 7168,
+          "cacheWrite": 0,
+          "reportedTotal": 67468
+        },
+        "stepBudgetMessage": false,
+        "toolErrors": 6
+      },
+      {
+        "name": "D04-release-file",
+        "model": "opencode-go/deepseek-v4.1-flash",
+        "variant": "high",
+        "exit": 0,
+        "seconds": 465.3,
+        "worktreeChanges": [
+          "src/sync/cache-release-file.ts",
+          "tests/m3-cache-release-file.test.ts"
+        ],
+        "reportedTokens": {
+          "input": 62126,
+          "output": 8806,
+          "reasoning": 22838,
+          "cacheRead": 402304,
+          "cacheWrite": 0,
+          "reportedTotal": 496074
+        },
+        "stepBudgetMessage": true,
+        "toolErrors": 9
+      },
+      {
+        "name": "D05-retention",
+        "model": "opencode-go/deepseek-v4.1-flash",
+        "variant": "high",
+        "exit": 0,
+        "seconds": 197.6,
+        "worktreeChanges": [
+          "src/sync/sync-retention.ts",
+          "tests/m3-sync-retention.test.ts"
+        ],
+        "reportedTokens": {
+          "input": 43331,
+          "output": 6858,
+          "reasoning": 10015,
+          "cacheRead": 291968,
+          "cacheWrite": 0,
+          "reportedTotal": 352172
+        },
+        "stepBudgetMessage": false,
+        "toolErrors": 6
+      },
+      {
+        "name": "D06-connection-ui",
+        "model": "opencode-go/deepseek-v4.1-flash",
+        "variant": "high",
+        "exit": 0,
+        "seconds": 240.3,
+        "worktreeChanges": [
+          "src/renderer/sync/",
+          "tests/m3-connection-ui.test.ts"
+        ],
+        "reportedTokens": {
+          "input": 21446,
+          "output": 14132,
+          "reasoning": 18357,
+          "cacheRead": 521856,
+          "cacheWrite": 0,
+          "reportedTotal": 575791
+        },
+        "stepBudgetMessage": true,
+        "toolErrors": 8
+      },
+      {
+        "name": "D07-transfer-ui",
+        "model": "opencode-go/deepseek-v4.1-flash",
+        "variant": "high",
+        "exit": 0,
+        "seconds": 218.7,
+        "worktreeChanges": [
+          "src/renderer/sync/",
+          "tests/m3-transfer-ui.test.ts"
+        ],
+        "reportedTokens": {
+          "input": 33878,
+          "output": 5778,
+          "reasoning": 13758,
+          "cacheRead": 182656,
+          "cacheWrite": 0,
+          "reportedTotal": 236070
+        },
+        "stepBudgetMessage": false,
+        "toolErrors": 5
+      },
+      {
+        "name": "D08-server-lease",
+        "model": "opencode-go/deepseek-v4.1-flash",
+        "variant": "high",
+        "exit": 0,
+        "seconds": 242.3,
+        "worktreeChanges": [
+          "src/sync/server-directory-lease.ts",
+          "tests/m3-server-directory-lease.test.ts"
+        ],
+        "reportedTokens": {
+          "input": 48936,
+          "output": 7073,
+          "reasoning": 17110,
+          "cacheRead": 445952,
+          "cacheWrite": 0,
+          "reportedTotal": 519071
+        },
+        "stepBudgetMessage": true,
+        "toolErrors": 3
+      },
+      {
+        "name": "D09-connection-vault",
+        "model": "opencode-go/deepseek-v4.1-flash",
+        "variant": "high",
+        "exit": 0,
+        "seconds": 247.6,
+        "worktreeChanges": [],
+        "reportedTokens": {
+          "input": 69813,
+          "output": 4692,
+          "reasoning": 14044,
+          "cacheRead": 806528,
+          "cacheWrite": 0,
+          "reportedTotal": 895077
+        },
+        "stepBudgetMessage": false,
+        "toolErrors": 7
+      },
+      {
+        "name": "D09b-credential-codec",
+        "model": "opencode-go/deepseek-v4.1-flash",
+        "variant": "high",
+        "exit": 0,
+        "seconds": 112.2,
+        "worktreeChanges": [
+          "src/sync/connection-credential-codec.ts",
+          "tests/m3-credential-codec.test.ts"
+        ],
+        "reportedTokens": {
+          "input": 25838,
+          "output": 4571,
+          "reasoning": 6363,
+          "cacheRead": 117120,
+          "cacheWrite": 0,
+          "reportedTotal": 153892
+        },
+        "stepBudgetMessage": false,
+        "toolErrors": 5
+      },
+      {
+        "name": "D10-ledger-audit",
+        "model": "opencode-go/deepseek-v4.1-flash",
+        "variant": "high",
+        "exit": 0,
+        "seconds": 473.5,
+        "worktreeChanges": [
+          "tests/m3-private-ledger.test.ts"
+        ],
+        "reportedTokens": {
+          "input": 41841,
+          "output": 4649,
+          "reasoning": 15431,
+          "cacheRead": 175872,
+          "cacheWrite": 0,
+          "reportedTotal": 237793
+        },
+        "stepBudgetMessage": false,
+        "toolErrors": 5
+      },
+      {
+        "name": "D11-full-inspection",
+        "model": "opencode-go/deepseek-v4.1-flash",
+        "variant": "high",
+        "exit": 0,
+        "seconds": 297.8,
+        "worktreeChanges": [
+          "src/sync/server-full-inspection.ts",
+          "tests/m3-server-full-inspection.test.ts"
+        ],
+        "reportedTokens": {
+          "input": 61309,
+          "output": 10745,
+          "reasoning": 20249,
+          "cacheRead": 691072,
+          "cacheWrite": 0,
+          "reportedTotal": 783375
+        },
+        "stepBudgetMessage": true,
+        "toolErrors": 5
+      },
+      {
+        "name": "D12-ops-config",
+        "model": "opencode-go/deepseek-v4.1-flash",
+        "variant": "high",
+        "exit": 0,
+        "seconds": 350.9,
+        "worktreeChanges": [
+          "src/sync/server-ops-config.ts",
+          "tests/m3-server-ops-config.test.ts"
+        ],
+        "reportedTokens": {
+          "input": 52359,
+          "output": 8137,
+          "reasoning": 22297,
+          "cacheRead": 254848,
+          "cacheWrite": 0,
+          "reportedTotal": 337641
+        },
+        "stepBudgetMessage": false,
+        "toolErrors": 4
+      },
+      {
+        "name": "D13-backup-retention",
+        "model": "opencode-go/deepseek-v4.1-flash",
+        "variant": "high",
+        "exit": 0,
+        "seconds": 290.3,
+        "worktreeChanges": [
+          "src/sync/backup-retention.ts",
+          "tests/m3-backup-retention.test.ts"
+        ],
+        "reportedTokens": {
+          "input": 49272,
+          "output": 7170,
+          "reasoning": 18810,
+          "cacheRead": 597120,
+          "cacheWrite": 0,
+          "reportedTotal": 672372
+        },
+        "stepBudgetMessage": true,
+        "toolErrors": 6
+      },
+      {
+        "name": "D14-blob-retention",
+        "model": "opencode-go/deepseek-v4.1-flash",
+        "variant": "high",
+        "exit": 0,
+        "seconds": 520.2,
+        "worktreeChanges": [
+          "src/sync/server-blob-retention.ts",
+          "tests/m3-server-blob-retention.test.ts"
+        ],
+        "reportedTokens": {
+          "input": 88563,
+          "output": 6996,
+          "reasoning": 30362,
+          "cacheRead": 475648,
+          "cacheWrite": 0,
+          "reportedTotal": 601569
+        },
+        "stepBudgetMessage": false,
+        "toolErrors": 5
+      },
+      {
+        "name": "D15-transfer-catalog",
+        "model": "opencode-go/deepseek-v4.1-flash",
+        "variant": "high",
+        "exit": 0,
+        "seconds": 111.1,
+        "worktreeChanges": [],
+        "reportedTokens": {
+          "input": 73862,
+          "output": 3545,
+          "reasoning": 4632,
+          "cacheRead": 589184,
+          "cacheWrite": 0,
+          "reportedTotal": 671223
+        },
+        "stepBudgetMessage": true,
+        "toolErrors": 7
+      },
+      {
+        "name": "D16-file-audit",
+        "model": "opencode-go/deepseek-v4.1-flash",
+        "variant": "high",
+        "exit": 0,
+        "seconds": 173.9,
+        "worktreeChanges": [
+          "tests/m3-server-verified-file.test.ts"
+        ],
+        "reportedTokens": {
+          "input": 40491,
+          "output": 4178,
+          "reasoning": 7612,
+          "cacheRead": 105344,
+          "cacheWrite": 0,
+          "reportedTotal": 157625
+        },
+        "stepBudgetMessage": false,
+        "toolErrors": 6
+      },
+      {
+        "name": "D17-history-audit",
+        "model": "opencode-go/deepseek-v4.1-flash",
+        "variant": "high",
+        "exit": 0,
+        "seconds": 192.3,
+        "worktreeChanges": [
+          "tests/m3-server-history-adversarial.test.ts"
+        ],
+        "reportedTokens": {
+          "input": 42967,
+          "output": 5013,
+          "reasoning": 13408,
+          "cacheRead": 202752,
+          "cacheWrite": 0,
+          "reportedTotal": 264140
+        },
+        "stepBudgetMessage": false,
+        "toolErrors": 4
+      },
+      {
+        "name": "D18-vault-tests",
+        "model": "opencode-go/deepseek-v4.1-flash",
+        "variant": "high",
+        "exit": 0,
+        "seconds": 267.2,
+        "worktreeChanges": [
+          "tests/m3-connection-vault.test.ts"
+        ],
+        "reportedTokens": {
+          "input": 51965,
+          "output": 8008,
+          "reasoning": 16848,
+          "cacheRead": 473984,
+          "cacheWrite": 0,
+          "reportedTotal": 550805
+        },
+        "stepBudgetMessage": false,
+        "toolErrors": 3
+      },
+      {
+        "name": "D19-maintenance-tests",
+        "model": "opencode-go/deepseek-v4.1-flash",
+        "variant": "high",
+        "exit": 0,
+        "seconds": 376.9,
+        "worktreeChanges": [
+          "tests/m3-transfer-maintenance.test.ts"
+        ],
+        "reportedTokens": {
+          "input": 76837,
+          "output": 10404,
+          "reasoning": 23497,
+          "cacheRead": 821632,
+          "cacheWrite": 0,
+          "reportedTotal": 932370
+        },
+        "stepBudgetMessage": false,
+        "toolErrors": 2
+      },
+      {
+        "name": "D20-catalog-tests",
+        "model": "opencode-go/deepseek-v4.1-flash",
+        "variant": "high",
+        "exit": 0,
+        "seconds": 230.7,
+        "worktreeChanges": [
+          "tests/m3-transfer-catalog.test.ts"
+        ],
+        "reportedTokens": {
+          "input": 57930,
+          "output": 6573,
+          "reasoning": 14589,
+          "cacheRead": 376576,
+          "cacheWrite": 0,
+          "reportedTotal": 455668
+        },
+        "stepBudgetMessage": false,
+        "toolErrors": 4
+      },
+      {
+        "name": "D21-full-backup-audit",
+        "model": "opencode-go/deepseek-v4.1-flash",
+        "variant": "high",
+        "exit": 0,
+        "seconds": 369.0,
+        "worktreeChanges": [
+          "tests/m3-full-backup-adversarial.test.ts"
+        ],
+        "reportedTokens": {
+          "input": 101503,
+          "output": 9508,
+          "reasoning": 24583,
+          "cacheRead": 1605760,
+          "cacheWrite": 0,
+          "reportedTotal": 1741354
+        },
+        "stepBudgetMessage": true,
+        "toolErrors": 4
+      },
+      {
+        "name": "D22-connection-ui-fix",
+        "model": "opencode-go/deepseek-v4.1-flash",
+        "variant": "high",
+        "exit": 0,
+        "seconds": 226.5,
+        "worktreeChanges": [
+          "src/renderer/sync/SyncConnectionPanel.tsx",
+          "tests/m3-connection-panel.test.tsx"
+        ],
+        "reportedTokens": {
+          "input": 48916,
+          "output": 9559,
+          "reasoning": 14867,
+          "cacheRead": 657548,
+          "cacheWrite": 0,
+          "reportedTotal": 730890
+        },
+        "stepBudgetMessage": false,
+        "toolErrors": 6
+      },
+      {
+        "name": "D23-transfer-ui-fix",
+        "model": "opencode-go/deepseek-v4.1-flash",
+        "variant": "high",
+        "exit": 0,
+        "seconds": 442.4,
+        "worktreeChanges": [
+          "src/renderer/sync/TransferMaintenancePanel.tsx",
+          "tests/m3-transfer-panel.test.tsx"
+        ],
+        "reportedTokens": {
+          "input": 63998,
+          "output": 12511,
+          "reasoning": 17814,
+          "cacheRead": 725248,
+          "cacheWrite": 0,
+          "reportedTotal": 819571
+        },
+        "stepBudgetMessage": true,
+        "toolErrors": 4
+      },
+      {
+        "name": "D24-server-retention-wire",
+        "model": "opencode-go/deepseek-v4.1-flash",
+        "variant": "high",
+        "exit": 0,
+        "seconds": 247.4,
+        "worktreeChanges": [
+          "src/sync/checkpoint-server.ts",
+          "tests/m3-server-retention-admission.test.ts"
+        ],
+        "reportedTokens": {
+          "input": 59696,
+          "output": 6538,
+          "reasoning": 9210,
+          "cacheRead": 354176,
+          "cacheWrite": 0,
+          "reportedTotal": 429620
+        },
+        "stepBudgetMessage": false,
+        "toolErrors": 4
+      },
+      {
+        "name": "D25-client-retention-wire",
+        "model": "opencode-go/deepseek-v4.1-flash",
+        "variant": "high",
+        "exit": 0,
+        "seconds": 228.2,
+        "worktreeChanges": [
+          "src/sync/workspace-store.ts",
+          "tests/m3-client-retention-admission.test.ts"
+        ],
+        "reportedTokens": {
+          "input": 64254,
+          "output": 9299,
+          "reasoning": 7587,
+          "cacheRead": 1159680,
+          "cacheWrite": 0,
+          "reportedTotal": 1240820
+        },
+        "stepBudgetMessage": true,
+        "toolErrors": 2
+      },
+      {
+        "name": "D26-backup-retention-wire",
+        "model": "opencode-go/deepseek-v4.1-flash",
+        "variant": "high",
+        "exit": 0,
+        "seconds": 251.8,
+        "worktreeChanges": [
+          "src/main/workspace-backup-service.ts",
+          "src/sync/workspace-sync.ts",
+          "tests/m3-backup-admission.test.ts"
+        ],
+        "reportedTokens": {
+          "input": 86177,
+          "output": 6659,
+          "reasoning": 8504,
+          "cacheRead": 933760,
+          "cacheWrite": 0,
+          "reportedTotal": 1035100
+        },
+        "stepBudgetMessage": false,
+        "toolErrors": 5
+      },
+      {
+        "name": "D27-server-cli",
+        "model": "opencode-go/deepseek-v4.1-flash",
+        "variant": "high",
+        "exit": 0,
+        "seconds": 237.3,
+        "worktreeChanges": [
+          "src/sync/server-ops-cli.ts",
+          "tests/m3-server-cli.test.ts"
+        ],
+        "reportedTokens": {
+          "input": 57036,
+          "output": 8080,
+          "reasoning": 13572,
+          "cacheRead": 427264,
+          "cacheWrite": 0,
+          "reportedTotal": 505952
+        },
+        "stepBudgetMessage": false,
+        "toolErrors": 3
+      },
+      {
+        "name": "D28-management-tests",
+        "model": "opencode-go/deepseek-v4.1-flash",
+        "variant": "high",
+        "exit": 0,
+        "seconds": 444.1,
+        "worktreeChanges": [
+          "tests/m3-management-control.test.ts",
+          "tests/m3-service-suspend.test.ts"
+        ],
+        "reportedTokens": {
+          "input": 111670,
+          "output": 13611,
+          "reasoning": 22511,
+          "cacheRead": 1902592,
+          "cacheWrite": 0,
+          "reportedTotal": 2050384
+        },
+        "stepBudgetMessage": true,
+        "toolErrors": 3
+      },
+      {
+        "name": "D29-network-guard-tests",
+        "model": "opencode-go/deepseek-v4.1-flash",
+        "variant": "high",
+        "exit": 0,
+        "seconds": 287.1,
+        "worktreeChanges": [
+          "tests/m3-transfer-suspension.test.ts"
+        ],
+        "reportedTokens": {
+          "input": 103925,
+          "output": 9016,
+          "reasoning": 16889,
+          "cacheRead": 1533952,
+          "cacheWrite": 0,
+          "reportedTotal": 1663782
+        },
+        "stepBudgetMessage": false,
+        "toolErrors": 3
+      },
+      {
+        "name": "D30-blob-admission-tests",
+        "model": "opencode-go/deepseek-v4.1-flash",
+        "variant": "high",
+        "exit": 0,
+        "seconds": 263.8,
+        "worktreeChanges": [
+          "tests/m3-server-blob-admission.test.ts"
+        ],
+        "reportedTokens": {
+          "input": 76532,
+          "output": 10163,
+          "reasoning": 18543,
+          "cacheRead": 1140464,
+          "cacheWrite": 0,
+          "reportedTotal": 1245702
+        },
+        "stepBudgetMessage": false,
+        "toolErrors": 2
+      },
+      {
+        "name": "D31-product-lifecycle",
+        "model": "opencode-go/deepseek-v4.1-flash",
+        "variant": "high",
+        "exit": 0,
+        "seconds": 634.4,
+        "worktreeChanges": [
+          "tests/m3-product-lifecycle.test.ts"
+        ],
+        "reportedTokens": {
+          "input": 168398,
+          "output": 11977,
+          "reasoning": 29603,
+          "cacheRead": 2784256,
+          "cacheWrite": 0,
+          "reportedTotal": 2994234
+        },
+        "stepBudgetMessage": true,
+        "toolErrors": 5
+      },
+      {
+        "name": "D32-restore-directory-sync",
+        "model": "opencode-go/deepseek-v4.1-flash",
+        "variant": "high",
+        "exit": 0,
+        "seconds": 201.7,
+        "worktreeChanges": [
+          "tests/m3-full-directory-sync.test.ts"
+        ],
+        "reportedTokens": {
+          "input": 46064,
+          "output": 4020,
+          "reasoning": 9795,
+          "cacheRead": 164864,
+          "cacheWrite": 0,
+          "reportedTotal": 224743
+        },
+        "stepBudgetMessage": false,
+        "toolErrors": 2
+      },
+      {
+        "name": "D33-credential-reuse-tests",
+        "model": "opencode-go/deepseek-v4.1-flash",
+        "variant": "high",
+        "exit": 0,
+        "seconds": 216.9,
+        "worktreeChanges": [
+          "tests/m3-credential-reuse.test.ts"
+        ],
+        "reportedTokens": {
+          "input": 110111,
+          "output": 5345,
+          "reasoning": 10361,
+          "cacheRead": 495744,
+          "cacheWrite": 0,
+          "reportedTotal": 621561
+        },
+        "stepBudgetMessage": false,
+        "toolErrors": 4
+      },
+      {
+        "name": "D34-server-hot-recovery",
+        "model": "opencode-go/deepseek-v4.1-flash",
+        "variant": "high",
+        "exit": 0,
+        "seconds": 340.8,
+        "worktreeChanges": [
+          "tests/m3-server-hot-recovery.test.ts"
+        ],
+        "reportedTokens": {
+          "input": 64208,
+          "output": 5985,
+          "reasoning": 19744,
+          "cacheRead": 1115904,
+          "cacheWrite": 0,
+          "reportedTotal": 1205841
+        },
+        "stepBudgetMessage": false,
+        "toolErrors": 2
+      },
+      {
+        "name": "D35-scale-benchmark",
+        "model": "opencode-go/deepseek-v4.1-flash",
+        "variant": "high",
+        "exit": 0,
+        "seconds": 247.6,
+        "worktreeChanges": [
+          "tests/benchmarks/"
+        ],
+        "reportedTokens": {
+          "input": 95864,
+          "output": 8113,
+          "reasoning": 18000,
+          "cacheRead": 1431040,
+          "cacheWrite": 0,
+          "reportedTotal": 1553017
+        },
+        "stepBudgetMessage": false,
+        "toolErrors": 5
+      },
+      {
+        "name": "D36-recovery-benchmark",
+        "model": "opencode-go/deepseek-v4.1-flash",
+        "variant": "high",
+        "exit": 0,
+        "seconds": 310.7,
+        "worktreeChanges": [
+          "tests/benchmarks/"
+        ],
+        "reportedTokens": {
+          "input": 64920,
+          "output": 7093,
+          "reasoning": 24053,
+          "cacheRead": 505088,
+          "cacheWrite": 0,
+          "reportedTotal": 601154
+        },
+        "stepBudgetMessage": false,
+        "toolErrors": 2
+      },
+      {
+        "name": "D37-conflict-readiness",
+        "model": "opencode-go/deepseek-v4.1-flash",
+        "variant": "high",
+        "exit": 0,
+        "seconds": 195.7,
+        "worktreeChanges": [
+          "src/renderer/WorkspaceConflictDecisionControls.tsx",
+          "tests/m3-conflict-readiness.test.ts"
+        ],
+        "reportedTokens": {
+          "input": 65276,
+          "output": 4276,
+          "reasoning": 9227,
+          "cacheRead": 390912,
+          "cacheWrite": 0,
+          "reportedTotal": 469691
+        },
+        "stepBudgetMessage": true,
+        "toolErrors": 3
+      },
+      {
+        "name": "D38-catalog-counter",
+        "model": "opencode-go/deepseek-v4.1-flash",
+        "variant": "high",
+        "exit": 0,
+        "seconds": 258.2,
+        "worktreeChanges": [
+          "src/sync/transfer-cache-catalog.ts",
+          "tests/m3-catalog-counter.test.ts"
+        ],
+        "reportedTokens": {
+          "input": 74940,
+          "output": 7538,
+          "reasoning": 14181,
+          "cacheRead": 569728,
+          "cacheWrite": 0,
+          "reportedTotal": 666387
+        },
+        "stepBudgetMessage": true,
+        "toolErrors": 5
+      },
+      {
+        "name": "G01-editor-port",
+        "model": "opencode-go/deepseek-v4.1-flash",
+        "variant": "high",
+        "exit": 0,
+        "seconds": 289.0,
+        "worktreeChanges": [
+          "tests/e2e/create-gate.spec.ts",
+          "tests/e2e/drag.spec.ts",
+          "tests/e2e/gate-a.spec.ts"
+        ],
+        "reportedTokens": {
+          "input": 88515,
+          "output": 5849,
+          "reasoning": 11204,
+          "cacheRead": 893568,
+          "cacheWrite": 0,
+          "reportedTotal": 999136
+        },
+        "stepBudgetMessage": true,
+        "toolErrors": 4
+      },
+      {
+        "name": "G02-record-port",
+        "model": "opencode-go/deepseek-v4.1-flash",
+        "variant": "high",
+        "exit": 0,
+        "seconds": 210.8,
+        "worktreeChanges": [
+          "tests/e2e/dialogs.spec.ts",
+          "tests/e2e/record-core.spec.ts",
+          "tests/e2e/record-open-order.spec.ts"
+        ],
+        "reportedTokens": {
+          "input": 70702,
+          "output": 10471,
+          "reasoning": 4959,
+          "cacheRead": 1137920,
+          "cacheWrite": 0,
+          "reportedTotal": 1224052
+        },
+        "stepBudgetMessage": true,
+        "toolErrors": 0
+      },
+      {
+        "name": "G03-local-port",
+        "model": "opencode-go/deepseek-v4.1-flash",
+        "variant": "high",
+        "exit": 0,
+        "seconds": 152.0,
+        "worktreeChanges": [
+          "tests/e2e/desktop.spec.ts",
+          "tests/e2e/local-first-fixture.ts",
+          "tests/e2e/local-first.spec.ts",
+          "tests/e2e/record-page-presentation.spec.ts",
+          "tests/e2e/ui-v2.spec.ts"
+        ],
+        "reportedTokens": {
+          "input": 72899,
+          "output": 6434,
+          "reasoning": 11183,
+          "cacheRead": 1429376,
+          "cacheWrite": 0,
+          "reportedTotal": 1519892
+        },
+        "stepBudgetMessage": true,
+        "toolErrors": 1
+      },
+      {
+        "name": "G04-r5r6-port",
+        "model": "opencode-go/deepseek-v4.1-flash",
+        "variant": "high",
+        "exit": 0,
+        "seconds": 104.0,
+        "worktreeChanges": [
+          "tests/e2e/r4-visual.spec.ts"
+        ],
+        "reportedTokens": {
+          "input": 54441,
+          "output": 3067,
+          "reasoning": 4137,
+          "cacheRead": 341504,
+          "cacheWrite": 0,
+          "reportedTotal": 403149
+        },
+        "stepBudgetMessage": false,
+        "toolErrors": 0
+      },
+      {
+        "name": "G05-r7r8-port",
+        "model": "opencode-go/deepseek-v4.1-flash",
+        "variant": "high",
+        "exit": 0,
+        "seconds": 260.5,
+        "worktreeChanges": [
+          "tests/e2e/r7-acceptance/r7-fixture.ts",
+          "tests/e2e/r7-acceptance/search.spec.ts",
+          "tests/e2e/r7-parent.spec.ts",
+          "tests/e2e/r8-acceptance/page-width.spec.ts",
+          "tests/e2e/r8-acceptance/r8-fixture.ts",
+          "tests/e2e/r8-acceptance/real-launch.spec.ts"
+        ],
+        "reportedTokens": {
+          "input": 74108,
+          "output": 8702,
+          "reasoning": 6556,
+          "cacheRead": 1260672,
+          "cacheWrite": 0,
+          "reportedTotal": 1350038
+        },
+        "stepBudgetMessage": true,
+        "toolErrors": 0
+      },
+      {
+        "name": "G06-r9-port",
+        "model": "opencode-go/deepseek-v4.1-flash",
+        "variant": "high",
+        "exit": 0,
+        "seconds": 181.2,
+        "worktreeChanges": [
+          "tests/e2e/r9-acceptance/r9-blocks.spec.ts",
+          "tests/e2e/r9-acceptance/r9-fixture.ts"
+        ],
+        "reportedTokens": {
+          "input": 68417,
+          "output": 6830,
+          "reasoning": 6367,
+          "cacheRead": 1228416,
+          "cacheWrite": 0,
+          "reportedTotal": 1310030
+        },
+        "stepBudgetMessage": false,
+        "toolErrors": 0
+      },
+      {
+        "name": "G07-m3-connection-gui",
+        "model": "opencode-go/deepseek-v4.1-flash",
+        "variant": "high",
+        "exit": 0,
+        "seconds": 206.8,
+        "worktreeChanges": [],
+        "reportedTokens": {
+          "input": 95724,
+          "output": 5594,
+          "reasoning": 5507,
+          "cacheRead": 1372544,
+          "cacheWrite": 0,
+          "reportedTotal": 1479369
+        },
+        "stepBudgetMessage": true,
+        "toolErrors": 1
+      },
+      {
+        "name": "G08-m3-transfer-gui",
+        "model": "opencode-go/deepseek-v4.1-flash",
+        "variant": "high",
+        "exit": 0,
+        "seconds": 576.0,
+        "worktreeChanges": [
+          "tests/e2e/linux-ci/m3-transfer.spec.ts"
+        ],
+        "reportedTokens": {
+          "input": 144067,
+          "output": 11500,
+          "reasoning": 44678,
+          "cacheRead": 1805824,
+          "cacheWrite": 0,
+          "reportedTotal": 2006069
+        },
+        "stepBudgetMessage": false,
+        "toolErrors": 2
+      },
+      {
+        "name": "G09-m3-restart-gui",
+        "model": "opencode-go/deepseek-v4.1-flash",
+        "variant": "high",
+        "exit": 0,
+        "seconds": 328.3,
+        "worktreeChanges": [],
+        "reportedTokens": {
+          "input": 122791,
+          "output": 6128,
+          "reasoning": 8793,
+          "cacheRead": 1938432,
+          "cacheWrite": 0,
+          "reportedTotal": 2076144
+        },
+        "stepBudgetMessage": true,
+        "toolErrors": 2
+      },
+      {
+        "name": "R1-cache-release",
+        "model": "opencode-go/deepseek-v4.1-flash",
+        "variant": "high",
+        "exit": 0,
+        "seconds": 102.6,
+        "worktreeChanges": [],
+        "reportedTokens": {
+          "input": 36534,
+          "output": 1405,
+          "reasoning": 4099,
+          "cacheRead": 109824,
+          "cacheWrite": 0,
+          "reportedTotal": 151862
+        },
+        "stepBudgetMessage": false,
+        "toolErrors": 1
+      },
+      {
+        "name": "R2-secret-lifecycle",
+        "model": "opencode-go/deepseek-v4.1-flash",
+        "variant": "high",
+        "exit": 0,
+        "seconds": 61.3,
+        "worktreeChanges": [],
+        "reportedTokens": {
+          "input": 12348,
+          "output": 1031,
+          "reasoning": 1857,
+          "cacheRead": 5632,
+          "cacheWrite": 0,
+          "reportedTotal": 20868
+        },
+        "stepBudgetMessage": false,
+        "toolErrors": 0
+      },
+      {
+        "name": "R3-connection-flow",
+        "model": "opencode-go/deepseek-v4.1-flash",
+        "variant": "high",
+        "exit": 0,
+        "seconds": 98.2,
+        "worktreeChanges": [],
+        "reportedTokens": {
+          "input": 38789,
+          "output": 3002,
+          "reasoning": 3786,
+          "cacheRead": 154368,
+          "cacheWrite": 0,
+          "reportedTotal": 199945
+        },
+        "stepBudgetMessage": false,
+        "toolErrors": 3
+      },
+      {
+        "name": "R4-server-recovery",
+        "model": "opencode-go/deepseek-v4.1-flash",
+        "variant": "high",
+        "exit": 0,
+        "seconds": 184.5,
+        "worktreeChanges": [],
+        "reportedTokens": {
+          "input": 28352,
+          "output": 1292,
+          "reasoning": 5868,
+          "cacheRead": 5632,
+          "cacheWrite": 0,
+          "reportedTotal": 41144
+        },
+        "stepBudgetMessage": false,
+        "toolErrors": 0
+      },
+      {
+        "name": "R5-retention",
+        "model": "opencode-go/deepseek-v4.1-flash",
+        "variant": "high",
+        "exit": 0,
+        "seconds": 118.1,
+        "worktreeChanges": [],
+        "reportedTokens": {
+          "input": 30346,
+          "output": 1480,
+          "reasoning": 4505,
+          "cacheRead": 66816,
+          "cacheWrite": 0,
+          "reportedTotal": 103147
+        },
+        "stepBudgetMessage": false,
+        "toolErrors": 2
+      },
+      {
+        "name": "R6-gui-coverage",
+        "model": "opencode-go/deepseek-v4.1-flash",
+        "variant": "high",
+        "exit": 0,
+        "seconds": 106.8,
+        "worktreeChanges": [],
+        "reportedTokens": {
+          "input": 37255,
+          "output": 2377,
+          "reasoning": 5112,
+          "cacheRead": 42368,
+          "cacheWrite": 0,
+          "reportedTotal": 87112
+        },
+        "stepBudgetMessage": false,
+        "toolErrors": 0
+      },
+      {
+        "name": "R7-ops-cli",
+        "model": "opencode-go/deepseek-v4.1-flash",
+        "variant": "high",
+        "exit": 0,
+        "seconds": 91.7,
+        "worktreeChanges": [],
+        "reportedTokens": {
+          "input": 32235,
+          "output": 2226,
+          "reasoning": 2988,
+          "cacheRead": 103040,
+          "cacheWrite": 0,
+          "reportedTotal": 140489
+        },
+        "stepBudgetMessage": false,
+        "toolErrors": 1
+      },
+      {
+        "name": "R8-integration-tests",
+        "model": "opencode-go/deepseek-v4.1-flash",
+        "variant": "high",
+        "exit": 0,
+        "seconds": 195.4,
+        "worktreeChanges": [],
+        "reportedTokens": {
+          "input": 89688,
+          "output": 2991,
+          "reasoning": 3876,
+          "cacheRead": 373632,
+          "cacheWrite": 0,
+          "reportedTotal": 470187
+        },
+        "stepBudgetMessage": true,
+        "toolErrors": 0
+      }
+    ]
+  },
+  "notes": [
+    "Counters are provider-reported, not independently billed usage. Cache and reasoning fields are retained separately.",
+    "No billed price, token savings or speedup is inferred. A successful CLI exit does not mean implementation accepted.",
+    "Jobs with tool errors, step budget messages, no edits, and failing tests remain included. Parent fixes and final acceptance determine integrated quality."
+  ],
+  "opus": {
+    "completedReviews": [
+      {
+        "review": "advice",
+        "model": "claude-opus-5-5-medium",
+        "reportedMetrics": {
+          "total_prompt_tokens": 26599,
+          "total_completion_tokens": 6052,
+          "total_cached_tokens": 12704,
+          "total_steps": 10
+        }
+      },
+      {
+        "review": "contracts",
+        "model": "claude-opus-5-5-high",
+        "reportedMetrics": {
+          "total_prompt_tokens": 27843,
+          "total_completion_tokens": 10213,
+          "total_cached_tokens": 12704,
+          "total_steps": 10
+        }
+      },
+      {
+        "review": "source-safety",
+        "model": "claude-opus-5-5-high",
+        "reportedMetrics": {
+          "total_prompt_tokens": 53911,
+          "total_completion_tokens": 16652,
+          "total_cached_tokens": 12704,
+          "total_steps": 10
+        }
+      },
+      {
+        "review": "full-restore",
+        "model": "claude-opus-5-5-high",
+        "reportedMetrics": {
+          "total_prompt_tokens": 48900,
+          "total_completion_tokens": 26800,
+          "total_cached_tokens": 12704,
+          "total_steps": 10
+        }
+      },
+      {
+        "review": "final-delta",
+        "model": "claude-opus-5-5-high",
+        "reportedMetrics": {
+          "total_prompt_tokens": 39739,
+          "total_completion_tokens": 12886,
+          "total_cached_tokens": 12704,
+          "total_steps": 10
+        }
+      }
+    ],
+    "abandonedAttempt": {
+      "reason": "Short-lived launcher ended without output/export",
+      "usage": "UNKNOWN; not counted as zero"
+    }
+  }
+}

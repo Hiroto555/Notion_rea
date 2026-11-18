@@ -1,0 +1,166 @@
+import { lstatSync, opendirSync, realpathSync } from "node:fs";
+import { join } from "node:path";
+import type { TransferMaintenanceEntry, TransferMaintenanceView } from "../shared/sync-management";
+import { BlobTransferJournal } from "./blob-transfer-journal";
+import { inspectWorkspaceTransferBudget } from "./blob-transfer-budget";
+import { pinPrivateRoot } from "./m3-private-root";
+import { requireCondition, SyncError } from "./protocol";
+import {
+  createProductPrivatePlatform,
+  type ProductPrivateJournalOptions,
+} from "../platform/product-private-journals";
+import {
+  nativeOptionalFile,
+  nativePathPresent,
+  sameNativeIdentity,
+  inspectNativeTransferBudget,
+  nativeTransferPort,
+  type NativeTransferContext,
+  type NativeTransferOptions,
+} from "../platform/windows/private-transfer";
+import type { NativePrivateFile } from "../platform/private-persistence";
+
+const HASH = /^[a-f0-9]{64}$/;
+const JOURNAL = /^(download|upload)-[a-f0-9]{64}$/;
+const CURSOR = /^[a-f0-9]{64}\/(download|upload)-[a-f0-9]{64}\/([a-f0-9]{64}|!|~)$/;
+const META = new Set(["state.sqlite", "state.sqlite-journal", "state.sqlite-wal", "state.sqlite-shm"]);
+const ROOT_META = /^(\.folio-upload-lock|cache-maintenance)\.sqlite(-journal|-shm|-wal)?$/;
+const LOCK_META = /^transfer-lock\.sqlite(-journal|-shm|-wal)?$/;
+
+/** Native metadata probe: returns undefined when conclusively absent. */
+function nativeMetadata(
+  native: NativeTransferContext,
+  path: string,
+  maxBytes: number,
+): NativePrivateFile | undefined {
+  return nativeOptionalFile(native.filesystem, path, maxBytes);
+}
+function optional(path: string) {
+  try {return lstatSync(path);} catch (e) {if ((e as NodeJS.ErrnoException).code === "ENOENT") return null; throw e;}
+}
+function names(path: string, limit = 4096): string[] {
+  const handle = opendirSync(path), result: string[] = [];
+  try {for (let entry; (entry = handle.readSync());) {
+    requireCondition(result.length < limit, "cache-inventory-limit", 409); result.push(entry.name);
+  }} finally {handle.closeSync();}
+  return result.sort();
+}
+/** Caller serializes this with product transfers using the global cache mutex.
+ * Existing SQLite journals may recover their own interrupted transaction. */
+export function inspectTransferCacheCatalog(workspaceDirectory: string, currentScopeHash: string | null, cursor?: string,
+  privateJournals?: ProductPrivateJournalOptions, nativeTransfer?: NativeTransferOptions): TransferMaintenanceView {
+  const native = nativeTransferPort(nativeTransfer);
+  requireCondition(!cursor || CURSOR.test(cursor), "cache-inventory-cursor", 409);
+  requireCondition(currentScopeHash === null || HASH.test(currentScopeHash), "cache-inventory-scope", 409);
+  const workspace = native ? native.filesystem.inspectDirectory(workspaceDirectory).path : realpathSync(workspaceDirectory);
+  const root = join(workspace, ".folio-sync-transfers");
+  const view: TransferMaintenanceView = {entries: [], nextCursor: null, usedBytes: 0, overLimit: false, held: null};
+  if (native ? !nativePathPresent(native.filesystem, root) : !optional(root)) return view;
+  const rootPin = native?.filesystem.inspectDirectory(root);
+  if (!native) pinPrivateRoot(root);
+  const scan = () => {
+    let opened = 0;
+    const push = (entry: TransferMaintenanceEntry) => {
+      if (cursor && entry.entryId <= cursor) return;
+      if (view.entries.length < 50) view.entries.push(entry);
+    };
+    for (const scopeHash of names(root)) {
+      if (ROOT_META.test(scopeHash) || (native && LOCK_META.test(scopeHash))) continue;
+      if (!HASH.test(scopeHash)) {view.held ??= "unknown-root-entry"; continue;}
+      const scope = join(root, scopeHash);
+      try {
+        if (native) native.filesystem.inspectDirectory(scope);
+        else pinPrivateRoot(scope);
+      } catch {view.held ??= "unsafe-scope"; continue;}
+      let journals: string[];
+      try {journals = names(scope);} catch {view.held ??= "inventory-limit"; continue;}
+      for (const journalName of journals) {
+        if (!JOURNAL.test(journalName)) {view.held ??= "unknown-scope-entry"; continue;}
+        const base = scopeHash + "/" + journalName + "/";
+        if (cursor && base + "~" <= cursor) continue;
+        if (++opened > 32) {view.nextCursor = view.entries.at(-1)?.entryId ?? view.nextCursor ?? base + "!"; return;}
+        const path = join(scope, journalName), currentScope = scopeHash === currentScopeHash;
+        let journal: BlobTransferJournal | undefined;
+        try {
+          if (native) native.filesystem.inspectDirectory(path);
+          else pinPrivateRoot(path);
+          const listed = names(path, 2048);
+          // Successful empty-journal release retains only this directory.
+          if (native && listed.length === 0) continue;
+          let databaseSize = 0;
+          if (native) {
+            const n = native as NativeTransferContext;
+            for (const name of META) {
+              const meta = nativeMetadata(n, join(path, name), 32 * 1024 * 1024);
+              requireCondition(meta === undefined || meta.bytes <= 32 * 1024 * 1024, "cache-inventory-unsafe", 409);
+            }
+            const database = nativeMetadata(n, join(path, "state.sqlite"), 16 * 1024 * 1024);
+            requireCondition(database !== undefined && database.bytes > 0, "cache-inventory-unsafe", 409);
+            databaseSize = database.bytes;
+          } else {
+            for (const name of META) {
+              const stat = optional(join(path, name));
+              requireCondition(!stat || (stat.isFile() && !stat.isSymbolicLink() && stat.nlink === 1 &&
+                stat.uid === process.getuid?.() && stat.size <= 32 * 1024 * 1024), "cache-inventory-unsafe", 409);
+            }
+            const database = optional(join(path, "state.sqlite"));
+            requireCondition(database && database.size > 0 && database.size <= 16 * 1024 * 1024, "cache-inventory-unsafe", 409);
+            databaseSize = database.size;
+          }
+          journal = new BlobTransferJournal(path, {scopeHash}, {},
+            createProductPrivatePlatform(path, "state.sqlite", privateJournals));
+          const records = journal.inventory().sort((a, b) => a.key.localeCompare(b.key));
+          const known = new Set([...META, ...records.map(record => record.partialName)]);
+          const unknown = listed.some(name => !known.has(name));
+          if (records.length === 0) push({entryId: base + "!", scopeHash, assetId: null,
+            bytes: databaseSize, offset: 0, state: "empty-scope", currentScope,
+            canRelease: !currentScope && !unknown, reason: unknown ? "unknown-cache-files" : currentScope ? "current-scope" : null});
+          for (const record of records) {
+            let partBytes = 0, safe: boolean;
+            if (native) {
+              const n = native as NativeTransferContext;
+              const part = nativeMetadata(n, join(path, record.partialName), 20_000_000);
+              safe = part === undefined || part.bytes <= 20_000_000;
+              partBytes = part?.bytes ?? 0;
+            } else {
+              const part = optional(join(path, record.partialName));
+              safe = !part || (part.isFile() && !part.isSymbolicLink() && part.nlink === 1 && part.size <= 20_000_000 && part.uid === process.getuid?.());
+              partBytes = part?.size ?? 0;
+            }
+            push({entryId: base + record.key, scopeHash, assetId: record.assetId,
+              bytes: safe ? partBytes : 0, offset: record.offset, state: record.state, currentScope,
+              canRelease: safe && record.state !== "releasing", reason: !safe ? "unsafe-partial" : record.reason,
+              ...(record.state === "releasing" && record.reason ? {operationId: record.reason} : {})});
+            if (view.entries.length >= 50) {view.nextCursor = view.entries.at(-1)!.entryId; return;}
+          }
+          if (unknown) {view.held ??= "unknown-cache-files";
+            push({entryId: base + "~", scopeHash, assetId: null, bytes: 0, offset: 0, state: "unknown", currentScope,
+              canRelease: false, reason: "unknown-cache-files"});}
+        } catch {
+          view.held ??= "journal-unavailable";
+          push({entryId: base + "~", scopeHash, assetId: null, bytes: 0, offset: 0, state: "unknown", currentScope,
+            canRelease: false, reason: "journal-unavailable"});
+        } finally {journal?.close();}
+        if (view.entries.length >= 50) {view.nextCursor = view.entries.at(-1)!.entryId; return;}
+        // An empty page still advances past scanned journals.
+        if (!view.entries.length) view.nextCursor = base + "~";
+      }
+    }
+    view.nextCursor = null;
+  };
+  scan();
+  if (native && rootPin)
+    requireCondition(sameNativeIdentity(rootPin, native.filesystem.inspectDirectory(root)),
+      "cache-inventory-unsafe", 409);
+  // Sample the catalog budget only after every journal opened by this call has
+  // been closed. Closing or recovering an owned journal can delete its
+  // state.sqlite-journal sidecar; sampling earlier over-reports disk bytes.
+  try {
+    const budget = native
+      ? inspectNativeTransferBudget(native, workspace)
+      : inspectWorkspaceTransferBudget(workspace);
+    view.usedBytes = budget.bytes; view.overLimit = budget.overLimit;
+  }
+  catch {view.held = "unsafe-cache-entry";}
+  return view;
+}

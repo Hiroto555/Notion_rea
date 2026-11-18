@@ -1,3 +1,4 @@
+import { sqliteHeader } from "./sqlite-header";
 import { DatabaseSync } from "node:sqlite";
 import { randomUUID } from "node:crypto";
 import {
@@ -9,9 +10,14 @@ import {
   unlinkSync,
   type Stats,
 } from "node:fs";
-import { dirname } from "node:path";
+import { dirname, isAbsolute, resolve } from "node:path";
 import { validateRecordStoreVersion } from "./record-version";
 import { validateWorkspaceSyncSchema } from "../sync/workspace-checkpoint";
+import {privatePersistencePort, type PrivatePersistenceOptions, type NativePrivateFilesystemPort, type NativePrivateSqliteLease} from "../platform/private-persistence";
+import type { HotJournalSnapshot } from "../sync/private-platform";
+import { types as utilTypes } from "node:util";
+import {closeStartupConnection} from "./startup-connection-owner";
+import {withNativeSqliteReader} from "./native-sqlite-reader";
 
 export { validateWorkspaceSyncSchema };
 
@@ -32,7 +38,11 @@ export function validateV5WorkspaceSchema(connection: DatabaseSync): void {
   }
 }
 
-export type StoreStartupOptions = {
+export type StoreStartupOptions = PrivatePersistenceOptions & {
+  /** Owned native lease acquired before preflight/open. Store releases it
+   * only after SQLite is known closed. Never a PID or marker-file lease. */
+  nativeLease?: NativePrivateSqliteLease;
+  nativeHotJournalSnapshot?: HotJournalSnapshot;
   allowIncompleteRecovery?: boolean;
   /**
    * Called before a writable database is opened and before its directory is
@@ -74,6 +84,13 @@ export function assertConnectionState(connection: DatabaseSync): void {
   )
     throw new Error(
       "SQLite connection and transaction state APIs are required",
+    );
+}
+
+export function assertPrivateApplicationId(connection: DatabaseSync): void {
+  if (connection.prepare("PRAGMA application_id").get()?.application_id !== 0)
+    throw new Error(
+      "This workspace requires a newer Folio version. Foreign application id.",
     );
 }
 
@@ -168,6 +185,8 @@ function assertSafeSource(
 export function inspectWritableStartup(
   databasePath: string,
   supportedVersion: number,
+  nativeSnapshot?: HotJournalSnapshot,
+  nativeLease?: NativePrivateSqliteLease,
 ): WritableStartupPlan {
   const main = lstatOptional(databasePath),
     sidecars = DATABASE_SIDECARS.map((suffix) =>
@@ -175,11 +194,19 @@ export function inspectWritableStartup(
     );
   assertSafeSource(main, sidecars);
   if (!main) return { version: 0, additionalBytes: 0 };
+  const header = sqliteHeader(databasePath);
+  if (
+    header && !(nativeSnapshot && sidecars[2]) &&
+    (header.version > supportedVersion || header.applicationId !== 0)
+  )
+    throw new Error("This workspace requires a newer Folio version.");
 
-  const connection = new DatabaseSync(databasePath, { readOnly: true });
+  const inspect = (path: string, recoveryCopy = false): WritableStartupPlan => {
+  const connection = new DatabaseSync(path, { readOnly: !recoveryCopy });
   let plan: WritableStartupPlan;
   try {
-    connection.exec("PRAGMA query_only=ON; PRAGMA busy_timeout=5000");
+    connection.exec("PRAGMA query_only=ON; PRAGMA trusted_schema=OFF; PRAGMA busy_timeout=5000");
+    assertPrivateApplicationId(connection);
     const version = readUserVersion(connection);
     if (version > supportedVersion)
       throw new Error("This workspace requires a newer Folio version.");
@@ -201,29 +228,55 @@ export function inspectWritableStartup(
     }
     plan = { version, additionalBytes };
   } catch (error) {
-    try {
-      connection.close();
-    } catch (closeError) {
-      throw new AggregateError(
-        [error, closeError],
-        "Read-only preflight close failed after a startup error",
-      );
-    }
+    closeStartupConnection(connection, nativeLease, {error});
     throw error;
   }
-  connection.close();
+  closeStartupConnection(connection, nativeLease);
   return plan;
+  };
+  try {return inspect(databasePath);}
+  catch (error) {
+    if ((error as {errcode?: unknown})?.errcode !== 776 || nativeSnapshot === undefined) throw error;
+    if (typeof nativeSnapshot !== "function" || utilTypes.isAsyncFunction(nativeSnapshot) || utilTypes.isGeneratorFunction(nativeSnapshot))
+      throw new Error("Synchronous native workspace hot-journal snapshot is required", {cause: error});
+    let plan: WritableStartupPlan | undefined, active = true, calls = 0, callbackFailure: unknown;
+    try {
+      const result: unknown = nativeSnapshot(databasePath, snapshotPath => {
+        try {
+          if (!active || ++calls !== 1 || typeof snapshotPath !== "string" ||
+              !isAbsolute(snapshotPath) || snapshotPath.includes("\0") || resolve(snapshotPath).toLowerCase() === resolve(databasePath).toLowerCase())
+            throw new Error("Invalid native workspace snapshot callback");
+          plan = inspect(snapshotPath, true);
+        } catch (failure) {callbackFailure = failure; throw failure;}
+      });
+      if (utilTypes.isPromise(result)) Promise.prototype.then.call(result, undefined, () => undefined);
+      if (result !== undefined || calls !== 1 || !plan || callbackFailure !== undefined)
+        throw new Error("Native workspace preflight did not complete synchronously", {cause: callbackFailure});
+    } finally {active = false;}
+    return plan;
+  }
 }
 
 /** Open a completed v3/v4 workspace without init, migration, seed or WAL. */
 export function openReadOnlyStore(
   databasePath: string,
   supportedVersion: number,
+  nativeLease?: NativePrivateSqliteLease,
 ): DatabaseSync {
-  assertSafeSource(lstatOptional(databasePath), DATABASE_SIDECARS.map(suffix => lstatOptional(databasePath + suffix)));
+  assertSafeSource(
+    lstatOptional(databasePath),
+    DATABASE_SIDECARS.map((suffix) => lstatOptional(databasePath + suffix)),
+  );
+  const header = sqliteHeader(databasePath);
+  if (
+    header &&
+    (header.version > supportedVersion || header.applicationId !== 0)
+  )
+    throw new Error("This workspace requires a newer Folio version.");
   const connection = new DatabaseSync(databasePath, { readOnly: true });
   try {
     connection.exec("PRAGMA query_only=ON; PRAGMA busy_timeout=5000");
+    assertPrivateApplicationId(connection);
     const version = readUserVersion(connection);
     if (version > supportedVersion)
       throw new Error("This workspace requires a newer Folio version.");
@@ -235,14 +288,7 @@ export function openReadOnlyStore(
     if (version === 5) validateV5WorkspaceSchema(connection);
     return connection;
   } catch (error) {
-    try {
-      connection.close();
-    } catch (closeError) {
-      throw new AggregateError(
-        [error, closeError],
-        "Read-only SQLite close failed after a startup error",
-      );
-    }
+    closeStartupConnection(connection, nativeLease, {error});
     throw error;
   }
 }
@@ -269,10 +315,8 @@ function hasColumn(
  * Verify the fresh snapshot independently before it can gate a migration.
  * Only schema metadata is inspected; Page JSON is never decoded.
  */
-function verifySchemaSnapshot(path: string, expectedVersion: number): void {
-  const snapshot = new DatabaseSync(path, { readOnly: true });
-  let failure: unknown;
-  try {
+function verifySchemaSnapshot(path: string, expectedVersion: number, native?: NativePrivateFilesystemPort): void {
+  withNativeSqliteReader(path, native, (snapshot) => {
     snapshot.exec("PRAGMA query_only=ON");
     const checks = snapshot.prepare("PRAGMA integrity_check").all() as {
       integrity_check: string;
@@ -287,21 +331,7 @@ function verifySchemaSnapshot(path: string, expectedVersion: number): void {
         throw new Error("Schema snapshot is missing a required table");
     if (expectedVersion === 2 && !hasColumn(snapshot, "versions", "database"))
       throw new Error("Schema snapshot is missing legacy history data");
-  } catch (error) {
-    failure = error;
-    throw error;
-  } finally {
-    try {
-      snapshot.close();
-    } catch (closeError) {
-      if (failure !== undefined)
-        throw new AggregateError(
-          [failure, closeError],
-          "Schema snapshot close failed after verification error",
-        );
-      throw closeError;
-    }
-  }
+  });
 }
 
 function syncFile(path: string): void {
@@ -345,11 +375,24 @@ export function publishSchemaSnapshot(
   connection: DatabaseSync,
   databasePath: string,
   sourceVersion: 1 | 2,
+  options?: PrivatePersistenceOptions,
 ): string {
   if (connection.isTransaction)
     throw new Error("Schema snapshot requires no active transaction");
   const canonicalPath = `${databasePath}.pre-v${sourceVersion + 1}.sqlite`,
     stagedPath = `${canonicalPath}.staging-${randomUUID()}`;
+  const native = privatePersistencePort(options);
+  if (native) {
+    const snapshot = native.snapshotSqlite(connection, stagedPath);
+    verifySchemaSnapshot(stagedPath, sourceVersion, native);
+    // A fresh immutable name is always used. An existing canonical snapshot
+    // remains untouched, including a stale or foreign one.
+    const destination = `${canonicalPath}.${randomUUID()}.sqlite`;
+    const published = native.copyNew(stagedPath, destination, snapshot.identity, 256 * 1024 * 1024);
+    verifySchemaSnapshot(destination, sourceVersion, native);
+    native.proveSync(destination, published.identity);
+    return destination;
+  }
   connection.prepare("VACUUM INTO ?").run(stagedPath);
   const stagedInfo = lstatOptional(stagedPath);
   if (!stagedInfo || !isSafeRegularFile(stagedInfo) || stagedInfo.size === 0)

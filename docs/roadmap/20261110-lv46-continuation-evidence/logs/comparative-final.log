@@ -1,0 +1,30 @@
+✔ R01 B: duplicate concurrent block identity is allocated once and the rejected intent keeps its raw command (73.588167ms)
+✔ R02 B: move alongside unsynced marked KEEP keeps the original block text, ID and marks (19.346ms)
+✔ R02 B: delete of a block with unsynced KEEP is refused with the raw delete intent retained (22.587541ms)
+✔ R03 B: row/column insert orders yield identical final IDs, content and marks (30.682416ms)
+✔ R04 B: structural move undo restores order and keeps the remote KEEP (9.689958ms)
+✔ R04 B: per-user table insertion undo removes only its dimension (18.758958ms)
+✔ R04 B: mixed text and structure undo follows the author's reverse operation order (9.241333ms)
+✔ R05 B: repeat and reorder transport delivery cannot be proven by the in-memory adapter (4.367875ms)
+ℹ B: sync() is an in-process fixed-point drain with no delivery-order or retry hook, so repeated and reordered transport delivery, missing receipts and redelivery are not provable here.
+✔ R01 C: duplicate concurrent block identity is allocated once and the rejected intent keeps its raw command (3.409792ms)
+✔ R02 C: move alongside unsynced marked KEEP keeps the original block text, ID and marks (2.42475ms)
+✔ R02 C: delete of a block with unsynced KEEP is refused with the raw delete intent retained (1.076333ms)
+✔ R03 C: row/column insert orders yield identical final IDs, content and marks (4.95625ms)
+✔ R04 C: structural move undo restores order and keeps the remote KEEP (1.079417ms)
+✔ R04 C: per-user table insertion undo removes only its dimension (3.222709ms)
+✔ R04 C: mixed text and structure undo follows the author's reverse operation order (1.464458ms)
+✔ R05 C: repeat and reorder transport delivery cannot be proven by the in-memory adapter (0.262708ms)
+ℹ C: sync() is an in-process fixed-point drain with no delivery-order or retry hook, so repeated and reordered transport delivery, missing receipts and redelivery are not provable here.
+✔ shared image resolves scoped bytes without changing JSON or touching the private protocol (56.499917ms)
+✔ shared image refuses private UUID and external URLs without resolving them (7.750167ms)
+✔ shared image discards late bytes after its reference changes or its view is destroyed (4.52075ms)
+✔ shared image refuses executable or unsupported media (8.328334ms)
+ℹ tests 20
+ℹ suites 0
+ℹ pass 20
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1409.562708

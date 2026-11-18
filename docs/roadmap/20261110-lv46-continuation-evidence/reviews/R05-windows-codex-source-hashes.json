@@ -1,0 +1,9 @@
+{
+  "src/collaboration/runtime/recovery-operator.ts": "7ee6c8b53104706eb07abd146e77f6f4268255d956e4ba0f524b79d132dbbb77",
+  "src/collaboration/runtime/server-entry.ts": "9eac434507805749f7fecd9e74cdf4b8545cad7e4043b06451788b653dd490ab",
+  "tests/shared-owner-recovery-operator.test.ts": "a457ae57639cd3e506c39c7ad97ef7238105c523791bf4148c30768ed75bce56",
+  "src/main/sync-connection-vault.ts": "e7698b318cffbc6ead6c6a2977df3099c467f64b737d2a87b18ba39580e55a2b",
+  "tests/windows-vault-final-review.test.ts": "68af7c614c29af9167557e2317b890eb27ded991a7f7fe69b2643df855b43910",
+  "src/sync/secret-record-ledger.ts": "b8eb7e068d45c4bd9ce962afb8449eb6cb9dc753c1da3b996e8b469c9910525f",
+  "tests/windows-secret-ledger-final-review.test.ts": "755d550e5c3c6f9796eca066f6eafa0d1929e979323b2dea226bc7c75057b623"
+}

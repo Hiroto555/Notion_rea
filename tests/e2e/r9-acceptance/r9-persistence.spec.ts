@@ -43,6 +43,9 @@ test("W3 acceptance: record side/full/width switches keep one Editor and an unsa
           document.querySelector(".r3-record-page .folio-editor"),
       );
 
+    await surface
+      .locator('[data-settings-menu-trigger="record-display"]')
+      .click();
     await surface.getByRole("button", { name: "ワイド", exact: true }).click();
     await expect(surface).toHaveAttribute("data-page-width", "wide");
     expect(await sameEditor()).toBe(true);

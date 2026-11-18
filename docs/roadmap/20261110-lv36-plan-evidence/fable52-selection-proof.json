@@ -1,0 +1,70 @@
+[
+  {
+    "newSession": {
+      "sessionId": "necessary-backbone",
+      "initialModel": "claude-fable-5-2-medium",
+      "modelConfigId": "model",
+      "fable52FamilyOffered": {
+        "value": "claude-fable-5-2-medium",
+        "name": "Claude Fable 5.2",
+        "_meta": {
+          "cognition.ai/supportsImages": true
+        }
+      },
+      "modelOptionCount": 143,
+      "thoughtLevel": "xhigh"
+    }
+  },
+  {
+    "explicitSelection": {
+      "configId": "model",
+      "value": "claude-fable-5-2-medium",
+      "selectedValues": {
+        "mode": "accept-edits",
+        "model": "claude-fable-5-2-medium",
+        "thought_level": "medium",
+        "speed": "standard"
+      },
+      "legacyModelState": null
+    }
+  },
+  {
+    "explicitSelection": {
+      "configId": "thought_level",
+      "value": "xhigh",
+      "selectedValues": {
+        "mode": "accept-edits",
+        "model": "claude-fable-5-2-medium",
+        "thought_level": "xhigh",
+        "speed": "standard"
+      },
+      "legacyModelState": null
+    }
+  },
+  {
+    "explicitSelection": {
+      "configId": "speed",
+      "value": "standard",
+      "selectedValues": {
+        "mode": "accept-edits",
+        "model": "claude-fable-5-2-medium",
+        "thought_level": "xhigh",
+        "speed": "standard"
+      },
+      "legacyModelState": null
+    }
+  },
+  {
+    "explicitSelection": {
+      "configId": "mode",
+      "value": "ask",
+      "selectedValues": {
+        "mode": "ask",
+        "model": "claude-fable-5-2-medium",
+        "thought_level": "xhigh",
+        "speed": "standard"
+      },
+      "legacyModelState": null
+    }
+  }
+]

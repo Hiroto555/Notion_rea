@@ -1,20 +1,15 @@
 import {
   expect,
   test,
-  _electron as electron,
   type ElectronApplication,
   type Locator,
   type Page,
 } from "@playwright/test";
-import {
-  existsSync,
-  mkdirSync,
-  mkdtempSync,
-  readFileSync,
-  rmSync,
-} from "node:fs";
+import { existsSync, mkdirSync, readFileSync, rmSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { DatabaseSync } from "node:sqlite";
+import { fixtureRoot } from "../fixture-isolation";
+import { killFixture, launchFixture } from "../recovery-ci-runtime";
 import { Store } from "../../../src/persistence/store";
 import { RecordRepository } from "../../../src/persistence/record-repository";
 import { markRecordStoreVersion } from "../../../src/persistence/record-version";
@@ -25,8 +20,9 @@ import {
 } from "../../../src/shared/types";
 
 /**
- * W3 acceptance fixtures are entirely synthetic and always live below
- * output/r9-acceptance-*. No real workspace is read or written.
+ * W3 acceptance fixtures are entirely synthetic and live below the isolated
+ * fixture root (FOLIO_GUI_CI_DATA_ROOT in Linux CI, otherwise output).
+ * No real workspace is read or written.
  *
  * The acceptance outcomes intentionally remain skipped until the integration
  * branch contains the frozen W3 files and a built Electron entry point.
@@ -248,8 +244,7 @@ function plantPage(store: Store, id: string, patch: Record<string, unknown>) {
 }
 
 export function r9Data(includeFuture = false) {
-  mkdirSync(resolve("output"), { recursive: true });
-  const root = mkdtempSync(resolve("output/r9-acceptance-"));
+  const root = fixtureRoot("r9-acceptance-");
   const dataDir = join(root, "workspace");
   const filesDir = join(root, "files");
   mkdirSync(dataDir);
@@ -343,10 +338,7 @@ export function r9Data(includeFuture = false) {
 export type R9Data = ReturnType<typeof r9Data>;
 
 export async function launchR9(data: R9Data) {
-  const app = await electron.launch({
-    args: [resolve("dist/main.cjs")],
-    env: { ...process.env, FOLIO_DATA_DIR: data.dataDir },
-  });
+  const app = await launchFixture(data.dataDir);
   const window = await app.firstWindow();
   await expect(window.locator(".page-title")).toBeVisible();
   // Let Editor setup, recovery checkpoints and launch normalization settle.
@@ -581,11 +573,6 @@ export function readExportedMarkdown(path: string): string {
 }
 
 export async function disposeR9(data: R9Data, app?: ElectronApplication) {
-  const child = app?.process();
-  if (child && child.exitCode === null && child.signalCode === null)
-    await new Promise<void>((done) => {
-      child.once("exit", () => done());
-      child.kill("SIGKILL");
-    });
+  await killFixture(app);
   rmSync(data.root, { recursive: true, force: true });
 }

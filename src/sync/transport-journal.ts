@@ -1,4 +1,9 @@
 import { DatabaseSync } from "node:sqlite";
+import { basename, dirname, join } from "node:path";
+import { synchronousPrivatePlatform, type PrivatePlatform } from "./private-platform";
+import { preflightExistingJournal } from "./journal-preflight";
+import { SqliteConnectionOwner, closeSqlitePlatform } from "./sqlite-connection-owner";
+import { lstatSync } from "node:fs";
 import { SyncSqliteGuard } from "./sqlite-guard";
 import {
   canonicalJson,
@@ -8,6 +13,7 @@ import {
   parseCommit,
   parseResult,
   requireCondition,
+  SyncError,
   type Change,
   type ChangePage,
   type Commit,
@@ -20,6 +26,8 @@ export type JournalOptions = {
   clientId: string;
   /** Instance configuration outside backups; a copied DB must not silently reuse identity. */
   bindingId: string;
+  /** Explicit native proof; never replace Windows ACL/File ID with POSIX mode. */
+  platformAdapter?: PrivatePlatform;
 };
 export type TransportStatus = {
   workspaceId: string;
@@ -34,19 +42,53 @@ export type TransportStatus = {
 
 /** A separate transport database. It does NOT atomically capture Folio Store writes. */
 export class SyncTransportJournal {
-  private readonly storage: SyncSqliteGuard;
+  private readonly storage!: SyncSqliteGuard;
+  private readonly owner: SqliteConnectionOwner;
   private get db(): DatabaseSync {
+    this.assertOwned();
     return this.storage.db;
   }
   readonly workspaceId: string;
   readonly clientId: string;
+  private readonly platform?: PrivatePlatform;
+  private readonly path: string;
+  private uncertain = false;
+  private closing = false;
 
   constructor(options: JournalOptions) {
     this.workspaceId = identifier(options.workspaceId);
     this.clientId = identifier(options.clientId);
     identifier(options.bindingId);
-    this.storage = new SyncSqliteGuard(new DatabaseSync(options.path));
+    requireCondition(process.platform !== "win32" || options.platformAdapter?.kind === "windows", "transport-native-platform-required", 503);
+    const supplied = options.platformAdapter;
+    let facade: PrivatePlatform | undefined;
+    // The owner is reserved before any filesystem/native acquisition; the
+    // closure keeps the supplied adapter closeable even if facade wrapping
+    // itself fails.
+    this.owner = new SqliteConnectionOwner(() =>
+      closeSqlitePlatform(facade ?? supplied),
+    );
+    this.path = options.path;
     try {
+      this.platform = facade = supplied === undefined ? undefined : synchronousPrivatePlatform(supplied);
+      if (this.platform) {
+        requireCondition(this.platform.kind === "windows", "transport-native-platform-required", 503);
+        this.path = join(this.platform.bind(dirname(options.path)), basename(options.path));
+        // Positive creation (which acquires a held platform's authority
+        // scope) must precede any proof that requires the hold.
+        this.platform.createExclusive(this.path);
+        this.platform.assertRoot();
+        this.platform.assertFile(this.path);
+        this.platform.assertSidecars(this.path);
+      }
+      let existing = false;
+      try { existing = lstatSync(this.path).size > 0; }
+      catch (error) { if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error; }
+      if (existing)
+        preflightExistingJournal(this.path, () => this.assertFilesystem(), candidate => this.validateExisting(candidate, options.bindingId), this.platform, this.owner);
+      const db = new DatabaseSync(this.path);
+      this.owner.opened(db);
+      this.storage = this.owner.guarded(db);
       const tables = this.db
         .prepare(
           "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'",
@@ -57,6 +99,7 @@ export class SyncTransportJournal {
           tables.some((row) => row.name === "transport_identity"),
         "not-a-transport-journal",
       );
+      if (tables.length === 0) this.platform?.assertEmptyFile(this.path);
       this.db.exec(
         "PRAGMA journal_mode=WAL; PRAGMA synchronous=FULL; PRAGMA busy_timeout=5000;",
       );
@@ -99,20 +142,44 @@ export class SyncTransportJournal {
         }
       });
     } catch (error) {
-      try {
-        this.storage.close();
-      } catch (closeError) {
-        throw new AggregateError(
-          [error, closeError],
-          "Journal initialization and close failed",
-        );
-      }
-      throw error;
+      this.owner.fail(error);
     }
   }
 
   private transaction<T>(work: () => T): T {
-    return this.storage.transaction(work);
+    this.assertOwned();
+    const result = this.storage.transaction(work);
+    if (this.platform) {
+      try { this.assertOwned(); }
+      catch (cause) {
+        this.uncertain = true;
+        const error = new SyncError("transport-commit-unknown", 503);
+        error.cause = cause;
+        throw error;
+      }
+    }
+    return result;
+  }
+
+  private assertOwned(): void {
+    requireCondition(!this.uncertain, "transport-commit-unknown", 503);
+    requireCondition(!this.closing, "transport-closing", 503);
+    this.assertFilesystem();
+    this.storage.assertUsable();
+  }
+  private assertFilesystem(): void {
+    this.platform?.assertRoot();
+    this.platform?.assertFile(this.path);
+    this.platform?.assertSidecars(this.path);
+  }
+  private validateExisting(db: DatabaseSync, bindingId: string): void {
+    const tables = db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'").all();
+    requireCondition(tables.length === 3 &&
+      ["transport_identity", "transport_outbox", "transport_inbox"].every(name => tables.some(row => row.name === name)), "not-a-transport-journal");
+    const identity = db.prepare("SELECT * FROM transport_identity").all();
+    requireCondition(identity.length === 1 && identity[0].singleton === 1, "missing-journal-identity");
+    requireCondition(identity[0].version === 1, "unsupported-journal-version");
+    requireCondition(identity[0].workspace_id === this.workspaceId && identity[0].client_id === this.clientId && identity[0].binding_id === bindingId, "journal-binding-mismatch");
   }
 
   bindServer(epoch: string): void {
@@ -334,6 +401,7 @@ export class SyncTransportJournal {
   }
 
   close(): void {
-    this.storage.close();
+    this.closing = true;
+    this.owner.close();
   }
 }

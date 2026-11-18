@@ -27,7 +27,10 @@ export type CrashRecoverySnapshot = {schemaVersion: 1; pages: EditSessionRecover
    * confirmed yet. Only an explicit resolve may clear them. */
   pageOperations?: PageOperation[]};
 export type CrashRecoveryRead = {status: "empty" | "ready" | "blocked"; generation: number;
-  snapshot?: CrashRecoverySnapshot; message?: string};
+  snapshot?: CrashRecoverySnapshot; message?: string;
+  /** Bounded v1 diagnostic that may accompany a blocked read. It is transport
+   * metadata, never part of the persisted snapshot, schema or receipt. */
+  storageFailure?: import("./private-storage-failure").StorageFailureV1};
 
 export function emptyCrashRecoverySnapshot(): CrashRecoverySnapshot {
   return {schemaVersion: 1, pages: [], records: [], databases: [], creations: [], rawDrafts: [], externalOperations: []};

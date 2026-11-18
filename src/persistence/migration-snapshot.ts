@@ -1,6 +1,7 @@
 import type { DatabaseSync } from "node:sqlite";
-import { DatabaseSync as SQLite } from "node:sqlite";
 import { createHash } from "node:crypto";
+import { privatePersistencePort, type PrivatePersistenceOptions } from "../platform/private-persistence";
+import { withNativeSqliteReader } from "./native-sqlite-reader";
 import {
   constants,
   copyFileSync,
@@ -37,7 +38,9 @@ export function createMigrationSnapshot(
   db: DatabaseSync,
   assetsPath: string,
   destination: string,
+  options?: PrivatePersistenceOptions,
 ): void {
+  const native = privatePersistencePort(options);
   if (db.isTransaction)
     throw new Error("Migration snapshot requires no active transaction");
   if (!isAbsolute(assetsPath) || !isAbsolute(destination))
@@ -58,13 +61,17 @@ export function createMigrationSnapshot(
     throw new Error("Snapshot destination cannot be in assets");
   // Exclusive creation ensures that a previous snapshot (including an aborted
   // attempt) can never be overwritten or silently mistaken for a valid backup.
-  mkdirSync(target);
+  if (native) native.createDirectory(target);
+  else mkdirSync(target);
   const snapshotPath = join(target, "workspace.sqlite"),
     outputAssets = join(target, "assets");
-  db.prepare("VACUUM INTO ?").run(snapshotPath);
-  mkdirSync(outputAssets);
-  const snapshot = new SQLite(snapshotPath, { readOnly: true });
-  try {
+  if (native) native.snapshotSqlite(db, snapshotPath);
+  else db.prepare("VACUUM INTO ?").run(snapshotPath);
+  if (native) native.createDirectory(outputAssets);
+  else mkdirSync(outputAssets);
+  // The verified reader must be known-closed before the manifest can publish;
+  // a native reader that cannot be proven closed retains its exact-path lease.
+  withNativeSqliteReader(snapshotPath, native, (snapshot) => {
     const checks = snapshot.prepare("PRAGMA integrity_check").all() as {
       integrity_check: string;
     }[];
@@ -104,7 +111,8 @@ export function createMigrationSnapshot(
         info = lstatSync(input);
       if (!info.isFile() || info.isSymbolicLink())
         throw new Error("Unsupported asset entry; snapshot not completed");
-      copyFileSync(input, output, constants.COPYFILE_EXCL);
+      if (native) native.copyNew(input, output, native.inspectFile(input, 256 * 1024 * 1024), 256 * 1024 * 1024);
+      else copyFileSync(input, output, constants.COPYFILE_EXCL);
       const sourceBytes = readFileSync(input),
         outputBytes = readFileSync(output);
       const digest = (bytes: Buffer) =>
@@ -123,13 +131,9 @@ export function createMigrationSnapshot(
       throw new Error("Registered asset missing; snapshot not completed");
     if (JSON.stringify(readdirSync(assets).sort()) !== JSON.stringify(names))
       throw new Error("Assets changed while snapshotting");
-  } finally {
-    snapshot.close();
-  }
+  });
   const pendingManifest = join(target, ".manifest-pending.json");
-  writeFileSync(
-    pendingManifest,
-    JSON.stringify(
+  const manifest = JSON.stringify(
       {
         format: "folio-pre-migration-snapshot",
         schemaVersion: 1,
@@ -140,9 +144,13 @@ export function createMigrationSnapshot(
       },
       null,
       2,
-    ),
-    { flag: "wx" },
-  );
+    );
+  if (native) {
+    const pending = native.writeNew(pendingManifest, Buffer.from(manifest), 64 * 1024).identity;
+    native.copyNew(pendingManifest, join(target, "manifest.json"), pending, 64 * 1024);
+    return;
+  }
+  writeFileSync(pendingManifest, manifest, { flag: "wx" });
   // Publish only after the complete manifest was written. A hard link is
   // exclusive and does not replace an entry another actor created. Leave
   // the pending file in place so there is no cleanup after publication.

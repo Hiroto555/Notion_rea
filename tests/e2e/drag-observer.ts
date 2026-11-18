@@ -79,6 +79,7 @@ export async function observeDrag(s: Pick<Session, "app" | "window">) {
             t = e.target as Element;
           const entry = {
             type,
+            trusted: e.isTrusted,
             time: performance.now(),
             x: m.clientX,
             y: m.clientY,
@@ -119,6 +120,7 @@ export async function dragEvidence(
   const events = await s.window.evaluate(() => ({
     events: (globalThis as any).dragJournal,
     attempt: (globalThis as any).dragAttempt,
+    attempts: (globalThis as any).dragAttempts,
     after: (document.querySelector(".folio-editor") as any)?.editor.getJSON(),
   }));
   const ack = await s.app.evaluate(() => (globalThis as any).dragACK);

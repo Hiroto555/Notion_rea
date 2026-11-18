@@ -1,0 +1,1363 @@
+{
+  "node": "v24.20.0",
+  "platform": "darwin/arm64",
+  "checkpointLimitBytes": 1048576,
+  "wireLimitBytes": 2113536,
+  "methodology": "synthetic Store + real WorkspaceSyncStore; applied ACK shape passed through recordResult; remote changes through stageChanges/applyNext; own echo staged with skip_apply; one run per case; no network; no user data",
+  "scenarios": [
+    {
+      "name": "revisions-1",
+      "enable": {
+        "ok": true,
+        "ms": 3.8121659999999977
+      },
+      "revisions": [
+        {
+          "revision": 1,
+          "checkpointBytes": 2497,
+          "commitWireBytes": 2769,
+          "wireMarginBytes": 2110767,
+          "versions": 3,
+          "prepareMs": 0.6572910000000007,
+          "recordMs": 0.686833,
+          "outboxBytes": 3123,
+          "appliedBytes": 2497,
+          "inboxBytes": 0,
+          "status": {
+            "receivedCursor": 0,
+            "appliedRevision": 1,
+            "generation": 3,
+            "cleanGeneration": 3,
+            "pending": false,
+            "conflict": false
+          }
+        }
+      ],
+      "remoteRounds": [],
+      "schemaOk": true,
+      "dbBytes": 4096,
+      "walBytes": 296672
+    },
+    {
+      "name": "revisions-5",
+      "enable": {
+        "ok": true,
+        "ms": 1.8847920000000045
+      },
+      "revisions": [
+        {
+          "revision": 1,
+          "checkpointBytes": 2497,
+          "commitWireBytes": 2769,
+          "wireMarginBytes": 2110767,
+          "versions": 3,
+          "prepareMs": 0.4686669999999964,
+          "recordMs": 0.5456670000000088,
+          "outboxBytes": 3123,
+          "appliedBytes": 2497,
+          "inboxBytes": 0,
+          "status": {
+            "receivedCursor": 0,
+            "appliedRevision": 1,
+            "generation": 3,
+            "cleanGeneration": 3,
+            "pending": false,
+            "conflict": false
+          }
+        },
+        {
+          "revision": 2,
+          "checkpointBytes": 2934,
+          "commitWireBytes": 3206,
+          "wireMarginBytes": 2110330,
+          "versions": 4,
+          "prepareMs": 0.636375000000001,
+          "recordMs": 1.0187920000000048,
+          "outboxBytes": 6683,
+          "appliedBytes": 2934,
+          "inboxBytes": 0,
+          "status": {
+            "receivedCursor": 0,
+            "appliedRevision": 2,
+            "generation": 5,
+            "cleanGeneration": 5,
+            "pending": false,
+            "conflict": false
+          }
+        },
+        {
+          "revision": 3,
+          "checkpointBytes": 3371,
+          "commitWireBytes": 3643,
+          "wireMarginBytes": 2109893,
+          "versions": 5,
+          "prepareMs": 1.6294579999999996,
+          "recordMs": 0.594458000000003,
+          "outboxBytes": 10680,
+          "appliedBytes": 3371,
+          "inboxBytes": 0,
+          "status": {
+            "receivedCursor": 0,
+            "appliedRevision": 3,
+            "generation": 7,
+            "cleanGeneration": 7,
+            "pending": false,
+            "conflict": false
+          }
+        },
+        {
+          "revision": 4,
+          "checkpointBytes": 3808,
+          "commitWireBytes": 4080,
+          "wireMarginBytes": 2109456,
+          "versions": 6,
+          "prepareMs": 0.8640000000000043,
+          "recordMs": 0.6074579999999941,
+          "outboxBytes": 15114,
+          "appliedBytes": 3808,
+          "inboxBytes": 0,
+          "status": {
+            "receivedCursor": 0,
+            "appliedRevision": 4,
+            "generation": 9,
+            "cleanGeneration": 9,
+            "pending": false,
+            "conflict": false
+          }
+        },
+        {
+          "revision": 5,
+          "checkpointBytes": 4245,
+          "commitWireBytes": 4517,
+          "wireMarginBytes": 2109019,
+          "versions": 7,
+          "prepareMs": 1.0333750000000066,
+          "recordMs": 0.5232910000000004,
+          "outboxBytes": 19985,
+          "appliedBytes": 4245,
+          "inboxBytes": 0,
+          "status": {
+            "receivedCursor": 0,
+            "appliedRevision": 5,
+            "generation": 11,
+            "cleanGeneration": 11,
+            "pending": false,
+            "conflict": false
+          }
+        }
+      ],
+      "remoteRounds": [],
+      "schemaOk": true,
+      "dbBytes": 4096,
+      "walBytes": 531512
+    },
+    {
+      "name": "revisions-20",
+      "enable": {
+        "ok": true,
+        "ms": 1.8424590000000052
+      },
+      "revisions": [
+        {
+          "revision": 1,
+          "checkpointBytes": 2497,
+          "commitWireBytes": 2769,
+          "wireMarginBytes": 2110767,
+          "versions": 3,
+          "prepareMs": 0.40058399999999494,
+          "recordMs": 0.4211659999999995,
+          "outboxBytes": 3123,
+          "appliedBytes": 2497,
+          "inboxBytes": 0,
+          "status": {
+            "receivedCursor": 0,
+            "appliedRevision": 1,
+            "generation": 3,
+            "cleanGeneration": 3,
+            "pending": false,
+            "conflict": false
+          }
+        },
+        {
+          "revision": 2,
+          "checkpointBytes": 2934,
+          "commitWireBytes": 3206,
+          "wireMarginBytes": 2110330,
+          "versions": 4,
+          "prepareMs": 0.5208750000000038,
+          "recordMs": 0.7061250000000001,
+          "outboxBytes": 6683,
+          "appliedBytes": 2934,
+          "inboxBytes": 0,
+          "status": {
+            "receivedCursor": 0,
+            "appliedRevision": 2,
+            "generation": 5,
+            "cleanGeneration": 5,
+            "pending": false,
+            "conflict": false
+          }
+        },
+        {
+          "revision": 3,
+          "checkpointBytes": 3371,
+          "commitWireBytes": 3643,
+          "wireMarginBytes": 2109893,
+          "versions": 5,
+          "prepareMs": 0.6319579999999974,
+          "recordMs": 0.43166700000000446,
+          "outboxBytes": 10680,
+          "appliedBytes": 3371,
+          "inboxBytes": 0,
+          "status": {
+            "receivedCursor": 0,
+            "appliedRevision": 3,
+            "generation": 7,
+            "cleanGeneration": 7,
+            "pending": false,
+            "conflict": false
+          }
+        },
+        {
+          "revision": 4,
+          "checkpointBytes": 3808,
+          "commitWireBytes": 4080,
+          "wireMarginBytes": 2109456,
+          "versions": 6,
+          "prepareMs": 0.588832999999994,
+          "recordMs": 0.4426249999999925,
+          "outboxBytes": 15114,
+          "appliedBytes": 3808,
+          "inboxBytes": 0,
+          "status": {
+            "receivedCursor": 0,
+            "appliedRevision": 4,
+            "generation": 9,
+            "cleanGeneration": 9,
+            "pending": false,
+            "conflict": false
+          }
+        },
+        {
+          "revision": 5,
+          "checkpointBytes": 4245,
+          "commitWireBytes": 4517,
+          "wireMarginBytes": 2109019,
+          "versions": 7,
+          "prepareMs": 0.9489590000000021,
+          "recordMs": 0.48425000000000296,
+          "outboxBytes": 19985,
+          "appliedBytes": 4245,
+          "inboxBytes": 0,
+          "status": {
+            "receivedCursor": 0,
+            "appliedRevision": 5,
+            "generation": 11,
+            "cleanGeneration": 11,
+            "pending": false,
+            "conflict": false
+          }
+        },
+        {
+          "revision": 6,
+          "checkpointBytes": 4682,
+          "commitWireBytes": 4954,
+          "wireMarginBytes": 2108582,
+          "versions": 8,
+          "prepareMs": 0.7099169999999901,
+          "recordMs": 0.5332500000000095,
+          "outboxBytes": 25293,
+          "appliedBytes": 4682,
+          "inboxBytes": 0,
+          "status": {
+            "receivedCursor": 0,
+            "appliedRevision": 6,
+            "generation": 13,
+            "cleanGeneration": 13,
+            "pending": false,
+            "conflict": false
+          }
+        },
+        {
+          "revision": 7,
+          "checkpointBytes": 5119,
+          "commitWireBytes": 5391,
+          "wireMarginBytes": 2108145,
+          "versions": 9,
+          "prepareMs": 0.7305829999999958,
+          "recordMs": 0.5147910000000024,
+          "outboxBytes": 31038,
+          "appliedBytes": 5119,
+          "inboxBytes": 0,
+          "status": {
+            "receivedCursor": 0,
+            "appliedRevision": 7,
+            "generation": 15,
+            "cleanGeneration": 15,
+            "pending": false,
+            "conflict": false
+          }
+        },
+        {
+          "revision": 8,
+          "checkpointBytes": 5557,
+          "commitWireBytes": 5829,
+          "wireMarginBytes": 2107707,
+          "versions": 10,
+          "prepareMs": 0.5867920000000026,
+          "recordMs": 0.5519170000000031,
+          "outboxBytes": 37221,
+          "appliedBytes": 5557,
+          "inboxBytes": 0,
+          "status": {
+            "receivedCursor": 0,
+            "appliedRevision": 8,
+            "generation": 17,
+            "cleanGeneration": 17,
+            "pending": false,
+            "conflict": false
+          }
+        },
+        {
+          "revision": 9,
+          "checkpointBytes": 5996,
+          "commitWireBytes": 6268,
+          "wireMarginBytes": 2107268,
+          "versions": 11,
+          "prepareMs": 0.7421659999999974,
+          "recordMs": 0.5552080000000075,
+          "outboxBytes": 43843,
+          "appliedBytes": 5996,
+          "inboxBytes": 0,
+          "status": {
+            "receivedCursor": 0,
+            "appliedRevision": 9,
+            "generation": 19,
+            "cleanGeneration": 19,
+            "pending": false,
+            "conflict": false
+          }
+        },
+        {
+          "revision": 10,
+          "checkpointBytes": 6434,
+          "commitWireBytes": 6706,
+          "wireMarginBytes": 2106830,
+          "versions": 12,
+          "prepareMs": 0.618583000000001,
+          "recordMs": 0.5812499999999972,
+          "outboxBytes": 50904,
+          "appliedBytes": 6434,
+          "inboxBytes": 0,
+          "status": {
+            "receivedCursor": 0,
+            "appliedRevision": 10,
+            "generation": 21,
+            "cleanGeneration": 21,
+            "pending": false,
+            "conflict": false
+          }
+        },
+        {
+          "revision": 11,
+          "checkpointBytes": 6873,
+          "commitWireBytes": 7146,
+          "wireMarginBytes": 2106390,
+          "versions": 13,
+          "prepareMs": 0.650375000000011,
+          "recordMs": 0.6040419999999926,
+          "outboxBytes": 58405,
+          "appliedBytes": 6873,
+          "inboxBytes": 0,
+          "status": {
+            "receivedCursor": 0,
+            "appliedRevision": 11,
+            "generation": 23,
+            "cleanGeneration": 23,
+            "pending": false,
+            "conflict": false
+          }
+        },
+        {
+          "revision": 12,
+          "checkpointBytes": 7312,
+          "commitWireBytes": 7585,
+          "wireMarginBytes": 2105951,
+          "versions": 14,
+          "prepareMs": 0.6793750000000074,
+          "recordMs": 0.7688340000000125,
+          "outboxBytes": 66345,
+          "appliedBytes": 7312,
+          "inboxBytes": 0,
+          "status": {
+            "receivedCursor": 0,
+            "appliedRevision": 12,
+            "generation": 25,
+            "cleanGeneration": 25,
+            "pending": false,
+            "conflict": false
+          }
+        },
+        {
+          "revision": 13,
+          "checkpointBytes": 7751,
+          "commitWireBytes": 8024,
+          "wireMarginBytes": 2105512,
+          "versions": 15,
+          "prepareMs": 0.7470829999999893,
+          "recordMs": 0.6526670000000081,
+          "outboxBytes": 74724,
+          "appliedBytes": 7751,
+          "inboxBytes": 0,
+          "status": {
+            "receivedCursor": 0,
+            "appliedRevision": 13,
+            "generation": 27,
+            "cleanGeneration": 27,
+            "pending": false,
+            "conflict": false
+          }
+        },
+        {
+          "revision": 14,
+          "checkpointBytes": 8190,
+          "commitWireBytes": 8463,
+          "wireMarginBytes": 2105073,
+          "versions": 16,
+          "prepareMs": 0.7611659999999887,
+          "recordMs": 0.8421670000000034,
+          "outboxBytes": 83542,
+          "appliedBytes": 8190,
+          "inboxBytes": 0,
+          "status": {
+            "receivedCursor": 0,
+            "appliedRevision": 14,
+            "generation": 29,
+            "cleanGeneration": 29,
+            "pending": false,
+            "conflict": false
+          }
+        },
+        {
+          "revision": 15,
+          "checkpointBytes": 8629,
+          "commitWireBytes": 8902,
+          "wireMarginBytes": 2104634,
+          "versions": 17,
+          "prepareMs": 1.0447089999999974,
+          "recordMs": 0.7010000000000076,
+          "outboxBytes": 92799,
+          "appliedBytes": 8629,
+          "inboxBytes": 0,
+          "status": {
+            "receivedCursor": 0,
+            "appliedRevision": 15,
+            "generation": 31,
+            "cleanGeneration": 31,
+            "pending": false,
+            "conflict": false
+          }
+        },
+        {
+          "revision": 16,
+          "checkpointBytes": 9068,
+          "commitWireBytes": 9341,
+          "wireMarginBytes": 2104195,
+          "versions": 18,
+          "prepareMs": 0.7646670000000029,
+          "recordMs": 0.850750000000005,
+          "outboxBytes": 102495,
+          "appliedBytes": 9068,
+          "inboxBytes": 0,
+          "status": {
+            "receivedCursor": 0,
+            "appliedRevision": 16,
+            "generation": 33,
+            "cleanGeneration": 33,
+            "pending": false,
+            "conflict": false
+          }
+        },
+        {
+          "revision": 17,
+          "checkpointBytes": 9507,
+          "commitWireBytes": 9780,
+          "wireMarginBytes": 2103756,
+          "versions": 19,
+          "prepareMs": 0.7547079999999937,
+          "recordMs": 0.8181670000000025,
+          "outboxBytes": 112630,
+          "appliedBytes": 9507,
+          "inboxBytes": 0,
+          "status": {
+            "receivedCursor": 0,
+            "appliedRevision": 17,
+            "generation": 35,
+            "cleanGeneration": 35,
+            "pending": false,
+            "conflict": false
+          }
+        },
+        {
+          "revision": 18,
+          "checkpointBytes": 9946,
+          "commitWireBytes": 10219,
+          "wireMarginBytes": 2103317,
+          "versions": 20,
+          "prepareMs": 0.8887919999999951,
+          "recordMs": 0.7775829999999928,
+          "outboxBytes": 123204,
+          "appliedBytes": 9946,
+          "inboxBytes": 0,
+          "status": {
+            "receivedCursor": 0,
+            "appliedRevision": 18,
+            "generation": 37,
+            "cleanGeneration": 37,
+            "pending": false,
+            "conflict": false
+          }
+        },
+        {
+          "revision": 19,
+          "checkpointBytes": 10385,
+          "commitWireBytes": 10658,
+          "wireMarginBytes": 2102878,
+          "versions": 21,
+          "prepareMs": 0.8277910000000048,
+          "recordMs": 0.7501250000000113,
+          "outboxBytes": 134217,
+          "appliedBytes": 10385,
+          "inboxBytes": 0,
+          "status": {
+            "receivedCursor": 0,
+            "appliedRevision": 19,
+            "generation": 39,
+            "cleanGeneration": 39,
+            "pending": false,
+            "conflict": false
+          }
+        },
+        {
+          "revision": 20,
+          "checkpointBytes": 10824,
+          "commitWireBytes": 11097,
+          "wireMarginBytes": 2102439,
+          "versions": 22,
+          "prepareMs": 0.961459000000005,
+          "recordMs": 0.754667000000012,
+          "outboxBytes": 145669,
+          "appliedBytes": 10824,
+          "inboxBytes": 0,
+          "status": {
+            "receivedCursor": 0,
+            "appliedRevision": 20,
+            "generation": 41,
+            "cleanGeneration": 41,
+            "pending": false,
+            "conflict": false
+          }
+        }
+      ],
+      "remoteRounds": [],
+      "schemaOk": true,
+      "dbBytes": 4096,
+      "walBytes": 1676872
+    },
+    {
+      "name": "remote-rounds-5",
+      "enable": {
+        "ok": true,
+        "ms": 1.7124159999999904
+      },
+      "revisions": [
+        {
+          "revision": 1,
+          "checkpointBytes": 2497,
+          "commitWireBytes": 2769,
+          "wireMarginBytes": 2110767,
+          "versions": 3,
+          "prepareMs": 0.3208750000000009,
+          "recordMs": 0.3410829999999976,
+          "outboxBytes": 3123,
+          "appliedBytes": 2497,
+          "inboxBytes": 0,
+          "status": {
+            "receivedCursor": 0,
+            "appliedRevision": 1,
+            "generation": 3,
+            "cleanGeneration": 3,
+            "pending": false,
+            "conflict": false
+          }
+        }
+      ],
+      "remoteRounds": [
+        {
+          "revision": 2,
+          "changePageWireBytes": 3815,
+          "stageMs": 0.3022089999999764,
+          "applyMs": 0.6247499999999775,
+          "inboxBytes": 6476,
+          "appliedBytes": 3425,
+          "pageCountAfter": 3
+        },
+        {
+          "revision": 3,
+          "changePageWireBytes": 4743,
+          "stageMs": 0.33183299999998894,
+          "applyMs": 0.6429170000000113,
+          "inboxBytes": 11106,
+          "appliedBytes": 4353,
+          "pageCountAfter": 4
+        },
+        {
+          "revision": 4,
+          "changePageWireBytes": 5671,
+          "stageMs": 0.4426250000000209,
+          "applyMs": 0.5590840000000128,
+          "inboxBytes": 16664,
+          "appliedBytes": 5281,
+          "pageCountAfter": 5
+        },
+        {
+          "revision": 5,
+          "changePageWireBytes": 6599,
+          "stageMs": 0.3806250000000091,
+          "applyMs": 0.6076670000000206,
+          "inboxBytes": 23150,
+          "appliedBytes": 6209,
+          "pageCountAfter": 6
+        },
+        {
+          "revision": 6,
+          "changePageWireBytes": 7527,
+          "stageMs": 0.428875000000005,
+          "applyMs": 0.8019999999999925,
+          "inboxBytes": 30564,
+          "appliedBytes": 7137,
+          "pageCountAfter": 7
+        }
+      ],
+      "echo": {
+        "echoWireBytes": 2887,
+        "stageMs": 0.4302500000000009
+      },
+      "schemaOk": true,
+      "dbBytes": 4096,
+      "walBytes": 613912
+    },
+    {
+      "name": "remote-rounds-20",
+      "enable": {
+        "ok": true,
+        "ms": 1.7449170000000152
+      },
+      "revisions": [
+        {
+          "revision": 1,
+          "checkpointBytes": 2497,
+          "commitWireBytes": 2769,
+          "wireMarginBytes": 2110767,
+          "versions": 3,
+          "prepareMs": 0.3342919999999765,
+          "recordMs": 0.36520799999999554,
+          "outboxBytes": 3123,
+          "appliedBytes": 2497,
+          "inboxBytes": 0,
+          "status": {
+            "receivedCursor": 0,
+            "appliedRevision": 1,
+            "generation": 3,
+            "cleanGeneration": 3,
+            "pending": false,
+            "conflict": false
+          }
+        }
+      ],
+      "remoteRounds": [
+        {
+          "revision": 2,
+          "changePageWireBytes": 3815,
+          "stageMs": 0.2899579999999844,
+          "applyMs": 0.4938330000000235,
+          "inboxBytes": 6476,
+          "appliedBytes": 3425,
+          "pageCountAfter": 3
+        },
+        {
+          "revision": 3,
+          "changePageWireBytes": 4743,
+          "stageMs": 0.5931249999999864,
+          "applyMs": 0.5170410000000061,
+          "inboxBytes": 11106,
+          "appliedBytes": 4353,
+          "pageCountAfter": 4
+        },
+        {
+          "revision": 4,
+          "changePageWireBytes": 5671,
+          "stageMs": 0.43779200000000174,
+          "applyMs": 0.6459169999999972,
+          "inboxBytes": 16664,
+          "appliedBytes": 5281,
+          "pageCountAfter": 5
+        },
+        {
+          "revision": 5,
+          "changePageWireBytes": 6599,
+          "stageMs": 2.6938749999999914,
+          "applyMs": 0.6057089999999903,
+          "inboxBytes": 23150,
+          "appliedBytes": 6209,
+          "pageCountAfter": 6
+        },
+        {
+          "revision": 6,
+          "changePageWireBytes": 7527,
+          "stageMs": 0.4330410000000029,
+          "applyMs": 0.6656670000000133,
+          "inboxBytes": 30564,
+          "appliedBytes": 7137,
+          "pageCountAfter": 7
+        },
+        {
+          "revision": 7,
+          "changePageWireBytes": 8455,
+          "stageMs": 0.4577079999999967,
+          "applyMs": 0.699374999999975,
+          "inboxBytes": 38906,
+          "appliedBytes": 8065,
+          "pageCountAfter": 8
+        },
+        {
+          "revision": 8,
+          "changePageWireBytes": 9383,
+          "stageMs": 0.4841250000000059,
+          "applyMs": 0.6844169999999963,
+          "inboxBytes": 48176,
+          "appliedBytes": 8993,
+          "pageCountAfter": 9
+        },
+        {
+          "revision": 9,
+          "changePageWireBytes": 10311,
+          "stageMs": 0.5324999999999989,
+          "applyMs": 0.8445000000000107,
+          "inboxBytes": 58374,
+          "appliedBytes": 9921,
+          "pageCountAfter": 10
+        },
+        {
+          "revision": 10,
+          "changePageWireBytes": 11245,
+          "stageMs": 0.5364999999999895,
+          "applyMs": 0.789999999999992,
+          "inboxBytes": 69505,
+          "appliedBytes": 10853,
+          "pageCountAfter": 11
+        },
+        {
+          "revision": 11,
+          "changePageWireBytes": 12178,
+          "stageMs": 0.6920000000000073,
+          "applyMs": 0.801542000000012,
+          "inboxBytes": 81568,
+          "appliedBytes": 11785,
+          "pageCountAfter": 12
+        },
+        {
+          "revision": 12,
+          "changePageWireBytes": 13110,
+          "stageMs": 0.693333999999993,
+          "applyMs": 0.9047919999999863,
+          "inboxBytes": 94563,
+          "appliedBytes": 12717,
+          "pageCountAfter": 13
+        },
+        {
+          "revision": 13,
+          "changePageWireBytes": 14042,
+          "stageMs": 0.6235420000000147,
+          "applyMs": 0.8618329999999901,
+          "inboxBytes": 108490,
+          "appliedBytes": 13649,
+          "pageCountAfter": 14
+        },
+        {
+          "revision": 14,
+          "changePageWireBytes": 14974,
+          "stageMs": 0.6811250000000086,
+          "applyMs": 0.9006249999999909,
+          "inboxBytes": 123349,
+          "appliedBytes": 14581,
+          "pageCountAfter": 15
+        },
+        {
+          "revision": 15,
+          "changePageWireBytes": 15906,
+          "stageMs": 0.8286659999999983,
+          "applyMs": 0.9801250000000152,
+          "inboxBytes": 139140,
+          "appliedBytes": 15513,
+          "pageCountAfter": 16
+        },
+        {
+          "revision": 16,
+          "changePageWireBytes": 16838,
+          "stageMs": 1.0466249999999775,
+          "applyMs": 1.1427500000000066,
+          "inboxBytes": 155863,
+          "appliedBytes": 16445,
+          "pageCountAfter": 17
+        },
+        {
+          "revision": 17,
+          "changePageWireBytes": 17770,
+          "stageMs": 0.9879579999999919,
+          "applyMs": 1.1129169999999817,
+          "inboxBytes": 173518,
+          "appliedBytes": 17377,
+          "pageCountAfter": 18
+        },
+        {
+          "revision": 18,
+          "changePageWireBytes": 18702,
+          "stageMs": 1.0640000000000214,
+          "applyMs": 1.1371249999999975,
+          "inboxBytes": 192105,
+          "appliedBytes": 18309,
+          "pageCountAfter": 19
+        },
+        {
+          "revision": 19,
+          "changePageWireBytes": 19634,
+          "stageMs": 0.9664999999999964,
+          "applyMs": 1.127915999999999,
+          "inboxBytes": 211624,
+          "appliedBytes": 19241,
+          "pageCountAfter": 20
+        },
+        {
+          "revision": 20,
+          "changePageWireBytes": 20566,
+          "stageMs": 0.9212909999999965,
+          "applyMs": 1.0854579999999885,
+          "inboxBytes": 232075,
+          "appliedBytes": 20173,
+          "pageCountAfter": 21
+        },
+        {
+          "revision": 21,
+          "changePageWireBytes": 21498,
+          "stageMs": 0.9650000000000034,
+          "applyMs": 1.203374999999994,
+          "inboxBytes": 253458,
+          "appliedBytes": 21105,
+          "pageCountAfter": 22
+        }
+      ],
+      "echo": {
+        "echoWireBytes": 2887,
+        "stageMs": 0.2600410000000011
+      },
+      "schemaOk": true,
+      "dbBytes": 4096,
+      "walBytes": 2167152
+    },
+    {
+      "name": "revisions-body-8k-x10",
+      "enable": {
+        "ok": true,
+        "ms": 1.7355000000000018
+      },
+      "revisions": [
+        {
+          "revision": 1,
+          "checkpointBytes": 17521,
+          "commitWireBytes": 17793,
+          "wireMarginBytes": 2095743,
+          "versions": 2,
+          "prepareMs": 0.5301249999999982,
+          "recordMs": 0.7578340000000026,
+          "outboxBytes": 18147,
+          "appliedBytes": 17521,
+          "inboxBytes": 0,
+          "status": {
+            "receivedCursor": 0,
+            "appliedRevision": 1,
+            "generation": 3,
+            "cleanGeneration": 3,
+            "pending": false,
+            "conflict": false
+          }
+        },
+        {
+          "revision": 2,
+          "checkpointBytes": 25894,
+          "commitWireBytes": 26166,
+          "wireMarginBytes": 2087370,
+          "versions": 3,
+          "prepareMs": 0.9463330000000099,
+          "recordMs": 0.8949999999999818,
+          "outboxBytes": 44667,
+          "appliedBytes": 25894,
+          "inboxBytes": 0,
+          "status": {
+            "receivedCursor": 0,
+            "appliedRevision": 2,
+            "generation": 5,
+            "cleanGeneration": 5,
+            "pending": false,
+            "conflict": false
+          }
+        },
+        {
+          "revision": 3,
+          "checkpointBytes": 34267,
+          "commitWireBytes": 34539,
+          "wireMarginBytes": 2078997,
+          "versions": 4,
+          "prepareMs": 1.0965829999999812,
+          "recordMs": 1.0960830000000215,
+          "outboxBytes": 79560,
+          "appliedBytes": 34267,
+          "inboxBytes": 0,
+          "status": {
+            "receivedCursor": 0,
+            "appliedRevision": 3,
+            "generation": 7,
+            "cleanGeneration": 7,
+            "pending": false,
+            "conflict": false
+          }
+        },
+        {
+          "revision": 4,
+          "checkpointBytes": 42640,
+          "commitWireBytes": 42912,
+          "wireMarginBytes": 2070624,
+          "versions": 5,
+          "prepareMs": 1.2297499999999957,
+          "recordMs": 1.2893750000000068,
+          "outboxBytes": 122826,
+          "appliedBytes": 42640,
+          "inboxBytes": 0,
+          "status": {
+            "receivedCursor": 0,
+            "appliedRevision": 4,
+            "generation": 9,
+            "cleanGeneration": 9,
+            "pending": false,
+            "conflict": false
+          }
+        },
+        {
+          "revision": 5,
+          "checkpointBytes": 51013,
+          "commitWireBytes": 51285,
+          "wireMarginBytes": 2062251,
+          "versions": 6,
+          "prepareMs": 1.423374999999993,
+          "recordMs": 1.5112499999999898,
+          "outboxBytes": 174465,
+          "appliedBytes": 51013,
+          "inboxBytes": 0,
+          "status": {
+            "receivedCursor": 0,
+            "appliedRevision": 5,
+            "generation": 11,
+            "cleanGeneration": 11,
+            "pending": false,
+            "conflict": false
+          }
+        },
+        {
+          "revision": 6,
+          "checkpointBytes": 59386,
+          "commitWireBytes": 59658,
+          "wireMarginBytes": 2053878,
+          "versions": 7,
+          "prepareMs": 1.5802920000000142,
+          "recordMs": 1.8787920000000042,
+          "outboxBytes": 234477,
+          "appliedBytes": 59386,
+          "inboxBytes": 0,
+          "status": {
+            "receivedCursor": 0,
+            "appliedRevision": 6,
+            "generation": 13,
+            "cleanGeneration": 13,
+            "pending": false,
+            "conflict": false
+          }
+        },
+        {
+          "revision": 7,
+          "checkpointBytes": 67759,
+          "commitWireBytes": 68031,
+          "wireMarginBytes": 2045505,
+          "versions": 8,
+          "prepareMs": 2.069000000000017,
+          "recordMs": 2.065041999999977,
+          "outboxBytes": 302862,
+          "appliedBytes": 67759,
+          "inboxBytes": 0,
+          "status": {
+            "receivedCursor": 0,
+            "appliedRevision": 7,
+            "generation": 15,
+            "cleanGeneration": 15,
+            "pending": false,
+            "conflict": false
+          }
+        },
+        {
+          "revision": 8,
+          "checkpointBytes": 76132,
+          "commitWireBytes": 76404,
+          "wireMarginBytes": 2037132,
+          "versions": 9,
+          "prepareMs": 2.1837500000000034,
+          "recordMs": 2.6144160000000056,
+          "outboxBytes": 379620,
+          "appliedBytes": 76132,
+          "inboxBytes": 0,
+          "status": {
+            "receivedCursor": 0,
+            "appliedRevision": 8,
+            "generation": 17,
+            "cleanGeneration": 17,
+            "pending": false,
+            "conflict": false
+          }
+        },
+        {
+          "revision": 9,
+          "checkpointBytes": 84507,
+          "commitWireBytes": 84779,
+          "wireMarginBytes": 2028757,
+          "versions": 10,
+          "prepareMs": 2.513916999999992,
+          "recordMs": 2.6364169999999945,
+          "outboxBytes": 464753,
+          "appliedBytes": 84507,
+          "inboxBytes": 0,
+          "status": {
+            "receivedCursor": 0,
+            "appliedRevision": 9,
+            "generation": 19,
+            "cleanGeneration": 19,
+            "pending": false,
+            "conflict": false
+          }
+        },
+        {
+          "revision": 10,
+          "checkpointBytes": 92881,
+          "commitWireBytes": 93153,
+          "wireMarginBytes": 2020383,
+          "versions": 11,
+          "prepareMs": 2.6897500000000036,
+          "recordMs": 2.947958,
+          "outboxBytes": 558261,
+          "appliedBytes": 92881,
+          "inboxBytes": 0,
+          "status": {
+            "receivedCursor": 0,
+            "appliedRevision": 10,
+            "generation": 21,
+            "cleanGeneration": 21,
+            "pending": false,
+            "conflict": false
+          }
+        }
+      ],
+      "remoteRounds": [],
+      "schemaOk": true,
+      "dbBytes": 4096,
+      "walBytes": 2645072
+    },
+    {
+      "name": "history-over-limit",
+      "enable": {
+        "ok": true,
+        "ms": 1.6982920000000092
+      },
+      "revisions": [
+        {
+          "revision": 1,
+          "checkpointBytes": 59329,
+          "commitWireBytes": 59601,
+          "wireMarginBytes": 2053935,
+          "versions": 2,
+          "prepareMs": 1.1200420000000122,
+          "recordMs": 1.6945419999999842,
+          "outboxBytes": 59955,
+          "appliedBytes": 59329,
+          "inboxBytes": 0,
+          "status": {
+            "receivedCursor": 0,
+            "appliedRevision": 1,
+            "generation": 3,
+            "cleanGeneration": 3,
+            "pending": false,
+            "conflict": false
+          }
+        },
+        {
+          "revision": 2,
+          "checkpointBytes": 114510,
+          "commitWireBytes": 114782,
+          "wireMarginBytes": 1998754,
+          "versions": 3,
+          "prepareMs": 2.842917,
+          "recordMs": 3.521958000000012,
+          "outboxBytes": 175091,
+          "appliedBytes": 114510,
+          "inboxBytes": 0,
+          "status": {
+            "receivedCursor": 0,
+            "appliedRevision": 2,
+            "generation": 5,
+            "cleanGeneration": 5,
+            "pending": false,
+            "conflict": false
+          }
+        },
+        {
+          "revision": 3,
+          "checkpointBytes": 174691,
+          "commitWireBytes": 174963,
+          "wireMarginBytes": 1938573,
+          "versions": 4,
+          "prepareMs": 4.234542000000033,
+          "recordMs": 5.011541999999963,
+          "outboxBytes": 350408,
+          "appliedBytes": 174691,
+          "inboxBytes": 0,
+          "status": {
+            "receivedCursor": 0,
+            "appliedRevision": 3,
+            "generation": 7,
+            "cleanGeneration": 7,
+            "pending": false,
+            "conflict": false
+          }
+        },
+        {
+          "revision": 4,
+          "checkpointBytes": 239872,
+          "commitWireBytes": 240144,
+          "wireMarginBytes": 1873392,
+          "versions": 5,
+          "prepareMs": 5.6604580000000055,
+          "recordMs": 7.706792000000007,
+          "outboxBytes": 590906,
+          "appliedBytes": 239872,
+          "inboxBytes": 0,
+          "status": {
+            "receivedCursor": 0,
+            "appliedRevision": 4,
+            "generation": 9,
+            "cleanGeneration": 9,
+            "pending": false,
+            "conflict": false
+          }
+        },
+        {
+          "revision": 5,
+          "checkpointBytes": 310053,
+          "commitWireBytes": 310325,
+          "wireMarginBytes": 1803211,
+          "versions": 6,
+          "prepareMs": 9.153999999999996,
+          "recordMs": 17.587458999999967,
+          "outboxBytes": 901585,
+          "appliedBytes": 310053,
+          "inboxBytes": 0,
+          "status": {
+            "receivedCursor": 0,
+            "appliedRevision": 5,
+            "generation": 11,
+            "cleanGeneration": 11,
+            "pending": false,
+            "conflict": false
+          }
+        },
+        {
+          "revision": 6,
+          "checkpointBytes": 385234,
+          "commitWireBytes": 385506,
+          "wireMarginBytes": 1728030,
+          "versions": 7,
+          "prepareMs": 9.978458999999987,
+          "recordMs": 12.306375000000003,
+          "outboxBytes": 1287445,
+          "appliedBytes": 385234,
+          "inboxBytes": 0,
+          "status": {
+            "receivedCursor": 0,
+            "appliedRevision": 6,
+            "generation": 13,
+            "cleanGeneration": 13,
+            "pending": false,
+            "conflict": false
+          }
+        },
+        {
+          "revision": 7,
+          "checkpointBytes": 465415,
+          "commitWireBytes": 465687,
+          "wireMarginBytes": 1647849,
+          "versions": 8,
+          "prepareMs": 11.702666999999963,
+          "recordMs": 21.002250000000004,
+          "outboxBytes": 1753486,
+          "appliedBytes": 465415,
+          "inboxBytes": 0,
+          "status": {
+            "receivedCursor": 0,
+            "appliedRevision": 7,
+            "generation": 15,
+            "cleanGeneration": 15,
+            "pending": false,
+            "conflict": false
+          }
+        },
+        {
+          "revision": 8,
+          "checkpointBytes": 550596,
+          "commitWireBytes": 550868,
+          "wireMarginBytes": 1562668,
+          "versions": 9,
+          "prepareMs": 15.48808299999996,
+          "recordMs": 20.126499999999965,
+          "outboxBytes": 2304708,
+          "appliedBytes": 550596,
+          "inboxBytes": 0,
+          "status": {
+            "receivedCursor": 0,
+            "appliedRevision": 8,
+            "generation": 17,
+            "cleanGeneration": 17,
+            "pending": false,
+            "conflict": false
+          }
+        },
+        {
+          "revision": 9,
+          "checkpointBytes": 640779,
+          "commitWireBytes": 641051,
+          "wireMarginBytes": 1472485,
+          "versions": 10,
+          "prepareMs": 17.700083000000006,
+          "recordMs": 21.765125000000012,
+          "outboxBytes": 2946113,
+          "appliedBytes": 640779,
+          "inboxBytes": 0,
+          "status": {
+            "receivedCursor": 0,
+            "appliedRevision": 9,
+            "generation": 19,
+            "cleanGeneration": 19,
+            "pending": false,
+            "conflict": false
+          }
+        },
+        {
+          "revision": 10,
+          "checkpointBytes": 735961,
+          "commitWireBytes": 736233,
+          "wireMarginBytes": 1377303,
+          "versions": 11,
+          "prepareMs": 17.470084000000043,
+          "recordMs": 24.421707999999967,
+          "outboxBytes": 3682701,
+          "appliedBytes": 735961,
+          "inboxBytes": 0,
+          "status": {
+            "receivedCursor": 0,
+            "appliedRevision": 10,
+            "generation": 21,
+            "cleanGeneration": 21,
+            "pending": false,
+            "conflict": false
+          }
+        },
+        {
+          "revision": 11,
+          "checkpointBytes": 836143,
+          "commitWireBytes": 836416,
+          "wireMarginBytes": 1277120,
+          "versions": 12,
+          "prepareMs": 24.90383399999996,
+          "recordMs": 24.698541999999975,
+          "outboxBytes": 4519472,
+          "appliedBytes": 836143,
+          "inboxBytes": 0,
+          "status": {
+            "receivedCursor": 0,
+            "appliedRevision": 11,
+            "generation": 23,
+            "cleanGeneration": 23,
+            "pending": false,
+            "conflict": false
+          }
+        },
+        {
+          "revision": 12,
+          "checkpointBytes": 941325,
+          "commitWireBytes": 941598,
+          "wireMarginBytes": 1171938,
+          "versions": 13,
+          "prepareMs": 24.816084000000046,
+          "recordMs": 27.907958000000008,
+          "outboxBytes": 5461425,
+          "appliedBytes": 941325,
+          "inboxBytes": 0,
+          "status": {
+            "receivedCursor": 0,
+            "appliedRevision": 12,
+            "generation": 25,
+            "cleanGeneration": 25,
+            "pending": false,
+            "conflict": false
+          }
+        }
+      ],
+      "remoteRounds": [],
+      "schemaOk": true,
+      "rejection": {
+        "at": "prepare",
+        "revision": 13,
+        "errorCode": "invalid-local-workspace-checkpoint",
+        "message": "invalid-local-workspace-checkpoint",
+        "checkpointBytes": 1051507,
+        "ms": 6.641875000000027
+      },
+      "dbBytes": 7536640,
+      "walBytes": 4869872
+    },
+    {
+      "name": "over-limit-at-enable",
+      "enable": {
+        "ok": false,
+        "ms": 3.73112500000002,
+        "errorCode": "payload-too-large",
+        "message": "payload-too-large"
+      },
+      "schemaOk": null,
+      "rejection": {
+        "at": "enable",
+        "revision": null,
+        "errorCode": "payload-too-large",
+        "message": "payload-too-large",
+        "checkpointBytes": 1142888,
+        "ms": 9.138290999999981
+      },
+      "dbBytes": 1347584,
+      "walBytes": 4144752
+    }
+  ]
+}

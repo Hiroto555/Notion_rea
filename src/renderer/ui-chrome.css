@@ -1,0 +1,202 @@
+/* Shell chrome added for the save/recovery entry point and the per-target
+ * save-state disclosure. styles.css is owned by another worker; these rules
+ * only cover the new ui-chrome elements and reuse the existing tokens. */
+
+/* The Electron topbar is a drag region. The new summaries and disclosure
+ * panels are not buttons or inputs, so pointer input would be swallowed by
+ * the drag hit-test unless every surface under the shell-tools group is
+ * explicitly non-draggable. */
+.topbar-shell-tools,
+.topbar-shell-tools details,
+.topbar-shell-tools summary,
+.topbar-shell-tools section,
+.topbar-shell-tools button,
+.topbar-shell-tools input,
+.save-state-menu,
+.save-state-panel,
+.workspace-tools,
+.workspace-tools-body {
+  -webkit-app-region: no-drag;
+}
+
+/* Per-target anomaly chips shown on the closed summary: a compact target +
+ * fixed state label, never raw or unbounded error text. */
+.save-state-alert,
+.workspace-tools-alert {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: var(--panel);
+  color: var(--text);
+  font-size: 11px;
+  line-height: 1;
+  padding: 3px 7px;
+  margin-left: 4px;
+  white-space: nowrap;
+}
+
+.save-state-alert[data-state="conflict"],
+.save-state-alert[data-state="error"],
+.save-state-alert[data-state="blocked"],
+.workspace-tools-alert {
+  border-color: var(--danger);
+  color: var(--danger);
+}
+
+.workspace-tools {
+  position: relative;
+}
+
+.workspace-tools > summary {
+  list-style: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 10px;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  user-select: none;
+}
+
+.workspace-tools > summary::-webkit-details-marker,
+.save-state-menu > summary::-webkit-details-marker {
+  display: none;
+}
+
+.workspace-tools > summary::before {
+  content: "";
+  width: 0;
+  height: 0;
+  border-left: 4px solid transparent;
+  border-right: 4px solid transparent;
+  border-top: 5px solid currentColor;
+  opacity: 0.6;
+  transition: transform 120ms ease;
+}
+
+.workspace-tools[open] > summary::before {
+  transform: rotate(180deg);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .workspace-tools > summary::before {
+    transition: none;
+  }
+}
+
+.workspace-tools > summary:hover {
+  background: var(--hover);
+  color: var(--text);
+}
+
+.workspace-tools-body {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  width: 288px;
+  max-height: min(70vh, 560px);
+  overflow-y: auto;
+  padding: 8px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-lg);
+  z-index: 320;
+}
+
+.workspace-tools-body .inspector-section {
+  padding: 6px 4px;
+  border-bottom: none;
+}
+
+.save-state-menu {
+  position: relative;
+  display: inline-flex;
+}
+
+.save-state-menu > summary {
+  list-style: none;
+  display: inline-flex;
+  cursor: pointer;
+  user-select: none;
+}
+
+.save-state-panel {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  width: 300px;
+  max-height: min(70vh, 480px);
+  overflow-y: auto;
+  padding: 8px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-lg);
+  z-index: 320;
+  font-size: 12px;
+  text-align: left;
+}
+
+.save-state-targets {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.save-state-target {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 6px 8px;
+  border-radius: var(--radius-sm);
+  background: var(--panel);
+  color: var(--text);
+}
+
+.save-state-target-head {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+
+.save-state-target-name {
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.save-state-target-label {
+  color: var(--muted);
+  overflow-wrap: anywhere;
+}
+
+.save-state-target-state {
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.save-state-target[data-state="unknown"] .save-state-target-state,
+.save-state-target[data-state="error"] .save-state-target-state,
+.save-state-target[data-state="conflict"] .save-state-target-state {
+  color: var(--danger);
+  font-weight: 600;
+}
+
+.save-state-target-detail {
+  font-size: 11px;
+  color: var(--muted);
+  overflow-wrap: anywhere;
+}
+
+.menu-page-layout {
+  padding: 4px 8px 8px;
+}

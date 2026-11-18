@@ -94,7 +94,7 @@ export function validDocument(value: unknown): boolean {
 function attributes(value: any, declared: Record<string, unknown>): boolean {
   if (!value || typeof value !== "object" || Array.isArray(value)) return false;
   for (const [key, v] of Object.entries(value)) {
-    if (!(key in declared)) return false;
+    if (!Object.hasOwn(declared, key)) return false;
     if (key === "level") {
       if (!Number.isInteger(v) || Number(v) < 1 || Number(v) > 6) return false;
     } else if (key === "start") {

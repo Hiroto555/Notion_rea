@@ -44,10 +44,10 @@ test("R4 slash heading choice is one Undo step and survives SQLite restart", asy
   await w.keyboard.press("Enter");
   await expect(body.locator("h2")).toHaveCount(1);
   await expect(menu).toHaveCount(0);
-  await w.keyboard.press("Meta+z");
+  await w.keyboard.press(process.platform === "darwin" ? "Meta+z" : "Control+z");
   await expect(body.locator("p").first()).toHaveText("/heading");
   await expect(body.locator("h2")).toHaveCount(0);
-  await w.keyboard.press("Meta+Shift+z");
+  await w.keyboard.press(process.platform === "darwin" ? "Meta+Shift+z" : "Control+Shift+z");
   await expect(body.locator("h2")).toHaveCount(1);
   await w.keyboard.insertText("Heading survives restart");
   await saved(s);
@@ -94,10 +94,10 @@ test("R4 Escape keeps slash text dismissed until input changes; todo conversion 
   await expect(menu.getByRole("option")).toHaveCount(1);
   await w.keyboard.press("Enter");
   await expect(body.locator('[data-type="taskList"]')).toHaveCount(1);
-  await w.keyboard.press("Meta+z");
+  await w.keyboard.press(process.platform === "darwin" ? "Meta+z" : "Control+z");
   await expect(body).toHaveText("/todo");
   await expect(body.locator('[data-type="taskList"]')).toHaveCount(0);
-  await w.keyboard.press("Meta+Shift+z");
+  await w.keyboard.press(process.platform === "darwin" ? "Meta+Shift+z" : "Control+Shift+z");
   await w.keyboard.insertText("Check this task");
   await body.locator('input[type="checkbox"]').check();
   await saved(s);

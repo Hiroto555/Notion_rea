@@ -1,6 +1,13 @@
 import * as fs from "node:fs";
 import { randomUUID } from "node:crypto";
-import { basename, dirname, isAbsolute, join, resolve } from "node:path";
+import { join, posix, win32 } from "node:path";
+import {
+  assertPrivateFilePort,
+  PrivateFilePortUnsupportedError,
+  publishPrivateFile,
+  selectPrivateFilePlatform,
+  type PrivateFilePort,
+} from "../platform/private-file-port";
 
 /** Test seam for fault injection. Production callers must use the native fs. */
 export type JournalFileOperations = Pick<
@@ -25,10 +32,13 @@ export type PendingJournalWriteOptions = {
   operations?: Partial<JournalFileOperations>;
   /** For isolated collision tests only; omitted in production. */
   temporaryId?: () => string;
+  privateFilePort?: PrivateFilePort;
+  /** Test seam; production must omit this override. */
+  platform?: NodeJS.Platform;
 };
 
-/** The staging name is deliberately retained. It is a second hard link to
- * the published inode on success; no failure path deletes an unknown file. */
+/** The staging name is deliberately retained. In the legacy POSIX branch it
+ * is a second hard link to the published inode; no branch deletes unknown files. */
 export type PendingJournalFileResult = { path: string; stagingPath: string };
 
 function ensureSynchronous(result: unknown, name: string): void {
@@ -49,8 +59,9 @@ function sameIdentity(
 
 /**
  * Write a validated journal into a previously nonexistent external path.
- * Publication uses a same-directory hard link, which fails if *any* object
- * already exists at the destination. Staging and destination are never
+ * Legacy POSIX publication uses a same-directory hard link; explicit ports
+ * must provide platform-native private, durable, exclusive publication.
+ * Either route fails if any object exists at the destination. Both names are never
  * automatically removed, even if a failure occurs after publication.
  *
  * The caller must exclude concurrent directory/file mutation. Node's path-
@@ -65,9 +76,11 @@ export function writePendingJournalFile(
   content: string,
   options: PendingJournalWriteOptions,
 ): PendingJournalFileResult {
+  const platform = selectPrivateFilePlatform(options?.platform);
+  const paths = platform === "win32" ? win32 : posix;
   if (
     typeof destination !== "string" ||
-    !isAbsolute(destination) ||
+    !paths.isAbsolute(destination) ||
     destination.includes("\0") ||
     typeof content !== "string" ||
     !options ||
@@ -75,10 +88,9 @@ export function writePendingJournalFile(
     typeof options.checkDestination !== "function"
   )
     throw new Error("Invalid pending journal arguments");
-  const ops: JournalFileOperations = { ...fs, ...options.operations };
-  const path = resolve(destination);
-  const parent = dirname(path);
-  const name = basename(path);
+  const path = paths.resolve(destination);
+  const parent = paths.dirname(path);
+  const name = paths.basename(path);
   if (!name || name === "." || name === "..")
     throw new Error("Invalid pending journal destination");
   const bytes = Buffer.from(content, "utf8");
@@ -87,6 +99,30 @@ export function writePendingJournalFile(
   ensureSynchronous(options.validate(content), "validate");
   ensureSynchronous(options.checkDestination(path), "checkDestination");
 
+  if (options.privateFilePort !== undefined || platform === "win32") {
+    if (options.operations !== undefined)
+      throw new PrivateFilePortUnsupportedError("Private publication cannot mix POSIX operations");
+    assertPrivateFilePort(options.privateFilePort, options.platform);
+    const id = (options.temporaryId ?? randomUUID)();
+    if (typeof id !== "string" || !/^[a-zA-Z0-9-]{1,128}$/.test(id))
+      throw new Error("Invalid journal staging identifier");
+    const stagingPath = paths.join(parent, `.${name}.folio-journal-${id}.tmp`);
+    const expected = Buffer.from(bytes);
+    publishPrivateFile(options.privateFilePort, {
+      path,
+      stagingPath,
+      bytes,
+      beforePublish(readback) {
+        const verified = Buffer.from(readback);
+        if (!verified.equals(expected)) throw new Error("Journal readback differs");
+        ensureSynchronous(options.validate(verified.toString("utf8")), "validate");
+        ensureSynchronous(options.checkDestination(path), "checkDestination");
+      },
+    }, options.platform);
+    return { path, stagingPath };
+  }
+
+  const ops: JournalFileOperations = { ...fs, ...options.operations };
   const directory = ops.lstatSync(parent);
   if (!directory.isDirectory() || directory.isSymbolicLink() || ops.realpathSync(parent) !== parent)
     throw new Error("Journal parent is not a stable canonical directory");

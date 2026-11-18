@@ -1,0 +1,10 @@
+
+ RUN  v3.2.7 <LOCAL_HOME>/Documents/ChatGPT/Folio-lv4-implementation-20261107.3qXBLqRk/integration
+
+ ✓ tests/shared-runtime-connected-final.test.ts (7 tests) 465ms
+
+ Test Files  1 passed (1)
+      Tests  7 passed (7)
+   Start at  19:50:01
+   Duration  1.16s (transform 346ms, setup 0ms, collect 555ms, tests 465ms, environment 0ms, prepare 43ms)
+

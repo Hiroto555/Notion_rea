@@ -4,7 +4,19 @@ import type { Request } from "../shared/types";
  * Enforce the same boundary in main even if a caller constructs another request. */
 export function assertReadOnlyRequest(request: Request): void {
   switch (request.type) {
+    case "recovery:list":
+    case "recovery:status":
+    case "recovery:export":
+    case "recovery:restore":
     case "startup:status":
+    case "desktop:capabilities":
+    case "sync:status":
+    case "sync:connectionStatus":
+    case "sync:restartStatus":
+    case "sync:conflict":
+    case "sync:conflictDecisionStatus":
+    case "sync:conflictCandidate":
+    case "sync:conflictExport":
     case "load":
     case "search":
     case "pageSource":
@@ -26,6 +38,7 @@ export function assertReadOnlyRequest(request: Request): void {
     case "database:resolve":
     case "property:resolve":
     case "migration:resolve":
+    case "pageOrder:preview":
       return;
     default:
       throw new Error(

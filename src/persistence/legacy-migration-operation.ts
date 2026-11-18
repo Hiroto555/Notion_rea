@@ -1,7 +1,8 @@
 import { createHash, randomUUID } from "node:crypto";
-import { DatabaseSync } from "node:sqlite";
+import type { DatabaseSync } from "node:sqlite";
 import {
   lstatSync,
+  existsSync,
   mkdirSync,
   readFileSync,
   readdirSync,
@@ -19,6 +20,9 @@ import {
 import { inspectLegacyRecords } from "./legacy-record-plan";
 import { convertLegacyRecordsInTransaction } from "./record-migration";
 import { createMigrationSnapshot } from "./migration-snapshot";
+import { privatePersistencePort, type PrivatePersistenceOptions } from "../platform/private-persistence";
+import { withNativeSqliteReader } from "./native-sqlite-reader";
+import { startupRetainsNativeLease } from "./startup-connection-owner";
 import { RecordRepository } from "./record-repository";
 import { normalizeDatabaseData } from "../database/model";
 import type { LegacyMigrationIssue } from "../shared/legacy-migration-operation";
@@ -291,7 +295,7 @@ export function resolveLegacyMigration(
   );
 }
 
-export type LegacyMigrationEnvironment = {
+export type LegacyMigrationEnvironment = PrivatePersistenceOptions & {
   /** Both paths come from main's workspace context, never the renderer. */
   assetsPath: string;
   snapshotRoot: string;
@@ -312,6 +316,9 @@ export function commitLegacyMigration(
   if (existing) return existing;
   // Admission is retryable and must not be recorded as a terminal rejection.
   environment.beforeSnapshot?.();
+  const native = privatePersistencePort(
+    environment.nativePrivateFilesystem ? environment : undefined,
+  );
   let snapshotPath: string | undefined;
   try {
     const preview = previewLegacyMigration(store, operation.databasePageId);
@@ -325,23 +332,27 @@ export function commitLegacyMigration(
       );
     if (!isAbsolute(environment.snapshotRoot))
       throw new Error("移行前コピーの保存先が不正です。");
-    mkdirSync(environment.snapshotRoot, { recursive: true });
+    if (native) {
+      if (existsSync(environment.snapshotRoot)) native.inspectDirectory(environment.snapshotRoot);
+      else native.createDirectory(environment.snapshotRoot);
+    } else mkdirSync(environment.snapshotRoot, { recursive: true });
     const snapshotRoot = realpathSync(environment.snapshotRoot);
     snapshotPath = join(snapshotRoot, `legacy-${randomUUID()}`);
     const sourceDatabase = coherentRead(store, () =>
       workspaceFingerprint(store.db),
     );
     const sourceAssets = assetsFingerprint(environment.assetsPath);
-    createMigrationSnapshot(store.db, environment.assetsPath, snapshotPath);
-    const copy = new DatabaseSync(join(snapshotPath, "workspace.sqlite"), {
-      readOnly: true,
-    });
-    let copiedDatabase: string;
-    try {
-      copiedDatabase = workspaceFingerprint(copy);
-    } finally {
-      copy.close();
-    }
+    createMigrationSnapshot(
+      store.db,
+      environment.assetsPath,
+      snapshotPath,
+      native ? { nativePrivateFilesystem: native } : undefined,
+    );
+    const copiedDatabase = withNativeSqliteReader(
+      join(snapshotPath, "workspace.sqlite"),
+      native,
+      workspaceFingerprint,
+    );
     const copiedAssets = assetsFingerprint(join(snapshotPath, "assets"));
     if (sourceDatabase !== copiedDatabase || sourceAssets !== copiedAssets)
       throw new Error(
@@ -382,6 +393,9 @@ export function commitLegacyMigration(
       });
     });
   } catch (error) {
+    // A hidden live snapshot reader retains its native lease and must never be
+    // closed, retried or collapsed into a rejected receipt by this catch.
+    if (startupRetainsNativeLease(error)) throw error;
     // A COMMIT exception may be ambiguous. A durable receipt wins; only a
     // usable, rolled-back connection may record a rejected operation.
     try {

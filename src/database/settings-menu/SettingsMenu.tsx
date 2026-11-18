@@ -10,6 +10,10 @@ import {
   type ReactNode,
 } from "react";
 import { composing } from "../../shared/keyboard";
+import {
+  shouldPreservePointerFocus,
+  type FocusMatchLike,
+} from "../../shared/pointer-focus";
 
 export type SettingsMenuProps = {
   /** Stable hook used by E2E selectors and tests. */
@@ -24,7 +28,26 @@ export type SettingsMenuProps = {
   className?: string;
   panelClassName?: string;
   panelRole?: "group" | "dialog";
+  /**
+   * Opt-in for pointer-opened display menus that must not blur an active raw
+   * property input or Editor. Keyboard and secondary-button activation keep
+   * their normal behavior because the shared helper rejects them.
+   */
+  preserveTextEntryFocus?: boolean;
 };
+
+/**
+ * A display-menu trigger only prevents the primary mousedown default when the
+ * caller opted in and the shared pointer-focus policy matches. Keeping this
+ * decision pure lets Node tests cover the default-off contract without a DOM.
+ */
+export function shouldPreserveTriggerTextEntryFocus(
+  preserveTextEntryFocus: boolean,
+  button: number,
+  active: FocusMatchLike | null,
+): boolean {
+  return preserveTextEntryFocus && shouldPreservePointerFocus(button, active);
+}
 
 /** A disclosure popover that stays mounted while closed. Escape closes the
  * panel and returns focus to its trigger; clicking outside closes it without
@@ -38,6 +61,7 @@ export function SettingsMenu({
   className,
   panelClassName,
   panelRole = "group",
+  preserveTextEntryFocus = false,
 }: SettingsMenuProps) {
   const [open, setOpen] = useState(false);
   const panelId = useId();
@@ -134,6 +158,20 @@ export function SettingsMenu({
         aria-expanded={open}
         aria-controls={panelId}
         data-settings-menu-trigger={name}
+        data-preserve-text-entry-focus={
+          preserveTextEntryFocus ? "true" : undefined
+        }
+        onMouseDown={(event) => {
+          if (
+            typeof document !== "undefined" &&
+            shouldPreserveTriggerTextEntryFocus(
+              preserveTextEntryFocus,
+              event.button,
+              document.activeElement,
+            )
+          )
+            event.preventDefault();
+        }}
         onClick={() => setOpen((current) => !current)}
       >
         {trigger}

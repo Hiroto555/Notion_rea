@@ -1,10 +1,14 @@
+import {startupRetainsNativeLease} from "../persistence/startup-connection-owner";
 import fs from "node:fs";
+import { randomUUID } from "node:crypto";
 import type { Stats } from "node:fs";
 import { basename, dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
 import { assertOutsideFolioData } from "../persistence/output-path";
 import { syncPath } from "../persistence/durable-file";
 import { verifyFullBackup } from "../persistence/full-backup-verify";
 import type { VerifiedWorkspaceBackup } from "../shared/workspace-backup";
+import { privatePersistencePort, type NativePrivateIdentity, type NativePrivateTree,
+  type NativePrivateFilesystemPort } from "../platform/private-persistence";
 
 /** Names produced by WorkspaceBackupService.create(prefix) and the page-order
  * repair backup call. The legacy `workspace-<time>` name has no UUID and is
@@ -19,17 +23,31 @@ type WorkspaceRoot = {
   backups: string;
   workspaceStat: Stats;
   backupsStat: Stats;
+  nativeWorkspace?: NativePrivateIdentity;
+  nativeBackups?: NativePrivateIdentity;
 };
 
 type SourceRef = {
   name: string;
   path: string;
   stat: Stats;
+  native?: NativePrivateIdentity;
 };
 
 type Source = SourceRef & { verified: VerifiedWorkspaceBackup };
 
-type ExternalParent = { path: string; stat: Stats };
+type ExternalParent = { path: string; stat: Stats; native?: NativePrivateIdentity };
+
+function assertNativePin(expected: NativePrivateIdentity, actual: NativePrivateIdentity): void {
+  if (expected.path !== actual.path || expected.fileId.toLowerCase() !== actual.fileId.toLowerCase() ||
+    expected.volumeId.toLowerCase() !== actual.volumeId.toLowerCase())
+    throw new Error("native backup directory identity changed");
+}
+function assertNativeTree(expected: NativePrivateTree, actual: NativePrivateTree, path = expected.path): void {
+  assertNativePin({ ...expected, path }, actual);
+  if (expected.sha256 !== actual.sha256 || expected.entries !== actual.entries || expected.bytes !== actual.bytes)
+    throw new Error("native backup tree changed");
+}
 
 function lstatIfExists(path: string): Stats | undefined {
   try {
@@ -81,7 +99,9 @@ function readWorkspaceRoot(workspace: string): WorkspaceRoot {
   if (dirname(backups) !== real || basename(backups) !== "backups")
     throw new Error("バックアップフォルダーがワークスペース直下にありません。");
   const backupsStat = fs.statSync(backups);
-  return { workspace: real, backups, workspaceStat, backupsStat };
+  const native = privatePersistencePort();
+  return { workspace: real, backups, workspaceStat, backupsStat,
+    nativeWorkspace: native?.inspectDirectory(real), nativeBackups: native?.inspectDirectory(backups) };
 }
 
 function readSource(root: WorkspaceRoot, source: string): SourceRef {
@@ -98,13 +118,13 @@ function readSource(root: WorkspaceRoot, source: string): SourceRef {
   if (!isGeneratedName(name))
     throw new Error("Folioが生成した完全バックアップの名前ではありません。");
   const stat = fs.statSync(real);
+  const native = privatePersistencePort();
   if (
     !stat.isDirectory() ||
-    stat.dev !== requestedInfo.dev ||
-    stat.ino !== requestedInfo.ino
+    (!native && (stat.dev !== requestedInfo.dev || stat.ino !== requestedInfo.ino))
   )
     throw new Error("バックアップ元が検査中に変更されました。");
-  return { name, path: join(root.backups, name), stat };
+  return { name, path: join(root.backups, name), stat, native: native?.inspectDirectory(real) };
 }
 
 function verifySource(root: WorkspaceRoot, source: string): Source {
@@ -174,7 +194,11 @@ function assertRetention(root: WorkspaceRoot, sourceName: string, source: Verifi
       const other = verifyFullBackup(path);
       if (Date.parse(other.manifest.createdAt) > sourceTime) return;
       anotherValid = true;
-    } catch { /* Only a fully verified backup can protect this move. */ }
+    } catch (error) {
+      // A bad generation is skippable; an unconfirmed native SQLite owner
+      // must reach Main's lifecycle and retain every protector.
+      if (startupRetainsNativeLease(error)) throw error;
+    }
   }
   if (names.length > MAX_GENERATION_CHECKS) throw new Error("世代の検証上限内で新しい完全バックアップを確認できません。");
   if (!anotherValid) throw new Error("最後の有効な完全バックアップは移動できません。");
@@ -197,10 +221,14 @@ function readExternalParent(
     throw new Error("移動先が安全なディレクトリではありません。");
   if (inside(root.workspace, real))
     throw new Error("移動先はワークスペースの外側を指定してください。");
-  if (sameNode(stat, root.workspaceStat) || sameNode(stat, root.backupsStat))
+  const native = privatePersistencePort();
+  const pin = native?.inspectDirectory(real);
+  if (native ? [root.nativeWorkspace!, root.nativeBackups!].some(p =>
+    p.fileId.toLowerCase() === pin!.fileId.toLowerCase() && p.volumeId.toLowerCase() === pin!.volumeId.toLowerCase()) :
+    sameNode(stat, root.workspaceStat) || sameNode(stat, root.backupsStat))
     throw new Error("移動先がワークスペースまたはバックアップフォルダーを指しています。");
   assertOutsideFolioData(real);
-  return { path: real, stat };
+  return { path: real, stat, native: pin };
 }
 
 function createWrapper(external: ExternalParent): string {
@@ -334,7 +362,15 @@ export function planBackupArchive(
   isPinned: (canonical: string) => boolean,
 ): { fingerprint: string; name: string; bytes: number } {
   const root = readWorkspaceRoot(workspace);
+  const native = privatePersistencePort();
+  const initialTree = native?.inspectTree?.(resolve(source));
   const resolved = verifySource(root, source);
+  if (native) {
+    assertNativePin(root.nativeWorkspace!, native.inspectDirectory(root.workspace));
+    assertNativePin(root.nativeBackups!, native.inspectDirectory(root.backups));
+    assertNativePin(resolved.native!, native.inspectDirectory(resolved.path));
+    if (initialTree) assertNativeTree(initialTree, native.inspectTree!(resolved.path));
+  }
   assertNotPinned(isPinned, resolved.path);
   assertRetention(root, resolved.name, resolved.verified);
   return {
@@ -342,6 +378,61 @@ export function planBackupArchive(
     name: resolved.name,
     bytes: backupBytes(resolved.verified),
   };
+}
+
+function archiveNativeBackup(
+  native: NativePrivateFilesystemPort, workspace: string, source: string, externalParent: string,
+  expectedFingerprint: string, isPinned: (canonical: string) => boolean,
+): { destination: string } {
+  if (!native.inspectTree || !native.renameDirectoryNew) throw new Error("native directory archive capability required");
+  if (typeof expectedFingerprint !== "string" || !FINGERPRINT.test(expectedFingerprint))
+    throw new Error("期待するバックアップfingerprintが不正です。");
+  const root = readWorkspaceRoot(workspace);
+  const ref = readSource(root, source);
+  const tree = native.inspectTree(ref.path);
+  const verified = verifyFullBackup(ref.path);
+  assertNativeTree(tree, native.inspectTree(ref.path));
+  assertNotPinned(isPinned, ref.path);
+  if (verified.fingerprint !== expectedFingerprint) throw new Error("バックアップが計画後に変更されています。");
+  assertRetention(root, ref.name, verified);
+  const external = readExternalParent(root, externalParent);
+  if (external.native!.volumeId.toLowerCase() !== tree.volumeId.toLowerCase()) throw exdevError(undefined);
+  const pins = [root.nativeWorkspace!, root.nativeBackups!, ref.native!, external.native!];
+  for (const pin of pins) assertNativePin(pin, native.inspectDirectory(pin.path));
+  const wrapper = join(external.path, `${ARCHIVE_PREFIX}${Date.now()}-${randomUUID()}`);
+  const wrapperPin = native.createDirectory(wrapper);
+  const destination = join(wrapper, ref.name);
+  let dispatched = false;
+  try {
+    native.renameDirectoryNew(ref.path, destination, tree, phase => {
+      for (const pin of [root.nativeWorkspace!, root.nativeBackups!, external.native!, wrapperPin])
+        assertNativePin(pin, native.inspectDirectory(pin.path));
+      assertOutsideFolioData(external.path);
+      if (inside(root.workspace, external.path)) throw new Error("unsafe archive destination");
+      assertNotPinned(isPinned, ref.path);
+      if (phase === "success") {
+        assertNativeTree(tree, native.inspectTree!(destination), destination);
+        if (verifyFullBackup(destination).fingerprint !== expectedFingerprint) throw new Error("moved backup fingerprint changed");
+        assertNativeTree(tree, native.inspectTree!(destination), destination);
+        return; // The source name has vanished; never re-adopt it here.
+      }
+      assertNativePin(ref.native!, native.inspectDirectory(ref.path));
+      assertRetention(root, ref.name, verified);
+      assertNativeTree(tree, native.inspectTree!(ref.path));
+      if (verifyFullBackup(ref.path).fingerprint !== expectedFingerprint) throw new Error("backup fingerprint changed");
+      assertNativeTree(tree, native.inspectTree!(ref.path));
+      if (fs.readdirSync(wrapper).length !== 0 || lstatIfExists(destination)) throw new Error("archive destination collision");
+      assertNativePin(wrapperPin, native.inspectDirectory(wrapper));
+      if (phase === "dispatch") dispatched = true;
+    });
+    assertNativeTree(tree, native.inspectTree(destination), destination);
+    if (verifyFullBackup(destination).fingerprint !== expectedFingerprint) throw new Error("moved backup fingerprint changed");
+    return { destination: wrapper };
+  } catch (error) {
+    // No directory delete port exists. Even an empty wrapper remains evidence.
+    if (dispatched) throw new Error(`バックアップ移動済み/UNKNOWN。保持先: ${wrapper}。元へ戻していません。`, { cause: error });
+    throw new Error(`バックアップ退避停止。作業フォルダーを保持: ${wrapper}`, { cause: error });
+  }
 }
 
 /**
@@ -367,6 +458,8 @@ export function archiveBackup(
   expectedFingerprint: string,
   isPinned: (canonical: string) => boolean,
 ): { destination: string } {
+  const native = privatePersistencePort();
+  if (native) return archiveNativeBackup(native, workspace, source, externalParent, expectedFingerprint, isPinned);
   if (
     typeof expectedFingerprint !== "string" ||
     !FINGERPRINT.test(expectedFingerprint)

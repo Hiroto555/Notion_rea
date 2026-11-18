@@ -1,0 +1,518 @@
+{
+  "model": "opencode-go/deepseek-v4.1-flash",
+  "variant": "low",
+  "dispatches": 39,
+  "uniqueSessions": 37,
+  "observedPeakCliProcesses": 24,
+  "providerHardLimit": "NOT_VERIFIED",
+  "uniqueStepFinishes": 626,
+  "reportedTokenFields": {
+    "total": 29110991,
+    "input": 2429728,
+    "output": 266650,
+    "reasoning": 621845
+  },
+  "reportedCacheTokens": {
+    "write": 0,
+    "read": 25792768
+  },
+  "usageMeaning": "CLI reported tokens, deduplicated by session/step; not money, quota, or actual provider concurrency",
+  "timedOutJobs": [
+    "pilot-authority",
+    "pilot-client-tests",
+    "review-boundary-final",
+    "review-text-client-final"
+  ],
+  "toolCalls": {
+    "read": 926,
+    "grep": 154,
+    "glob": 192,
+    "write": 53,
+    "edit": 70,
+    "bash": 2
+  },
+  "completedOutOfOwnershipWrites": [
+    {
+      "id": "pilot-client-tests",
+      "path": "text-authority.mjs",
+      "tool": "write"
+    },
+    {
+      "id": "pilot-client-tests",
+      "path": "text-authority.mjs",
+      "tool": "edit"
+    },
+    {
+      "id": "pilot-client-tests",
+      "path": "text-authority.mjs",
+      "tool": "edit"
+    },
+    {
+      "id": "pilot-client-tests",
+      "path": "text-authority.mjs",
+      "tool": "edit"
+    },
+    {
+      "id": "pilot-client-tests",
+      "path": "text-authority.mjs",
+      "tool": "edit"
+    },
+    {
+      "id": "pilot-client-tests",
+      "path": "text-authority.mjs",
+      "tool": "edit"
+    },
+    {
+      "id": "pilot-client-tests",
+      "path": "text-authority.mjs",
+      "tool": "edit"
+    },
+    {
+      "id": "pilot-client-tests",
+      "path": "text-client.mjs",
+      "tool": "write"
+    },
+    {
+      "id": "pilot-client-tests",
+      "path": "tests/text-pilot.test.mjs",
+      "tool": "write"
+    },
+    {
+      "id": "pilot-client-tests",
+      "path": "tests/text-pilot.test.mjs",
+      "tool": "edit"
+    },
+    {
+      "id": "pilot-client-tests",
+      "path": "tests/text-pilot.test.mjs",
+      "tool": "edit"
+    },
+    {
+      "id": "pilot-client-tests",
+      "path": "tests/text-pilot.test.mjs",
+      "tool": "edit"
+    },
+    {
+      "id": "pilot-client-tests",
+      "path": "tests/text-pilot.test.mjs",
+      "tool": "edit"
+    },
+    {
+      "id": "pilot-client-tests",
+      "path": "tests/text-pilot.test.mjs",
+      "tool": "edit"
+    },
+    {
+      "id": "pilot-client-tests",
+      "path": "tests/text-pilot.test.mjs",
+      "tool": "edit"
+    },
+    {
+      "id": "pilot-client-tests",
+      "path": "tests/text-pilot.test.mjs",
+      "tool": "edit"
+    },
+    {
+      "id": "pilot-client-tests",
+      "path": "tests/text-pilot.test.mjs",
+      "tool": "edit"
+    },
+    {
+      "id": "pilot-client-tests",
+      "path": "text-authority.mjs",
+      "tool": "edit"
+    }
+  ],
+  "jobs": [
+    {
+      "id": "adapter-b",
+      "state": "finished",
+      "exit": 0,
+      "timedOut": false,
+      "seconds": 482.1,
+      "owned": "adapters/b.mjs",
+      "ownedArtifactPresent": true,
+      "reportPresent": true
+    },
+    {
+      "id": "adapter-c",
+      "state": "finished",
+      "exit": 0,
+      "timedOut": false,
+      "seconds": 209.47,
+      "owned": "adapters/c.mjs",
+      "ownedArtifactPresent": true,
+      "reportPresent": true
+    },
+    {
+      "id": "fixture-rich",
+      "state": "finished",
+      "exit": 0,
+      "timedOut": false,
+      "seconds": 172.75,
+      "owned": "fixtures/rich.mjs",
+      "ownedArtifactPresent": true,
+      "reportPresent": true
+    },
+    {
+      "id": "test-roundtrip",
+      "state": "finished",
+      "exit": 0,
+      "timedOut": false,
+      "seconds": 241.71,
+      "owned": "tests/roundtrip.test.mjs",
+      "ownedArtifactPresent": true,
+      "reportPresent": true
+    },
+    {
+      "id": "test-concurrency",
+      "state": "finished",
+      "exit": 0,
+      "timedOut": false,
+      "seconds": 178.64,
+      "owned": "tests/concurrency.test.mjs",
+      "ownedArtifactPresent": true,
+      "reportPresent": true
+    },
+    {
+      "id": "test-move",
+      "state": "finished",
+      "exit": 0,
+      "timedOut": false,
+      "seconds": 241.53,
+      "owned": "tests/move.test.mjs",
+      "ownedArtifactPresent": true,
+      "reportPresent": true
+    },
+    {
+      "id": "test-undo",
+      "state": "finished",
+      "exit": 0,
+      "timedOut": false,
+      "seconds": 228.11,
+      "owned": "tests/undo.test.mjs",
+      "ownedArtifactPresent": true,
+      "reportPresent": true
+    },
+    {
+      "id": "test-tables",
+      "state": "finished",
+      "exit": 0,
+      "timedOut": false,
+      "seconds": 241.4,
+      "owned": "tests/tables.test.mjs",
+      "ownedArtifactPresent": true,
+      "reportPresent": true
+    },
+    {
+      "id": "test-isolation",
+      "state": "finished",
+      "exit": 0,
+      "timedOut": false,
+      "seconds": 193.89,
+      "owned": "tests/isolation.test.mjs",
+      "ownedArtifactPresent": true,
+      "reportPresent": true
+    },
+    {
+      "id": "raw-parser",
+      "state": "finished",
+      "exit": 0,
+      "timedOut": false,
+      "seconds": 226.93,
+      "owned": "candidate/raw-json.ts",
+      "ownedArtifactPresent": true,
+      "reportPresent": true
+    },
+    {
+      "id": "review-format",
+      "state": "finished",
+      "exit": 0,
+      "timedOut": false,
+      "seconds": 178.55,
+      "owned": "REPORT.md",
+      "ownedArtifactPresent": true,
+      "reportPresent": true
+    },
+    {
+      "id": "review-editor",
+      "state": "finished",
+      "exit": 0,
+      "timedOut": false,
+      "seconds": 282.89,
+      "owned": "REPORT.md",
+      "ownedArtifactPresent": true,
+      "reportPresent": true
+    },
+    {
+      "id": "review-schema",
+      "state": "finished",
+      "exit": 0,
+      "timedOut": false,
+      "seconds": 295.6,
+      "owned": "REPORT.md",
+      "ownedArtifactPresent": true,
+      "reportPresent": true
+    },
+    {
+      "id": "review-auth",
+      "state": "finished",
+      "exit": 0,
+      "timedOut": false,
+      "seconds": 164.83,
+      "owned": "REPORT.md",
+      "ownedArtifactPresent": true,
+      "reportPresent": true
+    },
+    {
+      "id": "review-durable",
+      "state": "finished",
+      "exit": 0,
+      "timedOut": false,
+      "seconds": 237.09,
+      "owned": "REPORT.md",
+      "ownedArtifactPresent": true,
+      "reportPresent": true
+    },
+    {
+      "id": "review-move",
+      "state": "finished",
+      "exit": 0,
+      "timedOut": false,
+      "seconds": 249.63,
+      "owned": "REPORT.md",
+      "ownedArtifactPresent": true,
+      "reportPresent": true
+    },
+    {
+      "id": "review-undo",
+      "state": "finished",
+      "exit": 0,
+      "timedOut": false,
+      "seconds": 217.13,
+      "owned": "REPORT.md",
+      "ownedArtifactPresent": true,
+      "reportPresent": true
+    },
+    {
+      "id": "review-restore",
+      "state": "finished",
+      "exit": 0,
+      "timedOut": false,
+      "seconds": 271.19,
+      "owned": "REPORT.md",
+      "ownedArtifactPresent": true,
+      "reportPresent": true
+    },
+    {
+      "id": "review-resources",
+      "state": "finished",
+      "exit": 0,
+      "timedOut": false,
+      "seconds": 216.85,
+      "owned": "REPORT.md",
+      "ownedArtifactPresent": true,
+      "reportPresent": true
+    },
+    {
+      "id": "review-ipc",
+      "state": "finished",
+      "exit": 0,
+      "timedOut": false,
+      "seconds": 192.32,
+      "owned": "REPORT.md",
+      "ownedArtifactPresent": true,
+      "reportPresent": true
+    },
+    {
+      "id": "review-selection",
+      "state": "finished",
+      "exit": 0,
+      "timedOut": false,
+      "seconds": 223.87,
+      "owned": "REPORT.md",
+      "ownedArtifactPresent": true,
+      "reportPresent": true
+    },
+    {
+      "id": "test-identity",
+      "state": "finished",
+      "exit": 0,
+      "timedOut": false,
+      "seconds": 264.27,
+      "owned": "tests/identity.test.mjs",
+      "ownedArtifactPresent": true,
+      "reportPresent": true
+    },
+    {
+      "id": "review-tests",
+      "state": "finished",
+      "exit": 0,
+      "timedOut": false,
+      "seconds": 249.72,
+      "owned": "REPORT.md",
+      "ownedArtifactPresent": true,
+      "reportPresent": true
+    },
+    {
+      "id": "review-deps",
+      "state": "finished",
+      "exit": 0,
+      "timedOut": false,
+      "seconds": 181.52,
+      "owned": "REPORT.md",
+      "ownedArtifactPresent": true,
+      "reportPresent": true
+    },
+    {
+      "id": "review-new-store",
+      "state": "finished",
+      "exit": 0,
+      "timedOut": false,
+      "seconds": 308.36,
+      "owned": "REPORT.md",
+      "ownedArtifactPresent": true,
+      "reportPresent": true
+    },
+    {
+      "id": "review-new-port",
+      "state": "finished",
+      "exit": 0,
+      "timedOut": false,
+      "seconds": 313.06,
+      "owned": "REPORT.md",
+      "ownedArtifactPresent": true,
+      "reportPresent": true
+    },
+    {
+      "id": "review-new-input",
+      "state": "finished",
+      "exit": 0,
+      "timedOut": false,
+      "seconds": 428.56,
+      "owned": "REPORT.md",
+      "ownedArtifactPresent": true,
+      "reportPresent": true
+    },
+    {
+      "id": "review-new-tests",
+      "state": "finished",
+      "exit": 0,
+      "timedOut": false,
+      "seconds": 318.22,
+      "owned": "REPORT.md",
+      "ownedArtifactPresent": true,
+      "reportPresent": true
+    },
+    {
+      "id": "pilot-authority",
+      "state": "finished",
+      "exit": -15,
+      "timedOut": true,
+      "seconds": 900.07,
+      "owned": "text-authority.mjs",
+      "ownedArtifactPresent": true,
+      "reportPresent": true
+    },
+    {
+      "id": "pilot-client",
+      "state": "finished",
+      "exit": 0,
+      "timedOut": false,
+      "seconds": 600.94,
+      "owned": "text-client.mjs",
+      "ownedArtifactPresent": true,
+      "reportPresent": true
+    },
+    {
+      "id": "pilot-tests",
+      "state": "finished",
+      "exit": 0,
+      "timedOut": false,
+      "seconds": 257.73,
+      "owned": "tests/text-authority.test.mjs",
+      "ownedArtifactPresent": true,
+      "reportPresent": true
+    },
+    {
+      "id": "pilot-client-tests",
+      "state": "finished",
+      "exit": -15,
+      "timedOut": true,
+      "seconds": 900.06,
+      "owned": "tests/text-client.test.mjs",
+      "ownedArtifactPresent": false,
+      "reportPresent": true
+    },
+    {
+      "id": "review-header-final",
+      "state": "finished",
+      "exit": 0,
+      "timedOut": false,
+      "seconds": 461.59,
+      "owned": "REPORT.md",
+      "ownedArtifactPresent": true,
+      "reportPresent": true
+    },
+    {
+      "id": "review-boundary-final",
+      "state": "finished",
+      "exit": -15,
+      "timedOut": true,
+      "seconds": 600.03,
+      "owned": "REPORT.md",
+      "ownedArtifactPresent": false,
+      "reportPresent": false
+    },
+    {
+      "id": "review-text-authority",
+      "state": "finished",
+      "exit": 0,
+      "timedOut": false,
+      "seconds": 403.33,
+      "owned": "REPORT.md",
+      "ownedArtifactPresent": true,
+      "reportPresent": true
+    },
+    {
+      "id": "review-text-client",
+      "state": "finished",
+      "exit": 0,
+      "timedOut": false,
+      "seconds": 416.67,
+      "owned": "REPORT.md",
+      "ownedArtifactPresent": false,
+      "reportPresent": false
+    },
+    {
+      "id": "review-pilot-tests",
+      "state": "finished",
+      "exit": 0,
+      "timedOut": false,
+      "seconds": 165.65,
+      "owned": "REPORT.md",
+      "ownedArtifactPresent": true,
+      "reportPresent": true
+    },
+    {
+      "id": "review-text-authority-final",
+      "state": "finished",
+      "exit": 0,
+      "timedOut": false,
+      "seconds": 269.78,
+      "owned": "REPORT.md",
+      "ownedArtifactPresent": true,
+      "reportPresent": true
+    },
+    {
+      "id": "review-text-client-final",
+      "state": "finished",
+      "exit": -15,
+      "timedOut": true,
+      "seconds": 300.03,
+      "owned": "REPORT.md",
+      "ownedArtifactPresent": false,
+      "reportPresent": false
+    }
+  ]
+}

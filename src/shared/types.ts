@@ -1,5 +1,7 @@
+import { archiveTargetSchema, archiveCursorSchema } from "./conflict-recovery";
 import type { PageWidth } from "./page-layout";
 import { z } from "zod";
+import { syncConnectionInputSchema } from "./sync-management";
 import { crashRecoverySnapshotSchema } from "./crash-recovery";
 import { migrationPreviewRequestSchema, migrationCommitRequestSchema, migrationResolveRequestSchema } from "./legacy-migration-operation";
 import { propertyPreviewRequestSchema, propertyCommitRequestSchema, propertyResolveRequestSchema } from "./property-operation";
@@ -376,7 +378,41 @@ const managedGrowthLimitsSchema = z.object({
   maxDatabaseBytes: byteLimit, maxAssetBytes: byteLimit, maxBackupBytes: byteLimit, maxReceiptRows: byteLimit,
 }).strict();
 export const requestSchema = z.discriminatedUnion("type", [
+  z.object({type:z.literal("recovery:list"),cursor:archiveCursorSchema.optional()}).strict(),
+  z.object({type:z.literal("recovery:status"),operationId:z.string().uuid().optional()}).strict(),
+  z.object({type:z.literal("recovery:export"),operationId:z.string().uuid(),target:archiveTargetSchema,mode:z.enum(["metadata-only","complete-bundle"])}).strict(),
+  z.object({type:z.literal("recovery:restore"),operationId:z.string().uuid(),target:archiveTargetSchema}).strict(),
+  z.object({type: z.literal("sync:status")}).strict(),
+  z.object({type: z.literal("sync:connectionStatus")}).strict(),
+  z.object({type: z.literal("sync:retentionStatus")}).strict(),
+  z.object({type: z.literal("sync:connectionConfigure"), input: syncConnectionInputSchema}).strict(),
+  z.object({type: z.literal("sync:connectionDisable"), requestId: z.string().uuid(), expectedRevision: z.string().uuid().nullable()}).strict(),
+  z.object({type: z.literal("sync:connectionResolve"), requestId: z.string().uuid()}).strict(),
+  z.object({type: z.literal("sync:transferInventory"), cursor: z.string().max(400).optional()}).strict(),
+  z.object({type: z.literal("sync:transferPlan"), entryId: z.string().min(1).max(300)}).strict(),
+  z.object({type: z.literal("sync:transferRelease"), operationId: z.string().uuid()}).strict(),
+  z.object({type: z.literal("sync:transferResolve"), operationId: z.string().uuid()}).strict(),
+  z.object({type: z.literal("sync:run")}).strict(),
+  z.object({type: z.literal("sync:restartStatus")}).strict(),
+  z.object({type: z.literal("sync:restartRequest")}).strict(),
+  z.object({type: z.literal("sync:restartCancel"), reservationId:z.string().uuid().optional()}).strict(),
+  z.object({type: z.literal("sync:conflict")}).strict(),
+  z.object({type: z.literal("sync:conflictDecisionStatus")}).strict(),
+  z.object({type: z.literal("sync:conflictPreview"), choice: z.enum(["local", "remote"]),
+    operationId: z.string().min(1).max(128), expectedLocalHash: z.string().regex(/^[a-f0-9]{64}$/),
+    expectedRemoteRevision: z.number().int().nonnegative().safe(), expectedRemoteHash: z.string().regex(/^[a-f0-9]{64}$/).nullable()}).strict(),
+  z.object({type: z.literal("sync:conflictConfirm"), previewId: z.string().uuid()}).strict(),
+  z.object({type: z.literal("sync:conflictCancel"), decisionId: z.string().uuid()}).strict(),
+  z.object({type: z.literal("sync:conflictCandidate"), operationId: z.string().min(1).max(128),
+    side: z.enum(["local", "remote"]), expectedRevision: z.number().int().nonnegative().safe(),
+    expectedCheckpointHash: z.string().regex(/^[a-f0-9]{64}$/).nullable()}).strict(),
+  z.object({type: z.literal("sync:conflictExport"), operationId: z.string().min(1).max(128),
+    side: z.enum(["local", "remote"]), expectedRevision: z.number().int().nonnegative().safe(),
+    expectedCheckpointHash: z.string().regex(/^[a-f0-9]{64}$/).nullable()}).strict(),
+  z.object({ type: z.literal("pageOrder:preview") }).strict(),
+  z.object({ type: z.literal("pageOrder:apply"), sourceFingerprint: z.string().regex(/^[a-f0-9]{64}$/) }).strict(),
   z.object({type:z.literal("startup:status")}).strict(),
+  z.object({type:z.literal("desktop:capabilities")}).strict(),
   z.object({type: z.literal("storage:readLimits")}).strict(),
   z.object({type: z.literal("storage:applyLimits"), expectedRevision: z.string().uuid().nullable(), configured: managedGrowthLimitsSchema}).strict(),
   z.object({type: z.literal("storage:pressure")}).strict(),
@@ -388,7 +424,9 @@ export const requestSchema = z.discriminatedUnion("type", [
   z.object({type: z.literal("storage:rawSalvage")}).strict(),
   z.object({type: z.literal("workspaceBackup:release")}).strict(),
   z.object({type: z.literal("recovery:read")}).strict(),
-  z.object({type: z.literal("recovery:write"), expectedGeneration: z.number().int().nonnegative().safe(), snapshot: crashRecoverySnapshotSchema}).strict(),
+  // Recovery imports the operation schemas in this module. Defer this edge
+  // so either entry order (including the bundled main entry) is safe.
+  z.object({type: z.literal("recovery:write"), expectedGeneration: z.number().int().nonnegative().safe(), snapshot: z.lazy(() => crashRecoverySnapshotSchema)}).strict(),
   z.object({type: z.literal("recovery:copy"), recoveryId: z.string().regex(/^[a-zA-Z0-9:_-]{1,200}$/),
     input: z.object({title: z.string().max(500), doc: z.custom<Doc>(isDocument).optional(), sourcePageId: z.string().max(500).optional(), payload: z.unknown()}).strict()}).strict(),
   migrationPreviewRequestSchema, migrationCommitRequestSchema, migrationResolveRequestSchema,
@@ -583,7 +621,9 @@ export const requestSchema = z.discriminatedUnion("type", [
 ]);
 export type Request = z.infer<typeof requestSchema>;
 export interface FolioAPI {
+  shared?:import("./shared-runtime-ipc").SharedRuntimeAPI;
   request<T = unknown>(request: Request): Promise<T>;
+  requestDiagnostic(request: Request): Promise<unknown>;
 }
 declare global {
   interface Window {

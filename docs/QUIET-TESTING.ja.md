@@ -4,6 +4,8 @@
 
 ## コマンド
 
+2026-11-08追記：Linux GUIの実行先を[GitHub Actionsの仮想画面](lv4/GUI-LINUX-CI.ja.md)へ分離した。`npm run test:e2e:linux-ci`はGitHub Actions/Linux/Xvfbの検査後、既存のbatch入口を使う専用launcher。macOSや通常のローカル環境では起動前に拒否する。Mac/OS固有は別の受入枠で、このMacでの実行許可は追加しない。
+
 | コマンド | 動作 |
 | --- | --- |
 | `npm run verify:quiet` | 型検査 → Vitest（2 workers）→ build。最初の失敗で停止。GUI なし。 |
@@ -27,6 +29,8 @@ CLI 引数は配列のまま子プロセスへ渡し、シェル文字列に連�
 `--list` と `--ui` / `--ui-host` / `--ui-port` / `--debug` / `--headed` / `--reporter` の併用は、引数順序に関係なく拒否します。Playwrightでは UI モードが list モードより先に選択されるためです。`PWTEST_WATCH` または `PWDEBUG` が設定された環境での既定 dry-run も拒否します。dry-run 子プロセスには、親に残っている opt-in を引き継ぎません。
 
 ## 対象外
+
+2026-11-08追記：別ホストMac H1用に、明示batch限定の `--mac-acceptance-plan PATH` 経路を追加した。実OS identityの登録guardがこのMacを拒否し、固定suite・一時data/vault・外部watchdogへ接続する。通常のquietコマンドからは起動しない。今回この経路のGUI実行はNOT_RUNで、起動前拒否と監視はNodeで検証した。[実装・使用条件](lv4/QUIET-RESIDUAL-EXECUTION.ja.md)を参照する。
 
 `scripts/r9-screenshots.mjs`、`scripts/r8-screenshots.mjs`、各 demo/verify スクリプトなど、このゲートを通らない standalone スクリプトは対象外です。これらはユーザーが GUI 実行を明示的に許可した後でだけ実行してください。
 

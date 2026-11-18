@@ -146,26 +146,44 @@ test("held record ACK retains later input across close, another record and reope
     await openR4Database(window);
     await openR4Record(window);
     await app.evaluate(({ ipcMain }, pageId) => {
-      const ipc = ipcMain as any,
-        original = ipc._invokeHandlers.get("folio:request");
+      const ipc = ipcMain as any;
       const gate: any = ((globalThis as any).r4Ack = {
         requests: [],
         held: false,
       });
-      ipc.removeHandler("folio:request");
-      ipc.handle("folio:request", async (event: any, request: any) => {
-        const result = await original(event, request);
-        if (request.type === "save:commit") {
-          gate.requests.push(request.operation);
-          if (request.operation.pageId === pageId && !gate.held) {
-            gate.held = true;
-            await new Promise<void>((release) => {
-              gate.release = release;
-            });
+      const unwrap = (result: any) =>
+        result &&
+        result.tag === "folio-request-result" &&
+        result.ok === true &&
+        result.valueSlot &&
+        result.valueSlot.present === true
+          ? result.valueSlot.value
+          : result;
+      for (const channel of [
+        "folio:request",
+        "folio:request:diagnostic-v1",
+      ]) {
+        const original = ipc._invokeHandlers.get(channel);
+        if (!original) continue;
+        ipc.removeHandler(channel);
+        ipc.handle(channel, async (event: any, request: any) => {
+          const result = await original(event, request);
+          if (request.type === "save:commit") {
+            gate.requests.push(request.operation);
+            if (
+              request.operation.pageId === pageId &&
+              !gate.held &&
+              unwrap(result)?.status === "applied"
+            ) {
+              gate.held = true;
+              await new Promise<void>((release) => {
+                gate.release = release;
+              });
+            }
           }
-        }
-        return result;
-      });
+          return result;
+        });
+      }
     }, data.first.pageId);
     await window.getByLabel("レコードのタイトル").fill("R4 first ACK held");
     await expect
@@ -223,29 +241,52 @@ test("lost post-COMMIT ACK resolves from receipt without duplicate application a
     await r4Saved(window);
     const original = await readR4Record(window, data.first.pageId);
     await app.evaluate(({ ipcMain }, pageId) => {
-      const ipc = ipcMain as any,
-        handler = ipc._invokeHandlers.get("folio:request");
+      const ipc = ipcMain as any;
       const capture: any = ((globalThis as any).r4LostAck = {
         commits: [],
         resolves: 0,
+        injected: 0,
+        channel: null,
       });
-      ipc.removeHandler("folio:request");
-      ipc.handle("folio:request", async (event: any, request: any) => {
-        const result = await handler(event, request);
-        if (request.type === "save:resolve") capture.resolves++;
-        if (
-          request.type === "save:commit" &&
-          request.operation.pageId === pageId
-        ) {
-          capture.commits.push(request.operation);
-          if (capture.commits.length === 1) {
-            capture.operation = request.operation;
-            capture.result = result;
-            throw new Error("R4 synthetic ACK lost after COMMIT");
+      const unwrap = (result: any) =>
+        result &&
+        result.tag === "folio-request-result" &&
+        result.ok === true &&
+        result.valueSlot &&
+        result.valueSlot.present === true
+          ? result.valueSlot.value
+          : result;
+      for (const channel of [
+        "folio:request",
+        "folio:request:diagnostic-v1",
+      ]) {
+        const handler = ipc._invokeHandlers.get(channel);
+        if (!handler) continue;
+        ipc.removeHandler(channel);
+        ipc.handle(channel, async (event: any, request: any) => {
+          const result = await handler(event, request);
+          if (request.type === "save:resolve") capture.resolves++;
+          if (
+            request.type === "save:commit" &&
+            request.operation.pageId === pageId
+          ) {
+            capture.commits.push(request.operation);
+            const value = unwrap(result);
+            if (
+              capture.injected === 0 &&
+              value &&
+              value.status === "applied"
+            ) {
+              capture.injected++;
+              capture.channel = channel;
+              capture.operation = request.operation;
+              capture.result = value;
+              throw new Error("R4 synthetic ACK lost after COMMIT");
+            }
           }
-        }
-        return result;
-      });
+          return result;
+        });
+      }
     }, data.first.pageId);
     await window
       .getByLabel("レコードのタイトル")
@@ -288,18 +329,28 @@ test("lost post-COMMIT ACK resolves from receipt without duplicate application a
     const capture = await app.evaluate(() => ({
       commits: (globalThis as any).r4LostAck.commits,
       resolves: (globalThis as any).r4LostAck.resolves,
+      injected: (globalThis as any).r4LostAck.injected,
+      channel: (globalThis as any).r4LostAck.channel,
       operation: (globalThis as any).r4LostAck.operation,
     }));
     expect(capture.commits).toHaveLength(1);
     expect(capture.resolves).toBe(1);
-    const duplicate = await window.evaluate(
-      (operation) =>
-        globalThis.window.folio.request<any>({
-          type: "save:commit",
-          operation,
-        } as any),
-      capture.operation,
-    );
+    expect(capture.injected).toBe(1);
+    const duplicate = await window.evaluate(async (operation) => {
+      const envelope: any = await globalThis.window.folio.requestDiagnostic({
+        type: "save:commit",
+        operation,
+      } as any);
+      if (
+        !envelope ||
+        envelope.tag !== "folio-request-result" ||
+        envelope.ok !== true ||
+        !envelope.valueSlot ||
+        envelope.valueSlot.present !== true
+      )
+        throw new Error("diagnostic save envelope malformed");
+      return envelope.valueSlot.value;
+    }, capture.operation);
     expect(duplicate.status).toBe("applied");
     expect(duplicate.page.revision).toBe(beforeResolve.page.revision);
     const after = await readR4Record(window, data.first.pageId);

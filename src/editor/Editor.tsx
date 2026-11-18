@@ -1,10 +1,24 @@
+import { projectSharedDocument } from "./shared-projection";
+import {sharedImage,type SharedImageResolver} from "./shared-image";
 import { RichBlockControls } from "./RichBlockControls";
 import "./rich-blocks.css";
+import "./editor-chrome.css";
+import {
+  blurTransactionFocusTarget,
+  placeFloatingToolbar,
+  runEditorUiCommand,
+  selectionToolbarFocusTarget,
+  selectionToolbarOwnsFocus,
+  selectionToolbarVisible,
+  shouldRestoreMenuFocus,
+  type EditorUiCommand,
+} from "./editor-ui-actions";
 import { RichStructureGuard } from "./rich-structure-guard";
 import { assertSupportedRichHTML } from "../document-io/rich-html-guard";
 import { versionDocument } from "../shared/rich-document";
 import {
   useEffect,
+  useLayoutEffect,
   useRef,
   useState,
   type ClipboardEvent as ReactClipboardEvent,
@@ -41,9 +55,16 @@ import {
   editNestedSiblings,
   topSiblingRange,
 } from "./blocks";
+import {
+  blockHandleClass,
+  caretCueVisible,
+  caretTargetAt,
+  nestedHandleEligible,
+  resolveElementHit,
+} from "./block-affordance";
 import { closeHistory } from "@tiptap/pm/history";
 import type { ChainedCommands } from "@tiptap/core";
-import { Selection } from "@tiptap/pm/state";
+import { Selection, type Transaction } from "@tiptap/pm/state";
 export { extensions } from "../shared/editor-schema";
 import { extensions } from "../shared/editor-schema";
 type Command = {
@@ -126,9 +147,11 @@ export function Editor({
   onLink,
   onError,
   editable = true,
+  shared,
 }: {
   documentId: string;
   editable?: boolean;
+  shared?:{revision:string;onUndo:()=>void;onRedo:()=>void;isComposing?:()=>boolean;resolveImage?:SharedImageResolver};
   doc: Doc;
   onChange: (d: Doc) => void;
   onReady: (e: TiptapEditor) => void;
@@ -155,21 +178,61 @@ export function Editor({
     >([]),
     [handles, setHandles] = useState<
       { top: number; index: number; pos: number; id: string }[]
-    >([]);
+    >([]),
+    [selectionBar, setSelectionBar] = useState<{
+      top: number;
+      left: number;
+    } | null>(null),
+    [nearby, setNearby] = useState<string | null>(null),
+    [caretBlock, setCaretBlock] = useState<string | null>(null),
+    [kbd, setKbd] = useState(false),
+    [bodyFocus, setBodyFocus] = useState(false),
+    [editOpen, setEditOpen] = useState(false);
   const host = useRef<HTMLDivElement>(null),
+    root = useRef<HTMLDivElement>(null),
     slashRef = useRef(slash),
     slashMenu = useRef<HTMLDivElement>(null),
+    selectionBarEl = useRef<HTMLDivElement>(null),
+    editMenu = useRef<HTMLDetailsElement>(null),
     dismissedSlash = useRef<string | null>(null),
     choiceRef = useRef(choice),
     changeRef = useRef(onChange),
+    readyRef = useRef(onReady),
+    sharedRef = useRef(shared),
+    syncBarRef = useRef<() => void>(() => {}),
+    rehitRef = useRef<() => void>(() => {}),
+    keyboardFocus = useRef(false),
+    windowFocused = useRef(true),
     drag = useRef<string[]>([]),
     nestedDrag = useRef<string | null>(null),
     selectionRef = useRef(selected),
+    nearbyRef = useRef<string | null>(null),
+    affordance = useRef<{
+      resolve: (target: EventTarget | null, x: number, y: number) => void;
+      leave: () => void;
+    } | null>(null),
     invalid = useRef(false);
   changeRef.current = onChange;
+  readyRef.current = onReady;
+  sharedRef.current = shared;
   slashRef.current = slash;
   choiceRef.current = choice;
   selectionRef.current = selected;
+  function closeEditMenu(restoreFocus = false) {
+    const menu = editMenu.current;
+    const restore =
+      restoreFocus &&
+      shouldRestoreMenuFocus({
+        open: !!menu?.open,
+        menu,
+        active: document.activeElement,
+      });
+    if (menu?.open) menu.open = false;
+    setEditOpen(false);
+    // Restore only when focus is still inside the menu being hidden. A body
+    // focus, a link dialog or an outside pane is never pulled back here.
+    if (restore) menu?.querySelector<HTMLElement>("summary")?.focus();
+  }
   function apply(e: TiptapEditor, c: Command) {
     if (invalid.current || !e.isEditable) {
       onError("読み取り専用の文書は変更できません。");
@@ -212,7 +275,7 @@ export function Editor({
     setSlash(null);
   }
   const editor = useEditor({
-    extensions: [...extensions(), RichStructureGuard.configure({onRejected: () => onError("この操作では表の形を保てません。内容を保持しています。")})],
+    extensions: [...(shared?.resolveImage?[...extensions({sharedHistory:true}).filter(extension=>extension.name!=="image"),sharedImage(shared.resolveImage)]:extensions({sharedHistory:!!shared})), RichStructureGuard.configure({onRejected: () => onError("この操作では表の形を保てません。内容を保持しています。")})],
     content: doc,
     editable,
     enableContentCheck: true,
@@ -237,10 +300,14 @@ export function Editor({
       },
       handleKeyDown: (view, event) => {
         if (event.defaultPrevented || composing(event)) return false;
+        if(shared&&(event.metaKey||event.ctrlKey)&&event.key.toLowerCase()==="z"){event.preventDefault();if(event.shiftKey)shared.onRedo();else shared.onUndo();return true;}
         const s = slashRef.current;
         if (!s) return false;
         const list = matchingCommands(s.query);
         if (event.key === "Escape") {
+          // Slash owns Escape first; keep the close from reaching the page.
+          event.preventDefault();
+          event.stopPropagation();
           dismissedSlash.current = `${s.from}:${s.to}:${s.query}`;
           slashRef.current = null;
           setSlash(null);
@@ -263,8 +330,8 @@ export function Editor({
         return false;
       },
     },
-    onUpdate: ({ editor: e }) => {
-      if (!invalid.current)
+    onUpdate: ({ editor: e, transaction }) => {
+      if (!invalid.current && !transaction.getMeta("folio.shared.projection"))
         changeRef.current(versionDocument(e.getJSON() as Doc));
     },
     onSelectionUpdate: () => {
@@ -273,11 +340,26 @@ export function Editor({
     },
   });
   useEffect(() => {
+    if (!editor || !shared || invalid.current || shared.isComposing?.()) return;
+    try {
+      const target = editor.schema.nodeFromJSON(doc);
+      const projection = projectSharedDocument(editor.state.doc, target);
+      if (projection.steps.length) {
+        const transaction = editor.state.tr;
+        for (const step of projection.steps) transaction.step(step);
+        transaction.setMeta("folio.shared.projection", true).setMeta("addToHistory", false).setMeta("preventUpdate", true);
+        editor.view.dispatch(transaction);
+      }
+    } catch (error) { invalid.current = true; editor.setEditable(false, false); onError(error); }
+  }, [editor, shared?.revision]);
+  useEffect(() => {
     if (editor && !invalid.current && editor.isEditable !== editable) editor.setEditable(editable, false);
     if (!editable) {
       slashRef.current = null;
       setSlash(null);
     }
+    // Editable changes affect the bar's display state, not the editor identity.
+    syncBarRef.current();
   }, [editor, editable]);
   useEffect(() => {
     slashMenu.current
@@ -291,21 +373,177 @@ export function Editor({
   }, [clipboard]);
   useEffect(() => {
     if (!editor) return;
-    onReady(editor);
-    const layout = () => {
+    // Instance lifetime only: changing `editable` must not re-announce a
+    // ready editor, recreate the editor, or replace its session/key.
+    readyRef.current(editor);
+  }, [editor]);
+  useLayoutEffect(() => {
+    // Re-hit only after React commits the freshly positioned handles. A
+    // same-height reorder would otherwise resolve the previous frame's grip
+    // geometry and keep lighting the block the pointer used to be over.
+    rehitRef.current();
+  }, [handles, nestedHandles]);
+  useEffect(() => {
+    if (!editor) return;
+    const computeBar = (active: Element | null | undefined) => {
+      if (!host.current || editor.isDestroyed) return null;
+      if (
+        !selectionToolbarVisible(editor, invalid.current, sharedRef.current)
+      )
+        return null;
+      // A stale non-empty selection alone is not enough. This Editor or its
+      // own chrome must own focus; external panes/editors must hide the bar.
+      if (
+        !selectionToolbarOwnsFocus({
+          active,
+          editorDom: editor.view.dom,
+          chrome: root.current,
+          keyboard: keyboardFocus.current,
+          // A deactivated window is external focus too, even though
+          // activeElement can still point at the old editor node.
+          windowFocused: windowFocused.current,
+        })
+      )
+        return null;
+      try {
+        const { from, to } = editor.state.selection;
+        const start = editor.view.coordsAtPos(from);
+        const end = editor.view.coordsAtPos(to, -1);
+        const base = host.current.getBoundingClientRect();
+        const bar = selectionBarEl.current;
+        return placeFloatingToolbar({
+          host: { top: base.top, left: base.left },
+          selection: {
+            top: Math.min(start.top, end.top),
+            bottom: Math.max(start.bottom, end.bottom),
+            left: start.left,
+          },
+          toolbar: {
+            width: bar?.offsetWidth || 176,
+            height: bar?.offsetHeight || 40,
+          },
+          viewport: {
+            width: window.innerWidth,
+            height: window.innerHeight,
+          },
+        });
+      } catch {
+        return null;
+      }
+    };
+    // The affordance modality is separate from the toolbar's keyboardFocus
+    // ref: a real pointer move/dragover ends the keyboard cue; a Tab starts it
+    // again. Only the focused own body may show its caret handle.
+    let affordanceKbd = false;
+    // The localized caret cue is owned by this instance's focused body only:
+    // keyboard modality plus real DOM focus inside this editor's content.
+    // Tab into another editor, the sidebar or any pointer use keeps it dark.
+    const syncKbd = (active: Element | null | undefined) => {
+      const ownsBody =
+        !!active &&
+        windowFocused.current &&
+        editor.view.dom.contains(active);
+      setBodyFocus(ownsBody);
+      setKbd(
+        caretCueVisible({
+          keyboard: affordanceKbd,
+          windowFocused: windowFocused.current,
+          ownsBody,
+        }),
+      );
+    };
+    const syncBarWith = (active: Element | null | undefined) => {
+      syncKbd(active);
+      const next = computeBar(active);
+      setSelectionBar((previous) =>
+        previous && next && previous.top === next.top && previous.left === next.left
+          ? previous
+          : next,
+      );
+    };
+    // Ordinary updates read the actual active element. Only focusout passes
+    // the next focus (relatedTarget) instead, because activeElement has not
+    // moved yet at capture time.
+    const syncBar = () => syncBarWith(document.activeElement);
+    syncBarRef.current = syncBar;
+    // Pointer tracking stays on this instance's own host. The single nearby
+    // handle comes from the real hit element — a gutter grip's own id, or the
+    // innermost block element mapped through the shared eligibility — never a
+    // nearest-caret guess. No transaction or selection is touched.
+    const pointer = { active: false, x: 0, y: 0 };
+    const setNearbyIfChanged = (next: string | null) => {
+      if (next === nearbyRef.current) return;
+      nearbyRef.current = next;
+      setNearby(next);
+    };
+    const asElement = (hit: EventTarget | null): Element | null => {
+      if (hit instanceof Element) return hit;
+      if (hit instanceof Node) return hit.parentElement;
+      return null;
+    };
+    // The layout indexes each actually rendered eligible block element (the
+    // same nodeDOM result used to position its handle) and every live handle
+    // id. Rebuilt per layout; no document positions or sibling guesses.
+    const hitIndex = new Map<Element, string>();
+    const liveIds = new Set<string>();
+    const resolveHit = (hit: EventTarget | null): string | null =>
+      resolveElementHit({
+        hit: asElement(hit),
+        root: host.current,
+        index: hitIndex,
+        live: liveIds,
+      });
+    // Re-hit whatever is actually under a possibly stationary pointer so a
+    // block that moved, split or vanished — or chrome now covering the spot —
+    // never leaves a stale handle lit.
+    const rehitPointer = () => {
+      if (!pointer.active || !host.current) return;
+      const hit = host.current.ownerDocument.elementFromPoint(
+        pointer.x,
+        pointer.y,
+      );
+      setNearbyIfChanged(resolveHit(hit));
+    };
+    rehitRef.current = rehitPointer;
+    affordance.current = {
+      resolve(target, x, y) {
+        // A real pointer move/dragover switches to pointer modality: the
+        // keyboard caret cue hides so the nearby handle stays the single grip.
+        affordanceKbd = false;
+        setKbd(false);
+        pointer.active = true;
+        pointer.x = x;
+        pointer.y = y;
+        setNearbyIfChanged(resolveHit(target));
+      },
+      leave() {
+        pointer.active = false;
+        setNearbyIfChanged(null);
+      },
+    };
+    const layout = (focus?: { active: Element | null }) => {
       if (!host.current || editor.isDestroyed) return;
       const base = host.current.getBoundingClientRect();
+      // Every indexed element is one the pointer can actually hit; only
+      // eligible rendered blocks enter, so excluded children (list first
+      // paragraphs, cell contents) resolve through their indexed ancestor
+      // and custom NodeViews need no special case.
+      hitIndex.clear();
+      liveIds.clear();
       const result: { top: number; index: number; pos: number; id: string }[] =
         [];
       editor.state.doc.forEach((node, pos, index) => {
         const el = editor.view.nodeDOM(pos);
-        if (el instanceof HTMLElement && typeof node.attrs.id === "string")
+        if (el instanceof HTMLElement && typeof node.attrs.id === "string") {
+          hitIndex.set(el, node.attrs.id);
+          liveIds.add(node.attrs.id);
           result.push({
             id: node.attrs.id,
             top: el.getBoundingClientRect().top - base.top,
             index,
             pos,
           });
+        }
       });
       setHandles(result);
       const nested: {
@@ -316,29 +554,13 @@ export function Editor({
       }[] = [];
       editor.state.doc.descendants((node, pos, parent, index) => {
         if (parent?.type.name === "doc" || !node.attrs.id) return;
-        // Cell editing has dedicated controls. Paragraph handles would cover
-        // adjacent cells and expose generic operations on table internals.
-        if (["tableCell", "tableHeader"].includes(parent?.type.name ?? "")) return;
-        if (!(
-          node.isTextblock ||
-          node.isAtom ||
-          ["listItem", "taskItem"].includes(node.type.name)
-        ))
-          return;
-        if (["detailsSummary", "detailsContent"].includes(node.type.name))
-          return;
-        // The first paragraph of a list item occupies the same line as the item;
-        // its parent handle already gives access without covering the text.
-        if (
-          node.type.name === "paragraph" &&
-          index === 0 &&
-          ["listItem", "taskItem"].includes(parent?.type.name ?? "")
-        )
-          return;
+        if (!nestedHandleEligible(node, parent, index)) return;
         const el = editor.view.nodeDOM(pos);
         if (!(el instanceof HTMLElement)) return;
         const rect = el.getBoundingClientRect();
         if (!rect.width || !rect.height) return;
+        hitIndex.set(el, node.attrs.id);
+        liveIds.add(node.attrs.id);
         const $pos = editor.state.doc.resolve(pos);
         const path = Array.from({ length: $pos.depth + 1 }, (_, depth) =>
           $pos.index(depth),
@@ -351,9 +573,23 @@ export function Editor({
         });
       });
       setNestedHandles(nested);
+      // The caret block's own handle is the localized keyboard cue; it follows
+      // the selection head without a transaction, selection change or history.
+      const caret =
+        caretTargetAt(editor.state.doc, editor.state.selection)?.id ?? null;
+      setCaretBlock((previous) => (previous === caret ? previous : caret));
+      // Re-hitting under a possibly stationary pointer happens in the
+      // post-commit layout effect (fresh grip geometry) and on scroll.
+      syncBarWith(focus ? focus.active : document.activeElement);
     };
-    const update = () => {
-      layout();
+    // ResizeObserver and requestAnimationFrame pass their own argument; this
+    // no-arg wrapper keeps it from being read as a focus target.
+    const layoutFromViewport = () => layout();
+    const update = (event: { transaction: Transaction }) => {
+      // Tiptap's blur transaction carries the native event. Use its
+      // relatedTarget when present, while ordinary transactions keep reading
+      // the actual active element.
+      layout(blurTransactionFocusTarget(event.transaction.getMeta("blur")));
       const { $from, empty } = editor.state.selection;
       const text = $from.parent.textBetween(0, $from.parentOffset);
       const match = text.match(/^\/([^\n]*)$/);
@@ -387,12 +623,86 @@ export function Editor({
       }
     };
     editor.on("transaction", update);
-    const ro = new ResizeObserver(layout);
+    const ro = new ResizeObserver(layoutFromViewport);
     if (host.current) ro.observe(host.current);
-    requestAnimationFrame(layout);
+    requestAnimationFrame(layoutFromViewport);
+    const onScroll = () => {
+      syncBar();
+      // Scrolling moves the document under a stationary pointer; re-hit it.
+      rehitPointer();
+    };
+    window.addEventListener("resize", syncBar);
+    window.addEventListener("scroll", onScroll, true);
+    editor.view.dom.addEventListener("compositionstart", syncBar);
+    editor.view.dom.addEventListener("compositionend", syncBar);
+    // Focus ownership is re-evaluated on every focus move and window blur.
+    // The button/pointer distinction is tracked only for this instance's
+    // chrome so another pane or editor can never inherit this bar.
+    const onFocusIn = () => syncBarWith(document.activeElement);
+    const onFocusOut = (event: FocusEvent) => {
+      // Capture-time focusout runs before document.activeElement moves, so
+      // the element about to receive focus decides ownership. A body→own-bar
+      // Tab move therefore keeps the conditional bar it is entering.
+      const related =
+        event.relatedTarget instanceof Element ? event.relatedTarget : null;
+      syncBarWith(
+        selectionToolbarFocusTarget({
+          active: document.activeElement,
+          relatedTarget: related,
+          leaving: true,
+        }),
+      );
+    };
+    const onWindowFocus = () => {
+      windowFocused.current = true;
+      syncBar();
+    };
+    const onWindowBlur = () => {
+      // A deactivated window is always non-owned, whatever activeElement says.
+      windowFocused.current = false;
+      syncBar();
+      pointer.active = false;
+      setNearbyIfChanged(null);
+    };
+    const onPointerDown = () => {
+      keyboardFocus.current = false;
+      affordanceKbd = false;
+      syncKbd(document.activeElement);
+    };
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Tab") {
+        keyboardFocus.current = true;
+        affordanceKbd = true;
+        // Keyboard navigation abandons this instance's pointer target even
+        // while focus lives elsewhere, and disarms the cached pointer so the
+        // next layout cannot re-enable a stale nearby handle.
+        pointer.active = false;
+        setNearbyIfChanged(null);
+        syncKbd(document.activeElement);
+      }
+    };
+    document.addEventListener("focusin", onFocusIn, true);
+    document.addEventListener("focusout", onFocusOut, true);
+    window.addEventListener("focus", onWindowFocus);
+    window.addEventListener("blur", onWindowBlur);
+    window.addEventListener("pointerdown", onPointerDown, true);
+    window.addEventListener("keydown", onKeyDown, true);
     return () => {
+      syncBarRef.current = () => {};
+      rehitRef.current = () => {};
+      affordance.current = null;
       editor.off("transaction", update);
       ro.disconnect();
+      window.removeEventListener("resize", syncBar);
+      window.removeEventListener("scroll", onScroll, true);
+      editor.view.dom.removeEventListener("compositionstart", syncBar);
+      editor.view.dom.removeEventListener("compositionend", syncBar);
+      document.removeEventListener("focusin", onFocusIn, true);
+      document.removeEventListener("focusout", onFocusOut, true);
+      window.removeEventListener("focus", onWindowFocus);
+      window.removeEventListener("blur", onWindowBlur);
+      window.removeEventListener("pointerdown", onPointerDown, true);
+      window.removeEventListener("keydown", onKeyDown, true);
     };
   }, [editor]);
   function manipulate(action: "duplicate" | "delete" | "move", target = 0) {
@@ -655,12 +965,22 @@ export function Editor({
     }
   }
   if (!editor) return null;
-  const runEditable = (action: () => void) => {
-    if (invalid.current || !editor.isEditable) {
-      onError("読み取り専用の文書は変更できません。");
-      return;
-    }
-    action();
+  const runUiCommand = (command: EditorUiCommand, closeMenu = false) => {
+    const ran = runEditorUiCommand(
+      {
+        editor,
+        invalid: invalid.current,
+        shared,
+        actions: { onLink, selectNestedAtCursor, onError },
+      },
+      command,
+    );
+    // A successful edit-menu command must not leave a stale open menu behind.
+    // If focus never left the menu (shared Undo/Redo, nested, link), restoring
+    // it to the visible summary keeps the keyboard start point; commands that
+    // already focused the body are left untouched.
+    if (ran && closeMenu) closeEditMenu(true);
+    return ran;
   };
   const selectedIndices = resolveTopSelection(
     (editor.getJSON().content as Doc[]) ?? [],
@@ -668,74 +988,98 @@ export function Editor({
   );
   const filtered = matchingCommands(slash?.query ?? "");
   return (
-    <div className="editor-root">
-      <div className="format-bar">
-        <button
-          title="太字 ⌘B"
-          aria-label="太字"
-          onClick={() =>
-            runEditable(() => {
-              editor.chain().focus().toggleBold().run();
-            })
-          }
+    <div ref={root} className="editor-root">
+      <details
+        ref={editMenu}
+        className="editor-edit"
+        onToggle={() => setEditOpen(!!editMenu.current?.open)}
+        onBlur={(event) => {
+          const next = event.relatedTarget;
+          if (next instanceof Node && event.currentTarget.contains(next)) return;
+          // Focus leaving the disclosure closes the stale menu; never pull
+          // focus back from the body to a menu that is already gone.
+          closeEditMenu();
+        }}
+        onKeyDown={(event) => {
+          if (event.key !== "Escape" || !editMenu.current?.open) return;
+          if (composing(event.nativeEvent)) return;
+          event.preventDefault();
+          event.stopPropagation();
+          // Focus was inside the open menu, so return it to the summary that
+          // remains visible. No menu item or editor transaction is touched.
+          closeEditMenu(true);
+        }}
+      >
+        <summary>編集</summary>
+        <div
+          className="editor-edit__menu"
+          role={editOpen ? "menu" : undefined}
+          aria-label="編集"
         >
-          <Bold size={15} />
-        </button>
-        <button
-          title="斜体 ⌘I"
-          onClick={() =>
-            runEditable(() => {
-              editor.chain().focus().toggleItalic().run();
-            })
-          }
-        >
-          <Italic size={15} />
-        </button>
-        <button
-          title="コード"
-          onClick={() =>
-            runEditable(() => {
-              editor.chain().focus().toggleCode().run();
-            })
-          }
-        >
-          <Code size={15} />
-        </button>
-        <button title="ページへのリンク" onClick={() => runEditable(onLink)}>
-          <Link2 size={15} />
-        </button>
-        <button
-          title="カーソルのネストブロックを選択"
-          aria-label="カーソルのネストブロックを選択"
-          onClick={selectNestedAtCursor}
-        >
-          <GripVertical size={15} />
-        </button>
-        <span />
-        <button
-          title="元に戻す ⌘Z"
-          aria-label="元に戻す"
-          onClick={() =>
-            runEditable(() => {
-              editor.chain().focus().undo().run();
-            })
-          }
-        >
-          <Undo2 size={15} />
-        </button>
-        <button
-          title="やり直す ⌘⇧Z"
-          aria-label="やり直す"
-          onClick={() =>
-            runEditable(() => {
-              editor.chain().focus().redo().run();
-            })
-          }
-        >
-          <Redo2 size={15} />
-        </button>
-        <small>Markdown · / コマンド</small>
-      </div>
+          <button
+            type="button"
+            title="太字 ⌘B"
+            aria-label="太字"
+            onMouseDown={(event) => event.preventDefault()}
+            onClick={() => runUiCommand("bold", true)}
+          >
+            <Bold size={15} />
+          </button>
+          <button
+            type="button"
+            title="斜体 ⌘I"
+            aria-label="斜体"
+            onMouseDown={(event) => event.preventDefault()}
+            onClick={() => runUiCommand("italic", true)}
+          >
+            <Italic size={15} />
+          </button>
+          <button
+            type="button"
+            title="コード"
+            onMouseDown={(event) => event.preventDefault()}
+            onClick={() => runUiCommand("code", true)}
+          >
+            <Code size={15} />
+          </button>
+          <button
+            type="button"
+            title="ページへのリンク"
+            onMouseDown={(event) => event.preventDefault()}
+            onClick={() => runUiCommand("link", true)}
+          >
+            <Link2 size={15} />
+          </button>
+          <button
+            type="button"
+            title="カーソルのネストブロックを選択"
+            aria-label="カーソルのネストブロックを選択"
+            onMouseDown={(event) => event.preventDefault()}
+            onClick={() => runUiCommand("nested", true)}
+          >
+            <GripVertical size={15} />
+          </button>
+          <button
+            type="button"
+            title="元に戻す ⌘Z"
+            aria-label="元に戻す"
+            onMouseDown={(event) => event.preventDefault()}
+            onClick={() => runUiCommand("undo", true)}
+          >
+            <Undo2 size={15} />
+          </button>
+          <button
+            type="button"
+            title="やり直す ⌘⇧Z"
+            aria-label="やり直す"
+            onMouseDown={(event) => event.preventDefault()}
+            onClick={() => runUiCommand("redo", true)}
+          >
+            <Redo2 size={15} />
+          </button>
+          <small>Markdown · / コマンド</small>
+        </div>
+      </details>
       <RichBlockControls editor={editor} disabled={invalid.current || !editable} onError={onError} />
       {selected.length > 0 && (
         <div className="block-actions">
@@ -828,7 +1172,22 @@ export function Editor({
       )}
       <div
         ref={host}
-        className="editor-host"
+        className={`editor-host${kbd ? " kbd" : ""}${bodyFocus ? " body" : ""}`}
+        onPointerMove={(event) =>
+          affordance.current?.resolve(
+            event.target,
+            event.clientX,
+            event.clientY,
+          )
+        }
+        onPointerLeave={() => affordance.current?.leave()}
+        onDragOver={(event) =>
+          affordance.current?.resolve(
+            event.target,
+            event.clientX,
+            event.clientY,
+          )
+        }
         onCopy={(event) => copySelected(event, "copy")}
         onCut={(event) => copySelected(event, "cut")}
         onPasteCapture={pasteBlocks}
@@ -848,6 +1207,15 @@ export function Editor({
             event.stopPropagation();
             setSelected([]);
             setNestedSelected(null);
+            return;
+          }
+          if (event.key === "Escape" && editMenu.current?.open) {
+            // Slash/block Escape already won above; this closes only the
+            // chrome disclosure. Focus stays in the body and the selection
+            // is left untouched.
+            event.preventDefault();
+            event.stopPropagation();
+            closeEditMenu();
             return;
           }
           if (
@@ -873,14 +1241,69 @@ export function Editor({
         }}
       >
         <EditorContent editor={editor} />
+        {selectionBar && (
+          <div
+            ref={selectionBarEl}
+            className="editor-selection-toolbar"
+            role="toolbar"
+            aria-label="選択したテキストの書式"
+            style={{ top: selectionBar.top, left: selectionBar.left }}
+            onKeyDown={(event) => {
+              if (event.key === "Escape") {
+                event.preventDefault();
+                event.stopPropagation();
+                editor.commands.focus();
+              }
+            }}
+          >
+            <button
+              type="button"
+              title="太字 ⌘B"
+              aria-label="太字"
+              onMouseDown={(event) => event.preventDefault()}
+              onClick={() => runUiCommand("bold")}
+            >
+              <Bold size={15} />
+            </button>
+            <button
+              type="button"
+              title="斜体 ⌘I"
+              aria-label="斜体"
+              onMouseDown={(event) => event.preventDefault()}
+              onClick={() => runUiCommand("italic")}
+            >
+              <Italic size={15} />
+            </button>
+            <button
+              type="button"
+              title="コード"
+              onMouseDown={(event) => event.preventDefault()}
+              onClick={() => runUiCommand("code")}
+            >
+              <Code size={15} />
+            </button>
+            <button
+              type="button"
+              title="ページへのリンク"
+              onMouseDown={(event) => event.preventDefault()}
+              onClick={() => runUiCommand("link")}
+            >
+              <Link2 size={15} />
+            </button>
+          </div>
+        )}
         {handles.map((h) => (
           <button
-            key={h.index}
+            key={h.id}
+            data-block-id={h.id}
             aria-label={`ブロック ${h.index + 1} を選択`}
             title="ドラッグで移動・Shiftクリックで複数選択"
-            className={
-              "block-handle " + (selected.includes(h.id) ? "selected" : "")
-            }
+            className={blockHandleClass({
+              id: h.id,
+              nearby,
+              caret: caretBlock,
+              selected,
+            })}
             style={{ top: h.top }}
             draggable
             onDragStart={(event) => {
@@ -893,6 +1316,7 @@ export function Editor({
             }}
             onDragEnd={() => {
               drag.current = [];
+              affordance.current?.leave();
             }}
             onDragOver={(event) => {
               if (
@@ -939,12 +1363,15 @@ export function Editor({
         {nestedHandles.map((h) => (
           <button
             key={h.id}
+            data-block-id={h.id}
             aria-label={`ネストブロック ${h.path.map((n) => n + 1).join(".")} を選択`}
             title="ドラッグで対象の前へ移動"
-            className={
-              "block-handle " +
-              (nestedSelected?.ids.includes(h.id) ? "selected" : "")
-            }
+            className={blockHandleClass({
+              id: h.id,
+              nearby,
+              caret: caretBlock,
+              selected: nestedSelected?.ids ?? [],
+            })}
             style={{ top: h.top, left: h.left, width: 18 }}
             draggable
             onDragStart={(event) => {
@@ -965,6 +1392,7 @@ export function Editor({
             }}
             onDragEnd={() => {
               nestedDrag.current = null;
+              affordance.current?.leave();
             }}
             onDragOver={(event) => {
               if (

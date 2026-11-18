@@ -6,6 +6,10 @@ import type {
   WorkspaceInventory,
 } from "../../shared/workspace-backup";
 import { DialogFrame } from "../Modal";
+import {
+  backupWriteHoldMessage,
+  type BackupWriteHoldView,
+} from "./backup-write-hold";
 import "./workspace-backup-dialog.css";
 
 type PreviewSource = "created" | "chosen";
@@ -117,6 +121,9 @@ export type WorkspaceBackupDialogProps = {
   onRestore: (preview: BackupPreview) => Promise<BackupRestored | null>;
   onOpen: (result: BackupRestored) => Promise<void>;
   onBusyChange?: (busy: boolean) => void;
+  /** Read-only view of the App-root backup write hold. The dialog never owns
+   * an authoritative hold and cannot latch, clear or reset it. */
+  backupHold?: BackupWriteHoldView | null;
 };
 
 export type WorkspaceBackupViewProps = {
@@ -127,6 +134,7 @@ export type WorkspaceBackupViewProps = {
   preview?: BackupPreview;
   previewSource?: PreviewSource;
   restored?: BackupRestored;
+  backupHold?: BackupWriteHoldView | null;
   onCreate: () => void;
   onChoose: () => void;
   onRestore: () => void;
@@ -142,6 +150,7 @@ export function WorkspaceBackupView({
   preview,
   previewSource,
   restored,
+  backupHold,
   onCreate,
   onChoose,
   onRestore,
@@ -155,6 +164,10 @@ export function WorkspaceBackupView({
   const statusText = busy
     ? busyMessage || "処理を進めています…"
     : (status ?? "");
+  const held = backupHold?.held() === true;
+  const holdMessage = held
+    ? backupWriteHoldMessage(backupHold?.failure() ?? null)
+    : null;
   return (
     <div className="workspace-backup-body" aria-busy={busy}>
       <header>
@@ -188,7 +201,7 @@ export function WorkspaceBackupView({
           保存済みのワークスペースを今すぐバックアップするか、以前のバックアップを選んで内容を検証します。
         </p>
         <div className="workspace-backup-actions">
-          <button type="button" disabled={busy} onClick={onCreate}>
+          <button type="button" disabled={busy || held} onClick={onCreate}>
             バックアップを作成
           </button>
           <button type="button" disabled={busy} onClick={onChoose}>
@@ -252,7 +265,7 @@ export function WorkspaceBackupView({
             <button
               type="button"
               className="primary"
-              disabled={busy}
+              disabled={busy || held}
               onClick={onRestore}
             >
               新しいフォルダーへ復元
@@ -278,7 +291,7 @@ export function WorkspaceBackupView({
             <button
               type="button"
               className="primary"
-              disabled={busy}
+              disabled={busy || held}
               onClick={onOpen}
             >
               復元先を開く
@@ -287,15 +300,21 @@ export function WorkspaceBackupView({
         </section>
       )}
 
-      {(busy || statusText) && (
+      {(busy || (!held && statusText)) && (
         <p className="workspace-backup-status" role="status">
           {statusText}
         </p>
       )}
-      {error && (
+      {holdMessage ? (
         <p className="workspace-backup-error" role="alert">
-          {error}
+          {holdMessage}
         </p>
+      ) : (
+        error && (
+          <p className="workspace-backup-error" role="alert">
+            {error}
+          </p>
+        )
       )}
 
       <footer>
@@ -314,6 +333,7 @@ export function WorkspaceBackupDialog({
   onRestore,
   onOpen,
   onBusyChange,
+  backupHold,
 }: WorkspaceBackupDialogProps) {
   const [busyAction, setBusyAction] = useState<PendingAction | null>(null);
   const [preview, setPreview] = useState<BackupPreview>();
@@ -355,6 +375,7 @@ export function WorkspaceBackupDialog({
   }
 
   const create = () => {
+    if (backupHold?.held()) return;
     void runAction("create", onCreate, (value) => {
       setPreview(value);
       setPreviewSource("created");
@@ -377,7 +398,7 @@ export function WorkspaceBackupDialog({
   };
 
   const restore = () => {
-    if (!preview || restored) return;
+    if (!preview || restored || backupHold?.held()) return;
     void runAction("restore", () => onRestore(preview), (value) => {
       setRestored(value);
       setStatus(
@@ -387,7 +408,7 @@ export function WorkspaceBackupDialog({
   };
 
   const open = () => {
-    if (!restored) return;
+    if (!restored || backupHold?.held()) return;
     void runAction(
       "open",
       async () => {
@@ -418,6 +439,7 @@ export function WorkspaceBackupDialog({
         preview={preview}
         previewSource={previewSource}
         restored={restored}
+        backupHold={backupHold}
         onCreate={create}
         onChoose={choose}
         onRestore={restore}

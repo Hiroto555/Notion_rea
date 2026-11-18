@@ -1,11 +1,18 @@
 import { test, expect, saved } from "./next-round-fixture";
 import { observeDrag, dragEvidence, editorDoc } from "./drag-observer";
 import { realDrag, beginRealDrag } from "./real-drag";
+import { clickEditorEditButton, documentEditor } from "./ui-chrome-controls";
+const primary = (key: string) =>
+  process.platform === "darwin"
+    ? `Meta+${key}`
+    : key === "ArrowLeft"
+      ? "Home"
+      : `Control+${key}`;
 test("R2 short original regression: checkbox edit then real handle drag", async ({
   folio: s,
 }, info) => {
   const w = s.window;
-  await w.keyboard.press("Meta+n");
+  await w.keyboard.press(primary("n"));
   await w.getByLabel("ページタイトル", { exact: true }).fill("Drag regression");
   await w.locator(".folio-editor").click();
   await w.keyboard.type("/heading");
@@ -94,11 +101,11 @@ test("R2 top-level matrix: single/multiple/start/end/same/cancel/scroll/undo/red
     ];
     await realDrag(w, handle(2), handle(1));
     await assertDoc(first);
-    await w.getByLabel("元に戻す", { exact: true }).click();
+    await clickEditorEditButton(documentEditor(w), "元に戻す");
     await assertDoc(before.content);
-    await w.getByLabel("やり直す", { exact: true }).click();
+    await clickEditorEditButton(documentEditor(w), "やり直す");
     await assertDoc(first);
-    await w.getByLabel("元に戻す", { exact: true }).click();
+    await clickEditorEditButton(documentEditor(w), "元に戻す");
     await assertDoc(before.content);
     await handle(2).click();
     await handle(3).click({ modifiers: ["Shift"] });
@@ -114,9 +121,9 @@ test("R2 top-level matrix: single/multiple/start/end/same/cancel/scroll/undo/red
     // A no-op must not hide the preceding move from Undo.
     await realDrag(w, handle(1), handle(1));
     await assertDoc(multi);
-    await w.getByLabel("元に戻す", { exact: true }).click();
+    await clickEditorEditButton(documentEditor(w), "元に戻す");
     await assertDoc(before.content);
-    await w.getByLabel("やり直す", { exact: true }).click();
+    await clickEditorEditButton(documentEditor(w), "やり直す");
     await assertDoc(multi);
     const cancelledDrag = await beginRealDrag(w, handle(2));
     try {
@@ -146,9 +153,9 @@ test("R2 top-level matrix: single/multiple/start/end/same/cancel/scroll/undo/red
     const ended = [...scrolled];
     ended.push(...ended.splice(27, 1));
     await assertDoc(ended);
-    await w.getByLabel("元に戻す", { exact: true }).click();
+    await clickEditorEditButton(documentEditor(w), "元に戻す");
     await assertDoc(scrolled);
-    await w.getByLabel("やり直す", { exact: true }).click();
+    await clickEditorEditButton(documentEditor(w), "やり直す");
     await assertDoc(ended);
     const stored = await w.evaluate(
       async (id) =>

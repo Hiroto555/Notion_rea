@@ -4,6 +4,7 @@ import {
 } from "@playwright/test";
 import { mkdtempSync, mkdirSync, writeFileSync } from "node:fs";
 import { resolve, join } from "node:path";
+import { fixtureElectronOptions, fixtureRoot } from "./fixture-isolation";
 export type Session = {
   app: ElectronApplication;
   window: Page;
@@ -14,7 +15,7 @@ export type Session = {
 };
 export const test = base.extend<{ folio: Session }>({
   folio: async ({}, use, info) => {
-    const root = mkdtempSync(resolve("output/next-round-e2e-"));
+    const root = fixtureRoot("next-round-");
     const folder = join(root, "workspace"), exportsDir = join(root, "exports"), inputsDir = join(root, "inputs");
     mkdirSync(folder); mkdirSync(exportsDir); mkdirSync(inputsDir);
     let app: ElectronApplication | undefined, window: Page | undefined, tracing = false;
@@ -22,7 +23,7 @@ export const test = base.extend<{ folio: Session }>({
     const record = (stage: string, detail?: unknown) => diagnostics.push({ stage, time: new Date().toISOString(), detail });
     const start = async () => {
       record("launch-start", { url: process.env.FOLIO_DEV_URL || "production" });
-      app = await electron.launch({ args: [resolve("dist/main.cjs")], env: { ...process.env, FOLIO_DATA_DIR: folder } });
+      app = await electron.launch(fixtureElectronOptions(folder));
       const child = app.process();
       record("launch-complete", { pid: child.pid });
       await app.evaluate(({ app, BrowserWindow }) => {
@@ -94,4 +95,4 @@ export async function saveDialog(s: Session, path: string | null) {
 export async function openDialog(s: Session, path: string | null) {
   await s.app.evaluate(({ dialog }, p) => { dialog.showOpenDialog = (async () => ({ canceled: p === null, filePaths: p ? [p] : [] })) as typeof dialog.showOpenDialog; }, path);
 }
-export const saved = async (s: Session) => { await expect(s.window.locator(".save-state")).toHaveText("保存済み"); };
+export const saved = async (s: Session) => { await expect(s.window.locator(".save-state[data-state]")).toHaveText("保存済み"); };

@@ -1,0 +1,195 @@
+{
+  "recordedAt": "2026-11-10T14:52:00.110Z",
+  "scope": "Current staged candidate and 18 explicitly included evidence logs; not all historical refs",
+  "testedSourceManifest": "bd4fa1fd02f4c689ea703b76be05fc9d60edc341745a73c1c55e0da4fbc2afe0",
+  "testedSourceMatches": true,
+  "productTestScriptChangesSinceFinalValidation": false,
+  "documentationPathLabelsSanitized": true,
+  "pathRedactions": [
+    {
+      "path": "docs/roadmap/20261110-lv36-plan-evidence/source-audit.json",
+      "reason": "Replace local home identity with portable label; no product/test changes",
+      "localOriginalSha256": "2c04949c58ebae8cdec55d9b771eb556b49dfac34422d88f4c213a31eb4a8a7f",
+      "publishedSha256": "b5a6de1934c1ccf2716e027bb5d08a5ab9c276eb90c8f3f86ee754e50467326a"
+    },
+    {
+      "path": "docs/roadmap/20261110-lv36-execution-evidence/logs/native-owned-current.log",
+      "reason": "Replace local home identity with portable label; no product/test changes",
+      "localOriginalSha256": "3977cc64763de5efddc148a41548349dcd725e67be2cba9999654b9930e78d19",
+      "publishedSha256": "9421b68ddbbd6cce86ced09b0e161e6afcf2474c47214fdf38bfe775bba5e668"
+    },
+    {
+      "path": "docs/roadmap/20261110-lv36-execution-evidence/logs/connected-final-second.log",
+      "reason": "Replace local home identity with portable label; no product/test changes",
+      "localOriginalSha256": "478329b6388b059bf7e8739c7a496e250f32d61d414c683d800b77ca80a4e292",
+      "publishedSha256": "8106684f1072ab0c432e2187f300267e8ed66073c6c7621e8f20ad12d47a062d"
+    },
+    {
+      "path": "docs/roadmap/20261110-lv36-execution-evidence/logs/binding-final.log",
+      "reason": "Replace local home identity with portable label; no product/test changes",
+      "localOriginalSha256": "a71c63bf3f76074b076fac54c73eb0696798c9b81c01bdee4b6d8ba162be45cb",
+      "publishedSha256": "b95e736cb8c4ed017317d860a9fa1bc42f2fb67fa0ec18e0f3095798da60e076"
+    },
+    {
+      "path": "docs/roadmap/20261110-lv36-execution-evidence/logs/connected-final-first.log",
+      "reason": "Replace local home identity with portable label; no product/test changes",
+      "localOriginalSha256": "c0a6a8871d9bcb197b52425d919f97205f317ac949252033b5ea559d437c8274",
+      "publishedSha256": "e81797d9024706a23c8db3e143a1c88e7be3629509ade4a1ca761de351edfef7"
+    },
+    {
+      "path": "docs/roadmap/20261110-lv36-execution-evidence/logs/final-build.log",
+      "reason": "Replace local home identity with portable label; no product/test changes",
+      "localOriginalSha256": "034b75bb9d49f1ede74df52a24e36ee5df0d13c28603b7931d86a288378f9ee7",
+      "publishedSha256": "69011f8b973efb6575149cf9817c4139442f6ba73af42964c666b1b20a6a4414"
+    },
+    {
+      "path": "docs/roadmap/20261110-lv36-execution-evidence/logs/process-crash-first.log",
+      "reason": "Replace local home identity with portable label; no product/test changes",
+      "localOriginalSha256": "87336cfedf6c2bca854d4a8efc1beeb9205a26a57c528c57948a31b19fffd125",
+      "publishedSha256": "8a33bed76e6145d3158ab62780c08407949386b7fcc72923297d480c925c0cb4"
+    },
+    {
+      "path": "docs/roadmap/20261110-lv36-execution-evidence/logs/final-tests.log",
+      "reason": "Replace local home identity with portable label; no product/test changes",
+      "localOriginalSha256": "2c74cab74766071c06f5f7ba6f81932aedf8a5def692309d6365c6ae532a2061",
+      "publishedSha256": "0a8611efbce5c0eab67ee3acb744fe69edc65981064c506ac7ee4e2dc05984e4"
+    },
+    {
+      "path": "docs/roadmap/20261110-lv36-execution-evidence/logs/native-probe-current.log",
+      "reason": "Replace local home identity with portable label; no product/test changes",
+      "localOriginalSha256": "fff4f6d732159f659635c4f7ed251f35902aab83c70739a024cf2f63426dcfdf",
+      "publishedSha256": "21a2d5a207c23a4406cbcccc00a3a46b047f323f1307800a52a24bee0d2e8d22"
+    },
+    {
+      "path": "docs/roadmap/20261110-lv46-continuation-evidence/logs/final-build.log",
+      "reason": "Replace local home identity with portable label; no product/test changes",
+      "localOriginalSha256": "4d69e99ec38b65bfdbd9af59d804e88db6b895c50491c2a61f4ed4debe3f728d",
+      "publishedSha256": "8d2825828b6fcfa7cdc507709088600a6a6fe3570d2c2ce8ea7a51d86de9d9f6"
+    },
+    {
+      "path": "docs/roadmap/20261110-NEXT-CHAT-LV6-IMPLEMENTATION.ja.md",
+      "reason": "Replace local home identity with portable label; no product/test changes",
+      "localOriginalSha256": "5a741a12e11249c392a9b0c1fddf3296fbf9ea8f35705f99f7a9b5a7d4474a0e",
+      "publishedSha256": "e0fe47245d928bcaaae7070da3832887e3f2b7429085653bb54838ae5acdc9ee"
+    },
+    {
+      "path": "docs/roadmap/20261110-lv36-implementation-plan.ja.md",
+      "reason": "Replace local home identity with portable label; no product/test changes",
+      "localOriginalSha256": "55c9f2e2a6c915ba16b88fe82054fe3e205724e278478f21868f25d8ef5f1b70",
+      "publishedSha256": "81b1137054eb9a6a89b263f5b4708c17153f9c078b43f52ce24166298c9fd9ae"
+    }
+  ],
+  "findings": [
+    {
+      "path": "docs/roadmap/20261110-lv36-execution-evidence/worker-reports/R09-native-review.md",
+      "category": "personal-path",
+      "line": 58
+    },
+    {
+      "path": "docs/roadmap/20261110-lv36-execution-evidence/worker-reports/R09-native-review.md",
+      "category": "personal-path",
+      "line": 83
+    },
+    {
+      "path": "tests/shared-runtime-http.test.ts",
+      "category": "credential-url",
+      "line": 308
+    },
+    {
+      "path": "tests/shared-runtime-tls-policy.test.ts",
+      "category": "private-key",
+      "line": 32
+    },
+    {
+      "path": "tests/shared-runtime-tls-policy.test.ts",
+      "category": "credential-url",
+      "line": 83
+    },
+    {
+      "path": "tests/shared-runtime-tls-policy.test.ts",
+      "category": "credential-url",
+      "line": 84
+    },
+    {
+      "path": "tests/shared-runtime-tls-policy.test.ts",
+      "category": "email",
+      "line": 84
+    },
+    {
+      "path": "tests/windows-path-policy.test.ts",
+      "category": "personal-path",
+      "line": 50
+    },
+    {
+      "path": "tests/windows-private-root-contract.test.ts",
+      "category": "personal-path",
+      "line": 60
+    },
+    {
+      "path": "tests/windows-private-root-contract.test.ts",
+      "category": "personal-path",
+      "line": 61
+    },
+    {
+      "path": "tests/windows-private-root-contract.test.ts",
+      "category": "personal-path",
+      "line": 252
+    },
+    {
+      "path": "tests/windows-private-root-contract.test.ts",
+      "category": "personal-path",
+      "line": 253
+    }
+  ],
+  "triage": {
+    "personal-path": "Synthetic Windows Alice/Japanese name path-policy fixtures and Windows Public-directory attack counterexamples; retained unchanged",
+    "credential-url": "Intentionally invalid URL fixtures at example/loopback endpoints",
+    "private-key": "Header-only malformed private-key fixture, no key body or live credential",
+    "email": "Synthetic invalid endpoint fixture at example domain"
+  },
+  "unexpectedFindings": 0,
+  "explicitEvidenceLogs": [
+    "docs/roadmap/20261110-lv36-execution-evidence/logs/baseline-final.log",
+    "docs/roadmap/20261110-lv36-execution-evidence/logs/binding-final.log",
+    "docs/roadmap/20261110-lv36-execution-evidence/logs/connected-final-first.log",
+    "docs/roadmap/20261110-lv36-execution-evidence/logs/connected-final-second.log",
+    "docs/roadmap/20261110-lv36-execution-evidence/logs/final-build.log",
+    "docs/roadmap/20261110-lv36-execution-evidence/logs/final-check.log",
+    "docs/roadmap/20261110-lv36-execution-evidence/logs/final-tests.log",
+    "docs/roadmap/20261110-lv36-execution-evidence/logs/native-owned-current.log",
+    "docs/roadmap/20261110-lv36-execution-evidence/logs/native-probe-current.log",
+    "docs/roadmap/20261110-lv36-execution-evidence/logs/native-root-current.log",
+    "docs/roadmap/20261110-lv36-execution-evidence/logs/process-crash-first.log",
+    "docs/roadmap/20261110-lv36-execution-evidence/logs/shared-image-final.log",
+    "docs/roadmap/20261110-lv46-continuation-evidence/logs/comparative-bindings-final.log",
+    "docs/roadmap/20261110-lv46-continuation-evidence/logs/comparative-final.log",
+    "docs/roadmap/20261110-lv46-continuation-evidence/logs/compiled-cli-final.log",
+    "docs/roadmap/20261110-lv46-continuation-evidence/logs/final-build.log",
+    "docs/roadmap/20261110-lv46-continuation-evidence/logs/final-check.log",
+    "docs/roadmap/20261110-lv46-continuation-evidence/logs/final-tests.log"
+  ],
+  "exclude": [
+    "auth configuration",
+    "raw model sessions/reasoning",
+    "database and actual credentials",
+    "native binaries and SDK",
+    "dist/node_modules"
+  ],
+  "actions": {
+    "branch": "codex/folio-lv5-collaboration-20261109",
+    "commitSkipMarker": "[skip ci]",
+    "newPullRequest": false,
+    "workflowChanges": false,
+    "masterMerge": false,
+    "gui": false
+  },
+  "ciPolicy": {
+    "pushWorkflow": "quiet-checks only on master",
+    "pullRequestWorkflow": "quiet-checks and gui-linux; no PR created/updated",
+    "skipCiMarker": true
+  },
+  "whitespaceCheck": {
+    "sourceAndDocumentation": "PASS",
+    "rawEvidenceLogs": "Original tool whitespace preserved; check excludes the two explicitly reviewed logs directories"
+  }
+}

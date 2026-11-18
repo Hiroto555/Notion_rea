@@ -60,6 +60,45 @@ function menuItems(group: HTMLElement) {
   ].filter(shown);
 }
 
+// The element focused at mount is not always a durable restore target: menu
+// panels stay mounted while hidden, so the opener's own menu trigger is the
+// stable candidate when the opener sat inside a panel that has since closed.
+export function captureDialogOrigin(active: HTMLElement | null): {
+  active: HTMLElement | null;
+  fallback: HTMLElement | null;
+} {
+  // A dropdown item that opened the dialog is unmounted in the same commit;
+  // remember its visible trigger so focus can return to the menu button.
+  const anchor = active?.closest?.(".menu-anchor");
+  const menu = active?.closest?.(".r7-menu");
+  return {
+    active:
+      active && active !== document.body && active !== document.documentElement
+        ? active
+        : null,
+    fallback:
+      anchor?.querySelector<HTMLElement>(":scope > button") ??
+      menu?.querySelector<HTMLElement>(
+        ":scope > [data-settings-menu-trigger]",
+      ) ??
+      null,
+  };
+}
+
+// A candidate counts only while it is connected and shown: focus() on a
+// hidden node silently fails, so activeElement must confirm the move before
+// the chain stops and focus is never dropped without trying the next entry.
+export function restoreDialogFocus(
+  candidates: readonly (HTMLElement | null | undefined)[],
+): boolean {
+  for (const candidate of candidates) {
+    if (!candidate?.isConnected || !shown(candidate)) continue;
+    candidate.focus({ preventScroll: true });
+    if (document.activeElement === candidate) return true;
+  }
+  return false;
+}
+
 // Native showModal supplies top-layer ordering and an inert background. The
 // explicit Tab loop also keeps focus inside rather than in browser chrome.
 export function Modal({
@@ -74,21 +113,9 @@ export function Modal({
   // Chromium can close a native select popup before dispatching the same
   // Escape to its containing dialog. Remember that inner surface until cancel.
   const selectMenu = useRef<HTMLSelectElement | null>(null);
-  const [origin] = useState(() => {
-    const active = document.activeElement as HTMLElement | null;
-    // A dropdown item that opened the dialog is unmounted in the same commit;
-    // remember its visible trigger so focus can return to the menu button.
-    const anchor = active?.closest?.(".menu-anchor");
-    return {
-      active:
-        active &&
-        active !== document.body &&
-        active !== document.documentElement
-          ? active
-          : null,
-      fallback: anchor?.querySelector<HTMLElement>(":scope > button") ?? null,
-    };
-  });
+  const [origin] = useState(() =>
+    captureDialogOrigin(document.activeElement as HTMLElement | null),
+  );
   const restore = useRef(restoreFocus);
   restore.current = restoreFocus;
   useLayoutEffect(() => {
@@ -102,16 +129,11 @@ export function Modal({
         // its effect cleanup; that is not a user dismissal.
         if (dialog.isConnected && dialog.open) return;
         if (restore.current?.()) return;
-        if (origin.active?.isConnected) {
-          origin.active.focus({ preventScroll: true });
-          return;
-        }
-        if (origin.fallback?.isConnected) {
-          origin.fallback.focus({ preventScroll: true });
-          return;
-        }
-        const title = document.querySelector<HTMLInputElement>(".page-title");
-        if (title && !title.disabled) title.focus({ preventScroll: true });
+        restoreDialogFocus([
+          origin.active,
+          origin.fallback,
+          document.querySelector<HTMLInputElement>(".page-title"),
+        ]);
       });
     };
   }, [origin]);

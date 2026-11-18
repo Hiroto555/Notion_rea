@@ -1,0 +1,773 @@
+{
+  "modelRequested": "opencode-go/deepseek-v4.1-flash",
+  "dispatches": 43,
+  "uniqueSessions": 37,
+  "peakOverlappingCliProcesses": 24,
+  "providerHardConcurrencyLimitVerified": false,
+  "metricsScope": "deduplicated step_finish counters from CLI logs only; interrupted/incomplete generations may not report final usage",
+  "reportedTotals": {
+    "input": 1195427,
+    "output": 160271,
+    "reasoning": 553257,
+    "total": 9560439,
+    "cacheRead": 7651484,
+    "cacheWrite": 0
+  },
+  "reportedMetricSteps": 380,
+  "observedCompletedToolCounts": {
+    "read": 284,
+    "glob": 24,
+    "write": 80,
+    "edit": 63,
+    "grep": 6
+  },
+  "toolErrorEvents": 21,
+  "quotaRemaining": "NOT_VERIFIED",
+  "billingAmount": "NOT_VERIFIED",
+  "billingSettingsChanged": false,
+  "rawEvidenceRoot": "/private/var/folders/fm/qk5fr3z11wq8hbphz6gk9llc0000gn/T/folio-lv456-sprint-20261108-fzvnnw0y",
+  "reportFilenameMismatch": {
+    "jobs": [
+      "19-server-review",
+      "20-engine-review"
+    ],
+    "packet": "REVIEW.md",
+    "dispatchMessage": "REPORT.md",
+    "actual": "REPORT.md",
+    "resolution": "parent read actual report and checked source; no source changes adopted from reviewers"
+  },
+  "rows": [
+    {
+      "job": "01-authz-impl",
+      "sessionId": "ses_e4471a01effeNpJqpiqjfgiptJ",
+      "variantRequested": "high",
+      "state": {
+        "id": "01-authz-impl",
+        "state": "finished",
+        "started": 1794148017.719147,
+        "pid": 27516,
+        "exit": 0,
+        "seconds": 158.37
+      },
+      "finalReasonsAsReported": [
+        "tool-calls",
+        "stop"
+      ]
+    },
+    {
+      "job": "01-authz-test",
+      "sessionId": "ses_e447195c5ffe6MVV62v5neaFpD",
+      "variantRequested": "high",
+      "state": {
+        "id": "01-authz-test",
+        "state": "finished",
+        "started": 1794148017.71926,
+        "pid": 27517,
+        "exit": 0,
+        "seconds": 164.17
+      },
+      "finalReasonsAsReported": [
+        "tool-calls",
+        "stop"
+      ]
+    },
+    {
+      "job": "02-command-impl",
+      "sessionId": "ses_e44719052ffe8tNBy4dbf3X7Jc",
+      "variantRequested": "high",
+      "state": {
+        "id": "02-command-impl",
+        "state": "finished",
+        "started": 1794148017.719378,
+        "pid": 27518,
+        "exit": 0,
+        "seconds": 168.32
+      },
+      "finalReasonsAsReported": [
+        "tool-calls",
+        "stop"
+      ]
+    },
+    {
+      "job": "02-command-test",
+      "sessionId": "ses_e447199e3ffeUIS36ErgDGlXjW",
+      "variantRequested": "high",
+      "state": {
+        "id": "02-command-test",
+        "state": "finished",
+        "started": 1794148017.7194471,
+        "pid": 27519,
+        "exit": 0,
+        "seconds": 174.59
+      },
+      "finalReasonsAsReported": [
+        "tool-calls",
+        "stop"
+      ]
+    },
+    {
+      "job": "03-receipt-impl",
+      "sessionId": "ses_e4471a428ffefi6Uv1fn95rSNR",
+      "variantRequested": "high",
+      "state": {
+        "id": "03-receipt-impl",
+        "state": "finished",
+        "started": 1794148017.719549,
+        "pid": 27520,
+        "exit": 0,
+        "seconds": 137.68
+      },
+      "finalReasonsAsReported": [
+        "tool-calls",
+        "stop"
+      ]
+    },
+    {
+      "job": "03-receipt-test",
+      "sessionId": "ses_e44719d36ffe5IKQnQlW8B0AGv",
+      "variantRequested": "high",
+      "state": {
+        "id": "03-receipt-test",
+        "state": "finished",
+        "started": 1794148017.719742,
+        "pid": 27521,
+        "exit": 0,
+        "seconds": 139.29
+      },
+      "finalReasonsAsReported": [
+        "tool-calls",
+        "stop"
+      ]
+    },
+    {
+      "job": "04-lifecycle-impl",
+      "sessionId": "ses_e4471a4f4ffemC57sZCg1ViPjL",
+      "variantRequested": "high",
+      "state": {
+        "id": "04-lifecycle-impl",
+        "state": "finished",
+        "started": 1794148017.71991,
+        "pid": 27537,
+        "exit": 0,
+        "seconds": 117.69
+      },
+      "finalReasonsAsReported": [
+        "tool-calls",
+        "stop"
+      ]
+    },
+    {
+      "job": "04-lifecycle-test",
+      "sessionId": "ses_e4471923bffeKec54E9GPsERIn",
+      "variantRequested": "high",
+      "state": {
+        "id": "04-lifecycle-test",
+        "state": "finished",
+        "started": 1794148017.724812,
+        "pid": 27535,
+        "exit": 0,
+        "seconds": 169.29
+      },
+      "finalReasonsAsReported": [
+        "tool-calls",
+        "stop"
+      ]
+    },
+    {
+      "job": "05-budget-impl",
+      "sessionId": "ses_e447188ccffegO3BTac1Ou21WF",
+      "variantRequested": "high",
+      "state": {
+        "id": "05-budget-impl",
+        "state": "finished",
+        "started": 1794148017.72513,
+        "pid": 27529,
+        "exit": 0,
+        "seconds": 90.74
+      },
+      "finalReasonsAsReported": [
+        "tool-calls",
+        "stop"
+      ]
+    },
+    {
+      "job": "05-budget-test",
+      "sessionId": "ses_e44718c81ffeg0sVyofdgo1n6V",
+      "variantRequested": "high",
+      "state": {
+        "id": "05-budget-test",
+        "state": "finished",
+        "started": 1794148017.7252438,
+        "pid": 27542,
+        "exit": 0,
+        "seconds": 128.36
+      },
+      "finalReasonsAsReported": [
+        "tool-calls",
+        "stop"
+      ]
+    },
+    {
+      "job": "06-audit-impl",
+      "sessionId": "ses_e447194e2ffeYZt8zmhkxs9wTM",
+      "variantRequested": "high",
+      "state": {
+        "id": "06-audit-impl",
+        "state": "finished",
+        "started": 1794148017.7253451,
+        "pid": 27525,
+        "exit": 0,
+        "seconds": 129.98
+      },
+      "finalReasonsAsReported": [
+        "tool-calls",
+        "stop"
+      ]
+    },
+    {
+      "job": "06-audit-test",
+      "sessionId": "ses_e447192dbffeRXH3pE3rAEbPnC",
+      "variantRequested": "high",
+      "state": {
+        "id": "06-audit-test",
+        "state": "finished",
+        "started": 1794148017.725711,
+        "pid": 27530,
+        "exit": 0,
+        "seconds": 249.62
+      },
+      "finalReasonsAsReported": [
+        "tool-calls",
+        "stop"
+      ]
+    },
+    {
+      "job": "07-org-impl",
+      "sessionId": "ses_e44719e74ffeI6NGFSYw5IBG5L",
+      "variantRequested": "high",
+      "state": {
+        "id": "07-org-impl",
+        "state": "finished",
+        "started": 1794148017.725837,
+        "pid": 27541,
+        "exit": 0,
+        "seconds": 143.71
+      },
+      "finalReasonsAsReported": [
+        "tool-calls",
+        "stop"
+      ]
+    },
+    {
+      "job": "07-org-test",
+      "sessionId": "ses_e447192b1ffeF3VXfzUHOpz3th",
+      "variantRequested": "high",
+      "state": {
+        "id": "07-org-test",
+        "state": "finished",
+        "started": 1794148017.725964,
+        "pid": 27539,
+        "exit": 0,
+        "seconds": 297.75
+      },
+      "finalReasonsAsReported": [
+        "tool-calls",
+        "stop"
+      ]
+    },
+    {
+      "job": "08-copy-impl",
+      "sessionId": "ses_e4471a24affeI0z9MOM7kUsenm",
+      "variantRequested": "high",
+      "state": {
+        "id": "08-copy-impl",
+        "state": "finished",
+        "started": 1794148017.7260501,
+        "pid": 27527,
+        "exit": 0,
+        "seconds": 133.81
+      },
+      "finalReasonsAsReported": [
+        "tool-calls",
+        "stop"
+      ]
+    },
+    {
+      "job": "08-copy-test",
+      "sessionId": "ses_e447198e8ffe5mOwrP0BgDhLt9",
+      "variantRequested": "high",
+      "state": {
+        "id": "08-copy-test",
+        "state": "finished",
+        "started": 1794148017.726183,
+        "pid": 27523,
+        "exit": 0,
+        "seconds": 158.47
+      },
+      "finalReasonsAsReported": [
+        "tool-calls",
+        "stop"
+      ]
+    },
+    {
+      "job": "09-restore-impl",
+      "sessionId": "ses_e4471894affeBJaHQoWGiJVJcx",
+      "variantRequested": "high",
+      "state": {
+        "id": "09-restore-impl",
+        "state": "finished",
+        "started": 1794148017.72627,
+        "pid": 27545,
+        "exit": 0,
+        "seconds": 129.46
+      },
+      "finalReasonsAsReported": [
+        "tool-calls",
+        "stop"
+      ]
+    },
+    {
+      "job": "09-restore-test",
+      "sessionId": "ses_e4471978affetc8rsp6HTYOjpL",
+      "variantRequested": "high",
+      "state": {
+        "id": "09-restore-test",
+        "state": "finished",
+        "started": 1794148017.726366,
+        "pid": 27526,
+        "exit": 0,
+        "seconds": 126.22
+      },
+      "finalReasonsAsReported": [
+        "tool-calls",
+        "stop"
+      ]
+    },
+    {
+      "job": "10-ui-state-impl",
+      "sessionId": "ses_e44718230ffeB2a42CtOcIFMWN",
+      "variantRequested": "high",
+      "state": {
+        "id": "10-ui-state-impl",
+        "state": "finished",
+        "started": 1794148017.726442,
+        "pid": 27533,
+        "exit": 0,
+        "seconds": 110.35
+      },
+      "finalReasonsAsReported": [
+        "tool-calls",
+        "stop"
+      ]
+    },
+    {
+      "job": "10-ui-state-test",
+      "sessionId": "ses_e4471856fffeDA1taU3TkdIsJE",
+      "variantRequested": "high",
+      "state": {
+        "id": "10-ui-state-test",
+        "state": "finished",
+        "started": 1794148017.726536,
+        "pid": 27522,
+        "exit": 0,
+        "seconds": 169.12
+      },
+      "finalReasonsAsReported": [
+        "tool-calls",
+        "stop"
+      ]
+    },
+    {
+      "job": "11-engine-b-impl",
+      "sessionId": "ses_e4471963dffeOyENyuc4WzgmBi",
+      "variantRequested": "high",
+      "state": {
+        "id": "11-engine-b-impl",
+        "state": "finished",
+        "started": 1794148017.726739,
+        "pid": 27540,
+        "timedOut": true,
+        "exit": -15,
+        "seconds": 900.26
+      },
+      "finalReasonsAsReported": [
+        "tool-calls",
+        "tool-calls"
+      ]
+    },
+    {
+      "job": "11-engine-b-test",
+      "sessionId": "ses_e4471a470ffe7FK0sXO6Q4X14d",
+      "variantRequested": "high",
+      "state": {
+        "id": "11-engine-b-test",
+        "state": "finished",
+        "started": 1794148017.726942,
+        "pid": 27543,
+        "exit": 0,
+        "seconds": 178.17
+      },
+      "finalReasonsAsReported": [
+        "tool-calls",
+        "stop"
+      ]
+    },
+    {
+      "job": "12-engine-c-impl",
+      "sessionId": "ses_e447193d4ffeazTKIeR2owXr3N",
+      "variantRequested": "high",
+      "state": {
+        "id": "12-engine-c-impl",
+        "state": "finished",
+        "started": 1794148017.727058,
+        "pid": 27524,
+        "exit": 0,
+        "seconds": 391.81
+      },
+      "finalReasonsAsReported": [
+        "tool-calls",
+        "length"
+      ]
+    },
+    {
+      "job": "12-engine-c-test",
+      "sessionId": "ses_e44719f7dffeyX6xLtK136pWvJ",
+      "variantRequested": "high",
+      "state": {
+        "id": "12-engine-c-test",
+        "state": "finished",
+        "started": 1794148017.727193,
+        "pid": 27531,
+        "exit": 0,
+        "seconds": 346.49
+      },
+      "finalReasonsAsReported": [
+        "tool-calls",
+        "stop"
+      ]
+    },
+    {
+      "job": "fix-03-receipt-impl",
+      "sessionId": "ses_e4471a428ffefi6Uv1fn95rSNR",
+      "variantRequested": "high",
+      "state": {
+        "id": "fix-03-receipt-impl",
+        "state": "finished",
+        "started": 1794148264.0614579,
+        "pid": 31325,
+        "exit": 0,
+        "seconds": 21.16
+      },
+      "finalReasonsAsReported": [
+        "tool-calls",
+        "stop"
+      ]
+    },
+    {
+      "job": "fix-05-budget-test",
+      "sessionId": "ses_e44718c81ffeg0sVyofdgo1n6V",
+      "variantRequested": "high",
+      "state": {
+        "id": "fix-05-budget-test",
+        "state": "finished",
+        "started": 1794148264.0616791,
+        "pid": 31326,
+        "exit": 0,
+        "seconds": 18.14
+      },
+      "finalReasonsAsReported": [
+        "tool-calls",
+        "stop"
+      ]
+    },
+    {
+      "job": "fix-08-copy-test",
+      "sessionId": "ses_e447198e8ffe5mOwrP0BgDhLt9",
+      "variantRequested": "high",
+      "state": {
+        "id": "fix-08-copy-test",
+        "state": "finished",
+        "started": 1794148264.062062,
+        "pid": 31327,
+        "exit": 0,
+        "seconds": 17.61
+      },
+      "finalReasonsAsReported": [
+        "tool-calls",
+        "stop"
+      ]
+    },
+    {
+      "job": "13-transport-impl",
+      "sessionId": "ses_e446cf071ffejqB8Z4dDT1VL9l",
+      "variantRequested": "high",
+      "state": {
+        "id": "13-transport-impl",
+        "state": "finished",
+        "started": 1794148338.967964,
+        "pid": 31966,
+        "exit": 0,
+        "seconds": 270.25
+      },
+      "finalReasonsAsReported": [
+        "tool-calls",
+        "stop"
+      ]
+    },
+    {
+      "job": "13-transport-test",
+      "sessionId": "ses_e446cf084ffeNjGPxFVApBwx0v",
+      "variantRequested": "high",
+      "state": {
+        "id": "13-transport-test",
+        "state": "finished",
+        "started": 1794148338.968066,
+        "pid": 31965,
+        "exit": 0,
+        "seconds": 251.61
+      },
+      "finalReasonsAsReported": [
+        "tool-calls",
+        "stop"
+      ]
+    },
+    {
+      "job": "14-authority-fault-tests",
+      "sessionId": "ses_e446bfb77ffeA2b06teIElrDjI",
+      "variantRequested": "high",
+      "state": {
+        "id": "14-authority-fault-tests",
+        "state": "finished",
+        "started": 1794148401.577887,
+        "pid": 32752,
+        "exit": 0,
+        "seconds": 244.25
+      },
+      "finalReasonsAsReported": [
+        "tool-calls",
+        "stop"
+      ]
+    },
+    {
+      "job": "fix-12-engine-c-impl",
+      "sessionId": "ses_e447193d4ffeazTKIeR2owXr3N",
+      "variantRequested": "high",
+      "state": {
+        "id": "fix-12-engine-c-impl",
+        "state": "finished",
+        "started": 1794148481.711194,
+        "pid": 33536,
+        "exit": 0,
+        "seconds": 59.17
+      },
+      "finalReasonsAsReported": [
+        "tool-calls",
+        "stop"
+      ]
+    },
+    {
+      "job": "15-actual-schema-tests",
+      "sessionId": "ses_e44684cd2ffeAtfAbs7xy9kSu9",
+      "variantRequested": "high",
+      "state": {
+        "id": "15-actual-schema-tests",
+        "state": "finished",
+        "started": 1794148642.7642748,
+        "pid": 34553,
+        "exit": 0,
+        "seconds": 277.87
+      },
+      "finalReasonsAsReported": [
+        "tool-calls",
+        "length"
+      ]
+    },
+    {
+      "job": "16-records-impl",
+      "sessionId": "ses_e44633717ffeuHZBK3YH73lXgA",
+      "variantRequested": "high",
+      "state": {
+        "id": "16-records-impl",
+        "state": "finished",
+        "started": 1794148975.384063,
+        "pid": 36345,
+        "exit": 0,
+        "seconds": 71.68
+      },
+      "finalReasonsAsReported": [
+        "tool-calls",
+        "stop"
+      ]
+    },
+    {
+      "job": "16-records-test",
+      "sessionId": "ses_e44633768ffeY1WqiQhBSk189X",
+      "variantRequested": "high",
+      "state": {
+        "id": "16-records-test",
+        "state": "finished",
+        "started": 1794148975.3841548,
+        "pid": 36350,
+        "exit": 0,
+        "seconds": 93.53
+      },
+      "finalReasonsAsReported": [
+        "tool-calls",
+        "stop"
+      ]
+    },
+    {
+      "job": "17-asset-admission-impl",
+      "sessionId": "ses_e446336d5ffegHw4HwZ2kS0070",
+      "variantRequested": "high",
+      "state": {
+        "id": "17-asset-admission-impl",
+        "state": "finished",
+        "started": 1794148975.384256,
+        "pid": 36349,
+        "exit": 0,
+        "seconds": 45.6
+      },
+      "finalReasonsAsReported": [
+        "tool-calls",
+        "stop"
+      ]
+    },
+    {
+      "job": "17-asset-admission-test",
+      "sessionId": "ses_e44633774ffekpNH4vQ9jbFKxY",
+      "variantRequested": "high",
+      "state": {
+        "id": "17-asset-admission-test",
+        "state": "finished",
+        "started": 1794148975.3843899,
+        "pid": 36346,
+        "exit": 0,
+        "seconds": 49.7
+      },
+      "finalReasonsAsReported": [
+        "tool-calls",
+        "stop"
+      ]
+    },
+    {
+      "job": "18-outbox-impl",
+      "sessionId": "ses_e446336e0ffeUnFSG7JAddOMp2",
+      "variantRequested": "high",
+      "state": {
+        "id": "18-outbox-impl",
+        "state": "finished",
+        "started": 1794148975.384516,
+        "pid": 36347,
+        "exit": -15,
+        "seconds": 526.78
+      },
+      "finalReasonsAsReported": [
+        "tool-calls",
+        "tool-calls"
+      ]
+    },
+    {
+      "job": "18-outbox-test",
+      "sessionId": "ses_e446336efffeMJVJzYQIvWRleB",
+      "variantRequested": "high",
+      "state": {
+        "id": "18-outbox-test",
+        "state": "finished",
+        "started": 1794148975.384588,
+        "pid": 36348,
+        "exit": 0,
+        "seconds": 439.4
+      },
+      "finalReasonsAsReported": [
+        "tool-calls",
+        "stop"
+      ]
+    },
+    {
+      "job": "19-server-review",
+      "sessionId": "ses_e445cec02ffelBhXQZN2i3mwUh",
+      "variantRequested": "low",
+      "state": {
+        "id": "19-server-review",
+        "state": "finished",
+        "started": 1794149388.6502972,
+        "pid": 38323,
+        "exit": 0,
+        "seconds": 293.7
+      },
+      "finalReasonsAsReported": [
+        "tool-calls",
+        "stop"
+      ]
+    },
+    {
+      "job": "20-engine-review",
+      "sessionId": "ses_e445cebfeffePQEd8SmnOyBs96",
+      "variantRequested": "low",
+      "state": {
+        "id": "20-engine-review",
+        "state": "finished",
+        "started": 1794149388.6503959,
+        "pid": 38322,
+        "exit": 0,
+        "seconds": 195.84
+      },
+      "finalReasonsAsReported": [
+        "tool-calls",
+        "stop"
+      ]
+    },
+    {
+      "job": "fix-18-outbox-impl",
+      "sessionId": "ses_e446336e0ffeUnFSG7JAddOMp2",
+      "variantRequested": "low",
+      "state": {
+        "id": "fix-18-outbox-impl",
+        "state": "finished",
+        "started": 1794149502.2451148,
+        "pid": 39511,
+        "exit": 0,
+        "seconds": 242.6
+      },
+      "finalReasonsAsReported": [
+        "tool-calls",
+        "stop"
+      ]
+    },
+    {
+      "job": "fix-18-outbox-test",
+      "sessionId": "ses_e446336efffeMJVJzYQIvWRleB",
+      "variantRequested": "low",
+      "state": {
+        "id": "fix-18-outbox-test",
+        "state": "finished",
+        "started": 1794149502.245693,
+        "pid": 39512,
+        "exit": 0,
+        "seconds": 76.37
+      },
+      "finalReasonsAsReported": [
+        "tool-calls",
+        "stop"
+      ]
+    },
+    {
+      "job": "21-resources-tests",
+      "sessionId": "ses_e444de728ffeUlY0rHOgvBFKcQ",
+      "variantRequested": "low",
+      "state": {
+        "id": "21-resources-tests",
+        "state": "finished",
+        "started": 1794150372.817373,
+        "pid": 45601,
+        "exit": 0,
+        "seconds": 116.39
+      },
+      "finalReasonsAsReported": [
+        "tool-calls",
+        "stop"
+      ]
+    }
+  ]
+}

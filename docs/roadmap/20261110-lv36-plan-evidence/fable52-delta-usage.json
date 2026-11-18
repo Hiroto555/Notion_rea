@@ -1,0 +1,60 @@
+{
+  "status": "VERIFIED_REQUESTED_MODEL",
+  "transport": "Devin CLI ACP stdio",
+  "requestedModel": "claude-fable-5-2-xhigh",
+  "selectedConfig": {
+    "mode": "ask",
+    "model": "claude-fable-5-2-medium",
+    "thought_level": "xhigh",
+    "speed": "standard"
+  },
+  "sessionId": "necessary-backbone",
+  "sessionDatabaseModel": "claude-fable-5-2-xhigh",
+  "generationModels": [
+    "claude-fable-5-2-xhigh"
+  ],
+  "promptCalls": 1,
+  "uniqueRecordedGenerations": 1,
+  "assistantDatabaseRowCopies": 2,
+  "toolCalls": 0,
+  "stopReason": "end_turn",
+  "promptBytes": 9623,
+  "previousPromptBytes": 29399,
+  "previousFullHistoryResubmitted": false,
+  "previousReasoningResubmitted": false,
+  "priorWorkReused": "Condensed Fable5.1 findings and Codex adoption, only three unresolved questions with minimal source summaries",
+  "promptUsage": {
+    "totalTokens": 62096,
+    "inputTokens": 20821,
+    "outputTokens": 41275,
+    "cachedWriteTokens": 18020
+  },
+  "generationMetrics": {
+    "ttft_ms": 5217,
+    "total_time_ms": 394409,
+    "input_tokens": 2801,
+    "output_tokens": 41275,
+    "cache_read_tokens": null,
+    "cache_creation_tokens": 18020,
+    "context_input_tokens": 20821,
+    "tpot_ms": 9.429242883101152,
+    "tokens_per_sec": 106.05305350572468
+  },
+  "textOutputTokens": "UNKNOWN",
+  "reasoningTokens": "UNKNOWN",
+  "billingAmount": "UNKNOWN",
+  "cacheSavingsRate": "UNKNOWN",
+  "previousReportedTokenTotal": 59359,
+  "currentReportedTokenTotal": 62096,
+  "totalReportedTokensReduced": false,
+  "elapsedSecondsIncludingPreflightGate": 417.82,
+  "promptSha256": "e3b378aaea6b7747820d53bac6930d67c105f6fb1d656dee019438e09ed10adb",
+  "answerSha256": "80b06a0a832a849d818ae6ac73d6f7a9c65759ce9dc92705b717ccf4dc4cc49a",
+  "modelProof": "Advertised model/thought_level/speed/ask selectors; session DB model; assistant metadata.generation_model",
+  "globalOrBillingConfigurationChanged": false,
+  "productCodeChanged": false,
+  "implementationWorkersStarted": 0,
+  "tests": "NOT_RUN",
+  "build": "NOT_RUN",
+  "gui": "NOT_RUN"
+}

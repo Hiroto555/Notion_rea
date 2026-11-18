@@ -364,23 +364,31 @@
   flex: 1 0 200px;
   min-width: 200px;
   max-width: 320px;
-  padding: 10px;
-  background: var(--panel);
-  border: 1px solid var(--line);
+  padding: 8px;
+  background: color-mix(in srgb, var(--panel) 55%, var(--surface));
+  border: 1px solid color-mix(in srgb, var(--line) 72%, transparent);
   border-radius: var(--radius);
+  box-shadow: none;
 }
 .r3-board-column > h4 {
   display: flex;
   align-items: center;
   gap: 6px;
-  margin: 0 0 10px;
+  margin: 0 0 8px;
+  padding: 0 2px 7px;
+  border-bottom: 1px solid var(--line);
   font-size: 11px;
   font-weight: 600;
+  color: var(--text);
 }
 .r3-board-column > h4 small {
   margin-left: auto;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: var(--surface);
   color: var(--muted);
   font-weight: 400;
+  font-variant-numeric: tabular-nums;
 }
 .r3-status-dot {
   width: 7px;
@@ -393,9 +401,9 @@
 .r3-card {
   position: relative;
   background: var(--surface);
-  border: 1px solid var(--line);
+  border: 1px solid color-mix(in srgb, var(--line) 82%, transparent);
   border-radius: var(--radius);
-  box-shadow: var(--shadow-sm);
+  box-shadow: none;
   margin-bottom: 8px;
 }
 .r3-card:hover {
@@ -504,10 +512,29 @@
 .r3-month-nav {
   display: flex;
   align-items: center;
-  justify-content: flex-end;
-  gap: 12px;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
   padding: 4px 0 10px;
   font-size: 12px;
+}
+.r3-month-nav-controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-inline-start: auto;
+}
+.r3-month-context {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 12px;
+  margin: 0;
+  color: var(--muted);
+  font-size: 10px;
+  line-height: 1.5;
+}
+.r3-month-context span {
+  white-space: nowrap;
 }
 .r3-month-nav button {
   padding: 4px 8px;

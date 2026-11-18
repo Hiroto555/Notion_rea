@@ -40,6 +40,51 @@
   justify-content: center;
   min-width: 32px;
 }
+/* Header "… → 表示" disclosure. It only changes visibility; the parent-owned
+ * controls stay mounted while the menu is closed. */
+.r4-record-display .r7-menu-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-height: var(--control-height, 32px);
+  padding: 5px 8px;
+  color: var(--muted);
+  font-size: 11px;
+  border-radius: var(--radius-sm);
+}
+.r4-record-display .r7-menu-trigger:hover {
+  color: var(--text);
+  background: var(--hover);
+}
+.r4-record-display-panel {
+  position: fixed;
+  z-index: 40;
+  box-sizing: border-box;
+  width: min(300px, calc(100vw - 32px));
+  max-height: min(70vh, 560px);
+  overflow: auto;
+  overscroll-behavior: contain;
+  padding: 12px;
+  border: 1px solid var(--line, #e7e5e4);
+  border-radius: var(--radius, 8px);
+  background: var(--surface, #fff);
+  box-shadow: 0 14px 36px rgb(0 0 0 / 18%);
+}
+.r4-record-display-panel[hidden] {
+  display: none;
+}
+.r4-record-display-heading {
+  margin-bottom: 8px;
+  color: var(--text-soft, #444);
+  font-size: 12px;
+  font-weight: 600;
+}
+.r4-record-display-options {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
 .r4-record-surface .r3-record-icon {
   margin-top: 36px;
 }

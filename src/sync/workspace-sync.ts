@@ -1,21 +1,32 @@
+import { assertRecoverySyncAllowed } from "../persistence/recovery-origin";
+import type { NormalApplyRecord } from "./normal-apply-journal";
 import { randomUUID } from "node:crypto";
-import { mkdirSync, realpathSync } from "node:fs";
+import { existsSync, mkdirSync, realpathSync } from "node:fs";
 import { basename, dirname, join } from "node:path";
 import { estimateBackupBytes } from "../main/bulk-storage-budget";
 import { WorkspaceStoragePressure } from "../main/storage-pressure";
+import { assertBackupRetention } from "./backup-retention";
+import { readSyncSuccess, writeSyncSuccess } from "../main/workspace-sync-history";
 import { createFullBackup } from "../persistence/full-backup-create";
+import { privatePersistencePort, type PrivatePersistenceOptions } from "../platform/private-persistence";
 import { readUserVersion } from "../persistence/schema-startup";
 import type { Store } from "../persistence/store";
+import type { WorkspaceConflictCandidateTarget } from "../shared/workspace-conflict-view";
+import type { WorkspaceConflictResolutionTarget } from "../shared/workspace-conflict-resolution";
+import { assertPendingConflictDecision } from "./conflict-decision";
 import { CheckpointRemote } from "./client";
 import {
   canonicalJson,
   hashCheckpoint,
   requireCondition,
+  sha256,
   type Change,
   type Commit,
 } from "./protocol";
 import {
   assertWorkspaceAssets,
+  publishCheckpointAssetsFromStaging,
+  reclaimAppliedStaging,
   stageCheckpointAssets,
   uploadCheckpointAssets,
 } from "./workspace-blobs";
@@ -23,14 +34,16 @@ import {
   verifyWorkspaceBinding,
   type WorkspaceDevice,
 } from "./workspace-binding";
-import { WorkspaceSyncStore } from "./workspace-store";
+import { WorkspaceSyncStore, type WorkspaceSyncIdentity } from "./workspace-store";
+
+export type WorkspaceSyncRestartTarget = WorkspaceSyncIdentity & {revision: number; checkpointHash: string};
 
 export type WorkspaceSyncAdmission = (
   bytes: number,
   purpose: "content" | "assets" | "backup",
 ) => void;
 
-type WorkspaceSyncOptions = WorkspaceDevice & {
+type WorkspaceSyncOptions = WorkspaceDevice & PrivatePersistenceOptions & {
   store: Store;
   baseUrl: string;
   token: string;
@@ -52,11 +65,15 @@ export class WorkspaceSync {
   private readonly assetsDirectory: string;
   private readonly admitBytes: WorkspaceSyncAdmission;
   private readonly remote: CheckpointRemote;
+  private transferAllowed: () => boolean = () => true;
+  setTransferAllowed(allowed: () => boolean): void {this.transferAllowed = allowed;}
+  private assertTransferAllowed(): void {requireCondition(this.transferAllowed(), "sync-disabled", 409);}
 
   private constructor(
     private readonly options: WorkspaceSyncOptions,
     private readonly local: WorkspaceSyncStore,
     remote: CheckpointRemote,
+    private readonly offlineOnly = false,
   ) {
     this.directory = dirname(realpathSync(options.store.path));
     this.assetsDirectory = join(this.directory, "assets");
@@ -64,9 +81,11 @@ export class WorkspaceSync {
     this.admitBytes =
       options.admitBytes ?? ((bytes) => pressure.assertWritable(bytes));
     this.remote = remote;
+    remote.setRequestGuard(() => this.assertTransferAllowed());
   }
 
   static async open(options: WorkspaceSyncOptions): Promise<WorkspaceSync> {
+    assertRecoverySyncAllowed(options.store.db);
     requireCondition(
       basename(options.store.path) === "workspace.sqlite",
       "invalid-workspace-path",
@@ -93,7 +112,7 @@ export class WorkspaceSync {
     // A restored v5 backup has no live binding, including when a caller
     // passes the old credentials. Recovery is a separate explicit enrollment.
     if (version === 5 && !recovering)
-      verifyWorkspaceBinding(options.store.path, options, false);
+      verifyWorkspaceBinding(options.store.path, options, false, options.nativePrivateFilesystem ? options : undefined);
     const remote = new CheckpointRemote(options);
     const { serverEpoch, head } = await remote.head();
     // The receipt route is device scoped. A workspace reader's token cannot
@@ -109,13 +128,16 @@ export class WorkspaceSync {
     if (recovering) {
       local.rebindRestored(() => {
         sync.backup("before-rebind");
-        verifyWorkspaceBinding(options.store.path, options, true);
+        verifyWorkspaceBinding(options.store.path, options, true, {
+          nativePrivateFilesystem: privatePersistencePort(options.nativePrivateFilesystem ? options : undefined),
+          reenroll: true,
+        });
       });
-      verifyWorkspaceBinding(options.store.path, options, false);
+      verifyWorkspaceBinding(options.store.path, options, false, options.nativePrivateFilesystem ? options : undefined);
     } else if (version !== 5 && (mode === "publish" || mode === "join")) {
       local.enable(mode, () => {
         sync.backup("before-enable");
-        verifyWorkspaceBinding(options.store.path, options, true);
+        verifyWorkspaceBinding(options.store.path, options, true, options.nativePrivateFilesystem ? options : undefined);
       });
     }
     const { appliedRevision, receivedCursor } = local.status();
@@ -127,12 +149,39 @@ export class WorkspaceSync {
     return sync;
   }
 
+  /** Reopen an already bound v5 queue without contacting the server. This
+   * cannot enroll, send, receive or resolve conflicts. The caller must supply
+   * the durable intent's epoch and verify recovery/intent before applying. */
+  static openStaged(options: WorkspaceSyncOptions, serverEpoch: string): WorkspaceSync {
+    assertRecoverySyncAllowed(options.store.db);
+    requireCondition(basename(options.store.path) === "workspace.sqlite", "invalid-workspace-path");
+    requireCondition(typeof options.canApply === "function", "edit-barrier-required");
+    requireCondition(options.mode === undefined && readUserVersion(options.store.db) === 5, "not-a-v5-workspace");
+    verifyWorkspaceBinding(options.store.path, options, false, options.nativePrivateFilesystem ? options : undefined);
+    const local = new WorkspaceSyncStore(options.store, {...options, serverEpoch});
+    local.status(); // Validate the stored identity and schema before returning.
+    return new WorkspaceSync({...options}, local, new CheckpointRemote(options), true);
+  }
+
   status(): SyncStatus {
     return this.local.status();
   }
 
   conflict() {
     return this.local.conflict();
+  }
+
+  conflictInspection() { return this.local.conflictInspection(); }
+  conflictArchives(limit = 20) { return this.local.conflictArchives(limit); }
+  conflictCandidate(target: WorkspaceConflictCandidateTarget) { return this.local.conflictCandidate(target); }
+  conflictResolutionTarget(choice: "local" | "remote") { return this.local.conflictResolutionTarget(choice); }
+  conflictResolutionPreview(choice: "local" | "remote") { return this.local.conflictResolutionPreview(choice); }
+  assertConflictResolutionTarget(target: WorkspaceConflictResolutionTarget) { this.local.assertConflictResolutionTarget(target); }
+  readLastSuccess() { return readSyncSuccess(this.options.store.db, this.local.identity); }
+  shouldRecordSuccess() { const status = this.local.status(); return !status.pending && !status.conflict; }
+  recordLastSuccess(at: string) {
+    this.admitBytes(Buffer.byteLength(at) + 128, "content");
+    writeSyncSuccess(this.options.store.db, this.local.identity, at);
   }
 
   writeEpoch(): number {
@@ -145,7 +194,8 @@ export class WorkspaceSync {
 
   syncOnce(): Promise<SyncStatus> {
     return this.exclusive(async () => {
-      const operation = this.local.prepare();
+      requireCondition(!this.offlineOnly, "offline-sync-instance", 409);
+      const operation = this.local.prepare((bytes) => this.admitBytes(bytes, "content"));
       if (operation) await this.send(operation);
       await this.receive();
       const status = this.local.status();
@@ -161,11 +211,124 @@ export class WorkspaceSync {
     });
   }
 
+  /** Transfer pending local work without reading or applying remote content. */
+  sendPending(): Promise<SyncStatus> {
+    return this.exclusive(async () => {
+      requireCondition(!this.offlineOnly, "offline-sync-instance", 409);
+      const operation = this.local.prepare((bytes) => this.admitBytes(bytes, "content"));
+      if (operation) await this.send(operation);
+      return this.local.status();
+    });
+  }
+
+  /** Persist remote changes and their attachments without applying content or
+   * reconciling self echoes. In particular, nextIncoming() must not be called
+   * here because it can advance applied_revision while reconciling an echo. */
+  receiveAndStage(): Promise<SyncStatus> {
+    return this.exclusive(async () => {
+      requireCondition(!this.offlineOnly, "offline-sync-instance", 409);
+      await this.receive();
+      const status = this.local.status();
+      // A prior download may have failed after its inbox row committed. Walk
+      // every unapplied remote revision on retry, not just the first/latest;
+      // otherwise later attachments could be missing when the server is offline.
+      for (let revision = status.appliedRevision + 1; revision <= status.receivedCursor; revision++) {
+        const incoming = this.local.incoming(revision);
+        requireCondition(incoming, "change-not-staged", 409);
+        if (incoming.clientId === this.options.clientId || !incoming.checkpoint.assets.length) continue;
+        await stageCheckpointAssets({
+          ...this.transferOptions(), assetsDirectory: this.stagingDirectory(),
+          admitBytes: (bytes) => this.admitBytes(bytes, "assets"),
+        }, incoming.checkpoint.assets);
+      }
+      return this.local.status();
+    });
+  }
+
+  /** Apply at most one remote revision, using only previously staged bytes.
+   * This entrypoint must be invoked by a windowless owner after explicit consent. */
+  stagedTarget(): { revision: number; checkpointHash: string } | null {
+    const change = this.stagedChange();
+    if (!change) return null;
+    return {revision: change.revision, checkpointHash: change.checkpointHash};
+  }
+
+  restartTarget(): WorkspaceSyncRestartTarget | null {
+    const change = this.stagedChange();
+    if (!change) return null;
+    return {...this.local.identity, revision: change.revision, checkpointHash: change.checkpointHash};
+  }
+
+  stagedChange(): Change | null {
+    const status = this.local.status();
+    for (let revision = status.appliedRevision + 1; revision <= status.receivedCursor; revision++) {
+      const change = this.local.incoming(revision);
+      if (!change) return null;
+      if (change.clientId !== this.options.clientId) return change;
+    }
+    return null;
+  }
+
+  appliedMatches(target: { revision: number; checkpointHash: string }): boolean {
+    return this.local.appliedMatches(target.revision, target.checkpointHash);
+  }
+
+  /** Reconcile only verified self echoes preceding the exact consent target.
+   * This may advance the applied cursor but never replaces content. */
+  reconcileStagedTarget(expected: { revision: number; checkpointHash: string }): Promise<SyncStatus> {
+    return this.exclusive(async () => {
+      this.reconcileBeforeApply(expected);
+      return this.local.status();
+    });
+  }
+
+  private reconcileBeforeApply(expected: { revision: number; checkpointHash: string }): Change | null {
+    const status = this.local.status();
+    if (status.conflict || !this.options.canApply()) return null;
+    const target = this.stagedChange();
+    requireCondition(target && target.revision === expected.revision && target.checkpointHash === expected.checkpointHash,
+      "staged-target-mismatch", 409);
+    // Check the target before nextIncoming() mutates any echo receipt/cursor.
+    const next = this.local.nextIncoming();
+    requireCondition(next && next.revision === target.revision && next.checkpointHash === target.checkpointHash,
+      "staged-target-mismatch", 409);
+    return next;
+  }
+
+  applyStaged(expected: { revision: number; checkpointHash: string }, reservation?: NormalApplyRecord): Promise<SyncStatus> {
+    const pinned = reservation ? structuredClone(reservation) : undefined;
+    return this.exclusive(async () => {
+      const incoming = this.reconcileBeforeApply(expected);
+      const status = this.local.status();
+      if (!incoming || status.pending || status.conflict || status.generation !== status.cleanGeneration)
+        return status;
+      await this.apply(incoming, false, true, undefined, undefined, pinned);
+      return this.local.status();
+    });
+  }
+
   resolveConflict(
     choice: "local" | "remote",
     expectedRevision: number,
   ): Promise<SyncStatus> {
-    return this.exclusive(async () => {
+    return this.exclusive(() => this.resolveConflictChoice(choice, expectedRevision));
+  }
+
+  /** Core-only decision boundary. The caller must own the edit/write barrier;
+   * remote replacement is not exposed by the active-window service or IPC.
+   * Clone before any await so caller mutation cannot retarget a decision. */
+  resolveConflictTarget(target: WorkspaceConflictResolutionTarget, decisionId?: string): Promise<SyncStatus> {
+    return this.exclusive(() => {
+      const pinned = Object.freeze(JSON.parse(canonicalJson(target, 4096))) as WorkspaceConflictResolutionTarget;
+      this.local.assertConflictResolutionTarget(pinned);
+      return this.resolveConflictChoice(pinned.choice, pinned.remoteRevision, pinned, decisionId);
+    });
+  }
+
+  private async resolveConflictChoice(
+    choice: "local" | "remote", expectedRevision: number, target?: WorkspaceConflictResolutionTarget, decisionId?: string,
+  ): Promise<SyncStatus> {
+      requireCondition(!this.offlineOnly, "offline-sync-instance", 409);
       const conflict = this.local.conflict();
       requireCondition(
         conflict && conflict.result.head.revision === expectedRevision,
@@ -177,28 +340,50 @@ export class WorkspaceSync {
         "edit-session-busy",
         409,
       );
+      const assertSelection = () => {
+        requireCondition(this.options.canApply() === true, "edit-session-busy", 409);
+        if (target) this.local.assertConflictResolutionTarget(target);
+        if (decisionId) assertPendingConflictDecision(this.options.store.db, decisionId, target!);
+      };
+      assertSelection();
+      if (target) {
+        const current = await this.remote.head();
+        assertSelection();
+        requireCondition(current.serverEpoch === target.serverEpoch &&
+          current.head.revision === target.remoteRevision &&
+          current.head.checkpointHash === target.remoteCheckpointHash, "conflict-head-changed", 409);
+      }
       if (choice === "local") {
-        await this.send(this.local.chooseLocal(expectedRevision));
+        await this.send(this.local.chooseLocal(expectedRevision, {target, decisionId,
+          admitBytes: (bytes) => {this.admitBytes(bytes, "content"); assertSelection();}}));
       } else {
         requireCondition(choice === "remote", "invalid-conflict-choice");
-        if (!this.local.incoming(expectedRevision)) await this.receive();
+        // Changes pages contain one revision. Catch up contiguously, but
+        // bound each explicit attempt so a large history cannot monopolize the
+        // main process; a retry resumes from the durable received cursor.
+        for (let round = 0; round < 8 && !this.local.incoming(expectedRevision); round++) {
+          const before = this.local.status().receivedCursor;
+          requireCondition(before < expectedRevision, "conflict-head-not-received", 409);
+          await this.receive();
+          assertSelection();
+          requireCondition(this.local.status().receivedCursor > before, "cursor-gap", 409);
+        }
         const incoming = this.local.incoming(expectedRevision);
-        requireCondition(incoming, "conflict-head-not-received", 409);
+        requireCondition(incoming, "conflict-catchup-required", 409);
         requireCondition(
-          await this.apply(incoming, true),
+          await this.apply(incoming, true, false, target, decisionId),
           "edit-session-busy",
           409,
         );
       }
       return this.local.status();
-    });
   }
 
   private async exclusive(
     work: () => Promise<SyncStatus>,
   ): Promise<SyncStatus> {
     requireCondition(!this.running, "sync-already-running", 409);
-    verifyWorkspaceBinding(this.options.store.path, this.options, false);
+    verifyWorkspaceBinding(this.options.store.path, this.options, false, this.options.nativePrivateFilesystem ? this.options : undefined);
     this.running = true;
     try {
       return await work();
@@ -231,17 +416,38 @@ export class WorkspaceSync {
     this.local.stageChanges(page);
   }
 
-  private async apply(change: Change, resolving: boolean): Promise<boolean> {
+  private async apply(change: Change, resolving: boolean, offline = false,
+    target?: WorkspaceConflictResolutionTarget, decisionId?: string, reservation?: NormalApplyRecord): Promise<boolean> {
     if (this.options.canApply() !== true) return false;
-    await stageCheckpointAssets(
+    if (target) this.local.assertConflictResolutionTarget(target);
+    if (decisionId) assertPendingConflictDecision(this.options.store.db, decisionId, target!);
+    if (offline) {
+      // Even an empty manifest is checked against the workspace asset root.
+      mkdirSync(this.assetsDirectory, { recursive: true, mode: 0o700 });
+      if (change.checkpoint.assets.length) publishCheckpointAssetsFromStaging(
+        this.stagingDirectory(), this.assetsDirectory, change.checkpoint.assets,
+        (bytes) => this.admitBytes(bytes, "assets"),
+      );
+    } else await stageCheckpointAssets(
       {
         ...this.transferOptions(),
         admitBytes: (bytes) => this.admitBytes(bytes, "assets"),
       },
       change.checkpoint.assets,
     );
+    if (resolving) {
+      if (this.options.canApply() !== true) return false;
+      if (target) this.local.assertConflictResolutionTarget(target);
+      // A conflict choice names a specific observed head. Recheck after asset
+      // transfer, immediately before entering the synchronous local apply path.
+      const current = await this.remote.head();
+      requireCondition(current.serverEpoch === this.local.identity.serverEpoch &&
+        current.head.revision === change.revision && current.head.checkpointHash === change.checkpointHash,
+        "conflict-head-changed", 409);
+    }
     // No asynchronous gap between this clean check, the backup, and SQLite apply.
     if (this.options.canApply() !== true) return false;
+    if (target) this.local.assertConflictResolutionTarget(target);
     const status = this.local.status();
     if (
       !resolving &&
@@ -260,38 +466,69 @@ export class WorkspaceSync {
       Buffer.byteLength(JSON.stringify(change.checkpoint)),
       "content",
     );
+    if (this.options.canApply() !== true) return false;
+    if (target) this.local.assertConflictResolutionTarget(target);
     // Invalidate before applying. A lost SQLite COMMIT acknowledgement must
     // also leave pre-apply editor requests stale.
     this.epoch++;
     const assertAssets = (assets: Change["checkpoint"]["assets"]) =>
       assertWorkspaceAssets(this.assetsDirectory, assets);
-    if (resolving) this.local.chooseRemote(change, assertAssets);
-    else this.local.applyNext(change, assertAssets);
+    if (resolving) this.local.chooseRemote(change, assertAssets, {target, decisionId,
+      admitBytes: (bytes) => {
+        this.admitBytes(bytes, "content");
+        requireCondition(this.options.canApply() === true, "edit-session-busy", 409);
+      }});
+    else this.local.applyNext(change, assertAssets, reservation);
+    // Cleanup follows a confirmed content COMMIT; it must not change its result.
+    try {
+      reclaimAppliedStaging(this.stagingDirectory(), this.assetsDirectory, change.checkpoint.assets);
+    } catch { /* Preserve uncertain cache evidence and the confirmed apply result. */ }
     return true;
+  }
+
+  private stagingDirectory(): string {
+    const path = join(this.directory, ".folio-sync-assets-staging");
+    const native = privatePersistencePort(this.options.nativePrivateFilesystem ? this.options : undefined);
+    if (native) {
+      if (existsSync(path)) native.inspectDirectory(path); else native.createDirectory(path);
+    } else mkdirSync(path, { recursive: true, mode: 0o700 });
+    return path;
   }
 
   private backup(
     reason: "before-enable" | "before-apply" | "before-rebind",
   ): void {
     const { store } = this.options;
-    this.admitBytes(estimateBackupBytes(store.db, this.directory), "backup");
+    const estimatedBytes = estimateBackupBytes(store.db, this.directory);
+    this.admitBytes(estimatedBytes, "backup");
+    assertBackupRetention(this.directory, estimatedBytes);
     const root = join(this.directory, "backups");
-    mkdirSync(root, { recursive: true, mode: 0o700 });
+    const options = this.options.nativePrivateFilesystem ? this.options : undefined;
+    const native = privatePersistencePort(options);
+    if (native) {
+      // Existing directory inspection and exclusive creation are distinct.
+      if (existsSync(root)) native.inspectDirectory(root); else native.createDirectory(root);
+    } else mkdirSync(root, { recursive: true, mode: 0o700 });
     createFullBackup(
       store.db,
       this.directory,
       join(root, `sync-${reason}-${Date.now()}-${randomUUID()}`),
+      options,
     );
   }
 
   private transferOptions() {
     const { baseUrl, token, workspaceId, timeoutMs } = this.options;
+    const scope = { baseUrlHash: sha256(new URL(baseUrl).origin), workspaceId,
+      clientId: this.options.clientId, bindingId: this.options.bindingId, serverEpoch: this.local.identity.serverEpoch };
     return {
       baseUrl,
       token,
       workspaceId,
       timeoutMs,
+      assertRequest: () => this.assertTransferAllowed(),
       assetsDirectory: this.assetsDirectory,
+      transfer: { scope, directory: join(this.directory, ".folio-sync-transfers", sha256(canonicalJson(scope))), workspaceDirectory: this.directory },
     };
   }
 }

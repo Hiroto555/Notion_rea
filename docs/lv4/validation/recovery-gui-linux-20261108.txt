@@ -1,0 +1,56 @@
+Folio save/recovery Linux GUI acceptance — 2026-11-08 JST
+Candidate: 6b078061670cab27617dedb1c615ea9b246a61eb
+GUI: https://github.com/Hiroto555/Notion_rea/actions/runs/42447102289
+Quiet: https://github.com/Hiroto555/Notion_rea/actions/runs/42447101864
+Artifact: 13604225980 (7-day retention)
+Artifact SHA256: 82b689a91405782fc95e1e1f16c6dcc6e1318395e2a22020ab974c5007364ab4
+Result: 69 PASS / 0 FAIL / 0 SKIP / retry 0 / flaky 0 / 1 worker / 17 files
+Scope: 41 real Electron+IPC, 2 mocked Electron presentation, 26 mocked Chromium presentation.
+Added batch: exactly 24 save/recovery cases in 9 files; no other suites added.
+Product src tree: 378c75ce5f86f7d2feb5ec462bac1d84ee622a94 (unchanged from M1)
+Tests tree: fcf3bcd28710dd2b9da7271623f19f28d4afdf20
+Scripts tree: dacc55ea5e9661cf205b61ab46d0cb252e687c5e
+Workflow tree: 0d2d8521d6c33d759bdeb8e95f20caad43bd2df2
+
+Completed GUI job extracts:
+2026-11-08T04:32:46.8412077Z   ✓  18 [electron-linux-real-ipc] › tests/e2e/pending-journal.spec.ts:7:1 › manual unsaved journal preserves later input and never overwrites an existing file (1.6s)
+2026-11-08T04:32:48.0565615Z   ✓  19 [electron-linux-real-ipc] › tests/e2e/pending-journal.spec.ts:77:1 › cancelling a manual journal leaves the original and pending input unchanged (1.2s)
+2026-11-08T04:32:49.2804323Z   ✓  20 [electron-linux-real-ipc] › tests/e2e/queued-failure-guard.spec.ts:10:1 › a failed first save blocks later queued input without discarding it (1.2s)
+2026-11-08T04:32:51.5014053Z   ✓  21 [electron-linux-real-ipc] › tests/e2e/r4-page-save.spec.ts:5:3 › closing history while restore-ack is held keeps old content locked until the restored snapshot is installed (2.2s)
+2026-11-08T04:32:53.7357911Z   ✓  22 [electron-linux-real-ipc] › tests/e2e/r4-page-save.spec.ts:5:3 › closing history while post-restore-load is held keeps old content locked until the restored snapshot is installed (2.2s)
+2026-11-08T04:32:55.1011280Z   ✓  23 [electron-linux-real-ipc] › tests/e2e/r4-page-save.spec.ts:108:1 › ordinary Page refresh cannot pair an old Editor document with an external revision (1.4s)
+2026-11-08T04:32:56.6620967Z   ✓  24 [electron-linux-real-ipc] › tests/e2e/r4-page-save.spec.ts:169:1 › ordinary Page delayed ACK keeps later input and does not replace another selected Page (1.6s)
+2026-11-08T04:32:59.6263735Z   ✓  25 [electron-linux-real-ipc] › tests/e2e/r6-recovery.spec.ts:247:3 › SIGKILL after page COMMIT and later input restores the latest title and body without applying the receipt twice (2.9s)
+2026-11-08T04:33:03.3954786Z   ✓  26 [electron-linux-real-ipc] › tests/e2e/r6-recovery.spec.ts:247:3 › SIGKILL after record COMMIT and later input restores the latest title and body without applying the receipt twice (3.8s)
+2026-11-08T04:33:05.9492274Z   ✓  27 [electron-linux-real-ipc] › tests/e2e/r6-recovery.spec.ts:345:1 › SIGKILL after database creation COMMIT retains an unknown lookup and resolves the same operation later without resending or duplicating it (2.5s)
+2026-11-08T04:33:08.4560693Z   ✓  28 [electron-linux-real-ipc] › tests/e2e/r6-recovery.spec.ts:426:1 › SIGKILL after row creation COMMIT restores later owner input and retains exactly the original row (2.5s)
+2026-11-08T04:33:11.1439180Z   ✓  29 [electron-linux-real-ipc] › tests/e2e/r6-recovery.spec.ts:478:1 › SIGKILL after settings COMMIT preserves later view input without replaying the acknowledged owner revision (2.7s)
+2026-11-08T04:33:15.0090315Z   ✓  30 [electron-linux-real-ipc] › tests/e2e/r6-recovery.spec.ts:540:1 › SIGKILL retains incomplete record and numeric-filter '-' as raw input without converting either to a saved number (3.9s)
+2026-11-08T04:33:17.3676811Z   ✓  31 [electron-linux-real-ipc] › tests/e2e/r6-recovery.spec.ts:643:1 › external revision after SIGKILL blocks resume; copy ACK loss retries once without changing the original or duplicating the recovery page (2.3s)
+2026-11-08T04:33:19.0164056Z   ✓  32 [electron-linux-real-ipc] › tests/e2e/r6-recovery.spec.ts:738:1 › a corrupt recovery journal stays byte-for-byte intact and blocks resume, copy, and dialog dismissal (1.6s)
+2026-11-08T04:33:23.2248012Z   ✓  33 [electron-linux-real-ipc] › tests/e2e/r7-data-safety/raw-input.spec.ts:18:1 › R7 raw numeric and filter input survives view switches, navigation and a guarded reload (4.2s)
+2026-11-08T04:33:29.2422948Z   ✓  34 [electron-linux-real-ipc] › tests/e2e/r7-data-safety/restart.spec.ts:18:1 › R7 normal restart retains the Japanese record body and saved view settings (6.0s)
+2026-11-08T04:33:31.4067692Z   ✓  35 [electron-linux-real-ipc] › tests/e2e/r7-data-safety/save-ack.spec.ts:17:1 › R7 delayed save ACK retains later input and never resends the held operation (2.1s)
+2026-11-08T04:33:33.4168286Z   ✓  36 [electron-linux-real-ipc] › tests/e2e/r7-data-safety/save-ack.spec.ts:82:1 › R7 unknown save ACK resolves from the receipt once without resending or duplicating the commit (2.0s)
+2026-11-08T04:33:35.3477494Z   ✓  37 [electron-linux-real-ipc] › tests/e2e/r7-data-safety/side-full-editor.spec.ts:11:1 › R7 side/full keeps the same Editor instance, text selection and Undo history (1.9s)
+2026-11-08T04:33:36.8055801Z   ✓  38 [electron-linux-real-ipc] › tests/e2e/recovery-race-guard.spec.ts:138:3 › Page-only recovery retains pending after later-input during the save dialog (1.4s)
+2026-11-08T04:33:38.2061189Z   ✓  39 [electron-linux-real-ipc] › tests/e2e/recovery-race-guard.spec.ts:138:3 › Page-only recovery retains pending after selection-change during the save dialog (1.4s)
+2026-11-08T04:33:39.5663016Z   ✓  40 [electron-linux-real-ipc] › tests/e2e/recovery-race-guard.spec.ts:138:3 › Page-only recovery retains pending after synthetic-ime during the save dialog (1.3s)
+2026-11-08T04:33:40.8971196Z   ✓  41 [electron-linux-real-ipc] › tests/e2e/recovery-race-guard.spec.ts:185:1 › Page-only recovery cancellation and write failure retain original and pending edits (1.3s)
+2026-11-08T04:34:43.2938951Z   69 passed (2.6m)
+
+Completed quiet job extracts:
+2026-11-08T04:31:03.6892222Z [quiet] PASS stage=typecheck in 11.2s
+2026-11-08T04:32:24.8520810Z  Test Files  182 passed (182)
+2026-11-08T04:32:24.8544772Z       Tests  1681 passed (1681)
+2026-11-08T04:32:24.9762755Z [quiet] PASS stage=test in 81.3s
+2026-11-08T04:32:39.3656584Z [quiet] PASS stage=build in 14.4s
+2026-11-08T04:32:39.3657297Z [quiet] PASS all 3 stages in 106.8s
+2026-11-08T04:32:39.4060411Z {"status":"PASS","files":3,"scope":"HTML script/style references and CSS dependencies are local build files"}
+
+Artifact JSON independently checked: 69 tests with expectedStatus=passed, exactly one result each, result.status=passed and result.retry=0.
+Report stats: expected=69, skipped=0, unexpected=0, flaky=0.
+New fixture captures: 35 trace ZIPs and 35 IPC journals. Artifact DB files: 0.
+Local preparation: typecheck, 8 Node isolation-policy tests PASS; --list only enumerated 69.
+This Mac GUI: NOT_RUN. Original master remains e269137f191081cabc0f05aa03ec68339ce413c2.
+Integration tree and synthetic temporary data only. No A3+, real-data changes, master merge or additional GUI scope.

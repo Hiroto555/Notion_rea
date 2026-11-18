@@ -1,0 +1,78 @@
+[
+  {
+    "path": "logs/baseline-final.log",
+    "sha256": "7b67dccd1a637c9f3031de21a73cccd3c0b0d1b6c24af2a942b5cb0e1758a3e9",
+    "bytes": 5331
+  },
+  {
+    "path": "logs/binding-final.log",
+    "sha256": "b95e736cb8c4ed017317d860a9fa1bc42f2fb67fa0ec18e0f3095798da60e076",
+    "bytes": 4851,
+    "localOriginalSha256": "a71c63bf3f76074b076fac54c73eb0696798c9b81c01bdee4b6d8ba162be45cb",
+    "publicationTransform": "Local home path label redaction only"
+  },
+  {
+    "path": "logs/connected-final-first.log",
+    "sha256": "e81797d9024706a23c8db3e143a1c88e7be3629509ade4a1ca761de351edfef7",
+    "bytes": 6579,
+    "localOriginalSha256": "c0a6a8871d9bcb197b52425d919f97205f317ac949252033b5ea559d437c8274",
+    "publicationTransform": "Local home path label redaction only"
+  },
+  {
+    "path": "logs/connected-final-second.log",
+    "sha256": "8106684f1072ab0c432e2187f300267e8ed66073c6c7621e8f20ad12d47a062d",
+    "bytes": 350,
+    "localOriginalSha256": "478329b6388b059bf7e8739c7a496e250f32d61d414c683d800b77ca80a4e292",
+    "publicationTransform": "Local home path label redaction only"
+  },
+  {
+    "path": "logs/final-build.log",
+    "sha256": "69011f8b973efb6575149cf9817c4139442f6ba73af42964c666b1b20a6a4414",
+    "bytes": 5258,
+    "localOriginalSha256": "034b75bb9d49f1ede74df52a24e36ee5df0d13c28603b7931d86a288378f9ee7",
+    "publicationTransform": "Local home path label redaction only"
+  },
+  {
+    "path": "logs/final-check.log",
+    "sha256": "ccd7d38fa0ada812b982d51bc907a1d69cf16c1a4310dc25a0def8a6f03fe8d5",
+    "bytes": 45
+  },
+  {
+    "path": "logs/final-tests.log",
+    "sha256": "0a8611efbce5c0eab67ee3acb744fe69edc65981064c506ac7ee4e2dc05984e4",
+    "bytes": 33168,
+    "localOriginalSha256": "2c74cab74766071c06f5f7ba6f81932aedf8a5def692309d6365c6ae532a2061",
+    "publicationTransform": "Local home path label redaction only"
+  },
+  {
+    "path": "logs/native-owned-current.log",
+    "sha256": "9421b68ddbbd6cce86ced09b0e161e6afcf2474c47214fdf38bfe775bba5e668",
+    "bytes": 489,
+    "localOriginalSha256": "3977cc64763de5efddc148a41548349dcd725e67be2cba9999654b9930e78d19",
+    "publicationTransform": "Local home path label redaction only"
+  },
+  {
+    "path": "logs/native-probe-current.log",
+    "sha256": "21a2d5a207c23a4406cbcccc00a3a46b047f323f1307800a52a24bee0d2e8d22",
+    "bytes": 501,
+    "localOriginalSha256": "fff4f6d732159f659635c4f7ed251f35902aab83c70739a024cf2f63426dcfdf",
+    "publicationTransform": "Local home path label redaction only"
+  },
+  {
+    "path": "logs/native-root-current.log",
+    "sha256": "7a75c9a54549602cafab51ff77a5ffc1b821bee279797f992236e731ef4d5ef9",
+    "bytes": 462
+  },
+  {
+    "path": "logs/process-crash-first.log",
+    "sha256": "8a33bed76e6145d3158ab62780c08407949386b7fcc72923297d480c925c0cb4",
+    "bytes": 596,
+    "localOriginalSha256": "87336cfedf6c2bca854d4a8efc1beeb9205a26a57c528c57948a31b19fffd125",
+    "publicationTransform": "Local home path label redaction only"
+  },
+  {
+    "path": "logs/shared-image-final.log",
+    "sha256": "92bbfccab77b0cce123b875254b3721493a211bc67f6d13b04533fd58b5f772e",
+    "bytes": 488
+  }
+]

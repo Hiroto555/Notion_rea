@@ -1,14 +1,24 @@
 import { writeFileSync } from "node:fs";
 import { test, expect, saved, type Session } from "./next-round-fixture";
 import { editorDoc } from "./drag-observer";
+import { clickPageLink, documentEditor } from "./ui-chrome-controls";
+
+const mod = process.platform === "darwin" ? "Meta" : "Control";
+const lineStart = process.platform === "darwin" ? "Meta+ArrowLeft" : "Home";
 async function openRecord(s: Session) {
   await s.window
     .locator(".page-tree-label")
     .filter({ hasText: "プロジェクト" })
     .click();
-  await s.window
-    .getByRole("button", { name: "ギャラリー", exact: true })
-    .click();
+  const galleryTab = s.window.getByRole("tab", {
+    name: "ビュー: ギャラリー",
+    exact: true,
+  });
+  if (await galleryTab.count()) await galleryTab.click();
+  else
+    await s.window
+      .getByLabel("ビューを追加", { exact: true })
+      .selectOption("gallery");
   const card = s.window.locator(".db-card").first();
   await card.click();
   return card;
@@ -34,8 +44,8 @@ test("R3 search/link/record share initial focus, modal tab cycle, close button a
   const w = s.window;
   for (const mode of ["search", "link", "record"]) {
     if (mode === "record") await openRecord(s);
-    else if (mode === "search") await w.keyboard.press("Meta+p");
-    else await w.getByTitle("ページへのリンク", { exact: true }).click();
+    else if (mode === "search") await w.keyboard.press(`${mod}+p`);
+    else await clickPageLink(documentEditor(w));
     const dialog = w.getByRole("dialog");
     await expect(dialog).toHaveAttribute("aria-modal", "true");
     await expect(
@@ -104,7 +114,7 @@ async function linkDocument(s: Session) {
 }
 async function selectWord(s: Session) {
   await s.window.locator(".folio-editor").click();
-  await s.window.keyboard.press("Meta+ArrowLeft");
+  await s.window.keyboard.press(lineStart);
   for (let i = 0; i < 3; i++) await s.window.keyboard.press("Shift+ArrowRight");
   expect(await s.window.evaluate(() => getSelection()?.toString())).toBe(
     "不動産",
@@ -173,14 +183,14 @@ test("R3 selected text link cancel/confirm restores exact range, wording and mar
     diagnosticInstalled = true;
     await selectWord(s);
     const before = await editorDoc(s);
-    await s.window.keyboard.press("Meta+k");
+    await s.window.keyboard.press(`${mod}+k`);
     await s.window.keyboard.press("Escape");
     expect(await editorDoc(s)).toEqual(before);
     await expect(s.window.locator(".folio-editor")).toBeFocused();
     expect(await s.window.evaluate(() => getSelection()?.toString())).toBe(
       "不動産",
     );
-    await s.window.getByTitle("ページへのリンク", { exact: true }).click();
+    await clickPageLink(documentEditor(s.window));
     await s.window.getByLabel("検索キーワード").fill("アイデアノート");
     await expect(s.window.locator(".search-results button")).toHaveCount(1);
     // Guard against selection drift while the modal is open; use the captured range.
@@ -210,8 +220,8 @@ test("R3 synthetic composition, prevented Escape and inner menus take priority (
 }) => {
   for (const mode of ["search", "link", "record"]) {
     if (mode === "record") await openRecord(s);
-    else if (mode === "search") await s.window.keyboard.press("Meta+p");
-    else await s.window.getByTitle("ページへのリンク", { exact: true }).click();
+    else if (mode === "search") await s.window.keyboard.press(`${mod}+p`);
+    else await clickPageLink(documentEditor(s.window));
     const input = s.window.getByLabel(
       mode === "record" ? "アイテムのタイトル" : "検索キーワード",
     );
@@ -246,7 +256,7 @@ test("R3 synthetic composition, prevented Escape and inner menus take priority (
 test("R3 nested native UI consumes one Escape; search navigation focuses destination", async ({
   folio: s,
 }, info) => {
-  await s.window.keyboard.press("Meta+p");
+  await s.window.keyboard.press(`${mod}+p`);
   await s.window.evaluate(() => {
     const inner = document.createElement("dialog");
     inner.setAttribute("aria-label", "Inner test menu");
@@ -313,7 +323,7 @@ test("R3 stale link document is rejected and switching page leaves both pages un
 }) => {
   const id = await linkDocument(s);
   await selectWord(s);
-  await s.window.keyboard.press("Meta+k");
+  await s.window.keyboard.press(`${mod}+k`);
   await s.window.getByLabel("検索キーワード").fill("アイデアノート");
   await expect(s.window.locator(".search-results button")).toHaveCount(1);
   await s.window
@@ -326,7 +336,7 @@ test("R3 stale link document is rejected and switching page leaves both pages un
   await expect(s.window.getByRole("dialog")).toHaveCount(0);
   await s.window.getByRole("button", { name: "閉じる", exact: true }).click();
   await saved(s);
-  await s.window.getByTitle("ページへのリンク", { exact: true }).click();
+  await clickPageLink(documentEditor(s.window));
   const state = await s.window.evaluate(() =>
     window.folio.request<any>({ type: "load" }),
   );
@@ -353,7 +363,7 @@ test("N04 slash arrow/confirm/cancel retains text and cursor (Folio only)", asyn
   folio: s,
 }) => {
   const w = s.window;
-  await w.keyboard.press("Meta+n");
+  await w.keyboard.press(`${mod}+n`);
   await w.locator(".folio-editor").click();
   await w.keyboard.type("/heading");
   await expect(w.getByRole("listbox")).toBeVisible();

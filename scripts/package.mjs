@@ -1,44 +1,16 @@
-import { packager } from "@electron/packager";
-import {
-  mkdirSync,
-  cpSync,
-  writeFileSync,
-  readFileSync,
-  rmSync,
-  existsSync,
-} from "node:fs";
+import { fileURLToPath } from "node:url";
 import { resolve } from "node:path";
-const stage = resolve("output/package-stage");
-// This directory is generated only by this script and contains no workspace data.
-rmSync(stage, { recursive: true, force: true });
-mkdirSync(stage, { recursive: true });
-cpSync("dist", stage + "/dist", { recursive: true });
-cpSync("docs/THIRD_PARTY_NOTICES.txt", stage + "/THIRD_PARTY_NOTICES.txt");
-const pkg = JSON.parse(readFileSync("package.json", "utf8"));
-writeFileSync(
-  stage + "/package.json",
-  JSON.stringify({
-    name: pkg.name,
-    productName: pkg.productName,
-    version: pkg.version,
-    main: "dist/main.cjs",
-  }),
-);
-const results = await packager({
-  dir: stage,
-  out: resolve("release"),
-  name: "Folio",
-  platform: "darwin",
-  arch: "arm64",
-  electronVersion: pkg.devDependencies.electron,
-  download: { cacheRoot: resolve(".cache/electron") },
-  overwrite: true,
-  asar: true,
-  prune: false,
-  icon: existsSync("assets/icon.icns")
-    ? resolve("assets/icon.icns")
-    : undefined,
-  appBundleId: "local.folio.desktop",
-  appCategoryType: "public.app-category.productivity",
-});
-console.log(results.join("\n"));
+import { parsePackageArgs, runPackage } from "./platform/package-evidence.mjs";
+
+export { parsePackageArgs, runPackage };
+
+export async function main(args = process.argv.slice(2)) {
+  const manifest = await runPackage(parsePackageArgs(args));
+  console.log([manifest.plan.outputDir, manifest.plan.artifactPath,
+    manifest.plan.manifestPath].join("\n"));
+  return manifest;
+}
+
+if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+  main().catch(error => { console.error(error.message); process.exitCode = 1; });
+}

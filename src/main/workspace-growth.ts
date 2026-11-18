@@ -117,11 +117,15 @@ export class WorkspaceGrowth {
   }
 
   assertAssetGrowth(additionalBytes: number): void {
-    this.assertDirectoryGrowth(
-      "assets",
-      this.limits.maxAssetBytes,
-      additionalBytes,
-    );
+    if (!isSafeByteCount(additionalBytes)) throw refusal("unknown");
+    const maximum = this.limits.maxAssetBytes;
+    if (maximum === undefined) return;
+    // Staged downloads remain on disk until separately collected. Count them
+    // together with active assets, including while publishing a fresh copy.
+    const current = this.directoryBytes("assets") + this.directoryBytes(".folio-sync-assets-staging");
+    const projected = current + additionalBytes;
+    if (!isSafeByteCount(current) || !isSafeByteCount(projected)) throw refusal("unknown");
+    if (projected > maximum) throw refusal("exceeded", "添付容量");
   }
 
   assertBackupGrowth(additionalBytes: number): void {
@@ -146,7 +150,7 @@ export class WorkspaceGrowth {
     }
   }
 
-  private directoryBytes(kind: "assets" | "backups"): number {
+  private directoryBytes(kind: "assets" | "backups" | ".folio-sync-assets-staging"): number {
     if (!this.workspaceRootIsSafe()) throw refusal("unknown");
     let usage: ReturnType<typeof scanDirectoryTree>["usage"];
     try {

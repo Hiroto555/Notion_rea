@@ -66,6 +66,10 @@ export class SyncSqliteGuard {
     return this.connection;
   }
 
+  isUncertainFailure(value: unknown): boolean {
+    return this.failure !== undefined && this.failure === value;
+  }
+
   transaction<T>(work: () => T): T {
     this.assertUsable();
     if (this.ownsTransaction)

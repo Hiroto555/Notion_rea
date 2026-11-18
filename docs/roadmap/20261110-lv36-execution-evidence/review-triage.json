@@ -1,0 +1,56 @@
+{
+  "policy": "The parent may correct oracle/interface errors within the approved plan, with reasons and invalidated evidence recorded; mandatory content-preservation gates remain.",
+  "decisions": [
+    {
+      "review": "R01/R03/R10",
+      "finding": "column identity demanded in Doc attrs; malformed text history/fixture offsets",
+      "decision": "Corrected fixtures to actual schema and immutable before text; Doc ID and atomic table metadata checks both retained. Old results invalidated and rerun."
+    },
+    {
+      "review": "R07/R08/R12/R16",
+      "finding": "namespace/lifecycle/current-auth and await activation gaps",
+      "decision": "Fixed actual authority namespace, current role/token, active scope, sender and generation checks before connection activation/cache persistence. Actual SQLite+HTTP tests passed."
+    },
+    {
+      "review": "R09/R14/R15/D46",
+      "finding": "native probe/DACL/owned-job cleanup/rights/pins",
+      "decision": "Hardened root/file/volume identity, helper hash, sidecars, ACL masks and Job Object setup. C# managed builds passed; actual Windows execution remains NOT_RUN."
+    },
+    {
+      "review": "R13",
+      "finding": "table restore witness/history gaps",
+      "decision": "Original writer/user/delete-cut/source binding; fresh restore IDs, single-use evidence, own text inverse and conflict proof integrated. Raw rejected inputs retained."
+    },
+    {
+      "review": "F13/F14/R16/R17",
+      "finding": "stale recovery ownership, old recovery secrets, cached facade, restore operator key separator",
+      "decision": "Current owner list is authoritative; old session/device/key/invite fenced; fresh realm keys and correct org/user key created. Older backup restored by later owner tested."
+    },
+    {
+      "review": "D40/D45/R16/R17",
+      "finding": "state root did not bind receipt/dedup/undo; recursive Cut normalization erased immutable base hashes",
+      "decision": "Bound actual authoritative namespaces and blobs to head. Only current commit pointer hashes normalized; immutable base/old hashes retained. Stored cut pointers and attempt fingerprints separately checked."
+    },
+    {
+      "review": "R17 fixtures",
+      "finding": "old IDs after copy, reopening wrong directory, HTTP spy missing binary capability",
+      "decision": "Look up remapped copied block, reopen actual authority directory, forward actual admin/binary methods. Preserve original first failing log; corrected owning-source tests passed."
+    },
+    {
+      "review": "R17 stale sender oracle",
+      "finding": "required error to imply remote mutation never occurred even after valid dispatch",
+      "decision": "Rejected that impossible rollback requirement. A previously authorized dispatched mutation may commit; stale frame receives no reply, old writer retains durable receipt/UNKNOWN, no resend/new-generation mixing. Separate pre-dispatch/pre-activation loss is blocked."
+    },
+    {
+      "review": "D54",
+      "finding": "worker deleted published credentials after uncertain SQL commit and recursively cleaned diagnostic destination",
+      "decision": "Removed recursive cleanup and post-publication deletion. RESTORE_UNKNOWN preserves output/destination. Actual commit-ack fault injected after SQL commit proves new realm and credentials remain recoverable."
+    },
+    {
+      "review": "B/C adoption",
+      "finding": "C mixed text/structure own Undo leaves Aabc instead of abc",
+      "decision": "FAIL retained; 35/36 is not full adoption. No test skip/expected-failure masking. Full Editor NO_GO."
+    }
+  ],
+  "sourceOnlyInspectionLimits": "Bounded independent reviews are not an exhaustive security certification. Final parent-only integration changes were verified against concrete non-GUI tests."
+}

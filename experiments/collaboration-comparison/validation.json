@@ -1,0 +1,129 @@
+{
+  "generatedAt": "2026-11-08T16:35:44.587994+00:00",
+  "branch": "codex/folio-lv5-collaboration-20261109",
+  "baseCommit": "12c7a27b3fa7dc8d5c3c306135fbcaf54e13ba80",
+  "scope": "non-GUI preparation and restricted C text pilot; full engine adoption NO_GO",
+  "checks": {
+    "rootTypecheck": {
+      "command": "npm run check",
+      "result": "PASS",
+      "log": "check-final.log"
+    },
+    "rootBuild": {
+      "command": "npm run build",
+      "result": "PASS",
+      "log": "build-final.log"
+    },
+    "rootTests": {
+      "command": "npm test -- --maxWorkers=2",
+      "files": 245,
+      "tests": 2329,
+      "result": "PASS",
+      "log": "full-tests-final.log"
+    },
+    "comparisonAndPilot": {
+      "command": "npm test (experiment)",
+      "tests": 48,
+      "result": "PASS_WITH_EXPECTED_ADOPTION_COUNTEREXAMPLES",
+      "log": "lab-final-tests.log"
+    },
+    "measuredReports": {
+      "commands": [
+        "node report.mjs",
+        "node text-report.mjs"
+      ],
+      "result": "PASS"
+    },
+    "gitDiffCheck": "PASS"
+  },
+  "adoptionGate": {
+    "full": "NO_GO",
+    "R02": "FAIL_DIRECT_MOVE_BINDING",
+    "R03": "FAIL_DIRECT_ROW_COLUMN_MERGE",
+    "limitedPilot": "C_TEXT_ONLY_SELECTED",
+    "editorAppIpcActivation": false
+  },
+  "notRun": [
+    "GUI",
+    "Electron",
+    "nativeIME",
+    "nativeClipboard",
+    "physicalMultipleMacs",
+    "productionAuthenticationAuthorization",
+    "productionProviderNetwork",
+    "compaction",
+    "powerLoss"
+  ],
+  "limits": [
+    "text pilot has no automatic client restart/outbox reconstruction or durable intent/receipt mapping",
+    "unknown or missing receipt stops without resend",
+    "initial source-helper checks do not prove universal OS sandbox isolation"
+  ],
+  "codeSha256": {
+    "experiments/collaboration-comparison/.gitignore": "51e853fbe31fef5e96e6cdc9ce4dde81f6c47e1a75e8fe6c6fe9eedaa71aceec",
+    "experiments/collaboration-comparison/CONTRACT.md": "ce159351dc7dbd61fe069b1406ae502fa135dd6e7130e5e80f6b2a206a73a15e",
+    "experiments/collaboration-comparison/README.ja.md": "96f3251c6c5643cc941eaa020641402642dfe469f6a56cea96a418055d2d94f8",
+    "experiments/collaboration-comparison/TEXT-PILOT-CONTRACT.md": "d6fabebca677c857e2e413fe3d8b12a1a7a3db73dc3bd1273e5f72a94beb0f05",
+    "experiments/collaboration-comparison/adapters/b.mjs": "d67f05d467679dd4ca8184a30cde0c51ef685f17061dc8bc635db7932a30bd0e",
+    "experiments/collaboration-comparison/adapters/c.mjs": "e29ee7bfb2924365d8f7af421f6861212b9b2b3a7e2e963cd1235d6992ca2f0a",
+    "experiments/collaboration-comparison/build.mjs": "7764caffbfda07afcacf651b90adf56ab6e35dbd1e2c6799f658bd7e7eb7f885",
+    "experiments/collaboration-comparison/comparison-result.json": "44db817fc083956ca05aa2406ef613b1c8dcee3a385996c57bfdd7c14a72b119",
+    "experiments/collaboration-comparison/dependencies.json": "ae8395cf43597b10aa49d8a1ae6c2fa7970331139d7bf6595c9a0921199a3e32",
+    "experiments/collaboration-comparison/fixtures/rich.mjs": "1817db3074c09cdae7d454d5cad07b9a7c8c7e250443a83a0453eb5b3f29eb2e",
+    "experiments/collaboration-comparison/package-lock.json": "dbb93f17da1fae8cde7b0061a96fd2db7aaa1378243a9ea811391aeba12233c5",
+    "experiments/collaboration-comparison/package.json": "e26bd58e09dd5b4fe55872255717cc772efc051a7740a2ce7340acb5a6fafae3",
+    "experiments/collaboration-comparison/report.mjs": "4082019b16eb11e1474806d9fda0d32f2bf44ca7ff1abf7b056b7dd71b67f7c1",
+    "experiments/collaboration-comparison/runtime/entry.ts": "3cb47220ec8436ade965a3f34a14ab60d020ce55e0ffe1db286fc59402fb95af",
+    "experiments/collaboration-comparison/runtime-modules.json": "d428c658dbff7ed505e2715bf40ec18a004312d5494b2c8ada4c521713126586",
+    "experiments/collaboration-comparison/tests/concurrency.test.mjs": "6925cccfb1691d7e41b9ef23993170837acc34e7b92e0d019c17ea1eb45e6c62",
+    "experiments/collaboration-comparison/tests/identity.test.mjs": "91e22c176f23bef8b65898b767f1c9b90457cafe5c29434c5f93b2baea17cb93",
+    "experiments/collaboration-comparison/tests/isolation.test.mjs": "8407bf99950f66a4653eff024756652ec6473d88dc58575d63f3c11a7f3527cb",
+    "experiments/collaboration-comparison/tests/move.test.mjs": "cd12dfa16e28d1b3eedd2daa4760698132dff50acd5a65f242088962f5c79d20",
+    "experiments/collaboration-comparison/tests/roundtrip.test.mjs": "b49e9df2af3b50f7d5318096a510c70d38879cbb1ac6551e8a847d3dbf1c0a5a",
+    "experiments/collaboration-comparison/tests/tables.test.mjs": "f4ebf88b34835951baefbd265634aba0221537efe98121d7e57654e125fcf735",
+    "experiments/collaboration-comparison/tests/text-authority.test.mjs": "367aaf5643a9b537fc03107bc63491d0e9521593bcf00cf237993c7d458c7583",
+    "experiments/collaboration-comparison/tests/text-connection.test.mjs": "36160679ea0b3daec73f5dae552d9a27b4270ecd9465a375ed38466e0faf32cb",
+    "experiments/collaboration-comparison/tests/text-crash.test.mjs": "ec22d08b4f6163511e1cfd76c6433c3b5b7db98a310e0ac2d123e42a1de344aa",
+    "experiments/collaboration-comparison/tests/undo.test.mjs": "8a4a8c394781ccb6d8c6e117150c1340f066f314fbafd3806bea45c796326745",
+    "experiments/collaboration-comparison/text-authority.mjs": "30e2380bf4bb8b54e095cd53e5211f84031b1845a577ea8544632cfe180e413a",
+    "experiments/collaboration-comparison/text-client.mjs": "db5266c76779f4ebde3f58eb6203857a4eb22c1cb4ac0699621386541ea1b51a",
+    "experiments/collaboration-comparison/text-pilot-result.json": "422e912206170b62e057410d2f457ff62498cea11b2d4fe87f3a98b86069de1f",
+    "experiments/collaboration-comparison/text-protocol.mjs": "cc0b3b655a380294d6dc0c375ec6454b9db37bd4346d06eeb8fd2e3ddc067f31",
+    "experiments/collaboration-comparison/text-report.mjs": "0a29fd7417e7be3e72b9d68d823e93f6b0ed003bb2438186a7fbfb54d8a3464d",
+    "src/collaboration/contract.ts": "d2f7be6e39489fe3596608f34542ff307dbd34e09947a145f5b4d738ea7d8ca7",
+    "src/collaboration/document-input.ts": "9acab1df2d9726d087f5978dbf8bbb176529eced509019da84730716dfce14a2",
+    "src/collaboration/draft-store.ts": "f483dcb0b4193e4bd30b97f501a648a35dd76a1115a681bbdca390d1257df5e7",
+    "src/collaboration/editor-port.ts": "5bd74ca5c113f6ff72d79cd21da8c5047e6448c9711656cea3189468f4881ec9",
+    "src/collaboration/raw-json.ts": "2d795cb02fc45ea25a95162d385f3f208bdcf1948a4daddf1073c08722980b74",
+    "src/main/shared-preparation.ts": "f06b32887a447b3a7beba32a57b5a3e1d0b6868bdceff033d555cd2845185166",
+    "src/persistence/sqlite-header.ts": "8aa6f59a4266f8cac7a8c75644c474ada2b28c181545cf74c2bc5c375a8bd0dc",
+    "src/persistence/schema-startup.ts": "6839b251422c2ce95c4d6651698ad5513436da223177b6b59ac9144e3b778ab5",
+    "src/persistence/store.ts": "a1b2e7b6f316eb2cb4fb8c13e05efa94011633d2c9fbc4e0b1e605655eabcc9f",
+    "src/shared/validation.ts": "fcac8966b0414a1a9d8fa08461b2daa529671dfacadf6f78e202fc00ead36bce",
+    "src/editor/rich-structure-guard.ts": "4ec79c849942c6fabe5f8c8e67d6cbda372a9da8baee07eb23f9381cbde6bd6d",
+    "src/shared/editor-schema.ts": "b478a428da83777447c4c30f547036259acd297908fd35016c2bed87440729f2",
+    "tests/collaboration-preparation.test.ts": "54dc47af9934fd58d2b12b64672828dccdfed0bdd07639f50a034454d33a0cb9",
+    "tests/collaboration-crash.test.ts": "a22502ec68f8e2b43946ab3759b1f859247874de854da10a619410b1df7192f0",
+    "tests/fixtures/shared-draft-crash-worker.ts": "e8ecfaf66e65889b320086d9663b1e34389099fc6a28fcf476eb0dc480f45c25",
+    "package.json": "1a95bb6ba2037a7009c7a3257be04d36ff8b4f84a3f2ed8c27c847332f15e262",
+    "package-lock.json": "b08cddaa73f347443854288cec92b39927f2ea190714a555f1ec187cb8ca53de",
+    "docs/roadmap/20261109-collaboration-decision.ja.md": "104e42b67b369d4037d7a787e3604ae87016dccdfcbfe56ccd455c1be93975ca"
+  },
+  "logsSha256": {
+    "check-final.log": "ccd7d38fa0ada812b982d51bc907a1d69cf16c1a4310dc25a0def8a6f03fe8d5",
+    "build-final.log": "668a8bf0687db0974d66a05451f2a81b97f2174092eb2b1b6df0697458de64ab",
+    "full-tests-final.log": "871aebf649c549c577ff9ab920faf9b2d79a87ef4d166d7fad1e256819f967fa",
+    "lab-final-tests.log": "83484a0a02f11bb4c29b77c48077ca611b8178763df5085b13d348f3c94704b6",
+    "startup-final-tests.log": "3fab93c89cbcd692a4a66d938b063b275537fe0c0c189733041b92f0400556b9",
+    "text-crash-tests-final.log": "87e7e8bd2a7fc49787659a1795b1cd98b4b9bbdfc1fa4870bd6175db791805d4"
+  },
+  "temporaryEvidenceDirectory": "/var/folders/fm/qk5fr3z11wq8hbphz6gk9llc0000gn/T/folio-lv5-selection-20261109-if07a_pv",
+  "prohibitedActionsPerformed": [],
+  "reviewArtifactsSha256": {
+    "review-summary.json": "78b981ad640cbc2ec817a6c84b772889cff49c92512528bc1962fa94d0eaf846",
+    "model-usage.json": "e0687a4193a50871bddd76b7ab17168e6801a7b7bb7cb7c25d2bddac27befb0c",
+    "worker-integrity.json": "b35a86553079749e7cc4b758823bac88a9bdcdc496d47236ab4b74da45224ea0"
+  },
+  "localCommitCreatedAtImplementationValidation": false,
+  "documentationFinalReviewAt": "2026-11-08T16:41:49.920758+00:00"
+}

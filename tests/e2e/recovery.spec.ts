@@ -6,7 +6,7 @@ import {
   saved,
 } from "./next-round-fixture";
 import { join } from "node:path";
-import { readFileSync, writeFileSync, statSync } from "node:fs";
+import { readFileSync, writeFileSync, statSync, existsSync } from "node:fs";
 import { sizedRecovery } from "../recovery-fixture";
 import { FILE_MAX_BYTES } from "../../src/shared/limits";
 test("R1 legacy export file → recovery → restart preserves a 500 character title", async ({
@@ -185,42 +185,160 @@ test("R1 multiple pending pages survive cancel/write/reload failures; copies ret
     name: "退避して再読込",
     exact: true,
   });
+  // Record every real exportRecovery attempt on both IPC lanes so each click
+  // is awaited on its own completion; an identical alert left over from the
+  // previous failure can never satisfy the next attempt's checks.
+  await s.app.evaluate(({ ipcMain }) => {
+    const m = ipcMain as any;
+    const state: any = ((globalThis as any).r1Rescue = {
+      attempts: [] as any[],
+      loads: 0,
+      faultRequested: false,
+      armed: false,
+      injected: 0,
+    });
+    const unwrap = (result: any) =>
+      result &&
+      result.tag === "folio-request-result" &&
+      result.ok === true &&
+      result.valueSlot &&
+      result.valueSlot.present === true
+        ? result.valueSlot.value
+        : result;
+    for (const channel of [
+      "folio:request",
+      "folio:request:diagnostic-v1",
+    ]) {
+      const handler = m._invokeHandlers.get(channel);
+      if (!handler) continue;
+      m.removeHandler(channel);
+      m.handle(channel, async (e: any, r: any) => {
+        if (r.type === "exportRecovery") {
+          const record: any = {
+            channel,
+            done: false,
+            failed: false,
+            path: null,
+          };
+          state.attempts.push(record);
+          try {
+            const result = await handler(e, r);
+            record.done = true;
+            record.failed = !!(
+              result &&
+              result.tag === "folio-request-result" &&
+              result.ok === false
+            );
+            const path = record.failed ? null : unwrap(result);
+            record.path = typeof path === "string" ? path : null;
+            if (state.faultRequested && record.path) state.armed = true;
+            return result;
+          } catch (error) {
+            record.done = true;
+            record.failed = true;
+            throw error;
+          }
+        }
+        if (r.type === "load") {
+          state.loads++;
+          if (state.armed && state.injected === 0) {
+            state.injected++;
+            throw Error("injected reload failure");
+          }
+        }
+        return handler(e, r);
+      });
+    }
+  });
+  const r1Rescue = () =>
+    s.app.evaluate(() => (globalThis as any).r1Rescue);
+  const completedExports = async () =>
+    (await r1Rescue()).attempts.filter((a: any) => a.done).length;
   await saveDialog(s, null);
   await button.click();
+  await expect.poll(completedExports).toBe(1);
+  expect((await r1Rescue()).attempts[0]).toMatchObject({
+    done: true,
+    failed: false,
+    path: null,
+  });
   await expect(
     s.window.getByLabel("ページタイトル", { exact: true }),
   ).toHaveValue("Recovery B local");
-  await saveDialog(s, join(s.folder, "workspace.sqlite"));
+  const sqliteTarget = join(s.folder, "workspace.sqlite");
+  await saveDialog(s, sqliteTarget);
+  const sqliteBefore = readFileSync(sqliteTarget);
   await button.click();
-  await expect(s.window.getByRole("alert")).toContainText("ワークスペース");
-  await expect(s.window.getByLabel("ページタイトル", { exact: true })).toHaveValue("Recovery B local");
-  await saveDialog(s, join(s.exportsDir, "missing-parent", "recovery.json"));
+  await expect.poll(completedExports).toBe(2);
+  expect((await r1Rescue()).attempts[1]).toMatchObject({
+    done: true,
+    failed: true,
+    path: null,
+  });
+  await expect(s.window.getByRole("alert")).toContainText(
+    "安全に分類できないため結果は未確認として停止しました。",
+  );
+  expect(readFileSync(sqliteTarget)).toEqual(sqliteBefore);
+  await expect(
+    s.window.getByLabel("ページタイトル", { exact: true }),
+  ).toHaveValue("Recovery B local");
+  const missingTarget = join(s.exportsDir, "missing-parent", "recovery.json");
+  await saveDialog(s, missingTarget);
   await button.click();
-  await expect(s.window.getByRole("alert")).toContainText("ENOENT");
+  await expect.poll(completedExports).toBe(3);
+  expect((await r1Rescue()).attempts[2]).toMatchObject({
+    done: true,
+    failed: true,
+    path: null,
+  });
+  await expect(s.window.getByRole("alert")).toContainText(
+    "安全に分類できないため結果は未確認として停止しました。",
+  );
+  expect(existsSync(missingTarget)).toBe(false);
+  await expect(
+    s.window.getByLabel("ページタイトル", { exact: true }),
+  ).toHaveValue("Recovery B local");
   const recovery = join(s.exportsDir, "recovery.json");
   await saveDialog(s, recovery);
   // Inject a post-write load failure, preserving the unsaved queue until retry.
-  await s.app.evaluate(({ ipcMain }) => {
-    const m = ipcMain as any;
-    const handler = m._invokeHandlers.get("folio:request");
-    m.removeHandler("folio:request");
-    m.handle("folio:request", async (e: any, r: any) => {
-      if (r.type === "load") {
-        m.removeHandler("folio:request");
-        m.handle("folio:request", handler);
-        throw Error("injected reload failure");
-      }
-      return handler(e, r);
-    });
+  // The fault arms only after the real exportRecovery reply returns a path so
+  // the pre-export membership load still succeeds, then fails the next actual
+  // load once on whichever registered channel the renderer really uses.
+  const loadsBeforeFault = (await r1Rescue()).loads;
+  await s.app.evaluate(() => {
+    (globalThis as any).r1Rescue.faultRequested = true;
   });
   await button.click();
+  await expect.poll(completedExports).toBe(4);
+  expect((await r1Rescue()).attempts[3]).toMatchObject({
+    done: true,
+    failed: false,
+    path: recovery,
+  });
+  await expect
+    .poll(async () => (await r1Rescue()).injected)
+    .toBe(1);
+  const fault = await r1Rescue();
+  expect(fault.armed).toBe(true);
+  expect(fault.loads).toBeGreaterThanOrEqual(loadsBeforeFault + 2);
   await expect(s.window.getByRole("alert")).toContainText(
-    "injected reload failure",
+    "安全に分類できないため結果は未確認として停止しました。",
   );
+  const written = JSON.parse(readFileSync(recovery, "utf8"));
+  expect(written.pages.map((p: any) => p.title)).toEqual([
+    "Recovery A local",
+    "Recovery B local",
+  ]);
   await expect(
     s.window.getByLabel("ページタイトル", { exact: true }),
   ).toHaveValue("Recovery B local");
   await button.click();
+  await expect.poll(completedExports).toBe(5);
+  expect((await r1Rescue()).attempts[4]).toMatchObject({
+    done: true,
+    failed: false,
+    path: recovery,
+  });
   await expect(
     s.window.getByLabel("ページタイトル", { exact: true }),
   ).toHaveValue("Recovery B competing");

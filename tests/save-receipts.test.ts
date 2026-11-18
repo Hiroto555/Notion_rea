@@ -1,11 +1,22 @@
 import { join } from "node:path";
 import { expect, it, vi } from "vitest";
 import { Store } from "../src/persistence/store";
-import { type SaveResult } from "../src/shared/save-contract";
+import { operationFingerprint, type SaveResult } from "../src/shared/save-contract";
 import { sendReliableSave, resolveReliableSave } from "../src/renderer/reliable-save";
+import { StorageFailureError, storageFailureMessageV1 } from "../src/renderer/private-request";
+import type { StorageFailureV1 } from "../src/shared/private-storage-failure";
 import { saveOperationSchema } from "../src/shared/types";
 
 import { saveFixture } from "./fixtures/r4-save-fixture";
+
+const localE = (requestType: string): Partial<StorageFailureV1> => ({
+  kind: "UNCLASSIFIED", family: "REQUEST", requestType});
+const typed = (requestType: string): StorageFailureV1 => ({
+  version: 1, kind: "OUTCOME_UNKNOWN", family: "K", stage: "COMMIT", failureSubject: "CURRENT_ATTEMPT",
+  mutationDispatch: "DISPATCHED", proofOrigin: "DISPATCH_OBSERVED", requestType,
+  sourceOutcome: {source: "K_EXCEPTION", state: "UNKNOWN", reason: "PRIVATE_K_COMMIT_UNKNOWN"},
+  sourceCauseCodes: ["PRIVATE_K_COMMIT_UNKNOWN"], causeSummaryIncomplete: false, attemptId: null,
+  precondition: null, operationProgress: "PARTIAL_OR_UNKNOWN", retryAuthority: "NONE", preserve: true});
 
 it("commits data and receipt atomically; same ID cannot apply twice or name another request", () => {
   const f = saveFixture();
@@ -121,5 +132,106 @@ it("treats corrupted ACK identity/payload as unknown without discarding input", 
     for (const reply of [{...applied, seq: 2}, {...applied, page: {...applied.page!, title: "Wrong"}}]) {
       expect((await sendReliableSave(operation, async () => reply as SaveResult)).status).toBe("unknown");
     }
+  } finally {f.dispose();}
+});
+
+it("preserves a bounded typed diagnostic and degrades timer/invalid ACK/raw rejection to the local E", async () => {
+  const f = saveFixture();
+  try {
+    const operation = f.operation();
+    const failure = typed("save:commit");
+    const held = await sendReliableSave(operation, async () => {throw new StorageFailureError(failure);});
+    expect(held.status).toBe("unknown");
+    expect(held.storageFailure).toEqual(failure);
+    expect(held.message).toBe(storageFailureMessageV1(failure));
+    expect(held).toMatchObject({operationId: operation.operationId, sessionId: operation.sessionId, seq: operation.seq});
+    // A valid diagnostic for another request type is demoted, never trusted.
+    const foreign = await sendReliableSave(operation, async () => {throw new StorageFailureError(typed("database:commit"));});
+    expect(foreign.status).toBe("unknown");
+    expect(foreign.storageFailure).toMatchObject(localE("save:commit"));
+    // Raw rejections never leak their message, cause or path.
+    const raw = await sendReliableSave(operation, async () => {throw new Error("capacity at /secret/workspace");});
+    expect(raw.status).toBe("unknown");
+    expect(raw.storageFailure).toMatchObject(localE("save:commit"));
+    expect(raw.message).toBe(storageFailureMessageV1(raw.storageFailure!));
+    expect(JSON.stringify(raw)).not.toContain("secret");
+    expect(JSON.stringify(raw)).not.toContain("capacity");
+    // The ACK timer is the same bounded E for the actual request type.
+    const timed = await sendReliableSave(operation, async () => new Promise(() => {}), 5);
+    expect(timed.status).toBe("unknown");
+    expect(timed.storageFailure).toMatchObject(localE("save:commit"));
+    const timedResolve = await resolveReliableSave(operation, async () => new Promise(() => {}), 5);
+    expect(timedResolve.storageFailure).toMatchObject(localE("save:resolve"));
+    // An invalid ACK and a malformed carried diagnostic both become the E.
+    const applied = f.store.commitSave(operation);
+    for (const reply of [{...applied, seq: 2}, {...applied, storageFailure: {kind: "UNCLASSIFIED"}},
+      {...applied, storageFailure: typed("database:commit")}]) {
+      const result = await sendReliableSave(operation, async () => reply as SaveResult);
+      expect(result.status).toBe("unknown");
+      expect(result.storageFailure).toMatchObject(localE("save:commit"));
+    }
+  } finally {f.dispose();}
+});
+
+it("normalizes an applied or rejected ACK carrying a diagnostic and keeps normal terminals", async () => {
+  const f = saveFixture();
+  try {
+    const operation = f.operation(), applied = f.store.commitSave(operation);
+    // Applied or rejected with its own failure metadata is contradictory:
+    // the whole ACK is untrusted and becomes the bounded local E.
+    for (const reply of [{...applied, storageFailure: typed("save:commit")},
+      {...applied, status: "rejected" as const, page: undefined, storageFailure: typed("save:commit")}]) {
+      const result = await sendReliableSave(operation, async () => reply as SaveResult);
+      expect(result.status).toBe("unknown");
+      expect(result.storageFailure).toMatchObject(localE("save:commit"));
+      expect(result).toMatchObject({operationId: operation.operationId, sessionId: operation.sessionId,
+        seq: operation.seq, pageId: operation.pageId, fingerprint: applied.fingerprint});
+    }
+    // A verified business rejection without any diagnostic keeps its
+    // original wire, message and terminal meaning.
+    f.store.update(f.page.id, 1, {title: "Elsewhere"});
+    const stale = f.operation();
+    const rejected = await sendReliableSave(stale, async (request) => f.store.handle(request));
+    expect(rejected.status).toBe("rejected");
+    expect(rejected.storageFailure).toBeUndefined();
+  } finally {f.dispose();}
+});
+
+it("rebuilds an unknown carrier's display from the validated diagnostic, never its raw message", async () => {
+  const f = saveFixture();
+  try {
+    const operation = f.operation(), failure = typed("save:commit");
+    const result = await sendReliableSave(operation, async () => ({
+      status: "unknown", operationId: operation.operationId, sessionId: operation.sessionId,
+      seq: operation.seq, pageId: operation.pageId,
+      fingerprint: await operationFingerprint(operation), message: "raw /secret/carrier path",
+      storageFailure: failure,
+    }) as SaveResult);
+    expect(result.status).toBe("unknown");
+    expect(result.storageFailure).toEqual(failure);
+    expect(result.message).toBe(storageFailureMessageV1(failure));
+    expect(JSON.stringify(result)).not.toContain("secret");
+  } finally {f.dispose();}
+});
+
+it("never serializes the transient diagnostic into the operation, fingerprint or stored receipt", async () => {
+  const f = saveFixture();
+  try {
+    const operation = f.operation();
+    expect(f.store.commitSave(operation).status).toBe("applied");
+    const row = f.store.db.prepare("SELECT fingerprint,result_json FROM save_receipts WHERE operation_id=?")
+      .get(operation.operationId) as {fingerprint: string; result_json: string};
+    expect(row.result_json).not.toContain("storageFailure");
+    const resolved = f.store.resolveSave(operation);
+    expect("storageFailure" in resolved).toBe(false);
+    // A terminal ACK carrying its own failure metadata is contradictory: the
+    // exchange normalizes it to the bounded local E for the actual request
+    // and never lets a consumer clear from it. The fingerprint is still the
+    // same operation identity; the field is never part of it.
+    const result = await resolveReliableSave(operation, async () => ({...resolved, storageFailure: typed("save:resolve")}));
+    expect(result.status).toBe("unknown");
+    expect(result.fingerprint).toBe(row.fingerprint);
+    expect(result.storageFailure).toMatchObject(localE("save:resolve"));
+    expect(JSON.stringify(operation)).not.toContain("storageFailure");
   } finally {f.dispose();}
 });

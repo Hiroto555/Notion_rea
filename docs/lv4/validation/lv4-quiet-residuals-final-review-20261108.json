@@ -1,0 +1,120 @@
+{
+  "recordType": "folio-lv4-quiet-residuals-final-review-v1",
+  "date": "2026-11-08",
+  "branch": "codex/folio-lv4-quiet-residuals-20261108",
+  "baseCommit": "ab48aab830ae9d924829c9fd66e195a8df3ebd70",
+  "storage": "Local commit containing this record; no push.",
+  "reviewScope": [
+    "restart cancellation and connection binding preservation",
+    "guarded batch routing and process ownership",
+    "temporary parent, artifact confinement and evidence privacy",
+    "native/Keychain classification and gate metadata boundaries",
+    "implementation evidence, model usage and remaining GUI acceptance"
+  ],
+  "findings": [
+    {
+      "id": "MR-01",
+      "status": "FIXED",
+      "issue": "The remote batch and watchdog assumed OS temp instead of the registered runner temp; a valid runner temporary parent could be rejected.",
+      "beforeFix": {
+        "testFile": "tests/acceptance-metadata/mac-supervisor-temp-root.test.ts",
+        "failed": 2,
+        "passed": 0
+      },
+      "fix": "Validate the live host first, check the plan directory against plan.tempParent, and pass the same approved parent into process supervision. Default Node probes still use OS temp; parent/sibling escape is rejected.",
+      "afterFocused": {
+        "files": 5,
+        "passed": 27
+      }
+    }
+  ],
+  "blockingIssuesRemaining": [],
+  "codeSha256": {
+    "playwright.remote-mac.config.ts": "0f747601ee6636b453b1ebb2a588c5c4aa590334ea2212c5bcc68962cdbbf376",
+    "scripts/mac-acceptance/gate-ledger.d.mts": "8b4914cb89e56dcab4143f299c5678f33685ada221ae1e935aada146829f79a6",
+    "scripts/mac-acceptance/gate-ledger.mjs": "dffd78e6cacb3646a498910f4593db4cc0c949ffdfc37153b5bc829c2b7a14a5",
+    "scripts/mac-acceptance/native-observations.d.mts": "511000e9a81bade7d4a9b48b5fabcdacbbf6442b2d58292c5caf96b6ef836544",
+    "scripts/mac-acceptance/native-observations.mjs": "cd40d8e83f10a99060364f700107e1ca79dcf983daa0ff845db80538441aa331",
+    "scripts/mac-acceptance/preflight/artifacts.d.mts": "4843ec78b42ec1268cd8e75d631ffc5f04af7e27a3da878410653aca1f8dce35",
+    "scripts/mac-acceptance/preflight/artifacts.mjs": "bfc49253404eb87b4d6e1e98bbd579e910d566464c9f6d29e4be7bfdf05efb63",
+    "scripts/mac-acceptance/preflight/keychain.d.mts": "39af4f97f0cfd08833d938620daf69f582a5a2323d95c185f45fe8eebd7bc030",
+    "scripts/mac-acceptance/preflight/keychain.mjs": "09fa65c1e2021d5c0d7ed47a56fbd3abd0cb8580e8b6def2e53c27120340a73b",
+    "scripts/mac-acceptance/preflight/remote-h1.d.mts": "6409d97c2fceb0cbfb466e641bbd9cbcd674a850b9afec9c5d48b779118bbfc0",
+    "scripts/mac-acceptance/preflight/remote-h1.mjs": "c1fe7ddbcd06b574687a80ba112d5bb9cc75a37cd972647a4026e7b29de91766",
+    "scripts/mac-acceptance/remote-batch.mjs": "aac6d991a5209d3f3365008573c3140b32731b17bcafc6445f37f66d7112e18a",
+    "scripts/mac-acceptance/watchdog/owned-process.d.mts": "fe876eba96634eb63fd4554faf4bb9b486007d72d9521298c080c63c6a755d61",
+    "scripts/mac-acceptance/watchdog/owned-process.mjs": "f4f1f910d4f9417995745c545578814db1c5267cc0d2dcf05e4416cb31663b84",
+    "scripts/run-gui-tests.mjs": "f3f2ab1205beded2c032b2e5a1e38936d97920ad3572502e1db04fd2f32eafb6",
+    "src/main/normal-apply-intent.ts": "d5f72f99bbb22703f15fa786645a19d999e4ad9a9a823d206892cbc8bc98283f",
+    "src/main/sync-connection-vault.ts": "ec61fe2dd32cc2e197de282bc933d717583e536828a19469fbf44491e7032b90",
+    "tests/acceptance-metadata/mac-artifacts.test.ts": "4c013bcadf98fbf5418b88cf6f5e909a6da805e9b15d2e5ce2b88688766f7bad",
+    "tests/acceptance-metadata/mac-gate-ledger.test.ts": "60c563dca1d5e2ce331855a1a94e6f97af50d2fe76e995a4b9854db9df022cce",
+    "tests/acceptance-metadata/mac-keychain-preflight.test.ts": "278526da7ce7007201d0063a40cca50fe0f61b99487caf56ccdd95b202053347",
+    "tests/acceptance-metadata/mac-native-observations.test.ts": "2f2b03bec40fa7b473fed55314b1aff08238f76254c77d78b1abb60e928471b6",
+    "tests/acceptance-metadata/mac-owned-process.test.ts": "d67a662879c9911dcd4bcaaf6585ccd95d6fa62a713c89beabf281a97eab9a29",
+    "tests/acceptance-metadata/mac-remote-h1-preflight.test.ts": "521b0f1b57037e65d41c38fc4b6d67470dbb0d0d1940ee0eeeddad42830eee51",
+    "tests/acceptance-metadata/mac-supervisor-binding.test.ts": "b55a8b34a64c67414bd6ae8bf604b9172e67239ddecb4851f2bddcb2179fe271",
+    "tests/acceptance-metadata/mac-supervisor-temp-root.test.ts": "f9032f4b4fbc4c9529ab6648af938c3213e1b7bc59982bfd7d2fc1fa1e3c881d",
+    "tests/acceptance/macos/remote-h1.spec.ts": "c884666eca9fe9b8c6f4c999b89a25bf74db29b387e5178e4308856ce0b246d8",
+    "tests/lv4-connection-binding-preflight.test.ts": "65ebbce39bdc1c001eb7ce665595813a1f5f5b8938d8d0a5d3c4e5bbb6ac2e4b",
+    "tests/lv4-normal-journal-cancel-fault.test.ts": "371d8088b5c770dd2290268d9e276e1264163e6cc2671700318f57cec7a8dab1",
+    "tests/mac-remote-batch.test.ts": "06e71f96bba5471b6e206de227d394e2cfecdbdb387bfc09fd6a5141e58f07ff",
+    "tsconfig.json": "2c4c43436ef62968cb80a656d766b71503c70b7e9067bbe7fa35d478cdf282e1"
+  },
+  "codeUnchangedThroughoutFinalQuiet": true,
+  "finalQuiet": {
+    "command": ["npm", "run", "verify:quiet"],
+    "exit": 0,
+    "typecheck": "PASS",
+    "testFiles": 243,
+    "nodeTests": 2292,
+    "baselineNodeTests": 2165,
+    "addedNodeTestsFromBaseline": 127,
+    "build": "PASS",
+    "seconds": 108.94,
+    "log": "final-review-verify-quiet.txt",
+    "logSha256": "bf9646db36d9075dc16e3b5eb569ed1885be4bb6bc69a6b69f5e4e5b6d25faa6"
+  },
+  "artifactSha256": {
+    "dist/main.cjs": "79e276240478877cfea2a324787b2d77bff097c417f6c456fc669e23ec25128d",
+    "dist/main.cjs.map": "c159a86d031949efcaa2dc397873fb9e971f61dd04377f1d1aaa94fb385fb97c",
+    "dist/preload.cjs": "3e39ba8560acf6abee58233896192a26f313dc2402abf82ad260650b42f1fc26",
+    "dist/raw-rescue.cjs": "64f3c6ac6e8503e6bf10655536c23fd6d8cfa7e6946139b99a7765f9214f419c",
+    "dist/renderer/assets/index-Bpd3T6nf.css": "10308de7ce698d992abaae455858de017f8054c3f8af58741987582aee0eec74",
+    "dist/renderer/assets/index-CSVd0Aq2.js": "63e97a7ec49aa15701a0fd1226f3e3e6d40f701347f04d57f37bbafdaafbc9ed",
+    "dist/renderer/index.html": "dca4ba1945167e937cc05c200dde11c3cbb166c2d3de7f2516be101306e3aaf2",
+    "dist/server-ops.cjs": "a7a27224af0d6cf6aaac50a316ef86334c191d599954f21c4194540e262bcd7c",
+    "dist/storage-overview-worker.cjs": "81b48fd581652dc26c7eaf46885e6dd27c0860e8091aa5591469a99ff6ae68c9"
+  },
+  "precedingImplementationRecord": "lv4-quiet-residuals-20261108.json",
+  "precedingImplementationRecordSha256": "779c24d00370257dbb30368191ebb09e6aeb2c3e8afab32f8dfc617f660c2b26",
+  "modelUsageRecord": "lv4-quiet-residuals-model-usage-20261108.json",
+  "modelUsageRecordSha256": "14d7fe992b80e260d0630a0951b8de3f42a023be14f87748a95cc5079ee162f8",
+  "temporaryEvidenceRoot": "/private/var/folders/fm/qk5fr3z11wq8hbphz6gk9llc0000gn/T/folio-lv4-quiet-deepseek-20261108-8tm0e7ir",
+  "acceptance": {
+    "confirmedLevel": 3,
+    "level4Certified": false,
+    "newCandidateGui": "NOT_RUN",
+    "realKeychain": "NOT_RUN",
+    "physicalTwoMacs": "NOT_RUN",
+    "previousGuiPassesCarriedForward": false
+  },
+  "constraints": {
+    "additionalGuiStarted": false,
+    "push": false,
+    "workflowCreatedOrRun": false,
+    "masterMerged": false,
+    "remoteHostGuardModified": false,
+    "originalMaster": "e269137f191081cabc0f05aa03ec68339ce413c2"
+  },
+  "finalStaticChecks": {
+    "reviewedFiles": 40,
+    "codeFiles": 30,
+    "localDocLinks": 52,
+    "evidenceAndArtifactHashes": "PASS",
+    "whitespaceAndScopedSecretPatterns": "PASS",
+    "remoteGuardValidatorDependenciesWorkflowMaster": "UNCHANGED",
+    "ownedIntegrationElectronProcesses": 0,
+    "activeCommitHooks": 0
+  }
+}

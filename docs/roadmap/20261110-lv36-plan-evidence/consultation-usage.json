@@ -1,0 +1,35 @@
+{
+  "requestedModel": "claude-fable-5-2-xhigh",
+  "catalogConfirmed": true,
+  "invocationFlagExact": true,
+  "cliVersion": "3000.12.32",
+  "exportAgentVersion": "3000.12.28",
+  "exportAgentModelLabel": "Fusion (Claude Fable 5.1 XHigh + GLM-5.2 High)",
+  "exportGenerationModels": [
+    "claude-fable-5-1-xhigh"
+  ],
+  "sessionId": "sudden-spot",
+  "sessionDatabaseModel": "fusion-claude-fable-5-1-xhigh-sidekick-glm-5-2",
+  "specifiedModelConsultation": "NOT_VERIFIED_ROUTING_MISMATCH",
+  "automaticToolCalls": 0,
+  "metrics": {
+    "total_prompt_tokens": 41546,
+    "total_completion_tokens": 17813,
+    "total_cached_tokens": 0,
+    "total_steps": 11
+  },
+  "cacheCreationInputTokens": 38813,
+  "textOutputTokens": "UNKNOWN",
+  "reasoningTokens": "UNKNOWN",
+  "billingAmount": "UNKNOWN",
+  "cacheFieldOverlap": "UNKNOWN",
+  "promptSha256": "8f5e82f1ef6952c9e51ef0ab40f756232ff3b2f5d2535b7614f2533e1cb023ad",
+  "promptBytes": 29399,
+  "exportSha256": "b215de3040ce723dc08dc7885a94838310cd51e2aa7460f1f7dac40cb7386119",
+  "elapsedSeconds": 287.45,
+  "fallbackModelSelectedByCodex": false,
+  "globalOrBillingConfigurationChanged": false,
+  "cliInvocations": 1,
+  "backendInferenceCalls": "UNKNOWN",
+  "recordedAgentResponses": 1
+}

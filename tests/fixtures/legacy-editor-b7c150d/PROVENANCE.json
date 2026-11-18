@@ -1,0 +1,28 @@
+{
+  "baselineCommit": "b7c150d15739c59edf6ba9a62ebda4794748d46b",
+  "author": "outer mechanical read-only git show extraction; no product behavior authored, no checkout/reset/write",
+  "files": [
+    {
+      "file": "editor-schema.ts.txt",
+      "original": "src/shared/editor-schema.ts",
+      "sha256": "5ab701c6c5987c797ff8c48ead94bdd01a02dcbe69a7b8473ef4b4418a6cd948",
+      "bytes": 1485,
+      "readOnlyCommand": [
+        "git",
+        "show",
+        "b7c150d15739c59edf6ba9a62ebda4794748d46b:src/shared/editor-schema.ts"
+      ]
+    },
+    {
+      "file": "validation.ts.txt",
+      "original": "src/shared/validation.ts",
+      "sha256": "339d2f88f8a64332348d29060d23a83940852316206296d1bbfb2c88212820b7",
+      "bytes": 3509,
+      "readOnlyCommand": [
+        "git",
+        "show",
+        "b7c150d15739c59edf6ba9a62ebda4794748d46b:src/shared/validation.ts"
+      ]
+    }
+  ]
+}

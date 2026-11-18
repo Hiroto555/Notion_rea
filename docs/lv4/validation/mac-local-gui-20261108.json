@@ -1,0 +1,2459 @@
+{
+  "recordType": "folio-local-mac-gui-acceptance-v1",
+  "date": "2026-11-08",
+  "timezone": "Asia/Tokyo",
+  "authorization": "Explicit user instruction for this local Mac GUI batch while watching TV; not continuing blanket authorization.",
+  "scope": "Local GUI acceptance only; not a remote MAC-P05 report or Lv4 certification.",
+  "source": {
+    "headAtRun": "b19ecbe1fd9700575d75474c5e08573ffcbb75d9",
+    "productAcceptanceBase": "bd65b73b492b95b8b9a2a1f73ad9a5e114c509dc",
+    "branch": "codex/folio-mac-gui-acceptance-20261108",
+    "harnessUnchangedSinceFinalQuiet": true,
+    "productSrcPackageLockAndWorkflowsUnchangedFromAcceptanceBase": true,
+    "remoteMacPocFoundationUnchangedFromSavedSource": true,
+    "originalMasterUnchanged": "e269137f191081cabc0f05aa03ec68339ce413c2",
+    "harnessSha256AtFinalQuiet": {
+      "scripts/local-gui-batch-policy.mjs": "6ed66b40b49fc6e0f68098e09315fd4e64f38d2d859cf56952fcc1751ef8d277",
+      "scripts/local-gui-batch-policy.d.mts": "bce24de86619939f19fe83dfd73b432056a3ea6199c254a4eb402fa74dcffd7c",
+      "tests/e2e/fixture-isolation.ts": "a92b1387b6f10b5f7863dc4be8a8833658aefcfdd03315b276d596bacd8fbb52",
+      "tests/e2e/linux-ci/recovery-fixture.ts": "61ced69e2a93d389f543407263f94d41c8503b996003ed7fdc29788a23a020a2",
+      "tests/local-gui-fixture.test.ts": "a3611a9d6cfc49e1b26fc8101d58da35ddbb75c24399f57feb76ffd248e3292a",
+      "playwright.local-native.config.ts": "c7df453296d6b740431b29510d5af7ee982e95c5866b706935c9f78c674ac1a6",
+      "tests/acceptance/macos/local-native.spec.ts": "ee8864cb083c943a72d4f2f8d184f44badb943dbff8c9eb251cdcbc9783b3b9a"
+    },
+    "nativeSuiteProgression": "Four native cases passed in phase 06; IME case was then appended and run alone in phase 07. The first four case bodies were unchanged.",
+    "harnessStateAtRun": "uncommitted"
+  },
+  "runtime": {
+    "hostOsVersionPostRun": "26.6.2",
+    "hostOsBuildPostRun": "25G83",
+    "platformObservedInApp": "darwin",
+    "archObservedInApp": "arm64",
+    "electronObservedInApp": "45.0.0",
+    "chromiumObservedInApp": "156.0.8078.48",
+    "nodeForFinalQuiet": "v24.20.0",
+    "mockKeychainObservedInApp": true,
+    "realKeychainAccepted": false,
+    "packagedApp": false
+  },
+  "temporaryEvidenceRoot": "/private/var/folders/fm/qk5fr3z11wq8hbphz6gk9llc0000gn/T/folio-local-gui-20261108-7mfn4v6x",
+  "summary": {
+    "selectedUniqueCases": 241,
+    "passed": 240,
+    "infraBlocked": 1,
+    "rawPassed": 240,
+    "rawFailed": 1,
+    "skippedInSelectedPhases": 0,
+    "retryInSelectedPhases": 0,
+    "flakyInSelectedPhases": 0,
+    "allSelectedCasesPassed": false,
+    "levelConfirmed": 3,
+    "level4Certified": false,
+    "modeCountsAmongPassed": {
+      "electron_product_ui_ipc_with_fault_injection": 206,
+      "chromium_presentation": 28,
+      "electron_substituted_presentation": 2,
+      "native_os": 4
+    },
+    "excludedLinuxOnlyCases": [
+      "real Secret Service saves only ciphertext and activates publish only after restart",
+      "basic_text fails closed and permits local disable without secure encryption"
+    ]
+  },
+  "selectedPhases": [
+    {
+      "phase": "01-save-smoke",
+      "rawStats": {
+        "startTime": "2026-11-08T11:59:55.100Z",
+        "duration": 9436.248,
+        "expected": 4,
+        "skipped": 0,
+        "unexpected": 0,
+        "flaky": 0
+      },
+      "report": "reports/01-save-smoke/results.json",
+      "reportSha256": "c1276eb023e5e28b70f64485ffee6ffed68ba1472ec4a5fc79fcb0f62bc8f82c",
+      "invocation": "reports/01-save-smoke/invocation.json",
+      "invocationSha256": "a306c2c26aa6e66e78e64c8c5d987a359d00327a0733099dd0f1a38de877450b",
+      "runLogSha256": "a80a25c176a44503dd8626da93fbf63f1b8d0da7f4424d3f50babfa82a1bcac0",
+      "runnerErrors": []
+    },
+    {
+      "phase": "02-common-mac",
+      "rawStats": {
+        "startTime": "2026-11-08T12:01:43.569Z",
+        "duration": 417487.673,
+        "expected": 213,
+        "skipped": 0,
+        "unexpected": 0,
+        "flaky": 0
+      },
+      "report": "reports/02-common-mac/results.json",
+      "reportSha256": "f7b2461770092cf91bc1a73c5e4ff7083f1774f0272a755a0e5ccf09fe7ea64b",
+      "invocation": "reports/02-common-mac/invocation.json",
+      "invocationSha256": "dadfe1f8b9569edbbc29ed4f090f65c39a69765878e346cecb35d5196b6dca76",
+      "runLogSha256": "96a00ec240704738f2a935a2696294ce4c297336ef4aae1a2014fa0d3290a4ce",
+      "runnerErrors": []
+    },
+    {
+      "phase": "03-recovery-sync-mac",
+      "rawStats": {
+        "startTime": "2026-11-08T12:10:08.616Z",
+        "duration": 30846.54,
+        "expected": 19,
+        "skipped": 0,
+        "unexpected": 0,
+        "flaky": 0
+      },
+      "report": "reports/03-recovery-sync-mac/results.json",
+      "reportSha256": "55a27fe9180d88b0dc781b76eb3ccc682d0dacd5a6795ac69100ae64d857e8cb",
+      "invocation": "reports/03-recovery-sync-mac/invocation.json",
+      "invocationSha256": "3cf4279e56395c725a44e3c3d25f6f8605778476860d894e0da4ac5fc37e0340",
+      "runLogSha256": "a015716c2058267ce2a0547036c905beac76af03e3e42350a53951063f3505f8",
+      "runnerErrors": []
+    },
+    {
+      "phase": "06-native-os-lifetime",
+      "rawStats": {
+        "startTime": "2026-11-08T12:17:08.869Z",
+        "duration": 257036.711,
+        "expected": 4,
+        "skipped": 0,
+        "unexpected": 0,
+        "flaky": 0
+      },
+      "report": "reports/06-native-os-lifetime/results.json",
+      "reportSha256": "b0437c476171a46ca9f51b2e753917220fcb8e800d0b8b73711b5d6d7f2066e7",
+      "invocation": "reports/06-native-os-lifetime/invocation.json",
+      "invocationSha256": "67bbdb2a363184984ed595b218903316fdbe69fe330bb6cba3a7a5e7fbb21ee6",
+      "runLogSha256": "95c0925e42e6c5d84774e23163dadcdab91e9f8bd438b5a49dc589c388bb45ac",
+      "runnerErrors": []
+    },
+    {
+      "phase": "07-native-ime",
+      "rawStats": {
+        "startTime": "2026-11-08T12:23:31.536Z",
+        "duration": 64076.752,
+        "expected": 0,
+        "skipped": 0,
+        "unexpected": 1,
+        "flaky": 0
+      },
+      "report": "reports/07-native-ime/results.json",
+      "reportSha256": "23b636114a80d5558a479be9e328809fada39a16c2f8bc6076e4872ce8244340",
+      "invocation": "reports/07-native-ime/invocation.json",
+      "invocationSha256": "7c4eba611925a634256507c340385375ddc2b496abac13a1c2ebc46fdc61b9fd",
+      "runLogSha256": "336a35568bf3315f5460c9960afd1b1d35f677622105c13018f5af9b0d2cd918",
+      "runnerErrors": [
+        "Testing stopped early after 1 maximum allowed failures."
+      ]
+    }
+  ],
+  "historicalHarnessFailuresExcludedFromFinalSelection": [
+    {
+      "phase": "04-native-os",
+      "classification": "HARNESS_FAILURE",
+      "reason": "Transient rejection toast expired while waiting for native-action acknowledgment; replaced with persistent trusted/defaultPrevented journal and PID/input assertions.",
+      "rawStats": {
+        "startTime": "2026-11-08T12:12:14.669Z",
+        "duration": 37426.04,
+        "expected": 0,
+        "skipped": 3,
+        "unexpected": 1,
+        "flaky": 0
+      },
+      "report": "reports/04-native-os/results.json",
+      "reportSha256": "a467fa570f846318ecc16860f919582ce48e59eec8fe59a273502c9553d56c6c",
+      "supersededBy": "06-native-os-lifetime"
+    },
+    {
+      "phase": "05-native-os-fixed",
+      "classification": "HARNESS_FAILURE",
+      "reason": "Playwright app process handle was read after disposal; capture the owned ChildProcess before the native exit action.",
+      "rawStats": {
+        "startTime": "2026-11-08T12:14:47.532Z",
+        "duration": 30631.952999999998,
+        "expected": 0,
+        "skipped": 3,
+        "unexpected": 1,
+        "flaky": 0
+      },
+      "report": "reports/05-native-os-fixed/results.json",
+      "reportSha256": "e3fbbddcd2fa94f84048746dd51b1ba5a67af91fb761d2d1679adfec76130fb2",
+      "supersededBy": "06-native-os-lifetime"
+    }
+  ],
+  "cases": [
+    {
+      "file": "tests/e2e/r4-page-save.spec.ts",
+      "title": "closing history while restore-ack is held keeps old content locked until the restored snapshot is installed",
+      "phase": "01-save-smoke",
+      "mode": "electron_product_ui_ipc_with_fault_injection",
+      "rawStatus": "passed",
+      "classification": "PASS",
+      "retry": 0
+    },
+    {
+      "file": "tests/e2e/r4-page-save.spec.ts",
+      "title": "closing history while post-restore-load is held keeps old content locked until the restored snapshot is installed",
+      "phase": "01-save-smoke",
+      "mode": "electron_product_ui_ipc_with_fault_injection",
+      "rawStatus": "passed",
+      "classification": "PASS",
+      "retry": 0
+    },
+    {
+      "file": "tests/e2e/r4-page-save.spec.ts",
+      "title": "ordinary Page refresh cannot pair an old Editor document with an external revision",
+      "phase": "01-save-smoke",
+      "mode": "electron_product_ui_ipc_with_fault_injection",
+      "rawStatus": "passed",
+      "classification": "PASS",
+      "retry": 0
+    },
+    {
+      "file": "tests/e2e/r4-page-save.spec.ts",
+      "title": "ordinary Page delayed ACK keeps later input and does not replace another selected Page",
+      "phase": "01-save-smoke",
+      "mode": "electron_product_ui_ipc_with_fault_injection",
+      "rawStatus": "passed",
+      "classification": "PASS",
+      "retry": 0
+    },
+    {
+      "file": "tests/e2e/create-gate.spec.ts",
+      "title": "delayed page creation cannot redirect immediate input into the previous page",
+      "phase": "02-common-mac",
+      "mode": "electron_product_ui_ipc_with_fault_injection",
+      "rawStatus": "passed",
+      "classification": "PASS",
+      "retry": 0
+    },
+    {
+      "file": "tests/e2e/create-gate.spec.ts",
+      "title": "a delayed create does not override a later explicit navigation",
+      "phase": "02-common-mac",
+      "mode": "electron_product_ui_ipc_with_fault_injection",
+      "rawStatus": "passed",
+      "classification": "PASS",
+      "retry": 0
+    },
+    {
+      "file": "tests/e2e/create-gate.spec.ts",
+      "title": "a failed create restores the same Editor and its saved content",
+      "phase": "02-common-mac",
+      "mode": "electron_product_ui_ipc_with_fault_injection",
+      "rawStatus": "passed",
+      "classification": "PASS",
+      "retry": 0
+    },
+    {
+      "file": "tests/e2e/create-gate.spec.ts",
+      "title": "a second create is refused while the first is pending",
+      "phase": "02-common-mac",
+      "mode": "electron_product_ui_ipc_with_fault_injection",
+      "rawStatus": "passed",
+      "classification": "PASS",
+      "retry": 0
+    },
+    {
+      "file": "tests/e2e/create-gate.spec.ts",
+      "title": "page creation from the sidebar is refused during synthetic composition",
+      "phase": "02-common-mac",
+      "mode": "electron_product_ui_ipc_with_fault_injection",
+      "rawStatus": "passed",
+      "classification": "PASS",
+      "retry": 0
+    },
+    {
+      "file": "tests/e2e/database-v2.spec.ts",
+      "title": "DB 2.0 independent views, AND/OR filter, multiple sorts and grouping survive restart",
+      "phase": "02-common-mac",
+      "mode": "electron_product_ui_ipc_with_fault_injection",
+      "rawStatus": "passed",
+      "classification": "PASS",
+      "retry": 0
+    },
+    {
+      "file": "tests/e2e/db-ui-legacy.spec.ts",
+      "title": "legacy board keeps a saved descending group direction",
+      "phase": "02-common-mac",
+      "mode": "electron_product_ui_ipc_with_fault_injection",
+      "rawStatus": "passed",
+      "classification": "PASS",
+      "retry": 0
+    },
+    {
+      "file": "tests/e2e/db-ui-readonly.spec.ts",
+      "title": "view-only modes permit local navigation without creating drafts or mutation callbacks",
+      "phase": "02-common-mac",
+      "mode": "chromium_presentation",
+      "rawStatus": "passed",
+      "classification": "PASS",
+      "retry": 0
+    },
+    {
+      "file": "tests/e2e/db-ui-readonly.spec.ts",
+      "title": "opening a live uniquely owned row sends only the navigation callback",
+      "phase": "02-common-mac",
+      "mode": "chromium_presentation",
+      "rawStatus": "passed",
+      "classification": "PASS",
+      "retry": 0
+    },
+    {
+      "file": "tests/e2e/db-ui-readonly.spec.ts",
+      "title": "a mismatched owner or duplicated page identity cannot navigate",
+      "phase": "02-common-mac",
+      "mode": "chromium_presentation",
+      "rawStatus": "passed",
+      "classification": "PASS",
+      "retry": 0
+    },
+    {
+      "file": "tests/e2e/db-ui.spec.ts",
+      "title": "table, board, gallery and calendar open the same record identity and values",
+      "phase": "02-common-mac",
+      "mode": "chromium_presentation",
+      "rawStatus": "passed",
+      "classification": "PASS",
+      "retry": 0
+    },
+    {
+      "file": "tests/e2e/db-ui.spec.ts",
+      "title": "record page saves, retains a failed edit, retries and handles trash/restore and read-only",
+      "phase": "02-common-mac",
+      "mode": "chromium_presentation",
+      "rawStatus": "passed",
+      "classification": "PASS",
+      "retry": 0
+    },
+    {
+      "file": "tests/e2e/db-ui.spec.ts",
+      "title": "inline table edits call record patches with pageId and never save rows",
+      "phase": "02-common-mac",
+      "mode": "chromium_presentation",
+      "rawStatus": "passed",
+      "classification": "PASS",
+      "retry": 0
+    },
+    {
+      "file": "tests/e2e/db-ui.spec.ts",
+      "title": "filter, multiple sorts, grouping and view CRUD persist through updateSettings",
+      "phase": "02-common-mac",
+      "mode": "chromium_presentation",
+      "rawStatus": "passed",
+      "classification": "PASS",
+      "retry": 0
+    },
+    {
+      "file": "tests/e2e/db-ui.spec.ts",
+      "title": "filter builder adds a typed condition and a settings failure can be retried",
+      "phase": "02-common-mac",
+      "mode": "chromium_presentation",
+      "rawStatus": "passed",
+      "classification": "PASS",
+      "retry": 0
+    },
+    {
+      "file": "tests/e2e/db-ui.spec.ts",
+      "title": "a pending settings write is rebased onto an external projection",
+      "phase": "02-common-mac",
+      "mode": "chromium_presentation",
+      "rawStatus": "passed",
+      "classification": "PASS",
+      "retry": 0
+    },
+    {
+      "file": "tests/e2e/db-ui.spec.ts",
+      "title": "board grouping follows the saved direction and the direction control",
+      "phase": "02-common-mac",
+      "mode": "chromium_presentation",
+      "rawStatus": "passed",
+      "classification": "PASS",
+      "retry": 0
+    },
+    {
+      "file": "tests/e2e/db-ui.spec.ts",
+      "title": "board drag moves a record between groups through patchRecord",
+      "phase": "02-common-mac",
+      "mode": "chromium_presentation",
+      "rawStatus": "passed",
+      "classification": "PASS",
+      "retry": 0
+    },
+    {
+      "file": "tests/e2e/db-ui.spec.ts",
+      "title": "keyboard handoff, Escape return, origin focus and scroll restoration",
+      "phase": "02-common-mac",
+      "mode": "chromium_presentation",
+      "rawStatus": "passed",
+      "classification": "PASS",
+      "retry": 0
+    },
+    {
+      "file": "tests/e2e/db-ui.spec.ts",
+      "title": "a filtered-out record stays open and returning does not focus a hidden row",
+      "phase": "02-common-mac",
+      "mode": "chromium_presentation",
+      "rawStatus": "passed",
+      "classification": "PASS",
+      "retry": 0
+    },
+    {
+      "file": "tests/e2e/db-ui.spec.ts",
+      "title": "create, duplicate, trash and restore show ACKs and update the projection",
+      "phase": "02-common-mac",
+      "mode": "chromium_presentation",
+      "rawStatus": "passed",
+      "classification": "PASS",
+      "retry": 0
+    },
+    {
+      "file": "tests/e2e/db-ui.spec.ts",
+      "title": "a failed cell stays retryable after another cell succeeds",
+      "phase": "02-common-mac",
+      "mode": "chromium_presentation",
+      "rawStatus": "passed",
+      "classification": "PASS",
+      "retry": 0
+    },
+    {
+      "file": "tests/e2e/db-ui.spec.ts",
+      "title": "retry retains a failed cell when another writer changed the same cell",
+      "phase": "02-common-mac",
+      "mode": "chromium_presentation",
+      "rawStatus": "passed",
+      "classification": "PASS",
+      "retry": 0
+    },
+    {
+      "file": "tests/e2e/db-ui.spec.ts",
+      "title": "Escape on an absent cell writes nothing and deletes after a value",
+      "phase": "02-common-mac",
+      "mode": "chromium_presentation",
+      "rawStatus": "passed",
+      "classification": "PASS",
+      "retry": 0
+    },
+    {
+      "file": "tests/e2e/db-ui.spec.ts",
+      "title": "an optimistic view keeps its id through a failed add and queued rename",
+      "phase": "02-common-mac",
+      "mode": "chromium_presentation",
+      "rawStatus": "passed",
+      "classification": "PASS",
+      "retry": 0
+    },
+    {
+      "file": "tests/e2e/db-ui.spec.ts",
+      "title": "an optimistic duplicate keeps its id through a failed write and queued rename",
+      "phase": "02-common-mac",
+      "mode": "chromium_presentation",
+      "rawStatus": "passed",
+      "classification": "PASS",
+      "retry": 0
+    },
+    {
+      "file": "tests/e2e/db-ui.spec.ts",
+      "title": "a same-field external change is reported instead of overwritten",
+      "phase": "02-common-mac",
+      "mode": "chromium_presentation",
+      "rawStatus": "passed",
+      "classification": "PASS",
+      "retry": 0
+    },
+    {
+      "file": "tests/e2e/db-ui.spec.ts",
+      "title": "filter and view-name edits are sent before navigation without blur",
+      "phase": "02-common-mac",
+      "mode": "chromium_presentation",
+      "rawStatus": "passed",
+      "classification": "PASS",
+      "retry": 0
+    },
+    {
+      "file": "tests/e2e/db-ui.spec.ts",
+      "title": "deleting a view is rejected after the same view changed externally",
+      "phase": "02-common-mac",
+      "mode": "chromium_presentation",
+      "rawStatus": "passed",
+      "classification": "PASS",
+      "retry": 0
+    },
+    {
+      "file": "tests/e2e/db-ui.spec.ts",
+      "title": "a newer cell edit supersedes an older failed patch before its ACK",
+      "phase": "02-common-mac",
+      "mode": "chromium_presentation",
+      "rawStatus": "passed",
+      "classification": "PASS",
+      "retry": 0
+    },
+    {
+      "file": "tests/e2e/db-ui.spec.ts",
+      "title": "a failed new view keeps stable filter/sort ids for queued edits",
+      "phase": "02-common-mac",
+      "mode": "chromium_presentation",
+      "rawStatus": "passed",
+      "classification": "PASS",
+      "retry": 0
+    },
+    {
+      "file": "tests/e2e/db-ui.spec.ts",
+      "title": "960/1024/1440 and narrow layout, dark theme, long text and an image do not overflow",
+      "phase": "02-common-mac",
+      "mode": "chromium_presentation",
+      "rawStatus": "passed",
+      "classification": "PASS",
+      "retry": 0
+    },
+    {
+      "file": "tests/e2e/desktop.spec.ts",
+      "title": "real Electron: page edit, slash, undo, blocks, search, clone, trash and restart",
+      "phase": "02-common-mac",
+      "mode": "electron_product_ui_ipc_with_fault_injection",
+      "rawStatus": "passed",
+      "classification": "PASS",
+      "retry": 0
+    },
+    {
+      "file": "tests/e2e/desktop.spec.ts",
+      "title": "database table edits, filters, sorts, board drop and calendar persistence",
+      "phase": "02-common-mac",
+      "mode": "electron_product_ui_ipc_with_fault_injection",
+      "rawStatus": "passed",
+      "classification": "PASS",
+      "retry": 0
+    },
+    {
+      "file": "tests/e2e/desktop.spec.ts",
+      "title": "security boundary, page hierarchy, cycle error and versions",
+      "phase": "02-common-mac",
+      "mode": "electron_product_ui_ipc_with_fault_injection",
+      "rawStatus": "passed",
+      "classification": "PASS",
+      "retry": 0
+    },
+    {
+      "file": "tests/e2e/desktop.spec.ts",
+      "title": "native rich HTML paste, Markdown shortcuts, toggle, links and block drag",
+      "phase": "02-common-mac",
+      "mode": "electron_product_ui_ipc_with_fault_injection",
+      "rawStatus": "passed",
+      "classification": "PASS",
+      "retry": 0
+    },
+    {
+      "file": "tests/e2e/desktop.spec.ts",
+      "title": "real import/export, image/file attachments and complete backup",
+      "phase": "02-common-mac",
+      "mode": "electron_product_ui_ipc_with_fault_injection",
+      "rawStatus": "passed",
+      "classification": "PASS",
+      "retry": 0
+    },
+    {
+      "file": "tests/e2e/desktop.spec.ts",
+      "title": "reproducible load: 150 pages, 1000 blocks, input and reopen",
+      "phase": "02-common-mac",
+      "mode": "electron_product_ui_ipc_with_fault_injection",
+      "rawStatus": "passed",
+      "classification": "PASS",
+      "retry": 0
+    },
+    {
+      "file": "tests/e2e/desktop.spec.ts",
+      "title": "stale-write recovery preserves unsaved edits before reload",
+      "phase": "02-common-mac",
+      "mode": "electron_product_ui_ipc_with_fault_injection",
+      "rawStatus": "passed",
+      "classification": "PASS",
+      "retry": 0
+    },
+    {
+      "file": "tests/e2e/dialogs.spec.ts",
+      "title": "R3 DB Escape closes the record and saves the latest input through restart",
+      "phase": "02-common-mac",
+      "mode": "electron_product_ui_ipc_with_fault_injection",
+      "rawStatus": "passed",
+      "classification": "PASS",
+      "retry": 0
+    },
+    {
+      "file": "tests/e2e/dialogs.spec.ts",
+      "title": "R3 search/link/record share initial focus, modal tab cycle, close button and background isolation",
+      "phase": "02-common-mac",
+      "mode": "electron_product_ui_ipc_with_fault_injection",
+      "rawStatus": "passed",
+      "classification": "PASS",
+      "retry": 0
+    },
+    {
+      "file": "tests/e2e/dialogs.spec.ts",
+      "title": "R3 selected text link cancel/confirm restores exact range, wording and marks",
+      "phase": "02-common-mac",
+      "mode": "electron_product_ui_ipc_with_fault_injection",
+      "rawStatus": "passed",
+      "classification": "PASS",
+      "retry": 0
+    },
+    {
+      "file": "tests/e2e/dialogs.spec.ts",
+      "title": "R3 synthetic composition, prevented Escape and inner menus take priority (not physical IME)",
+      "phase": "02-common-mac",
+      "mode": "electron_product_ui_ipc_with_fault_injection",
+      "rawStatus": "passed",
+      "classification": "PASS",
+      "retry": 0
+    },
+    {
+      "file": "tests/e2e/dialogs.spec.ts",
+      "title": "R3 nested native UI consumes one Escape; search navigation focuses destination",
+      "phase": "02-common-mac",
+      "mode": "electron_product_ui_ipc_with_fault_injection",
+      "rawStatus": "passed",
+      "classification": "PASS",
+      "retry": 0
+    },
+    {
+      "file": "tests/e2e/dialogs.spec.ts",
+      "title": "R3 stale link document is rejected and switching page leaves both pages unchanged",
+      "phase": "02-common-mac",
+      "mode": "electron_product_ui_ipc_with_fault_injection",
+      "rawStatus": "passed",
+      "classification": "PASS",
+      "retry": 0
+    },
+    {
+      "file": "tests/e2e/dialogs.spec.ts",
+      "title": "N04 slash arrow/confirm/cancel retains text and cursor (Folio only)",
+      "phase": "02-common-mac",
+      "mode": "electron_product_ui_ipc_with_fault_injection",
+      "rawStatus": "passed",
+      "classification": "PASS",
+      "retry": 0
+    },
+    {
+      "file": "tests/e2e/drag.spec.ts",
+      "title": "R2 short original regression: checkbox edit then real handle drag",
+      "phase": "02-common-mac",
+      "mode": "electron_product_ui_ipc_with_fault_injection",
+      "rawStatus": "passed",
+      "classification": "PASS",
+      "retry": 0
+    },
+    {
+      "file": "tests/e2e/drag.spec.ts",
+      "title": "R2 top-level matrix: single/multiple/start/end/same/cancel/scroll/undo/redo/restart",
+      "phase": "02-common-mac",
+      "mode": "electron_product_ui_ipc_with_fault_injection",
+      "rawStatus": "passed",
+      "classification": "PASS",
+      "retry": 0
+    },
+    {
+      "file": "tests/e2e/editor-identity.spec.ts",
+      "title": "Editor 2.0: legacy document obtains IDs on edit, survives restart and copy paste",
+      "phase": "02-common-mac",
+      "mode": "electron_product_ui_ipc_with_fault_injection",
+      "rawStatus": "passed",
+      "classification": "PASS",
+      "retry": 0
+    },
+    {
+      "file": "tests/e2e/editor-identity.spec.ts",
+      "title": "Editor 2.0: nested sibling move, duplicate, undo/redo and restart",
+      "phase": "02-common-mac",
+      "mode": "electron_product_ui_ipc_with_fault_injection",
+      "rawStatus": "passed",
+      "classification": "PASS",
+      "retry": 0
+    },
+    {
+      "file": "tests/e2e/editor-identity.spec.ts",
+      "title": "Editor 2.0: drag a nested item between lists without changing identity",
+      "phase": "02-common-mac",
+      "mode": "electron_product_ui_ipc_with_fault_injection",
+      "rawStatus": "passed",
+      "classification": "PASS",
+      "retry": 0
+    },
+    {
+      "file": "tests/e2e/editor-identity.spec.ts",
+      "title": "Editor 2.0: a stale legacy edit retains IDs and content in recovery",
+      "phase": "02-common-mac",
+      "mode": "electron_product_ui_ipc_with_fault_injection",
+      "rawStatus": "passed",
+      "classification": "PASS",
+      "retry": 0
+    },
+    {
+      "file": "tests/e2e/editor-r3-clipboard.spec.ts",
+      "title": "Editor 3 synthetic block cut/paste retains IDs once and reopens",
+      "phase": "02-common-mac",
+      "mode": "electron_product_ui_ipc_with_fault_injection",
+      "rawStatus": "passed",
+      "classification": "PASS",
+      "retry": 0
+    },
+    {
+      "file": "tests/e2e/editor-r3-clipboard.spec.ts",
+      "title": "Editor 3 clipboard write failure does not delete selected blocks",
+      "phase": "02-common-mac",
+      "mode": "electron_product_ui_ipc_with_fault_injection",
+      "rawStatus": "passed",
+      "classification": "PASS",
+      "retry": 0
+    },
+    {
+      "file": "tests/e2e/editor-r3-clipboard.spec.ts",
+      "title": "Editor 3 selects and cuts nested siblings and preserves IDs on paste",
+      "phase": "02-common-mac",
+      "mode": "electron_product_ui_ipc_with_fault_injection",
+      "rawStatus": "passed",
+      "classification": "PASS",
+      "retry": 0
+    },
+    {
+      "file": "tests/e2e/editor-r3-clipboard.spec.ts",
+      "title": "Editor 3 preserves plain text boundaries and rejects grouped nested drag",
+      "phase": "02-common-mac",
+      "mode": "electron_product_ui_ipc_with_fault_injection",
+      "rawStatus": "passed",
+      "classification": "PASS",
+      "retry": 0
+    },
+    {
+      "file": "tests/e2e/editor-r3-clipboard.spec.ts",
+      "title": "Editor 3 does not cut when either fallback clipboard format fails silently",
+      "phase": "02-common-mac",
+      "mode": "electron_product_ui_ipc_with_fault_injection",
+      "rawStatus": "passed",
+      "classification": "PASS",
+      "retry": 0
+    },
+    {
+      "file": "tests/e2e/editor-r3-clipboard.spec.ts",
+      "title": "Editor 3 rejects direct block mutation in a read-only editor",
+      "phase": "02-common-mac",
+      "mode": "electron_product_ui_ipc_with_fault_injection",
+      "rawStatus": "passed",
+      "classification": "PASS",
+      "retry": 0
+    },
+    {
+      "file": "tests/e2e/gate-a.spec.ts",
+      "title": "F01 same-page sidebar/search reselection keeps editor, attachment, link and exports",
+      "phase": "02-common-mac",
+      "mode": "electron_product_ui_ipc_with_fault_injection",
+      "rawStatus": "passed",
+      "classification": "PASS",
+      "retry": 0
+    },
+    {
+      "file": "tests/e2e/gate-a.spec.ts",
+      "title": "F05 attachment roundtrip LICENSE",
+      "phase": "02-common-mac",
+      "mode": "electron_product_ui_ipc_with_fault_injection",
+      "rawStatus": "passed",
+      "classification": "PASS",
+      "retry": 0
+    },
+    {
+      "file": "tests/e2e/gate-a.spec.ts",
+      "title": "F05 attachment roundtrip 資料.日本語",
+      "phase": "02-common-mac",
+      "mode": "electron_product_ui_ipc_with_fault_injection",
+      "rawStatus": "passed",
+      "classification": "PASS",
+      "retry": 0
+    },
+    {
+      "file": "tests/e2e/gate-a.spec.ts",
+      "title": "F05 attachment roundtrip file.abcdefghijklmnop",
+      "phase": "02-common-mac",
+      "mode": "electron_product_ui_ipc_with_fault_injection",
+      "rawStatus": "passed",
+      "classification": "PASS",
+      "retry": 0
+    },
+    {
+      "file": "tests/e2e/gate-a.spec.ts",
+      "title": "F05 attachment roundtrip archive.tar.gz",
+      "phase": "02-common-mac",
+      "mode": "electron_product_ui_ipc_with_fault_injection",
+      "rawStatus": "passed",
+      "classification": "PASS",
+      "retry": 0
+    },
+    {
+      "file": "tests/e2e/gate-a.spec.ts",
+      "title": "F05 attachment roundtrip IMAGE.PNG",
+      "phase": "02-common-mac",
+      "mode": "electron_product_ui_ipc_with_fault_injection",
+      "rawStatus": "passed",
+      "classification": "PASS",
+      "retry": 0
+    },
+    {
+      "file": "tests/e2e/gate-a.spec.ts",
+      "title": "F06 synthetic composing Enter does not navigate search or link (not physical IME)",
+      "phase": "02-common-mac",
+      "mode": "electron_product_ui_ipc_with_fault_injection",
+      "rawStatus": "passed",
+      "classification": "PASS",
+      "retry": 0
+    },
+    {
+      "file": "tests/e2e/gate-a.spec.ts",
+      "title": "F11 editing during move and delayed load keeps local patch and durable revision",
+      "phase": "02-common-mac",
+      "mode": "electron_product_ui_ipc_with_fault_injection",
+      "rawStatus": "passed",
+      "classification": "PASS",
+      "retry": 0
+    },
+    {
+      "file": "tests/e2e/gate-a.spec.ts",
+      "title": "F02 full-text search, preview, count and in-page selection cross inline marks",
+      "phase": "02-common-mac",
+      "mode": "electron_product_ui_ipc_with_fault_injection",
+      "rawStatus": "passed",
+      "classification": "PASS",
+      "retry": 0
+    },
+    {
+      "file": "tests/e2e/gate-a.spec.ts",
+      "title": "F04 DB delete Undo, restart history restore and property history retain IDs and values",
+      "phase": "02-common-mac",
+      "mode": "electron_product_ui_ipc_with_fault_injection",
+      "rawStatus": "passed",
+      "classification": "PASS",
+      "retry": 0
+    },
+    {
+      "file": "tests/e2e/gate-a.spec.ts",
+      "title": "F06 editor selection Cmd+K sets page link without replacing text; modal and prevented keys win",
+      "phase": "02-common-mac",
+      "mode": "electron_product_ui_ipc_with_fault_injection",
+      "rawStatus": "passed",
+      "classification": "PASS",
+      "retry": 0
+    },
+    {
+      "file": "tests/e2e/gate-a.spec.ts",
+      "title": "F07 invalid IPC is rejected and unknown stored schema is read-only with exact source export",
+      "phase": "02-common-mac",
+      "mode": "electron_product_ui_ipc_with_fault_injection",
+      "rawStatus": "passed",
+      "classification": "PASS",
+      "retry": 0
+    },
+    {
+      "file": "tests/e2e/gate-a.spec.ts",
+      "title": "F11 failed write exports pending patch and persisted state, then recovers a separate page",
+      "phase": "02-common-mac",
+      "mode": "electron_product_ui_ipc_with_fault_injection",
+      "rawStatus": "passed",
+      "classification": "PASS",
+      "retry": 0
+    },
+    {
+      "file": "tests/e2e/gate-a.spec.ts",
+      "title": "F03 default userData path and pre-ready directory failure are observable without touching user data",
+      "phase": "02-common-mac",
+      "mode": "electron_product_ui_ipc_with_fault_injection",
+      "rawStatus": "passed",
+      "classification": "PASS",
+      "retry": 0
+    },
+    {
+      "file": "tests/e2e/gate-a.spec.ts",
+      "title": "F07 malformed JSON stays read-only with raw export while healthy pages remain accessible",
+      "phase": "02-common-mac",
+      "mode": "electron_product_ui_ipc_with_fault_injection",
+      "rawStatus": "passed",
+      "classification": "PASS",
+      "retry": 0
+    },
+    {
+      "file": "tests/e2e/integration-v2.spec.ts",
+      "title": "integrated editor, attachment, independent database views and theme persist together through restart",
+      "phase": "02-common-mac",
+      "mode": "electron_product_ui_ipc_with_fault_injection",
+      "rawStatus": "passed",
+      "classification": "PASS",
+      "retry": 0
+    },
+    {
+      "file": "tests/e2e/local-first.spec.ts",
+      "title": "offline compiled desktop creates, edits, searches, exports and reopens persisted text",
+      "phase": "02-common-mac",
+      "mode": "electron_product_ui_ipc_with_fault_injection",
+      "rawStatus": "passed",
+      "classification": "PASS",
+      "retry": 0
+    },
+    {
+      "file": "tests/e2e/local-first.spec.ts",
+      "title": "capacity display clears stale ready and reflects blocked, unknown and recovery without filling disk",
+      "phase": "02-common-mac",
+      "mode": "electron_product_ui_ipc_with_fault_injection",
+      "rawStatus": "passed",
+      "classification": "PASS",
+      "retry": 0
+    },
+    {
+      "file": "tests/e2e/local-first.spec.ts",
+      "title": "successful duplication clears its durable recovery operation before a clean reopen",
+      "phase": "02-common-mac",
+      "mode": "electron_product_ui_ipc_with_fault_injection",
+      "rawStatus": "passed",
+      "classification": "PASS",
+      "retry": 0
+    },
+    {
+      "file": "tests/e2e/local-first.spec.ts",
+      "title": "lost create ACK resolves from the durable receipt without creating a second page",
+      "phase": "02-common-mac",
+      "mode": "electron_product_ui_ipc_with_fault_injection",
+      "rawStatus": "passed",
+      "classification": "PASS",
+      "retry": 0
+    },
+    {
+      "file": "tests/e2e/local-first.spec.ts",
+      "title": "rejected duplicate explains the conflict and recovery-copy preserves the external source through reopen",
+      "phase": "02-common-mac",
+      "mode": "electron_product_ui_ipc_with_fault_injection",
+      "rawStatus": "passed",
+      "classification": "PASS",
+      "retry": 0
+    },
+    {
+      "file": "tests/e2e/local-first.spec.ts",
+      "title": "usage deltas and limits survive reopen and reject stale configuration without silent overwrite",
+      "phase": "02-common-mac",
+      "mode": "electron_product_ui_ipc_with_fault_injection",
+      "rawStatus": "passed",
+      "classification": "PASS",
+      "retry": 0
+    },
+    {
+      "file": "tests/e2e/local-first.spec.ts",
+      "title": "quota refusal retains input, permits search and journal export, then retries the same operation",
+      "phase": "02-common-mac",
+      "mode": "electron_product_ui_ipc_with_fault_injection",
+      "rawStatus": "passed",
+      "classification": "PASS",
+      "retry": 0
+    },
+    {
+      "file": "tests/e2e/local-first.spec.ts",
+      "title": "low-capacity startup is read-only, exports raw files and rescues a bundle without checkpointing",
+      "phase": "02-common-mac",
+      "mode": "electron_product_ui_ipc_with_fault_injection",
+      "rawStatus": "passed",
+      "classification": "PASS",
+      "retry": 0
+    },
+    {
+      "file": "tests/e2e/local-first.spec.ts",
+      "title": "rich import keeps initial content in the atomic operation, checkpoint and prechange backup, including reopen",
+      "phase": "02-common-mac",
+      "mode": "electron_product_ui_ipc_with_fault_injection",
+      "rawStatus": "passed",
+      "classification": "PASS",
+      "retry": 0
+    },
+    {
+      "file": "tests/e2e/local-first.spec.ts",
+      "title": "pre-send checkpoint failure holds import input and explicit retry creates one page with its original operation",
+      "phase": "02-common-mac",
+      "mode": "electron_product_ui_ipc_with_fault_injection",
+      "rawStatus": "passed",
+      "classification": "PASS",
+      "retry": 0
+    },
+    {
+      "file": "tests/e2e/local-first.spec.ts",
+      "title": "initial rich backup refusal creates no page and retains the original document for same-ID retry",
+      "phase": "02-common-mac",
+      "mode": "electron_product_ui_ipc_with_fault_injection",
+      "rawStatus": "passed",
+      "classification": "PASS",
+      "retry": 0
+    },
+    {
+      "file": "tests/e2e/local-first.spec.ts",
+      "title": "safe auxiliary archive refuses addressable names, supports cancellation and moves only the confirmed file",
+      "phase": "02-common-mac",
+      "mode": "electron_product_ui_ipc_with_fault_injection",
+      "rawStatus": "passed",
+      "classification": "PASS",
+      "retry": 0
+    },
+    {
+      "file": "tests/e2e/local-first.spec.ts",
+      "title": "restart recovery lists the retained page creation and retries the identical operation once",
+      "phase": "02-common-mac",
+      "mode": "electron_product_ui_ipc_with_fault_injection",
+      "rawStatus": "passed",
+      "classification": "PASS",
+      "retry": 0
+    },
+    {
+      "file": "tests/e2e/local-first.spec.ts",
+      "title": "backup maintenance protects pinned/newest generations and restores the archived older generation",
+      "phase": "02-common-mac",
+      "mode": "electron_product_ui_ipc_with_fault_injection",
+      "rawStatus": "passed",
+      "classification": "PASS",
+      "retry": 0
+    },
+    {
+      "file": "tests/e2e/local-first.spec.ts",
+      "title": "malformed page remains untouched while a healthy page edits and diagnostic rescue stays distinct from full backup",
+      "phase": "02-common-mac",
+      "mode": "electron_product_ui_ipc_with_fault_injection",
+      "rawStatus": "passed",
+      "classification": "PASS",
+      "retry": 0
+    },
+    {
+      "file": "tests/e2e/lv4-sync-presentation.spec.ts",
+      "title": "shows bounded conflict excerpts and explains what is excluded",
+      "phase": "02-common-mac",
+      "mode": "electron_substituted_presentation",
+      "rawStatus": "passed",
+      "classification": "PASS",
+      "retry": 0
+    },
+    {
+      "file": "tests/e2e/lv4-sync-presentation.spec.ts",
+      "title": "shows restart reservation and cancellation as provisional",
+      "phase": "02-common-mac",
+      "mode": "electron_substituted_presentation",
+      "rawStatus": "passed",
+      "classification": "PASS",
+      "retry": 0
+    },
+    {
+      "file": "tests/e2e/output-boundary.spec.ts",
+      "title": "S1 real IPC protects workspace outputs and permits external namesake",
+      "phase": "02-common-mac",
+      "mode": "electron_product_ui_ipc_with_fault_injection",
+      "rawStatus": "passed",
+      "classification": "PASS",
+      "retry": 0
+    },
+    {
+      "file": "tests/e2e/page-move.spec.ts",
+      "title": "S2 tree input: edited source becomes target child with stable identity",
+      "phase": "02-common-mac",
+      "mode": "electron_product_ui_ipc_with_fault_injection",
+      "rawStatus": "passed",
+      "classification": "PASS",
+      "retry": 0
+    },
+    {
+      "file": "tests/e2e/page-move.spec.ts",
+      "title": "S2 menu F11: delayed load preserves local edit and page hierarchy through restart",
+      "phase": "02-common-mac",
+      "mode": "electron_product_ui_ipc_with_fault_injection",
+      "rawStatus": "passed",
+      "classification": "PASS",
+      "retry": 0
+    },
+    {
+      "file": "tests/e2e/page-move.spec.ts",
+      "title": "S2 tree order, root, cancellation and cycle rejection",
+      "phase": "02-common-mac",
+      "mode": "electron_product_ui_ipc_with_fault_injection",
+      "rawStatus": "passed",
+      "classification": "PASS",
+      "retry": 0
+    },
+    {
+      "file": "tests/e2e/page-order-repair.spec.ts",
+      "title": "page order repair previews, backs up and reloads before saving the changed Page",
+      "phase": "02-common-mac",
+      "mode": "electron_product_ui_ipc_with_fault_injection",
+      "rawStatus": "passed",
+      "classification": "PASS",
+      "retry": 0
+    },
+    {
+      "file": "tests/e2e/page-order-repair.spec.ts",
+      "title": "page order repair rejects a stale preview and leaves the current Pages untouched",
+      "phase": "02-common-mac",
+      "mode": "electron_product_ui_ipc_with_fault_injection",
+      "rawStatus": "passed",
+      "classification": "PASS",
+      "retry": 0
+    },
+    {
+      "file": "tests/e2e/page-order-repair.spec.ts",
+      "title": "page order repair keeps a lost reply pending until saved state is reloaded without a resend",
+      "phase": "02-common-mac",
+      "mode": "electron_product_ui_ipc_with_fault_injection",
+      "rawStatus": "passed",
+      "classification": "PASS",
+      "retry": 0
+    },
+    {
+      "file": "tests/e2e/pending-journal.spec.ts",
+      "title": "manual unsaved journal preserves later input and never overwrites an existing file",
+      "phase": "02-common-mac",
+      "mode": "electron_product_ui_ipc_with_fault_injection",
+      "rawStatus": "passed",
+      "classification": "PASS",
+      "retry": 0
+    },
+    {
+      "file": "tests/e2e/pending-journal.spec.ts",
+      "title": "cancelling a manual journal leaves the original and pending input unchanged",
+      "phase": "02-common-mac",
+      "mode": "electron_product_ui_ipc_with_fault_injection",
+      "rawStatus": "passed",
+      "classification": "PASS",
+      "retry": 0
+    },
+    {
+      "file": "tests/e2e/queued-failure-guard.spec.ts",
+      "title": "a failed first save blocks later queued input without discarding it",
+      "phase": "02-common-mac",
+      "mode": "electron_product_ui_ipc_with_fault_injection",
+      "rawStatus": "passed",
+      "classification": "PASS",
+      "retry": 0
+    },
+    {
+      "file": "tests/e2e/r3-fidelity.spec.ts",
+      "title": "R3 fidelity responsive: 1440/1024/960, inspector footprint, popovers and theme",
+      "phase": "02-common-mac",
+      "mode": "electron_product_ui_ipc_with_fault_injection",
+      "rawStatus": "passed",
+      "classification": "PASS",
+      "retry": 0
+    },
+    {
+      "file": "tests/e2e/r3-fidelity.spec.ts",
+      "title": "R3 fidelity DB display: board/calendar/gallery record dialog is modal, bounded and focus-returning",
+      "phase": "02-common-mac",
+      "mode": "electron_product_ui_ipc_with_fault_injection",
+      "rawStatus": "passed",
+      "classification": "PASS",
+      "retry": 0
+    },
+    {
+      "file": "tests/e2e/r3-fidelity.spec.ts",
+      "title": "R3 fidelity keyboard contract: search/link/record and older dialogs share focus entry, loop, Escape and return",
+      "phase": "02-common-mac",
+      "mode": "electron_product_ui_ipc_with_fault_injection",
+      "rawStatus": "passed",
+      "classification": "PASS",
+      "retry": 0
+    },
+    {
+      "file": "tests/e2e/r3-fidelity.spec.ts",
+      "title": "R3 fidelity long title, visible focus, sidebar width and reduced motion at 960",
+      "phase": "02-common-mac",
+      "mode": "electron_product_ui_ipc_with_fault_injection",
+      "rawStatus": "passed",
+      "classification": "PASS",
+      "retry": 0
+    },
+    {
+      "file": "tests/e2e/r4-editor.spec.ts",
+      "title": "R4 slash heading choice is one Undo step and survives SQLite restart",
+      "phase": "02-common-mac",
+      "mode": "electron_product_ui_ipc_with_fault_injection",
+      "rawStatus": "passed",
+      "classification": "PASS",
+      "retry": 0
+    },
+    {
+      "file": "tests/e2e/r4-editor.spec.ts",
+      "title": "R4 Escape keeps slash text dismissed until input changes; todo conversion is undoable",
+      "phase": "02-common-mac",
+      "mode": "electron_product_ui_ipc_with_fault_injection",
+      "rawStatus": "passed",
+      "classification": "PASS",
+      "retry": 0
+    },
+    {
+      "file": "tests/e2e/r4-editor.spec.ts",
+      "title": "R4 Escape cancels block selection before parent navigation",
+      "phase": "02-common-mac",
+      "mode": "electron_product_ui_ipc_with_fault_injection",
+      "rawStatus": "passed",
+      "classification": "PASS",
+      "retry": 0
+    },
+    {
+      "file": "tests/e2e/r4-record-edit.spec.ts",
+      "title": "record body, title and three property types persist through cells, panel and Electron restart",
+      "phase": "02-common-mac",
+      "mode": "electron_product_ui_ipc_with_fault_injection",
+      "rawStatus": "passed",
+      "classification": "PASS",
+      "retry": 0
+    },
+    {
+      "file": "tests/e2e/r4-record-edit.spec.ts",
+      "title": "side/full preserves the Editor and undo history and close restores origin focus and scroll",
+      "phase": "02-common-mac",
+      "mode": "electron_product_ui_ipc_with_fault_injection",
+      "rawStatus": "passed",
+      "classification": "PASS",
+      "retry": 0
+    },
+    {
+      "file": "tests/e2e/r4-record-edit.spec.ts",
+      "title": "held record ACK retains later input across close, another record and reopen without cross-target writes",
+      "phase": "02-common-mac",
+      "mode": "electron_product_ui_ipc_with_fault_injection",
+      "rawStatus": "passed",
+      "classification": "PASS",
+      "retry": 0
+    },
+    {
+      "file": "tests/e2e/r4-record-edit.spec.ts",
+      "title": "lost post-COMMIT ACK resolves from receipt without duplicate application and protects normal close and reload",
+      "phase": "02-common-mac",
+      "mode": "electron_product_ui_ipc_with_fault_injection",
+      "rawStatus": "passed",
+      "classification": "PASS",
+      "retry": 0
+    },
+    {
+      "file": "tests/e2e/r4-record-edit.spec.ts",
+      "title": "incomplete numeric input survives close and reopen and blocks reload until completed",
+      "phase": "02-common-mac",
+      "mode": "electron_product_ui_ipc_with_fault_injection",
+      "rawStatus": "passed",
+      "classification": "PASS",
+      "retry": 0
+    },
+    {
+      "file": "tests/e2e/r4-visual.spec.ts",
+      "title": "R4 fixed viewport synthetic Page, database and record captures",
+      "phase": "02-common-mac",
+      "mode": "electron_product_ui_ipc_with_fault_injection",
+      "rawStatus": "passed",
+      "classification": "PASS",
+      "retry": 0
+    },
+    {
+      "file": "tests/e2e/r5-create.spec.ts",
+      "title": "UI creates the first registered DB and record; real Editor and three properties survive restart without migrating the legacy DB",
+      "phase": "02-common-mac",
+      "mode": "electron_product_ui_ipc_with_fault_injection",
+      "rawStatus": "passed",
+      "classification": "PASS",
+      "retry": 0
+    },
+    {
+      "file": "tests/e2e/r5-create.spec.ts",
+      "title": "create DB lost post-COMMIT ACK resolves the same receipt and cannot create a duplicate",
+      "phase": "02-common-mac",
+      "mode": "electron_product_ui_ipc_with_fault_injection",
+      "rawStatus": "passed",
+      "classification": "PASS",
+      "retry": 0
+    },
+    {
+      "file": "tests/e2e/r5-create.spec.ts",
+      "title": "add row lost post-COMMIT ACK resolves without a second membership or owner revision increment",
+      "phase": "02-common-mac",
+      "mode": "electron_product_ui_ipc_with_fault_injection",
+      "rawStatus": "passed",
+      "classification": "PASS",
+      "retry": 0
+    },
+    {
+      "file": "tests/e2e/r5-interactions.spec.ts",
+      "title": "numeric filter raw input survives navigation; changing its target resets both valid and incomplete text and clears the reload guard",
+      "phase": "02-common-mac",
+      "mode": "electron_product_ui_ipc_with_fault_injection",
+      "rawStatus": "passed",
+      "classification": "PASS",
+      "retry": 0
+    },
+    {
+      "file": "tests/e2e/r5-interactions.spec.ts",
+      "title": "continuous typing in a grouping property keeps the same focused input until row blur and then moves the saved row",
+      "phase": "02-common-mac",
+      "mode": "electron_product_ui_ipc_with_fault_injection",
+      "rawStatus": "passed",
+      "classification": "PASS",
+      "retry": 0
+    },
+    {
+      "file": "tests/e2e/r5-interactions.spec.ts",
+      "title": "board groups and gallery filtering use saved views and open the same records after restart",
+      "phase": "02-common-mac",
+      "mode": "electron_product_ui_ipc_with_fault_injection",
+      "rawStatus": "passed",
+      "classification": "PASS",
+      "retry": 0
+    },
+    {
+      "file": "tests/e2e/r5-interactions.spec.ts",
+      "title": "late database creation ACK does not replace an existing record opened after its dialog was closed",
+      "phase": "02-common-mac",
+      "mode": "electron_product_ui_ipc_with_fault_injection",
+      "rawStatus": "passed",
+      "classification": "PASS",
+      "retry": 0
+    },
+    {
+      "file": "tests/e2e/r5-settings.spec.ts",
+      "title": "UI view creation, rename, switch, typed filters, sort and grouping persist after Electron restart",
+      "phase": "02-common-mac",
+      "mode": "electron_product_ui_ipc_with_fault_injection",
+      "rawStatus": "passed",
+      "classification": "PASS",
+      "retry": 0
+    },
+    {
+      "file": "tests/e2e/r5-settings.spec.ts",
+      "title": "held settings ACK preserves later settings and owner title through navigation using one revision lane",
+      "phase": "02-common-mac",
+      "mode": "electron_product_ui_ipc_with_fault_injection",
+      "rawStatus": "passed",
+      "classification": "PASS",
+      "retry": 0
+    },
+    {
+      "file": "tests/e2e/r5-settings.spec.ts",
+      "title": "unknown settings retain their identity across navigation and resolve without duplicate apply",
+      "phase": "02-common-mac",
+      "mode": "electron_product_ui_ipc_with_fault_injection",
+      "rawStatus": "passed",
+      "classification": "PASS",
+      "retry": 0
+    },
+    {
+      "file": "tests/e2e/r5-settings.spec.ts",
+      "title": "external owner revision conflicts with local settings without promoting the draft onto the new revision",
+      "phase": "02-common-mac",
+      "mode": "electron_product_ui_ipc_with_fault_injection",
+      "rawStatus": "passed",
+      "classification": "PASS",
+      "retry": 0
+    },
+    {
+      "file": "tests/e2e/r6-migration.spec.ts",
+      "title": "explicit selected legacy migration preserves mixed workspace bytes, history and verified assets and supports record editing after restart",
+      "phase": "02-common-mac",
+      "mode": "electron_product_ui_ipc_with_fault_injection",
+      "rawStatus": "passed",
+      "classification": "PASS",
+      "retry": 0
+    },
+    {
+      "file": "tests/e2e/r6-migration.spec.ts",
+      "title": "migration preview rejects an incompatible legacy value without changing original bytes or creating a snapshot",
+      "phase": "02-common-mac",
+      "mode": "electron_product_ui_ipc_with_fault_injection",
+      "rawStatus": "passed",
+      "classification": "PASS",
+      "retry": 0
+    },
+    {
+      "file": "tests/e2e/r6-migration.spec.ts",
+      "title": "post-COMMIT migration ACK loss locks the modal and resolves the original receipt without duplicate conversion",
+      "phase": "02-common-mac",
+      "mode": "electron_product_ui_ipc_with_fault_injection",
+      "rawStatus": "passed",
+      "classification": "PASS",
+      "retry": 0
+    },
+    {
+      "file": "tests/e2e/r6-migration.spec.ts",
+      "title": "migration apply rejects an external owner change after preview and leaves the external state intact",
+      "phase": "02-common-mac",
+      "mode": "electron_product_ui_ipc_with_fault_injection",
+      "rawStatus": "passed",
+      "classification": "PASS",
+      "retry": 0
+    },
+    {
+      "file": "tests/e2e/r6-recovery.spec.ts",
+      "title": "SIGKILL after page COMMIT and later input restores the latest title and body without applying the receipt twice",
+      "phase": "02-common-mac",
+      "mode": "electron_product_ui_ipc_with_fault_injection",
+      "rawStatus": "passed",
+      "classification": "PASS",
+      "retry": 0
+    },
+    {
+      "file": "tests/e2e/r6-recovery.spec.ts",
+      "title": "SIGKILL after record COMMIT and later input restores the latest title and body without applying the receipt twice",
+      "phase": "02-common-mac",
+      "mode": "electron_product_ui_ipc_with_fault_injection",
+      "rawStatus": "passed",
+      "classification": "PASS",
+      "retry": 0
+    },
+    {
+      "file": "tests/e2e/r6-recovery.spec.ts",
+      "title": "SIGKILL after database creation COMMIT retains an unknown lookup and resolves the same operation later without resending or duplicating it",
+      "phase": "02-common-mac",
+      "mode": "electron_product_ui_ipc_with_fault_injection",
+      "rawStatus": "passed",
+      "classification": "PASS",
+      "retry": 0
+    },
+    {
+      "file": "tests/e2e/r6-recovery.spec.ts",
+      "title": "SIGKILL after row creation COMMIT restores later owner input and retains exactly the original row",
+      "phase": "02-common-mac",
+      "mode": "electron_product_ui_ipc_with_fault_injection",
+      "rawStatus": "passed",
+      "classification": "PASS",
+      "retry": 0
+    },
+    {
+      "file": "tests/e2e/r6-recovery.spec.ts",
+      "title": "SIGKILL after settings COMMIT preserves later view input without replaying the acknowledged owner revision",
+      "phase": "02-common-mac",
+      "mode": "electron_product_ui_ipc_with_fault_injection",
+      "rawStatus": "passed",
+      "classification": "PASS",
+      "retry": 0
+    },
+    {
+      "file": "tests/e2e/r6-recovery.spec.ts",
+      "title": "SIGKILL retains incomplete record and numeric-filter '-' as raw input without converting either to a saved number",
+      "phase": "02-common-mac",
+      "mode": "electron_product_ui_ipc_with_fault_injection",
+      "rawStatus": "passed",
+      "classification": "PASS",
+      "retry": 0
+    },
+    {
+      "file": "tests/e2e/r6-recovery.spec.ts",
+      "title": "external revision after SIGKILL blocks resume; copy ACK loss retries once without changing the original or duplicating the recovery page",
+      "phase": "02-common-mac",
+      "mode": "electron_product_ui_ipc_with_fault_injection",
+      "rawStatus": "passed",
+      "classification": "PASS",
+      "retry": 0
+    },
+    {
+      "file": "tests/e2e/r6-recovery.spec.ts",
+      "title": "a corrupt recovery journal stays byte-for-byte intact and blocks resume, copy, and dialog dismissal",
+      "phase": "02-common-mac",
+      "mode": "electron_product_ui_ipc_with_fault_injection",
+      "rawStatus": "passed",
+      "classification": "PASS",
+      "retry": 0
+    },
+    {
+      "file": "tests/e2e/r6-schema.spec.ts",
+      "title": "five column types, select/date live fields and stable rename survive actual Electron restart",
+      "phase": "02-common-mac",
+      "mode": "electron_product_ui_ipc_with_fault_injection",
+      "rawStatus": "passed",
+      "classification": "PASS",
+      "retry": 0
+    },
+    {
+      "file": "tests/e2e/r6-schema.spec.ts",
+      "title": "lossless type changes persist, keep column IDs, and reject the pre-conversion record revision",
+      "phase": "02-common-mac",
+      "mode": "electron_product_ui_ipc_with_fault_injection",
+      "rawStatus": "passed",
+      "classification": "PASS",
+      "retry": 0
+    },
+    {
+      "file": "tests/e2e/r6-schema.spec.ts",
+      "title": "nonconvertible values and dependent view filters reject visibly without changing stored data",
+      "phase": "02-common-mac",
+      "mode": "electron_product_ui_ipc_with_fault_injection",
+      "rawStatus": "passed",
+      "classification": "PASS",
+      "retry": 0
+    },
+    {
+      "file": "tests/e2e/r6-schema.spec.ts",
+      "title": "post-COMMIT ACK loss resolves the same property operation once and reloads the confirmed schema",
+      "phase": "02-common-mac",
+      "mode": "electron_product_ui_ipc_with_fault_injection",
+      "rawStatus": "passed",
+      "classification": "PASS",
+      "retry": 0
+    },
+    {
+      "file": "tests/e2e/r6-schema.spec.ts",
+      "title": "a record changed after UI preview makes apply reject while preserving the external value",
+      "phase": "02-common-mac",
+      "mode": "electron_product_ui_ipc_with_fault_injection",
+      "rawStatus": "passed",
+      "classification": "PASS",
+      "retry": 0
+    },
+    {
+      "file": "tests/e2e/r6-structural-retry.spec.ts",
+      "title": "failed durable retention stays unsent, modal retry repeats the exact checkpoint then commits once",
+      "phase": "02-common-mac",
+      "mode": "electron_product_ui_ipc_with_fault_injection",
+      "rawStatus": "passed",
+      "classification": "PASS",
+      "retry": 0
+    },
+    {
+      "file": "tests/e2e/r6-structural-retry.spec.ts",
+      "title": "explicit re-preview reads the external owner revision without applying, then commits that exact preview",
+      "phase": "02-common-mac",
+      "mode": "electron_product_ui_ipc_with_fault_injection",
+      "rawStatus": "passed",
+      "classification": "PASS",
+      "retry": 0
+    },
+    {
+      "file": "tests/e2e/r7-acceptance/board.spec.ts",
+      "title": "board cards expose a readable excerpt and open the underlying record",
+      "phase": "02-common-mac",
+      "mode": "electron_product_ui_ipc_with_fault_injection",
+      "rawStatus": "passed",
+      "classification": "PASS",
+      "retry": 0
+    },
+    {
+      "file": "tests/e2e/r7-acceptance/markdown.spec.ts",
+      "title": "UI Markdown export writes real document Markdown and import reads it back",
+      "phase": "02-common-mac",
+      "mode": "electron_product_ui_ipc_with_fault_injection",
+      "rawStatus": "passed",
+      "classification": "PASS",
+      "retry": 0
+    },
+    {
+      "file": "tests/e2e/r7-acceptance/search.spec.ts",
+      "title": "search ranks title matches first and shows body and property context",
+      "phase": "02-common-mac",
+      "mode": "electron_product_ui_ipc_with_fault_injection",
+      "rawStatus": "passed",
+      "classification": "PASS",
+      "retry": 0
+    },
+    {
+      "file": "tests/e2e/r7-acceptance/search.spec.ts",
+      "title": "a late search response cannot replace a newer query's results",
+      "phase": "02-common-mac",
+      "mode": "electron_product_ui_ipc_with_fault_injection",
+      "rawStatus": "passed",
+      "classification": "PASS",
+      "retry": 0
+    },
+    {
+      "file": "tests/e2e/r7-acceptance/settings-menu.spec.ts",
+      "title": "compact view settings open accessibly and rename/type persistence survives restart",
+      "phase": "02-common-mac",
+      "mode": "electron_product_ui_ipc_with_fault_injection",
+      "rawStatus": "passed",
+      "classification": "PASS",
+      "retry": 0
+    },
+    {
+      "file": "tests/e2e/r7-data-safety/raw-input.spec.ts",
+      "title": "R7 raw numeric and filter input survives view switches, navigation and a guarded reload",
+      "phase": "02-common-mac",
+      "mode": "electron_product_ui_ipc_with_fault_injection",
+      "rawStatus": "passed",
+      "classification": "PASS",
+      "retry": 0
+    },
+    {
+      "file": "tests/e2e/r7-data-safety/restart.spec.ts",
+      "title": "R7 normal restart retains the Japanese record body and saved view settings",
+      "phase": "02-common-mac",
+      "mode": "electron_product_ui_ipc_with_fault_injection",
+      "rawStatus": "passed",
+      "classification": "PASS",
+      "retry": 0
+    },
+    {
+      "file": "tests/e2e/r7-data-safety/save-ack.spec.ts",
+      "title": "R7 delayed save ACK retains later input and never resends the held operation",
+      "phase": "02-common-mac",
+      "mode": "electron_product_ui_ipc_with_fault_injection",
+      "rawStatus": "passed",
+      "classification": "PASS",
+      "retry": 0
+    },
+    {
+      "file": "tests/e2e/r7-data-safety/save-ack.spec.ts",
+      "title": "R7 unknown save ACK resolves from the receipt once without resending or duplicating the commit",
+      "phase": "02-common-mac",
+      "mode": "electron_product_ui_ipc_with_fault_injection",
+      "rawStatus": "passed",
+      "classification": "PASS",
+      "retry": 0
+    },
+    {
+      "file": "tests/e2e/r7-data-safety/side-full-editor.spec.ts",
+      "title": "R7 side/full keeps the same Editor instance, text selection and Undo history",
+      "phase": "02-common-mac",
+      "mode": "electron_product_ui_ipc_with_fault_injection",
+      "rawStatus": "passed",
+      "classification": "PASS",
+      "retry": 0
+    },
+    {
+      "file": "tests/e2e/r7-parent.spec.ts",
+      "title": "DB popovers stay visible outside the scroller at desktop and narrow widths",
+      "phase": "02-common-mac",
+      "mode": "electron_product_ui_ipc_with_fault_injection",
+      "rawStatus": "passed",
+      "classification": "PASS",
+      "retry": 0
+    },
+    {
+      "file": "tests/e2e/r7-parent.spec.ts",
+      "title": "immediate link shortcut captures the visible range before delayed selectionchange",
+      "phase": "02-common-mac",
+      "mode": "electron_product_ui_ipc_with_fault_injection",
+      "rawStatus": "passed",
+      "classification": "PASS",
+      "retry": 0
+    },
+    {
+      "file": "tests/e2e/r7-parent.spec.ts",
+      "title": "DB menu Escape survives removing its focused control and yields to search navigation",
+      "phase": "02-common-mac",
+      "mode": "electron_product_ui_ipc_with_fault_injection",
+      "rawStatus": "passed",
+      "classification": "PASS",
+      "retry": 0
+    },
+    {
+      "file": "tests/e2e/r7-parent.spec.ts",
+      "title": "page menus close with Escape to their trigger and never follow search navigation",
+      "phase": "02-common-mac",
+      "mode": "electron_product_ui_ipc_with_fault_injection",
+      "rawStatus": "passed",
+      "classification": "PASS",
+      "retry": 0
+    },
+    {
+      "file": "tests/e2e/r7-parent.spec.ts",
+      "title": "pointer layout changes retain editor focus, selection and incomplete number focus",
+      "phase": "02-common-mac",
+      "mode": "electron_product_ui_ipc_with_fault_injection",
+      "rawStatus": "passed",
+      "classification": "PASS",
+      "retry": 0
+    },
+    {
+      "file": "tests/e2e/r7-parent.spec.ts",
+      "title": "app.quit is refused for incomplete raw input and communicates that the input is retained",
+      "phase": "02-common-mac",
+      "mode": "electron_product_ui_ipc_with_fault_injection",
+      "rawStatus": "passed",
+      "classification": "PASS",
+      "retry": 0
+    },
+    {
+      "file": "tests/e2e/r8-acceptance/backlinks.spec.ts",
+      "title": "contextual backlinks show exact text from every linking page and follow to the source",
+      "phase": "02-common-mac",
+      "mode": "electron_product_ui_ipc_with_fault_injection",
+      "rawStatus": "passed",
+      "classification": "PASS",
+      "retry": 0
+    },
+    {
+      "file": "tests/e2e/r8-acceptance/backlinks.spec.ts",
+      "title": "backlinks refresh after a source edit, link removal and source trash",
+      "phase": "02-common-mac",
+      "mode": "electron_product_ui_ipc_with_fault_injection",
+      "rawStatus": "passed",
+      "classification": "PASS",
+      "retry": 0
+    },
+    {
+      "file": "tests/e2e/r8-acceptance/backup.spec.ts",
+      "title": "backup creates a verified folder, restores into a new folder, opens it through the launch hook, and never mutates source",
+      "phase": "02-common-mac",
+      "mode": "electron_product_ui_ipc_with_fault_injection",
+      "rawStatus": "passed",
+      "classification": "PASS",
+      "retry": 0
+    },
+    {
+      "file": "tests/e2e/r8-acceptance/backup.spec.ts",
+      "title": "a malformed backup is rejected visibly, offers no restore, and leaves source untouched",
+      "phase": "02-common-mac",
+      "mode": "electron_product_ui_ipc_with_fault_injection",
+      "rawStatus": "passed",
+      "classification": "PASS",
+      "retry": 0
+    },
+    {
+      "file": "tests/e2e/r8-acceptance/integration.spec.ts",
+      "title": "record width preserves numeric draft, Editor identity and focus across side/full mode, then persists restart",
+      "phase": "02-common-mac",
+      "mode": "electron_product_ui_ipc_with_fault_injection",
+      "rawStatus": "passed",
+      "classification": "PASS",
+      "retry": 0
+    },
+    {
+      "file": "tests/e2e/r8-acceptance/integration.spec.ts",
+      "title": "incomplete numeric input blocks complete backup without dropping the draft or publishing a snapshot",
+      "phase": "02-common-mac",
+      "mode": "electron_product_ui_ipc_with_fault_injection",
+      "rawStatus": "passed",
+      "classification": "PASS",
+      "retry": 0
+    },
+    {
+      "file": "tests/e2e/r8-acceptance/page-width.spec.ts",
+      "title": "ordinary page width changes from 標準 to ワイド, keeps one Editor and Undo, and survives restart",
+      "phase": "02-common-mac",
+      "mode": "electron_product_ui_ipc_with_fault_injection",
+      "rawStatus": "passed",
+      "classification": "PASS",
+      "retry": 0
+    },
+    {
+      "file": "tests/e2e/r8-acceptance/page-width.spec.ts",
+      "title": "record/database width change preserves raw numeric input and canonical values across restart",
+      "phase": "02-common-mac",
+      "mode": "electron_product_ui_ipc_with_fault_injection",
+      "rawStatus": "passed",
+      "classification": "PASS",
+      "retry": 0
+    },
+    {
+      "file": "tests/e2e/r8-acceptance/real-launch.spec.ts",
+      "title": "restore open starts the actual compiled child app on the restored workspace while the source app stays alive",
+      "phase": "02-common-mac",
+      "mode": "electron_product_ui_ipc_with_fault_injection",
+      "rawStatus": "passed",
+      "classification": "PASS",
+      "retry": 0
+    },
+    {
+      "file": "tests/e2e/r9-acceptance/r9-blocks.spec.ts",
+      "title": "W3 acceptance: slash コールアウト creates an editable default-note callout and stores it",
+      "phase": "02-common-mac",
+      "mode": "electron_product_ui_ipc_with_fault_injection",
+      "rawStatus": "passed",
+      "classification": "PASS",
+      "retry": 0
+    },
+    {
+      "file": "tests/e2e/r9-acceptance/r9-blocks.spec.ts",
+      "title": "W3 acceptance: slash 簡易表 creates an editable table block and stores its cells",
+      "phase": "02-common-mac",
+      "mode": "electron_product_ui_ipc_with_fault_injection",
+      "rawStatus": "passed",
+      "classification": "PASS",
+      "retry": 0
+    },
+    {
+      "file": "tests/e2e/r9-acceptance/r9-blocks.spec.ts",
+      "title": "W3 acceptance: callout tone change preserves the body and is undone as one rich-block step",
+      "phase": "02-common-mac",
+      "mode": "electron_product_ui_ipc_with_fault_injection",
+      "rawStatus": "passed",
+      "classification": "PASS",
+      "retry": 0
+    },
+    {
+      "file": "tests/e2e/r9-acceptance/r9-blocks.spec.ts",
+      "title": "W3 acceptance: table Tab moves cells, row/column controls work, and the first row is a header",
+      "phase": "02-common-mac",
+      "mode": "electron_product_ui_ipc_with_fault_injection",
+      "rawStatus": "passed",
+      "classification": "PASS",
+      "retry": 0
+    },
+    {
+      "file": "tests/e2e/r9-acceptance/r9-clipboard.spec.ts",
+      "title": "W3 acceptance: HTML clipboard copy of a multi-cell table regenerates every block ID",
+      "phase": "02-common-mac",
+      "mode": "electron_product_ui_ipc_with_fault_injection",
+      "rawStatus": "passed",
+      "classification": "PASS",
+      "retry": 0
+    },
+    {
+      "file": "tests/e2e/r9-acceptance/r9-markdown.spec.ts",
+      "title": "W3 acceptance: Markdown export/import preserves rich callout, table, nested list, marks and Japanese title",
+      "phase": "02-common-mac",
+      "mode": "electron_product_ui_ipc_with_fault_injection",
+      "rawStatus": "passed",
+      "classification": "PASS",
+      "retry": 0
+    },
+    {
+      "file": "tests/e2e/r9-acceptance/r9-markdown.spec.ts",
+      "title": "W3 acceptance: plain GFM table Markdown imports through the table extension",
+      "phase": "02-common-mac",
+      "mode": "electron_product_ui_ipc_with_fault_injection",
+      "rawStatus": "passed",
+      "classification": "PASS",
+      "retry": 0
+    },
+    {
+      "file": "tests/e2e/r9-acceptance/r9-persistence.spec.ts",
+      "title": "W3 acceptance: record side/full/width switches keep one Editor and an unsaved rich doc across restart",
+      "phase": "02-common-mac",
+      "mode": "electron_product_ui_ipc_with_fault_injection",
+      "rawStatus": "passed",
+      "classification": "PASS",
+      "retry": 0
+    },
+    {
+      "file": "tests/e2e/r9-acceptance/r9-persistence.spec.ts",
+      "title": "W3 acceptance: an unknown future document stays read-only and its raw page bytes are untouched",
+      "phase": "02-common-mac",
+      "mode": "electron_product_ui_ipc_with_fault_injection",
+      "rawStatus": "passed",
+      "classification": "PASS",
+      "retry": 0
+    },
+    {
+      "file": "tests/e2e/r9-fidelity.spec.ts",
+      "title": "W3 exact Markdown roundtrip preserves rich text whitespace, blank code lines, links and cell paragraphs",
+      "phase": "02-common-mac",
+      "mode": "electron_product_ui_ipc_with_fault_injection",
+      "rawStatus": "passed",
+      "classification": "PASS",
+      "retry": 0
+    },
+    {
+      "file": "tests/e2e/r9-layout.spec.ts",
+      "title": "W3 a 20-column table scrolls inside its own frame at narrow width and keeps adjacent text visible",
+      "phase": "02-common-mac",
+      "mode": "electron_product_ui_ipc_with_fault_injection",
+      "rawStatus": "passed",
+      "classification": "PASS",
+      "retry": 0
+    },
+    {
+      "file": "tests/e2e/r9-parent.spec.ts",
+      "title": "W3 refuses merged/ragged/nested HTML paste and drop before normalization",
+      "phase": "02-common-mac",
+      "mode": "electron_product_ui_ipc_with_fault_injection",
+      "rawStatus": "passed",
+      "classification": "PASS",
+      "retry": 0
+    },
+    {
+      "file": "tests/e2e/r9-parent.spec.ts",
+      "title": "W3 first rich save creates verified pre-change snapshot, then restart preserves new doc",
+      "phase": "02-common-mac",
+      "mode": "electron_product_ui_ipc_with_fault_injection",
+      "rawStatus": "passed",
+      "classification": "PASS",
+      "retry": 0
+    },
+    {
+      "file": "tests/e2e/r9-parent.spec.ts",
+      "title": "W3 rich block cut/paste consumes identity once and copy assigns every descendant a new ID",
+      "phase": "02-common-mac",
+      "mode": "electron_product_ui_ipc_with_fault_injection",
+      "rawStatus": "passed",
+      "classification": "PASS",
+      "retry": 0
+    },
+    {
+      "file": "tests/e2e/r9-parent.spec.ts",
+      "title": "W3 backup failure retains the rich draft and leaves the saved page untouched",
+      "phase": "02-common-mac",
+      "mode": "electron_product_ui_ipc_with_fault_injection",
+      "rawStatus": "passed",
+      "classification": "PASS",
+      "retry": 0
+    },
+    {
+      "file": "tests/e2e/r9-parent.spec.ts",
+      "title": "W3 composing keys and read-only commands leave rich content and selection untouched",
+      "phase": "02-common-mac",
+      "mode": "electron_product_ui_ipc_with_fault_injection",
+      "rawStatus": "passed",
+      "classification": "PASS",
+      "retry": 0
+    },
+    {
+      "file": "tests/e2e/record-core.spec.ts",
+      "title": "isolated record can be found and edited with the normal full-page editor",
+      "phase": "02-common-mac",
+      "mode": "electron_product_ui_ipc_with_fault_injection",
+      "rawStatus": "passed",
+      "classification": "PASS",
+      "retry": 0
+    },
+    {
+      "file": "tests/e2e/record-core.spec.ts",
+      "title": "record Editor rejects an external update after its initial installation",
+      "phase": "02-common-mac",
+      "mode": "electron_product_ui_ipc_with_fault_injection",
+      "rawStatus": "passed",
+      "classification": "PASS",
+      "retry": 0
+    },
+    {
+      "file": "tests/e2e/record-core.spec.ts",
+      "title": "registered database displays records without enabling legacy row writes",
+      "phase": "02-common-mac",
+      "mode": "electron_product_ui_ipc_with_fault_injection",
+      "rawStatus": "passed",
+      "classification": "PASS",
+      "retry": 0
+    },
+    {
+      "file": "tests/e2e/record-core.spec.ts",
+      "title": "new v4 database is identified before enabling record cells and blocks unsupported owner actions",
+      "phase": "02-common-mac",
+      "mode": "electron_product_ui_ipc_with_fault_injection",
+      "rawStatus": "passed",
+      "classification": "PASS",
+      "retry": 0
+    },
+    {
+      "file": "tests/e2e/record-core.spec.ts",
+      "title": "editable record body still rejects generic Page writes",
+      "phase": "02-common-mac",
+      "mode": "electron_product_ui_ipc_with_fault_injection",
+      "rawStatus": "passed",
+      "classification": "PASS",
+      "retry": 0
+    },
+    {
+      "file": "tests/e2e/record-core.spec.ts",
+      "title": "record patch IPC requires the observed owner and preserves the page body",
+      "phase": "02-common-mac",
+      "mode": "electron_product_ui_ipc_with_fault_injection",
+      "rawStatus": "passed",
+      "classification": "PASS",
+      "retry": 0
+    },
+    {
+      "file": "tests/e2e/record-open-order.spec.ts",
+      "title": "last requested record wins when older-first response is released",
+      "phase": "02-common-mac",
+      "mode": "electron_product_ui_ipc_with_fault_injection",
+      "rawStatus": "passed",
+      "classification": "PASS",
+      "retry": 0
+    },
+    {
+      "file": "tests/e2e/record-open-order.spec.ts",
+      "title": "last requested record wins when newer-first response is released",
+      "phase": "02-common-mac",
+      "mode": "electron_product_ui_ipc_with_fault_injection",
+      "rawStatus": "passed",
+      "classification": "PASS",
+      "retry": 0
+    },
+    {
+      "file": "tests/e2e/record-open-order.spec.ts",
+      "title": "a delayed record read cannot supersede a committed database creation",
+      "phase": "02-common-mac",
+      "mode": "electron_product_ui_ipc_with_fault_injection",
+      "rawStatus": "passed",
+      "classification": "PASS",
+      "retry": 0
+    },
+    {
+      "file": "tests/e2e/record-open-order.spec.ts",
+      "title": "a trashed registered record cannot be restored through the generic UI",
+      "phase": "02-common-mac",
+      "mode": "electron_product_ui_ipc_with_fault_injection",
+      "rawStatus": "passed",
+      "classification": "PASS",
+      "retry": 0
+    },
+    {
+      "file": "tests/e2e/record-page-presentation.spec.ts",
+      "title": "side/full changes preserve the real Editor instance and its undo history",
+      "phase": "02-common-mac",
+      "mode": "chromium_presentation",
+      "rawStatus": "passed",
+      "classification": "PASS",
+      "retry": 0
+    },
+    {
+      "file": "tests/e2e/record-page-presentation.spec.ts",
+      "title": "unknown offers result lookup, preserves input and applies the parent edit lock",
+      "phase": "02-common-mac",
+      "mode": "chromium_presentation",
+      "rawStatus": "passed",
+      "classification": "PASS",
+      "retry": 0
+    },
+    {
+      "file": "tests/e2e/record-page-presentation.spec.ts",
+      "title": "Escape cancels the slash menu before closing and ignores composition",
+      "phase": "02-common-mac",
+      "mode": "chromium_presentation",
+      "rawStatus": "passed",
+      "classification": "PASS",
+      "retry": 0
+    },
+    {
+      "file": "tests/e2e/recovery-race-guard.spec.ts",
+      "title": "Page-only recovery retains pending after later-input during the save dialog",
+      "phase": "02-common-mac",
+      "mode": "electron_product_ui_ipc_with_fault_injection",
+      "rawStatus": "passed",
+      "classification": "PASS",
+      "retry": 0
+    },
+    {
+      "file": "tests/e2e/recovery-race-guard.spec.ts",
+      "title": "Page-only recovery retains pending after selection-change during the save dialog",
+      "phase": "02-common-mac",
+      "mode": "electron_product_ui_ipc_with_fault_injection",
+      "rawStatus": "passed",
+      "classification": "PASS",
+      "retry": 0
+    },
+    {
+      "file": "tests/e2e/recovery-race-guard.spec.ts",
+      "title": "Page-only recovery retains pending after synthetic-ime during the save dialog",
+      "phase": "02-common-mac",
+      "mode": "electron_product_ui_ipc_with_fault_injection",
+      "rawStatus": "passed",
+      "classification": "PASS",
+      "retry": 0
+    },
+    {
+      "file": "tests/e2e/recovery-race-guard.spec.ts",
+      "title": "Page-only recovery cancellation and write failure retain original and pending edits",
+      "phase": "02-common-mac",
+      "mode": "electron_product_ui_ipc_with_fault_injection",
+      "rawStatus": "passed",
+      "classification": "PASS",
+      "retry": 0
+    },
+    {
+      "file": "tests/e2e/recovery.spec.ts",
+      "title": "R1 legacy export file → recovery → restart preserves a 500 character title",
+      "phase": "02-common-mac",
+      "mode": "electron_product_ui_ipc_with_fault_injection",
+      "rawStatus": "passed",
+      "classification": "PASS",
+      "retry": 0
+    },
+    {
+      "file": "tests/e2e/recovery.spec.ts",
+      "title": "R1 real IPC v2 byte boundary -1 with escaping → file → restart",
+      "phase": "02-common-mac",
+      "mode": "electron_product_ui_ipc_with_fault_injection",
+      "rawStatus": "passed",
+      "classification": "PASS",
+      "retry": 0
+    },
+    {
+      "file": "tests/e2e/recovery.spec.ts",
+      "title": "R1 real IPC v2 byte boundary 0 with escaping → file → restart",
+      "phase": "02-common-mac",
+      "mode": "electron_product_ui_ipc_with_fault_injection",
+      "rawStatus": "passed",
+      "classification": "PASS",
+      "retry": 0
+    },
+    {
+      "file": "tests/e2e/recovery.spec.ts",
+      "title": "R1 real IPC v2 byte boundary 1 with escaping → file → restart",
+      "phase": "02-common-mac",
+      "mode": "electron_product_ui_ipc_with_fault_injection",
+      "rawStatus": "passed",
+      "classification": "PASS",
+      "retry": 0
+    },
+    {
+      "file": "tests/e2e/recovery.spec.ts",
+      "title": "R1 multiple pending pages survive cancel/write/reload failures; copies retain original and attachment",
+      "phase": "02-common-mac",
+      "mode": "electron_product_ui_ipc_with_fault_injection",
+      "rawStatus": "passed",
+      "classification": "PASS",
+      "retry": 0
+    },
+    {
+      "file": "tests/e2e/recovery.spec.ts",
+      "title": "R1 real IPC rejects the 30.3MB Japanese export previously accepted",
+      "phase": "02-common-mac",
+      "mode": "electron_product_ui_ipc_with_fault_injection",
+      "rawStatus": "passed",
+      "classification": "PASS",
+      "retry": 0
+    },
+    {
+      "file": "tests/e2e/store-runtime.spec.ts",
+      "title": "Electron SQLite exposes the transaction and connection state used by workspace snapshots",
+      "phase": "02-common-mac",
+      "mode": "electron_product_ui_ipc_with_fault_injection",
+      "rawStatus": "passed",
+      "classification": "PASS",
+      "retry": 0
+    },
+    {
+      "file": "tests/e2e/ui-v2.spec.ts",
+      "title": "UI 2.0 light: hierarchy, hover reveal, menu bounds and contrast",
+      "phase": "02-common-mac",
+      "mode": "electron_product_ui_ipc_with_fault_injection",
+      "rawStatus": "passed",
+      "classification": "PASS",
+      "retry": 0
+    },
+    {
+      "file": "tests/e2e/ui-v2.spec.ts",
+      "title": "UI 2.0 dark: theme tokens, menu surface and contrast",
+      "phase": "02-common-mac",
+      "mode": "electron_product_ui_ipc_with_fault_injection",
+      "rawStatus": "passed",
+      "classification": "PASS",
+      "retry": 0
+    },
+    {
+      "file": "tests/e2e/ui-v2.spec.ts",
+      "title": "UI 2.0 responsive: 1024 and 960 keep panels usable without overflow",
+      "phase": "02-common-mac",
+      "mode": "electron_product_ui_ipc_with_fault_injection",
+      "rawStatus": "passed",
+      "classification": "PASS",
+      "retry": 0
+    },
+    {
+      "file": "tests/e2e/ui-v2.spec.ts",
+      "title": "UI 2.0 keyboard: focus visibility, shortcuts and menu Escape",
+      "phase": "02-common-mac",
+      "mode": "electron_product_ui_ipc_with_fault_injection",
+      "rawStatus": "passed",
+      "classification": "PASS",
+      "retry": 0
+    },
+    {
+      "file": "tests/e2e/linux-ci/m1-recovery.spec.ts",
+      "title": "real IPC lists offline archives, isolates corruption, paginates and handles Escape",
+      "phase": "03-recovery-sync-mac",
+      "mode": "electron_product_ui_ipc_with_fault_injection",
+      "rawStatus": "passed",
+      "classification": "PASS",
+      "retry": 0
+    },
+    {
+      "file": "tests/e2e/linux-ci/m1-recovery.spec.ts",
+      "title": "real IPC writes JSON-only without a manifest or attachments",
+      "phase": "03-recovery-sync-mac",
+      "mode": "electron_product_ui_ipc_with_fault_injection",
+      "rawStatus": "passed",
+      "classification": "PASS",
+      "retry": 0
+    },
+    {
+      "file": "tests/e2e/linux-ci/m1-recovery.spec.ts",
+      "title": "real IPC exports and independently verifies every bundled attachment",
+      "phase": "03-recovery-sync-mac",
+      "mode": "electron_product_ui_ipc_with_fault_injection",
+      "rawStatus": "passed",
+      "classification": "PASS",
+      "retry": 0
+    },
+    {
+      "file": "tests/e2e/linux-ci/m1-recovery.spec.ts",
+      "title": "real IPC restores a new v4 copy, then reopening it holds ambient sync",
+      "phase": "03-recovery-sync-mac",
+      "mode": "electron_product_ui_ipc_with_fault_injection",
+      "rawStatus": "passed",
+      "classification": "PASS",
+      "retry": 0
+    },
+    {
+      "file": "tests/e2e/linux-ci/m1-recovery.spec.ts",
+      "title": "cancelled picker creates no output and allows a later request",
+      "phase": "03-recovery-sync-mac",
+      "mode": "electron_product_ui_ipc_with_fault_injection",
+      "rawStatus": "passed",
+      "classification": "PASS",
+      "retry": 0
+    },
+    {
+      "file": "tests/e2e/linux-ci/m1-recovery.spec.ts",
+      "title": "missing attachment preserves an incomplete output and never reports success",
+      "phase": "03-recovery-sync-mac",
+      "mode": "electron_product_ui_ipc_with_fault_injection",
+      "rawStatus": "passed",
+      "classification": "PASS",
+      "retry": 0
+    },
+    {
+      "file": "tests/e2e/linux-ci/m1-recovery.spec.ts",
+      "title": "source destination is refused without overwriting source",
+      "phase": "03-recovery-sync-mac",
+      "mode": "electron_product_ui_ipc_with_fault_injection",
+      "rawStatus": "passed",
+      "classification": "PASS",
+      "retry": 0
+    },
+    {
+      "file": "tests/e2e/linux-ci/m1-recovery.spec.ts",
+      "title": "target changed while picker waits is refused before creating output",
+      "phase": "03-recovery-sync-mac",
+      "mode": "electron_product_ui_ipc_with_fault_injection",
+      "rawStatus": "passed",
+      "classification": "PASS",
+      "retry": 0
+    },
+    {
+      "file": "tests/e2e/linux-ci/m1-recovery.spec.ts",
+      "title": "lost host success reply is reconciled by the same operation ID without a second effect",
+      "phase": "03-recovery-sync-mac",
+      "mode": "electron_product_ui_ipc_with_fault_injection",
+      "rawStatus": "passed",
+      "classification": "PASS",
+      "retry": 0
+    },
+    {
+      "file": "tests/e2e/linux-ci/m1-recovery.spec.ts",
+      "title": "ordinary edits survive Electron close and restart through the real save IPC",
+      "phase": "03-recovery-sync-mac",
+      "mode": "electron_product_ui_ipc_with_fault_injection",
+      "rawStatus": "passed",
+      "classification": "PASS",
+      "retry": 0
+    },
+    {
+      "file": "tests/e2e/linux-ci/m3-connection.spec.ts",
+      "title": "real token rotation preserves binding and disable persists over legacy environment",
+      "phase": "03-recovery-sync-mac",
+      "mode": "electron_product_ui_ipc_with_fault_injection",
+      "rawStatus": "passed",
+      "classification": "PASS",
+      "retry": 0
+    },
+    {
+      "file": "tests/e2e/linux-ci/m3-connection.spec.ts",
+      "title": "a lost configure response resolves the original request and stale CAS cannot replace it",
+      "phase": "03-recovery-sync-mac",
+      "mode": "electron_product_ui_ipc_with_fault_injection",
+      "rawStatus": "passed",
+      "classification": "PASS",
+      "retry": 0
+    },
+    {
+      "file": "tests/e2e/linux-ci/m3-restart.spec.ts",
+      "title": "real normal apply is provisional, cancellable and applied once only after all windows close",
+      "phase": "03-recovery-sync-mac",
+      "mode": "electron_product_ui_ipc_with_fault_injection",
+      "rawStatus": "passed",
+      "classification": "PASS",
+      "retry": 0
+    },
+    {
+      "file": "tests/e2e/linux-ci/m3-restart.spec.ts",
+      "title": "real conflict choice preserves both candidates and latest local content before one restart apply",
+      "phase": "03-recovery-sync-mac",
+      "mode": "electron_product_ui_ipc_with_fault_injection",
+      "rawStatus": "passed",
+      "classification": "PASS",
+      "retry": 0
+    },
+    {
+      "file": "tests/e2e/linux-ci/m3-transfer.spec.ts",
+      "title": "actual journal bytes and old scope survive preview and cancel unchanged",
+      "phase": "03-recovery-sync-mac",
+      "mode": "electron_product_ui_ipc_with_fault_injection",
+      "rawStatus": "passed",
+      "classification": "PASS",
+      "retry": 0
+    },
+    {
+      "file": "tests/e2e/linux-ci/m3-transfer.spec.ts",
+      "title": "explicit confirm releases only the pinned partial and keeps live data with a truthful counter",
+      "phase": "03-recovery-sync-mac",
+      "mode": "electron_product_ui_ipc_with_fault_injection",
+      "rawStatus": "passed",
+      "classification": "PASS",
+      "retry": 0
+    },
+    {
+      "file": "tests/e2e/linux-ci/m3-transfer.spec.ts",
+      "title": "a missing partial clears only its record while a part edited after preview holds",
+      "phase": "03-recovery-sync-mac",
+      "mode": "electron_product_ui_ipc_with_fault_injection",
+      "rawStatus": "passed",
+      "classification": "PASS",
+      "retry": 0
+    },
+    {
+      "file": "tests/e2e/linux-ci/m3-transfer.spec.ts",
+      "title": "unknown files, orphan journals, and symlinked parts stay held and untouched",
+      "phase": "03-recovery-sync-mac",
+      "mode": "electron_product_ui_ipc_with_fault_injection",
+      "rawStatus": "passed",
+      "classification": "PASS",
+      "retry": 0
+    },
+    {
+      "file": "tests/e2e/linux-ci/m3-transfer.spec.ts",
+      "title": "interrupted releases resume with the same ID and a lost release reply keeps the UI uncertain",
+      "phase": "03-recovery-sync-mac",
+      "mode": "electron_product_ui_ipc_with_fault_injection",
+      "rawStatus": "passed",
+      "classification": "PASS",
+      "retry": 0
+    },
+    {
+      "file": "tests/acceptance/macos/local-native.spec.ts",
+      "title": "native Cmd+Q preserves pending input, then exits normally and reopens with a new PID",
+      "phase": "06-native-os-lifetime",
+      "mode": "native_os",
+      "rawStatus": "passed",
+      "classification": "PASS",
+      "retry": 0
+    },
+    {
+      "file": "tests/acceptance/macos/local-native.spec.ts",
+      "title": "native red close exits after save and preserves the page through a new PID",
+      "phase": "06-native-os-lifetime",
+      "mode": "native_os",
+      "rawStatus": "passed",
+      "classification": "PASS",
+      "retry": 0
+    },
+    {
+      "file": "tests/acceptance/macos/local-native.spec.ts",
+      "title": "native picker cancellation and file selection preserve source and import only synthetic content",
+      "phase": "06-native-os-lifetime",
+      "mode": "native_os",
+      "rawStatus": "passed",
+      "classification": "PASS",
+      "retry": 0
+    },
+    {
+      "file": "tests/acceptance/macos/local-native.spec.ts",
+      "title": "native Cmd+C/V roundtrip uses a synthetic canary and restores the previous native clipboard",
+      "phase": "06-native-os-lifetime",
+      "mode": "native_os",
+      "rawStatus": "passed",
+      "classification": "PASS",
+      "retry": 0
+    },
+    {
+      "file": "tests/acceptance/macos/local-native.spec.ts",
+      "title": "native Japanese IME emits trusted composition, commits text and survives reopen",
+      "phase": "07-native-ime",
+      "mode": "native_os",
+      "rawStatus": "failed",
+      "classification": "INFRA_BLOCKED",
+      "retry": 0
+    }
+  ],
+  "nativeReopenEvidence": [
+    {
+      "evidence": "reports/06-native-os-lifetime/artifacts/local-native-native-Cmd-Q--084ca--and-reopens-with-a-new-PID/native-reopen.json",
+      "sha256": "798b775b42b9597c2e3ca64c7ed4a87517e5592aa3f746eb773c2f2ff6568688",
+      "priorPid": 79697,
+      "nextPid": 79837,
+      "id": "765d3e10-0d2f-4cb4-a130-0383e90fb27f",
+      "revision": 3,
+      "contentSha256": "bc93d8d4169ca1221a91b3015603a4adc6df955350e87191e288413e7d37d544"
+    },
+    {
+      "evidence": "reports/06-native-os-lifetime/artifacts/local-native-native-red-cl-5f1fb--the-page-through-a-new-PID/native-reopen.json",
+      "sha256": "dacadb3adafe24a44d17a82d86128b0a9ae6969925de4f82a32e7badf9895d1c",
+      "priorPid": 79842,
+      "nextPid": 80039,
+      "id": "b8b5ba16-f4f6-4dfc-ab89-d3ce4b06efcc",
+      "revision": 3,
+      "contentSha256": "d2875a6b786b18a0f7967a643fc5b6450b65ee9e9824e180f5fd6579a978acee"
+    }
+  ],
+  "ime": {
+    "classification": "INFRA_BLOCKED",
+    "rawStatus": "failed",
+    "evidence": "reports/07-native-ime/artifacts/local-native-native-Japane-09b60-ts-text-and-survives-reopen/native-ime-probe.json",
+    "sha256": "a0a4fed8e79e2ff5c6dd6ba5e2066764eb41e5c4e7f7a493b79f14308dd4fbf2",
+    "probe": {
+      "events": [],
+      "text": "nihongo"
+    },
+    "reason": "Selected Japanese input source/native composition route was not established. No product failure inferred. Commit/reopen path NOT_RUN."
+  },
+  "finalQuiet": {
+    "command": ["npm", "run", "verify:quiet"],
+    "classification": "PASS",
+    "typecheck": "PASS",
+    "nodeTestFiles": 232,
+    "nodeTests": 2165,
+    "build": "PASS",
+    "seconds": 103.0,
+    "log": "verify-quiet.txt",
+    "logSha256": "85bf79ef01b6fed4a47cdfe6541b0a5ddaac99002b9edadd8e3b86dc7980abbd",
+    "existingBuildWarnings": [
+      "mixed static/dynamic imports",
+      "large renderer chunk"
+    ]
+  },
+  "postRunArtifactSha256": {
+    "dist/main.cjs": "30ee65030980a780775418461615191075400ad158abe360e1849192e4e63b17",
+    "dist/main.cjs.map": "70ac8ee2a543b6bba28dfd8fa5cc4aeb5f8ba2d94b682780fd9be27fe8b9371a",
+    "dist/preload.cjs": "3e39ba8560acf6abee58233896192a26f313dc2402abf82ad260650b42f1fc26",
+    "dist/raw-rescue.cjs": "64f3c6ac6e8503e6bf10655536c23fd6d8cfa7e6946139b99a7765f9214f419c",
+    "dist/renderer/assets/index-Bpd3T6nf.css": "10308de7ce698d992abaae455858de017f8054c3f8af58741987582aee0eec74",
+    "dist/renderer/assets/index-CSVd0Aq2.js": "63e97a7ec49aa15701a0fd1226f3e3e6d40f701347f04d57f37bbafdaafbc9ed",
+    "dist/renderer/index.html": "dca4ba1945167e937cc05c200dde11c3cbb166c2d3de7f2516be101306e3aaf2",
+    "dist/server-ops.cjs": "a7a27224af0d6cf6aaac50a316ef86334c191d599954f21c4194540e262bcd7c",
+    "dist/storage-overview-worker.cjs": "81b48fd581652dc26c7eaf46885e6dd27c0860e8091aa5591469a99ff6ae68c9"
+  },
+  "remaining": {
+    "nativeImeRoute": "INFRA_BLOCKED",
+    "compositionInProgressCloseSyncMove": "NOT_RUN",
+    "dockLaunch": "NOT_RUN",
+    "nativeReservationCommitFailureSamePidRedisplay": "NOT_RUN",
+    "nativeParentFolderPermissionDeniedPickerStateChanges": "NOT_RUN",
+    "realMacKeychain": "NOT_RUN",
+    "remoteMacP05": "NOT_RUN",
+    "physicalTwoMacsSshSleepNetworkServerRestore": "NOT_RUN"
+  },
+  "cleanup": {
+    "ownedIntegrationElectronProcessesAtFinalObservation": 0,
+    "syntheticClipboardRestoredViaElectronExposedFormats": true,
+    "clipboardAllNativeFormatsGuaranteed": false,
+    "rawEvidenceKeptOnlyInPrivateTemporaryRoot": true,
+    "note": "Native controller once reopened bare Electron default_app after close; that helper window was closed and never counted as a product reopen."
+  },
+  "actionsNotPerformed": [
+    "push",
+    "workflow creation",
+    "workflow execution",
+    "master merge",
+    "billing or OS security setting changes"
+  ],
+  "finalReview": {
+    "mode": "non-GUI",
+    "scope": [
+      "local opt-in and temporary data isolation",
+      "Linux fixture compatibility",
+      "owned process exit and reopen assertions",
+      "native control assertions and acceptance boundaries",
+      "raw report to case ledger reconciliation",
+      "evidence and build artifact hash reconciliation",
+      "documentation and remaining acceptance status"
+    ],
+    "blockingIssues": [],
+    "priorQuietEvidenceVerifiedWithoutRerun": true,
+    "harnessUnchangedSinceRecordedQuiet": true,
+    "additionalGuiExecuted": false,
+    "documentationCorrections": [
+      "Distinguish uncommitted harness state at GUI run from local commit storage.",
+      "Preserve the IME phase maximum-failures runner stop notice."
+    ],
+    "storage": "Local commit containing this record on codex/folio-mac-gui-acceptance-20261108; no push."
+  }
+}

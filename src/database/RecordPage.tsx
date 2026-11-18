@@ -8,6 +8,7 @@ import {
   RotateCcw,
   Trash2,
   Maximize2,
+  MoreHorizontal,
   PanelRight,
   X,
 } from "lucide-react";
@@ -15,6 +16,7 @@ import { composing } from "../shared/keyboard";
 import type { FilterValue, Property, RecordProjection } from "../shared/types";
 import { draftValueFor, type RecordDraft } from "./database-ui";
 import { PropertyField } from "./PropertyField";
+import { SettingsMenu } from "./settings-menu/SettingsMenu";
 import "./database.css";
 import "./record-page.css";
 
@@ -61,6 +63,13 @@ export type RecordPageProps = {
   focusBody?: () => void;
   /** Core mounts the single active Editor here. */
   body: ReactNode;
+  /**
+   * Parent-owned display controls (for example the existing width control).
+   * Mounted in the header's "… → 表示" disclosure. The disclosure only
+   * changes visibility, so controls stay mounted while closed and keep their
+   * state; omit it to keep the legacy header without a display menu.
+   */
+  displayOptions?: ReactNode;
   autoFocusTitle?: boolean;
 };
 
@@ -95,6 +104,7 @@ export function RecordPage({
   onRestore,
   focusBody,
   body,
+  displayOptions,
   autoFocusTitle = true,
 }: RecordPageProps) {
   const root = useRef<HTMLElement>(null);
@@ -141,10 +151,10 @@ export function RecordPage({
       }
       if (
         target.closest(
-          "[role='dialog'], dialog[open], [role='menu'], [role='listbox']",
+          "[role='dialog'], dialog[open], [role='menu'], [role='listbox'], [data-settings-menu-panel]",
         ) ||
         root.current?.querySelector(
-          ".slash-menu, .block-actions, [role='menu']",
+          ".slash-menu, .block-actions, [role='menu'], [data-settings-menu-panel]:not([hidden])",
         )
       )
         return;
@@ -189,7 +199,7 @@ export function RecordPage({
         // first refusal and ignoring composition.
         if (event.key === "Escape" && !composing(event.nativeEvent) &&
             (event.target as HTMLElement).closest(".folio-editor") &&
-            !root.current?.querySelector(".slash-menu, .block-actions, [role='menu'], [role='listbox'], dialog[open], [role='dialog']")) {
+            !root.current?.querySelector(".slash-menu, .block-actions, [role='menu'], [role='listbox'], dialog[open], [role='dialog'], [data-settings-menu-panel]:not([hidden])")) {
           event.preventDefault();
           event.stopPropagation();
           close();
@@ -243,6 +253,37 @@ export function RecordPage({
                       : ""}
         </span>
         <span className="r3-record-header-spacer" />
+        {displayOptions !== undefined && (
+          <SettingsMenu
+            name="record-display"
+            label="表示"
+            panelLabel="レコードの表示"
+            className="r4-record-display"
+            panelClassName="r4-record-display-panel"
+            preserveTextEntryFocus
+            trigger={
+              <>
+                <MoreHorizontal size={16} aria-hidden="true" />
+                <span className="r4-record-display-label">表示</span>
+              </>
+            }
+          >
+            <div className="r4-record-display-heading">表示</div>
+            <div
+              className="r4-record-display-options"
+              data-record-display-options
+            >
+              {displayOptions}
+            </div>
+            <div className="r4-record-display-heading">ページ情報</div>
+            <div
+              className="r4-record-display-options"
+              data-record-page-info
+            >
+              <span className="r3-record-kind">データベースのレコード</span>
+            </div>
+          </SettingsMenu>
+        )}
         {mode && onModeChange && (
           <button
             type="button"
@@ -376,10 +417,14 @@ export function RecordPage({
         disabled={locked}
         onChange={(event) => onTitleChange(event.target.value)}
       />
-      <div className="r3-record-meta">
-        <span className="r3-record-kind">データベースのレコード</span>
-        {locked && <span className="r3-record-readonly">読み取り専用</span>}
-      </div>
+      {(displayOptions === undefined || locked) && (
+        <div className="r3-record-meta">
+          {displayOptions === undefined && (
+            <span className="r3-record-kind">データベースのレコード</span>
+          )}
+          {locked && <span className="r3-record-readonly">読み取り専用</span>}
+        </div>
+      )}
 
       <section className="r3-record-properties" aria-label="プロパティ">
         {properties.length ? (

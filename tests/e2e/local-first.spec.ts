@@ -16,6 +16,9 @@ import {
 import { join } from "node:path";
 import { DatabaseSync } from "node:sqlite";
 
+const shortcut = (key: string) =>
+  `${process.platform === "darwin" ? "Meta" : "Control"}+${key}`;
+
 test("offline compiled desktop creates, edits, searches, exports and reopens persisted text", async ({
   local: s,
 }) => {
@@ -39,7 +42,7 @@ test("offline compiled desktop creates, edits, searches, exports and reopens per
     .locator(".folio-editor")
     .fill("ローカル検索固有語 local-first saved body");
   await saved(s);
-  await w.keyboard.press("Meta+k");
+  await w.keyboard.press(shortcut("k"));
   await w.getByLabel("検索キーワード").fill("ローカル検索固有語");
   await expect(w.locator(".search-results")).toContainText(
     "Offline 日本語ノート",
@@ -92,19 +95,39 @@ test("capacity display clears stale ready and reflects blocked, unknown and reco
   await expect(region).toContainText(
     "確認時点では、保存用の空き容量があります。",
   );
+  const diagnosticPressureCalls = () =>
+    s.app.evaluate(
+      () =>
+        (globalThis as any).localFirstRequests.filter(
+          (r: any) =>
+            r.lane === "folio:request:diagnostic-v1" &&
+            r.type === "storage:pressure",
+        ).length,
+    );
+  const pressureCallsBeforeFault = await diagnosticPressureCalls();
   await s.app.evaluate(({ ipcMain }) => {
-    const ipc = ipcMain as any,
-      original = ipc._invokeHandlers.get("folio:request");
-    ipc.removeHandler("folio:request");
-    ipc.handle("folio:request", (event: any, request: any) => {
-      if (request.type === "storage:pressure")
-        throw new Error("isolated IPC observation failure");
-      return original(event, request);
-    });
+    const ipc = ipcMain as any;
+    for (const lane of ["folio:request", "folio:request:diagnostic-v1"]) {
+      const original = ipc._invokeHandlers.get(lane);
+      if (typeof original !== "function")
+        throw new Error(`missing registered handler ${lane}`);
+      ipc.removeHandler(lane);
+      ipc.handle(lane, (event: any, request: any) => {
+        if (request?.type === "storage:pressure") {
+          (globalThis as any).localFirstRequests.push({
+            ...structuredClone(request),
+            lane,
+          });
+          throw new Error("isolated IPC observation failure");
+        }
+        return original(event, request);
+      });
+    }
   });
   await region.getByRole("button").click();
   await expect(region).toContainText("空き容量を確認できませんでした。");
   await expect(region).not.toContainText("確認時点では");
+  expect(await diagnosticPressureCalls()).toBe(pressureCallsBeforeFault + 1);
 });
 
 test("successful duplication clears its durable recovery operation before a clean reopen", async ({
@@ -140,15 +163,46 @@ test("lost create ACK resolves from the durable receipt without creating a secon
     await s.window.evaluate(() => window.folio.request<any>({ type: "load" }))
   ).pages.length;
   await s.app.evaluate(({ ipcMain }) => {
-    const ipc = ipcMain as any,
-      original = ipc._invokeHandlers.get("folio:request");
-    ipc.removeHandler("folio:request");
-    ipc.handle("folio:request", async (event: any, request: any) => {
-      const result = await original(event, request);
-      if (request.type === "page:commit")
-        throw new Error("isolated ACK loss after COMMIT");
-      return result;
-    });
+    const ipc = ipcMain as any;
+    (globalThis as any).localFirstLostAck = {
+      count: 0,
+      lane: null,
+      operation: null,
+    };
+    for (const lane of ["folio:request", "folio:request:diagnostic-v1"]) {
+      const original = ipc._invokeHandlers.get(lane);
+      if (typeof original !== "function")
+        throw new Error(`missing registered handler ${lane}`);
+      ipc.removeHandler(lane);
+      ipc.handle(lane, async (event: any, request: any) => {
+        const result = await original(event, request);
+        const appliedValue =
+          lane === "folio:request:diagnostic-v1"
+            ? result?.tag === "folio-request-result" &&
+              result?.ok === true &&
+              result?.valueSlot?.present === true
+              ? result.valueSlot.value
+              : undefined
+            : result;
+        const durablyApplied =
+          appliedValue?.status === "applied" &&
+          (appliedValue?.operationId === undefined ||
+            appliedValue.operationId === request?.operation?.operationId);
+        if (
+          request?.type === "page:commit" &&
+          durablyApplied &&
+          (globalThis as any).localFirstLostAck.count === 0
+        ) {
+          (globalThis as any).localFirstLostAck = {
+            count: 1,
+            lane,
+            operation: structuredClone(request.operation ?? null),
+          };
+          throw new Error("isolated ACK loss after COMMIT");
+        }
+        return result;
+      });
+    }
   });
   await s.window
     .getByRole("button", { name: "新しいページ ⌘ N", exact: true })
@@ -161,18 +215,32 @@ test("lost create ACK resolves from the durable receipt without creating a secon
     .click();
   await expect(s.window.locator(".page-title")).toHaveValue("無題");
   await saved(s);
-  expect(
-    (await s.window.evaluate(() => window.folio.request<any>({ type: "load" })))
-      .pages,
-  ).toHaveLength(before + 1);
-  expect(
-    await s.app.evaluate(
-      () =>
-        (globalThis as any).localFirstRequests.filter(
-          (r: any) => r.type === "page:commit",
-        ).length,
-    ),
-  ).toBe(1);
+  const pages = (
+    await s.window.evaluate(() => window.folio.request<any>({ type: "load" }))
+  ).pages;
+  expect(pages).toHaveLength(before + 1);
+  expect(new Set(pages.map((p: any) => p.id)).size).toBe(pages.length);
+  const requests: any[] = await s.app.evaluate(
+    () => (globalThis as any).localFirstRequests,
+  );
+  const commits: any[] = requests.filter(
+    (r: any) => r.type === "page:commit",
+  );
+  const resolves: any[] = requests.filter(
+    (r: any) => r.type === "page:resolve",
+  );
+  expect(commits).toHaveLength(1);
+  expect(commits[0].lane).toBe("folio:request:diagnostic-v1");
+  expect(commits[0].operation).toBeTruthy();
+  expect(resolves).toHaveLength(1);
+  expect(resolves[0].lane).toBe("folio:request:diagnostic-v1");
+  expect(resolves[0].operation).toEqual(commits[0].operation);
+  const lostAck = await s.app.evaluate(
+    () => (globalThis as any).localFirstLostAck,
+  );
+  expect(lostAck.count).toBe(1);
+  expect(lostAck.lane).toBe("folio:request:diagnostic-v1");
+  expect(lostAck.operation).toEqual(commits[0].operation);
   await s.restart();
   await expect(s.window.locator(".page-title")).toHaveValue("無題");
 });
@@ -305,15 +373,29 @@ test("quota refusal retains input, permits search and journal export, then retri
   await panel.getByLabel("保存記録の上限（件）", { exact: true }).fill("0");
   await panel.getByRole("button", { name: "上限を保存", exact: true }).click();
   await expect(panel).toContainText("上限を保存しました。");
+  const tools = w.locator(".workspace-tools").first();
+  await tools
+    .locator(":scope > summary")
+    .filter({ hasText: "保存と復旧" })
+    .click();
+  await expect(tools).not.toHaveAttribute("open", "");
   await w.locator(".page-title").fill("容量停止中の入力を保全");
-  await expect(w.getByRole("alert")).toContainText("workspace-limit-exceeded");
+  const alert = w.getByRole("alert");
+  await expect(alert).toContainText(
+    "安全に分類できないため結果は未確認として停止しました。",
+  );
+  await expect(alert).not.toContainText("workspace-limit-exceeded");
   await expect(w.locator(".page-title")).toHaveValue("容量停止中の入力を保全");
-  const commits = await s.app.evaluate(() =>
+  await expect(w.locator(".save-state")).not.toHaveText("保存済み");
+  const commits: any[] = await s.app.evaluate(() =>
     (globalThis as any).localFirstRequests.filter(
       (r: any) => r.type === "save:commit",
     ),
   );
   expect(commits).toHaveLength(1);
+  expect(commits[0].lane).toBe("folio:request:diagnostic-v1");
+  const operation = commits[0].operation;
+  expect(operation).toBeTruthy();
   await w.getByRole("button", { name: "検索 ⌘ K", exact: true }).click();
   await w.getByLabel("検索キーワード").fill("アイデア");
   await expect(w.locator(".search-results")).toContainText("アイデアノート");
@@ -328,22 +410,70 @@ test("quota refusal retains input, permits search and journal export, then retri
     .click();
   await expect.poll(() => existsSync(journal)).toBe(true);
   expect(readFileSync(journal, "utf8")).toContain("容量停止中の入力を保全");
+  await maintenance(s);
   await panel.getByLabel("保存記録の上限（件）", { exact: true }).fill("");
   await panel.getByRole("button", { name: "上限を保存", exact: true }).click();
   await expect(panel).toContainText("上限を保存しました。");
+  await tools
+    .locator(":scope > summary")
+    .filter({ hasText: "保存と復旧" })
+    .click();
+  await expect(tools).not.toHaveAttribute("open", "");
+  const saveResolves = (): Promise<any[]> =>
+    s.app.evaluate(() =>
+      (globalThis as any).localFirstRequests.filter(
+        (r: any) => r.type === "save:resolve",
+      ),
+    );
+  await w
+    .getByRole("button", { name: "保存結果を確認", exact: true })
+    .click();
+  await expect.poll(async () => (await saveResolves()).length).toBe(1);
   await w.getByRole("button", { name: "保存を再試行", exact: true }).click();
-  await saved(s);
-  const retried = await s.app.evaluate(() =>
-    (globalThis as any).localFirstRequests.filter(
-      (r: any) => r.type === "save:commit",
+  await expect.poll(async () => (await saveResolves()).length).toBe(2);
+  const resolves: any[] = await saveResolves();
+  expect(resolves).toHaveLength(2);
+  for (const r of resolves) {
+    expect(r.lane).toBe("folio:request:diagnostic-v1");
+    expect(r.operation).toEqual(operation);
+  }
+  expect(
+    await s.app.evaluate(
+      () =>
+        (globalThis as any).localFirstRequests.filter(
+          (r: any) => r.type === "save:commit",
+        ).length,
     ),
+  ).toBe(1);
+  await expect(w.locator(".page-title")).toHaveValue("容量停止中の入力を保全");
+  await expect(w.locator(".save-state")).not.toHaveText("保存済み");
+  await expect(alert).toContainText(
+    "安全に分類できないため結果は未確認として停止しました。",
   );
-  expect(retried).toHaveLength(2);
-  expect(retried[1].operation).toEqual(commits[0].operation);
-  await s.restart();
-  await expect(s.window.locator(".page-title")).toHaveValue(
-    "容量停止中の入力を保全",
+  const snapshot = await s.window.evaluate(() =>
+    window.folio.request<any>({ type: "recovery:read" }),
   );
+  expect(typeof snapshot?.generation).toBe("number");
+  const containsOperation = (value: unknown): boolean => {
+    if (!value || typeof value !== "object") return false;
+    try {
+      expect(value).toEqual(operation);
+      return true;
+    } catch {
+      return Object.values(value).some(containsOperation);
+    }
+  };
+  expect(containsOperation(snapshot)).toBe(true);
+  expect(JSON.stringify(snapshot)).toContain("容量停止中の入力を保全");
+  await s.restart({ recovery: true });
+  const reopened = await s.window.evaluate(() =>
+    window.folio.request<any>({ type: "recovery:read" }),
+  );
+  expect(typeof reopened?.generation).toBe("number");
+  expect(reopened?.generation).toBe(snapshot?.generation);
+  expect(reopened).toEqual(snapshot);
+  expect(containsOperation(reopened)).toBe(true);
+  expect(JSON.stringify(reopened)).toContain("容量停止中の入力を保全");
 });
 
 test("low-capacity startup is read-only, exports raw files and rescues a bundle without checkpointing", async ({
@@ -458,7 +588,7 @@ test("rich import keeps initial content in the atomic operation, checkpoint and 
   await expect(s.window.locator(".folio-editor strong")).toHaveText(
     "Bold persisted",
   );
-  await s.window.keyboard.press("Meta+k");
+  await s.window.keyboard.press(shortcut("k"));
   await s.window.getByLabel("検索キーワード").fill("AtomicImportUnique");
   await expect(s.window.locator(".search-results")).toContainText(
     "rich-import",

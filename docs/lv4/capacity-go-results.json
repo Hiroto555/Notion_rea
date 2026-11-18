@@ -1,0 +1,870 @@
+{
+  "node": "v24.20.0",
+  "platform": "darwin/arm64",
+  "checkpointLimitBytes": 1048576,
+  "wireLimitBytes": 2113536,
+  "bounds": {
+    "maxRecordsPerScenario": 500,
+    "maxRecordEditsPerScenario": 100,
+    "maxRecordValueBytes": 16384,
+    "maxRecordBodyBytes": 65536,
+    "maxAttachmentFilesPerScenario": 8,
+    "maxAttachmentBytesEach": 1048576,
+    "maxAttachmentBytesTotal": 4194304,
+    "maxPagesPerScenario": 1000
+  },
+  "methodology": {
+    "data": "synthetic mkdtemp workspaces only",
+    "userDataAccessed": false,
+    "temporaryRootsRemovedInFinally": true,
+    "persistence": "production Store, RecordRepository, attachFile and createFullBackup",
+    "bounded": true,
+    "checkpointAmount": "canonical local JSON checkpoint size",
+    "assetAmount": "attachment file bytes on disk; not part of the checkpoint payload",
+    "backupAmount": "filesystem size of the verified full backup",
+    "networkMeasured": false,
+    "networkNote": "No network is attempted. checkpointBytes is a local serialization size, assetFileBytes is on-disk attachment payload, and neither is a transferred-byte count."
+  },
+  "scenarios": [
+    {
+      "name": "records-10",
+      "kind": "records",
+      "input": {
+        "recordCount": 10,
+        "recordValueBytes": 128,
+        "recordBodyBytes": 0,
+        "recordEdits": 0,
+        "attachmentFiles": 0,
+        "attachmentBytesEach": 0,
+        "attachmentBytesTotal": 0
+      },
+      "counts": {
+        "pages": 11,
+        "recordDatabases": 1,
+        "records": 10,
+        "versions": 0,
+        "recordValueVersions": 0,
+        "assets": 0,
+        "snapshotPages": 11,
+        "snapshotRecords": 10
+      },
+      "bytes": {
+        "database": 4096,
+        "wal": 346112,
+        "shm": 32768,
+        "journal": 0,
+        "pagesData": 3969,
+        "pagesBody": 108,
+        "versionsDoc": 0,
+        "versionsDatabase": 0,
+        "recordMembershipValues": 1390,
+        "recordValueVersionValues": 0,
+        "assetMetadata": 0,
+        "assetFileBytes": 0,
+        "checkpoint": 7779,
+        "checkpointAssetManifest": 2
+      },
+      "durationsMs": {
+        "recordSchema": 0.353,
+        "recordSetup": 6.815,
+        "recordBodies": 0,
+        "recordEdits": 0,
+        "attachmentSetup": 0.001,
+        "load": 0.469,
+        "checkpointBuild": 0.269,
+        "checkpointEncodeHash": 0.688,
+        "checkpointValidate": 0.959
+      },
+      "checkpoint": {
+        "valid": true,
+        "hashPrefix": "771d62fe",
+        "limitBytes": 1048576,
+        "wireLimitBytes": 2113536,
+        "withinLimit": true,
+        "assetBodiesIncluded": false,
+        "rejection": null
+      },
+      "backup": {
+        "durationMs": 35.917,
+        "databaseBytes": 86016,
+        "assetBytes": 0,
+        "manifestBytes": 548,
+        "totalBytes": 86564,
+        "files": 2,
+        "assetFiles": 0,
+        "scanState": "complete",
+        "fingerprintPrefix": "4133525c",
+        "inventory": {
+          "pages": 11,
+          "recordDatabases": 1,
+          "records": 10,
+          "versions": 0,
+          "settings": 0,
+          "saveReceipts": 0,
+          "registeredAssets": 0
+        }
+      },
+      "network": {
+        "attempted": false,
+        "bytes": null,
+        "note": "No network is attempted. checkpointBytes is a local serialization size, assetFileBytes is on-disk attachment payload, and neither is a transferred-byte count."
+      }
+    },
+    {
+      "name": "records-100",
+      "kind": "records",
+      "input": {
+        "recordCount": 100,
+        "recordValueBytes": 64,
+        "recordBodyBytes": 0,
+        "recordEdits": 0,
+        "attachmentFiles": 0,
+        "attachmentBytesEach": 0,
+        "attachmentBytesTotal": 0
+      },
+      "counts": {
+        "pages": 101,
+        "recordDatabases": 1,
+        "records": 100,
+        "versions": 0,
+        "recordValueVersions": 0,
+        "assets": 0,
+        "snapshotPages": 101,
+        "snapshotRecords": 100
+      },
+      "bytes": {
+        "database": 4096,
+        "wal": 2340192,
+        "shm": 32768,
+        "journal": 0,
+        "pagesData": 32859,
+        "pagesBody": 1008,
+        "versionsDoc": 0,
+        "versionsDatabase": 0,
+        "recordMembershipValues": 7500,
+        "recordValueVersionValues": 0,
+        "assetMetadata": 0,
+        "assetFileBytes": 0,
+        "checkpoint": 59339,
+        "checkpointAssetManifest": 2
+      },
+      "durationsMs": {
+        "recordSchema": 0.259,
+        "recordSetup": 26.255,
+        "recordBodies": 0,
+        "recordEdits": 0,
+        "attachmentSetup": 0.001,
+        "load": 2.306,
+        "checkpointBuild": 0.266,
+        "checkpointEncodeHash": 1.124,
+        "checkpointValidate": 1.663
+      },
+      "checkpoint": {
+        "valid": true,
+        "hashPrefix": "98472d72",
+        "limitBytes": 1048576,
+        "wireLimitBytes": 2113536,
+        "withinLimit": true,
+        "assetBodiesIncluded": false,
+        "rejection": null
+      },
+      "backup": {
+        "durationMs": 40.446,
+        "databaseBytes": 163840,
+        "assetBytes": 0,
+        "manifestBytes": 551,
+        "totalBytes": 164391,
+        "files": 2,
+        "assetFiles": 0,
+        "scanState": "complete",
+        "fingerprintPrefix": "fe6bf94e",
+        "inventory": {
+          "pages": 101,
+          "recordDatabases": 1,
+          "records": 100,
+          "versions": 0,
+          "settings": 0,
+          "saveReceipts": 0,
+          "registeredAssets": 0
+        }
+      },
+      "network": {
+        "attempted": false,
+        "bytes": null,
+        "note": "No network is attempted. checkpointBytes is a local serialization size, assetFileBytes is on-disk attachment payload, and neither is a transferred-byte count."
+      }
+    },
+    {
+      "name": "records-250",
+      "kind": "records",
+      "input": {
+        "recordCount": 250,
+        "recordValueBytes": 32,
+        "recordBodyBytes": 0,
+        "recordEdits": 0,
+        "attachmentFiles": 0,
+        "attachmentBytesEach": 0,
+        "attachmentBytesTotal": 0
+      },
+      "counts": {
+        "pages": 251,
+        "recordDatabases": 1,
+        "records": 250,
+        "versions": 0,
+        "recordValueVersions": 0,
+        "assets": 0,
+        "snapshotPages": 251,
+        "snapshotRecords": 250
+      },
+      "bytes": {
+        "database": 208896,
+        "wal": 4124152,
+        "shm": 32768,
+        "journal": 0,
+        "pagesData": 81309,
+        "pagesBody": 2658,
+        "versionsDoc": 0,
+        "versionsDatabase": 0,
+        "recordMembershipValues": 10750,
+        "recordValueVersionValues": 0,
+        "assetMetadata": 0,
+        "assetFileBytes": 0,
+        "checkpoint": 138789,
+        "checkpointAssetManifest": 2
+      },
+      "durationsMs": {
+        "recordSchema": 0.238,
+        "recordSetup": 55.081,
+        "recordBodies": 0.001,
+        "recordEdits": 0,
+        "attachmentSetup": 0.002,
+        "load": 3.707,
+        "checkpointBuild": 0.648,
+        "checkpointEncodeHash": 4.37,
+        "checkpointValidate": 4.663
+      },
+      "checkpoint": {
+        "valid": true,
+        "hashPrefix": "ece35a3b",
+        "limitBytes": 1048576,
+        "wireLimitBytes": 2113536,
+        "withinLimit": true,
+        "assetBodiesIncluded": false,
+        "rejection": null
+      },
+      "backup": {
+        "durationMs": 46.547,
+        "databaseBytes": 253952,
+        "assetBytes": 0,
+        "manifestBytes": 551,
+        "totalBytes": 254503,
+        "files": 2,
+        "assetFiles": 0,
+        "scanState": "complete",
+        "fingerprintPrefix": "98131937",
+        "inventory": {
+          "pages": 251,
+          "recordDatabases": 1,
+          "records": 250,
+          "versions": 0,
+          "settings": 0,
+          "saveReceipts": 0,
+          "registeredAssets": 0
+        }
+      },
+      "network": {
+        "attempted": false,
+        "bytes": null,
+        "note": "No network is attempted. checkpointBytes is a local serialization size, assetFileBytes is on-disk attachment payload, and neither is a transferred-byte count."
+      }
+    },
+    {
+      "name": "record-values-50x2k",
+      "kind": "records",
+      "input": {
+        "recordCount": 50,
+        "recordValueBytes": 2048,
+        "recordBodyBytes": 0,
+        "recordEdits": 0,
+        "attachmentFiles": 0,
+        "attachmentBytesEach": 0,
+        "attachmentBytesTotal": 0
+      },
+      "counts": {
+        "pages": 51,
+        "recordDatabases": 1,
+        "records": 50,
+        "versions": 0,
+        "recordValueVersions": 0,
+        "assets": 0,
+        "snapshotPages": 51,
+        "snapshotRecords": 50
+      },
+      "bytes": {
+        "database": 4096,
+        "wal": 1590352,
+        "shm": 32768,
+        "journal": 0,
+        "pagesData": 16809,
+        "pagesBody": 508,
+        "versionsDoc": 0,
+        "versionsDatabase": 0,
+        "recordMembershipValues": 102950,
+        "recordValueVersionValues": 0,
+        "assetMetadata": 0,
+        "assetFileBytes": 0,
+        "checkpoint": 129539,
+        "checkpointAssetManifest": 2
+      },
+      "durationsMs": {
+        "recordSchema": 0.257,
+        "recordSetup": 11.722,
+        "recordBodies": 0,
+        "recordEdits": 0,
+        "attachmentSetup": 0,
+        "load": 0.948,
+        "checkpointBuild": 0.601,
+        "checkpointEncodeHash": 1.166,
+        "checkpointValidate": 0.706
+      },
+      "checkpoint": {
+        "valid": true,
+        "hashPrefix": "cffab9e7",
+        "limitBytes": 1048576,
+        "wireLimitBytes": 2113536,
+        "withinLimit": true,
+        "assetBodiesIncluded": false,
+        "rejection": null
+      },
+      "backup": {
+        "durationMs": 51.294,
+        "databaseBytes": 307200,
+        "assetBytes": 0,
+        "manifestBytes": 549,
+        "totalBytes": 307749,
+        "files": 2,
+        "assetFiles": 0,
+        "scanState": "complete",
+        "fingerprintPrefix": "a4c30395",
+        "inventory": {
+          "pages": 51,
+          "recordDatabases": 1,
+          "records": 50,
+          "versions": 0,
+          "settings": 0,
+          "saveReceipts": 0,
+          "registeredAssets": 0
+        }
+      },
+      "network": {
+        "attempted": false,
+        "bytes": null,
+        "note": "No network is attempted. checkpointBytes is a local serialization size, assetFileBytes is on-disk attachment payload, and neither is a transferred-byte count."
+      }
+    },
+    {
+      "name": "record-bodies-20x4k",
+      "kind": "records",
+      "input": {
+        "recordCount": 20,
+        "recordValueBytes": 0,
+        "recordBodyBytes": 4096,
+        "recordEdits": 0,
+        "attachmentFiles": 0,
+        "attachmentBytesEach": 0,
+        "attachmentBytesTotal": 0
+      },
+      "counts": {
+        "pages": 21,
+        "recordDatabases": 1,
+        "records": 20,
+        "versions": 20,
+        "recordValueVersions": 20,
+        "assets": 0,
+        "snapshotPages": 21,
+        "snapshotRecords": 20
+      },
+      "bytes": {
+        "database": 4096,
+        "wal": 1231912,
+        "shm": 32768,
+        "journal": 0,
+        "pagesData": 89859,
+        "pagesBody": 82128,
+        "versionsDoc": 940,
+        "versionsDatabase": 80,
+        "recordMembershipValues": 270,
+        "recordValueVersionValues": 270,
+        "assetMetadata": 0,
+        "assetFileBytes": 0,
+        "checkpoint": 97729,
+        "checkpointAssetManifest": 2
+      },
+      "durationsMs": {
+        "recordSchema": 0.239,
+        "recordSetup": 4.387,
+        "recordBodies": 8.831,
+        "recordEdits": 0,
+        "attachmentSetup": 0,
+        "load": 0.888,
+        "checkpointBuild": 0.267,
+        "checkpointEncodeHash": 0.988,
+        "checkpointValidate": 0.967
+      },
+      "checkpoint": {
+        "valid": true,
+        "hashPrefix": "fba4e1e8",
+        "limitBytes": 1048576,
+        "wireLimitBytes": 2113536,
+        "withinLimit": true,
+        "assetBodiesIncluded": false,
+        "rejection": null
+      },
+      "backup": {
+        "durationMs": 31.202,
+        "databaseBytes": 253952,
+        "assetBytes": 0,
+        "manifestBytes": 550,
+        "totalBytes": 254502,
+        "files": 2,
+        "assetFiles": 0,
+        "scanState": "complete",
+        "fingerprintPrefix": "2c9f7eb5",
+        "inventory": {
+          "pages": 21,
+          "recordDatabases": 1,
+          "records": 20,
+          "versions": 20,
+          "settings": 0,
+          "saveReceipts": 0,
+          "registeredAssets": 0
+        }
+      },
+      "network": {
+        "attempted": false,
+        "bytes": null,
+        "note": "No network is attempted. checkpointBytes is a local serialization size, assetFileBytes is on-disk attachment payload, and neither is a transferred-byte count."
+      }
+    },
+    {
+      "name": "record-history-60",
+      "kind": "records",
+      "input": {
+        "recordCount": 1,
+        "recordValueBytes": 128,
+        "recordBodyBytes": 0,
+        "recordEdits": 60,
+        "attachmentFiles": 0,
+        "attachmentBytesEach": 0,
+        "attachmentBytesTotal": 0
+      },
+      "counts": {
+        "pages": 2,
+        "recordDatabases": 1,
+        "records": 1,
+        "versions": 60,
+        "recordValueVersions": 60,
+        "assets": 0,
+        "snapshotPages": 2,
+        "snapshotRecords": 1
+      },
+      "bytes": {
+        "database": 4096,
+        "wal": 1421432,
+        "shm": 32768,
+        "journal": 0,
+        "pagesData": 1098,
+        "pagesBody": 26,
+        "versionsDoc": 2820,
+        "versionsDatabase": 240,
+        "recordMembershipValues": 139,
+        "recordValueVersionValues": 8340,
+        "assetMetadata": 0,
+        "assetFileBytes": 0,
+        "checkpoint": 19141,
+        "checkpointAssetManifest": 2
+      },
+      "durationsMs": {
+        "recordSchema": 0.271,
+        "recordSetup": 0.723,
+        "recordBodies": 0,
+        "recordEdits": 19.438,
+        "attachmentSetup": 0,
+        "load": 0.096,
+        "checkpointBuild": 0.199,
+        "checkpointEncodeHash": 1.812,
+        "checkpointValidate": 0.577
+      },
+      "checkpoint": {
+        "valid": true,
+        "hashPrefix": "7f8a73b5",
+        "limitBytes": 1048576,
+        "wireLimitBytes": 2113536,
+        "withinLimit": true,
+        "assetBodiesIncluded": false,
+        "rejection": null
+      },
+      "backup": {
+        "durationMs": 30.991,
+        "databaseBytes": 98304,
+        "assetBytes": 0,
+        "manifestBytes": 547,
+        "totalBytes": 98851,
+        "files": 2,
+        "assetFiles": 0,
+        "scanState": "complete",
+        "fingerprintPrefix": "59a04938",
+        "inventory": {
+          "pages": 2,
+          "recordDatabases": 1,
+          "records": 1,
+          "versions": 60,
+          "settings": 0,
+          "saveReceipts": 0,
+          "registeredAssets": 0
+        }
+      },
+      "network": {
+        "attempted": false,
+        "bytes": null,
+        "note": "No network is attempted. checkpointBytes is a local serialization size, assetFileBytes is on-disk attachment payload, and neither is a transferred-byte count."
+      }
+    },
+    {
+      "name": "attachments-3x64k",
+      "kind": "attachments",
+      "input": {
+        "recordCount": 0,
+        "recordValueBytes": 0,
+        "recordBodyBytes": 0,
+        "recordEdits": 0,
+        "attachmentFiles": 3,
+        "attachmentBytesEach": 65536,
+        "attachmentBytesTotal": 196608
+      },
+      "counts": {
+        "pages": 1,
+        "recordDatabases": 0,
+        "records": 0,
+        "versions": 0,
+        "recordValueVersions": 0,
+        "assets": 3,
+        "snapshotPages": 1,
+        "snapshotRecords": 0
+      },
+      "bytes": {
+        "database": 4096,
+        "wal": 144232,
+        "shm": 32768,
+        "journal": 0,
+        "pagesData": 638,
+        "pagesBody": 35,
+        "versionsDoc": 0,
+        "versionsDatabase": 0,
+        "recordMembershipValues": 0,
+        "recordValueVersionValues": 0,
+        "assetMetadata": 783,
+        "assetFileBytes": 196608,
+        "checkpoint": 2536,
+        "checkpointAssetManifest": 409
+      },
+      "durationsMs": {
+        "recordSchema": 0.257,
+        "recordSetup": 0,
+        "recordBodies": 0,
+        "recordEdits": 0,
+        "attachmentSetup": 16.597,
+        "load": 0.09,
+        "checkpointBuild": 0.272,
+        "checkpointEncodeHash": 0.093,
+        "checkpointValidate": 0.363
+      },
+      "checkpoint": {
+        "valid": true,
+        "hashPrefix": "84ae2a2a",
+        "limitBytes": 1048576,
+        "wireLimitBytes": 2113536,
+        "withinLimit": true,
+        "assetBodiesIncluded": false,
+        "rejection": null
+      },
+      "backup": {
+        "durationMs": 49.845,
+        "databaseBytes": 77824,
+        "assetBytes": 196608,
+        "manifestBytes": 1085,
+        "totalBytes": 275517,
+        "files": 5,
+        "assetFiles": 3,
+        "scanState": "complete",
+        "fingerprintPrefix": "83e6f1de",
+        "inventory": {
+          "pages": 1,
+          "recordDatabases": 0,
+          "records": 0,
+          "versions": 0,
+          "settings": 0,
+          "saveReceipts": 0,
+          "registeredAssets": 3
+        }
+      },
+      "network": {
+        "attempted": false,
+        "bytes": null,
+        "note": "No network is attempted. checkpointBytes is a local serialization size, assetFileBytes is on-disk attachment payload, and neither is a transferred-byte count."
+      }
+    },
+    {
+      "name": "attachments-5x256k",
+      "kind": "attachments",
+      "input": {
+        "recordCount": 0,
+        "recordValueBytes": 0,
+        "recordBodyBytes": 0,
+        "recordEdits": 0,
+        "attachmentFiles": 5,
+        "attachmentBytesEach": 262144,
+        "attachmentBytesTotal": 1310720
+      },
+      "counts": {
+        "pages": 1,
+        "recordDatabases": 0,
+        "records": 0,
+        "versions": 0,
+        "recordValueVersions": 0,
+        "assets": 5,
+        "snapshotPages": 1,
+        "snapshotRecords": 0
+      },
+      "bytes": {
+        "database": 4096,
+        "wal": 160712,
+        "shm": 32768,
+        "journal": 0,
+        "pagesData": 810,
+        "pagesBody": 37,
+        "versionsDoc": 0,
+        "versionsDatabase": 0,
+        "recordMembershipValues": 0,
+        "recordValueVersionValues": 0,
+        "assetMetadata": 1310,
+        "assetFileBytes": 1310720,
+        "checkpoint": 3672,
+        "checkpointAssetManifest": 686
+      },
+      "durationsMs": {
+        "recordSchema": 0.316,
+        "recordSetup": 0,
+        "recordBodies": 0,
+        "recordEdits": 0,
+        "attachmentSetup": 27.091,
+        "load": 0.126,
+        "checkpointBuild": 0.203,
+        "checkpointEncodeHash": 0.139,
+        "checkpointValidate": 0.183
+      },
+      "checkpoint": {
+        "valid": true,
+        "hashPrefix": "54c1e274",
+        "limitBytes": 1048576,
+        "wireLimitBytes": 2113536,
+        "withinLimit": true,
+        "assetBodiesIncluded": false,
+        "rejection": null
+      },
+      "backup": {
+        "durationMs": 56.329,
+        "databaseBytes": 77824,
+        "assetBytes": 1310720,
+        "manifestBytes": 1448,
+        "totalBytes": 1389992,
+        "files": 7,
+        "assetFiles": 5,
+        "scanState": "complete",
+        "fingerprintPrefix": "20f4ae71",
+        "inventory": {
+          "pages": 1,
+          "recordDatabases": 0,
+          "records": 0,
+          "versions": 0,
+          "settings": 0,
+          "saveReceipts": 0,
+          "registeredAssets": 5
+        }
+      },
+      "network": {
+        "attempted": false,
+        "bytes": null,
+        "note": "No network is attempted. checkpointBytes is a local serialization size, assetFileBytes is on-disk attachment payload, and neither is a transferred-byte count."
+      }
+    },
+    {
+      "name": "mixed-100-records-2x256k",
+      "kind": "mixed",
+      "input": {
+        "recordCount": 100,
+        "recordValueBytes": 64,
+        "recordBodyBytes": 0,
+        "recordEdits": 0,
+        "attachmentFiles": 2,
+        "attachmentBytesEach": 262144,
+        "attachmentBytesTotal": 524288
+      },
+      "counts": {
+        "pages": 102,
+        "recordDatabases": 1,
+        "records": 100,
+        "versions": 0,
+        "recordValueVersions": 0,
+        "assets": 2,
+        "snapshotPages": 102,
+        "snapshotRecords": 100
+      },
+      "bytes": {
+        "database": 4096,
+        "wal": 2364912,
+        "shm": 32768,
+        "journal": 0,
+        "pagesData": 33411,
+        "pagesBody": 1042,
+        "versionsDoc": 0,
+        "versionsDatabase": 0,
+        "recordMembershipValues": 7500,
+        "recordValueVersionValues": 0,
+        "assetMetadata": 524,
+        "assetFileBytes": 524288,
+        "checkpoint": 60951,
+        "checkpointAssetManifest": 275
+      },
+      "durationsMs": {
+        "recordSchema": 0.381,
+        "recordSetup": 30.669,
+        "recordBodies": 0,
+        "recordEdits": 0,
+        "attachmentSetup": 15.68,
+        "load": 2.076,
+        "checkpointBuild": 0.491,
+        "checkpointEncodeHash": 1.412,
+        "checkpointValidate": 1.861
+      },
+      "checkpoint": {
+        "valid": true,
+        "hashPrefix": "e3ae9f41",
+        "limitBytes": 1048576,
+        "wireLimitBytes": 2113536,
+        "withinLimit": true,
+        "assetBodiesIncluded": false,
+        "rejection": null
+      },
+      "backup": {
+        "durationMs": 35.001,
+        "databaseBytes": 163840,
+        "assetBytes": 524288,
+        "manifestBytes": 913,
+        "totalBytes": 689041,
+        "files": 4,
+        "assetFiles": 2,
+        "scanState": "complete",
+        "fingerprintPrefix": "db2c5ec0",
+        "inventory": {
+          "pages": 102,
+          "recordDatabases": 1,
+          "records": 100,
+          "versions": 0,
+          "settings": 0,
+          "saveReceipts": 0,
+          "registeredAssets": 2
+        }
+      },
+      "network": {
+        "attempted": false,
+        "bytes": null,
+        "note": "No network is attempted. checkpointBytes is a local serialization size, assetFileBytes is on-disk attachment payload, and neither is a transferred-byte count."
+      }
+    },
+    {
+      "name": "mixed-20-bodies-1x1m",
+      "kind": "mixed",
+      "input": {
+        "recordCount": 20,
+        "recordValueBytes": 0,
+        "recordBodyBytes": 2048,
+        "recordEdits": 0,
+        "attachmentFiles": 1,
+        "attachmentBytesEach": 1048576,
+        "attachmentBytesTotal": 1048576
+      },
+      "counts": {
+        "pages": 22,
+        "recordDatabases": 1,
+        "records": 20,
+        "versions": 20,
+        "recordValueVersions": 20,
+        "assets": 1,
+        "snapshotPages": 22,
+        "snapshotRecords": 20
+      },
+      "bytes": {
+        "database": 4096,
+        "wal": 1165992,
+        "shm": 32768,
+        "journal": 0,
+        "pagesData": 49365,
+        "pagesBody": 41201,
+        "versionsDoc": 940,
+        "versionsDatabase": 80,
+        "recordMembershipValues": 270,
+        "recordValueVersionValues": 270,
+        "assetMetadata": 263,
+        "assetFileBytes": 1048576,
+        "checkpoint": 57818,
+        "checkpointAssetManifest": 139
+      },
+      "durationsMs": {
+        "recordSchema": 0.248,
+        "recordSetup": 5.176,
+        "recordBodies": 6.762,
+        "recordEdits": 0,
+        "attachmentSetup": 8.259,
+        "load": 0.585,
+        "checkpointBuild": 0.229,
+        "checkpointEncodeHash": 0.734,
+        "checkpointValidate": 0.622
+      },
+      "checkpoint": {
+        "valid": true,
+        "hashPrefix": "be058295",
+        "limitBytes": 1048576,
+        "wireLimitBytes": 2113536,
+        "withinLimit": true,
+        "assetBodiesIncluded": false,
+        "rejection": null
+      },
+      "backup": {
+        "durationMs": 34.623,
+        "databaseBytes": 172032,
+        "assetBytes": 1048576,
+        "manifestBytes": 733,
+        "totalBytes": 1221341,
+        "files": 3,
+        "assetFiles": 1,
+        "scanState": "complete",
+        "fingerprintPrefix": "99a95575",
+        "inventory": {
+          "pages": 22,
+          "recordDatabases": 1,
+          "records": 20,
+          "versions": 20,
+          "settings": 0,
+          "saveReceipts": 0,
+          "registeredAssets": 1
+        }
+      },
+      "network": {
+        "attempted": false,
+        "bytes": null,
+        "note": "No network is attempted. checkpointBytes is a local serialization size, assetFileBytes is on-disk attachment payload, and neither is a transferred-byte count."
+      }
+    }
+  ]
+}

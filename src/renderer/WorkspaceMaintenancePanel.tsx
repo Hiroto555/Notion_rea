@@ -14,7 +14,7 @@ function call<T>(request: Request): Promise<T> {
   return window.folio.request(request) as Promise<T>;
 }
 
-export function WorkspaceMaintenancePanel() {
+export function WorkspaceMaintenancePanel({ onRepairOrder }: { onRepairOrder?: () => void } = {}) {
   const [overview, setOverview] = useState<ManagedStorageOverview>();
   const [baseline, setBaseline] = useState<ManagedStorageOverview>();
   const previous = useRef<ManagedStorageOverview>(undefined);
@@ -64,6 +64,7 @@ export function WorkspaceMaintenancePanel() {
       | "databaseBytes"
       | "receiptBytes"
       | "assetBytes"
+      | "syncStagingBytes"
       | "backupBytes",
   ) {
     const current = overview?.[key] ?? null;
@@ -140,8 +141,10 @@ export function WorkspaceMaintenancePanel() {
               <dd>
                 {overview.receiptRows ?? "未確認"} 件 / {usage("receiptBytes")}
               </dd>
-              <dt>添付</dt>
+              <dt>添付（同期用の一時保存を含む）</dt>
               <dd>{usage("assetBytes")}</dd>
+              <dt>うち同期用の一時保存（適用済み分を含む）</dt>
+              <dd>{usage("syncStagingBytes")}</dd>
               <dt>添付の照合</dt>
               <dd>
                 {overview.registry.state === "complete"
@@ -182,6 +185,9 @@ export function WorkspaceMaintenancePanel() {
           disabled={busy}
           onApplied={() => setOverview(undefined)}
         />
+        {onRepairOrder && <button type="button" disabled={busy} onClick={onRepairOrder}>
+          ページの並び順を修復
+        </button>}
         <button
           type="button"
           disabled={busy}

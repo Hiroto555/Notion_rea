@@ -1,17 +1,16 @@
-import {
-  test,
-  expect,
-  _electron as electron,
-  type ElectronApplication,
-} from "@playwright/test";
-import { mkdtempSync, rmSync } from "node:fs";
-import { join, resolve } from "node:path";
+import { test, expect, type ElectronApplication } from "@playwright/test";
+import { rmSync } from "node:fs";
+import { join } from "node:path";
+import { fixtureRoot } from "./fixture-isolation";
+import { launchFixture, killFixture } from "./recovery-ci-runtime";
 import { Store } from "../../src/persistence/store";
 import { RecordRepository } from "../../src/persistence/record-repository";
 import { markRecordStoreVersion } from "../../src/persistence/record-version";
 
+const mod = process.platform === "darwin" ? "Meta" : "Control";
+
 test("isolated record can be found and edited with the normal full-page editor", async () => {
-  const root = mkdtempSync(resolve("output/record-core-e2e-"));
+  const root = fixtureRoot("record-core-e2e-");
   const path = join(root, "workspace.sqlite");
   let app: ElectronApplication | undefined;
   const store = new Store(path);
@@ -38,10 +37,7 @@ test("isolated record can be found and edited with the normal full-page editor",
   store.updateRecordPage(record.pageId, db.id, record.revision, { doc });
   store.close();
   const start = async () => {
-    app = await electron.launch({
-      args: [resolve("dist/main.cjs")],
-      env: { ...process.env, FOLIO_DATA_DIR: root },
-    });
+    app = await launchFixture(root);
     const window = await app.firstWindow();
     await window.waitForSelector(".page-title");
     return window;
@@ -53,7 +49,7 @@ test("isolated record can be found and edited with the normal full-page editor",
         .locator(".page-tree-label")
         .filter({ hasText: "Synthetic record" }),
     ).toHaveCount(0);
-    await window.keyboard.press("Meta+p");
+    await window.keyboard.press(`${mod}+p`);
     await window.getByLabel("検索キーワード").fill("unique-property-value");
     await window
       .locator(".search-results button")
@@ -123,21 +119,13 @@ test("isolated record can be found and edited with the normal full-page editor",
   } finally {
     // This is an isolated, disposable fixture with intentionally unsaved edits.
     // Terminate only the Electron child launched by this test, not any user app.
-    if (app) {
-      const child = app.process();
-      if (child && child.exitCode === null && child.signalCode === null) {
-        await new Promise<void>((resolveExit) => {
-          child.once("exit", () => resolveExit());
-          child.kill("SIGKILL");
-        });
-      }
-    }
+    await killFixture(app);
     rmSync(root, { recursive: true, force: true });
   }
 });
 
 test("record Editor rejects an external update after its initial installation", async () => {
-  const root = mkdtempSync(resolve("output/record-stale-refresh-"));
+  const root = fixtureRoot("record-stale-refresh-");
   const store = new Store(join(root, "workspace.sqlite"));
   const owner = store.create(null, "database", "Synthetic conflict DB");
   const deleted = store.create(null, "page", "Synthetic trashed page");
@@ -170,13 +158,10 @@ test("record Editor rejects an external update after its initial installation", 
   store.close();
   let app: ElectronApplication | undefined;
   try {
-    app = await electron.launch({
-      args: [resolve("dist/main.cjs")],
-      env: { ...process.env, FOLIO_DATA_DIR: root },
-    });
+    app = await launchFixture(root);
     const window = await app.firstWindow();
     await window.waitForSelector(".page-title");
-    await window.keyboard.press("Meta+p");
+    await window.keyboard.press(`${mod}+p`);
     await window.getByLabel("検索キーワード").fill("Synthetic stale record");
     await window
       .locator(".search-results button")
@@ -235,21 +220,13 @@ test("record Editor rejects an external update after its initial installation", 
       "local unsaved body",
     );
   } finally {
-    if (app) {
-      const child = app.process();
-      if (child && child.exitCode === null && child.signalCode === null) {
-        await new Promise<void>((resolveExit) => {
-          child.once("exit", () => resolveExit());
-          child.kill("SIGKILL");
-        });
-      }
-    }
+    await killFixture(app);
     rmSync(root, { recursive: true, force: true });
   }
 });
 
 test("registered database displays records without enabling legacy row writes", async () => {
-  const root = mkdtempSync(resolve("output/record-core-list-"));
+  const root = fixtureRoot("record-core-list-");
   const store = new Store(join(root, "workspace.sqlite"));
   const owner = store.create(null, "database", "Synthetic list DB");
   const repository = new RecordRepository(store);
@@ -264,10 +241,7 @@ test("registered database displays records without enabling legacy row writes", 
   store.close();
   let app: ElectronApplication | undefined;
   try {
-    app = await electron.launch({
-      args: [resolve("dist/main.cjs")],
-      env: { ...process.env, FOLIO_DATA_DIR: root },
-    });
+    app = await launchFixture(root);
     const window = await app.firstWindow();
     await window.waitForSelector(".page-title");
     await window
@@ -340,13 +314,13 @@ test("registered database displays records without enabling legacy row writes", 
     expect(unchanged.record).toEqual(saved.record);
     expect(unchanged.page).toEqual(saved.page);
   } finally {
-    if (app) await app.close();
+    await killFixture(app);
     rmSync(root, { recursive: true, force: true });
   }
 });
 
 test("new v4 database is identified before enabling record cells and blocks unsupported owner actions", async () => {
-  const root = mkdtempSync(resolve("output/record-core-new-db-"));
+  const root = fixtureRoot("record-core-new-db-");
   const store = new Store(join(root, "workspace.sqlite"));
   store.create(null, "page", "Synthetic home");
   store.transaction(() => {
@@ -356,10 +330,7 @@ test("new v4 database is identified before enabling record cells and blocks unsu
   store.close();
   let app: ElectronApplication | undefined;
   try {
-    app = await electron.launch({
-      args: [resolve("dist/main.cjs")],
-      env: { ...process.env, FOLIO_DATA_DIR: root },
-    });
+    app = await launchFixture(root);
     await app.evaluate(({ dialog }) => {
       dialog.showSaveDialog = (async () => {
         throw new Error("UNSAFE_RECOVERY_DIALOG_OPENED");
@@ -367,7 +338,7 @@ test("new v4 database is identified before enabling record cells and blocks unsu
     });
     const window = await app.firstWindow();
     await window.waitForSelector(".page-title");
-    await window.keyboard.press("Meta+p");
+    await window.keyboard.press(`${mod}+p`);
     await window.getByTitle("新しいデータベース", { exact: true }).click();
     const title = window.getByLabel("ページタイトル", { exact: true });
     await expect(title).toHaveValue("新しいデータベース");
@@ -410,21 +381,13 @@ test("new v4 database is identified before enabling record cells and blocks unsu
       window.getByRole("button", { name: "ゴミ箱に移動" }),
     ).toBeDisabled();
   } finally {
-    if (app) {
-      const child = app.process();
-      if (child && child.exitCode === null && child.signalCode === null) {
-        await new Promise<void>((resolveExit) => {
-          child.once("exit", () => resolveExit());
-          child.kill("SIGKILL");
-        });
-      }
-    }
+    await killFixture(app);
     rmSync(root, { recursive: true, force: true });
   }
 });
 
 test("editable record body still rejects generic Page writes", async () => {
-  const root = mkdtempSync(resolve("output/record-readonly-"));
+  const root = fixtureRoot("record-readonly-");
   const store = new Store(join(root, "workspace.sqlite"));
   const owner = store.create(null, "database", "Synthetic protected DB");
   const repository = new RecordRepository(store);
@@ -453,13 +416,10 @@ test("editable record body still rejects generic Page writes", async () => {
   store.close();
   let app: ElectronApplication | undefined;
   try {
-    app = await electron.launch({
-      args: [resolve("dist/main.cjs")],
-      env: { ...process.env, FOLIO_DATA_DIR: root },
-    });
+    app = await launchFixture(root);
     const window = await app.firstWindow();
     await window.waitForSelector(".page-title");
-    await window.keyboard.press("Meta+p");
+    await window.keyboard.press(`${mod}+p`);
     await window
       .getByLabel("検索キーワード")
       .fill("Synthetic protected record");
@@ -501,13 +461,13 @@ test("editable record body still rejects generic Page writes", async () => {
     expect(saved.page.title).toBe("Synthetic protected record");
     expect(JSON.stringify(saved.page.doc)).toContain("protected body");
   } finally {
-    if (app) await app.close();
+    await killFixture(app);
     rmSync(root, { recursive: true, force: true });
   }
 });
 
 test("record patch IPC requires the observed owner and preserves the page body", async () => {
-  const root = mkdtempSync(resolve("output/record-patch-owner-"));
+  const root = fixtureRoot("record-patch-owner-");
   const store = new Store(join(root, "workspace.sqlite"));
   const owner = store.create(null, "database", "Synthetic owner");
   const other = store.create(null, "database", "Synthetic other owner");
@@ -541,10 +501,7 @@ test("record patch IPC requires the observed owner and preserves the page body",
   store.close();
   let app: ElectronApplication | undefined;
   try {
-    app = await electron.launch({
-      args: [resolve("dist/main.cjs")],
-      env: { ...process.env, FOLIO_DATA_DIR: root },
-    });
+    app = await launchFixture(root);
     const window = await app.firstWindow();
     await window.waitForSelector(".page-title");
     const rejected = await window.evaluate(
@@ -603,7 +560,7 @@ test("record patch IPC requires the observed owner and preserves the page body",
     expect(persisted.record.values).toEqual(ack.values);
     expect(JSON.stringify(persisted.page.doc)).toContain("existing body");
   } finally {
-    if (app) await app.close();
+    await killFixture(app);
     rmSync(root, { recursive: true, force: true });
   }
 });
