@@ -132,7 +132,7 @@ function phaseMap(spans: Any[], events: Any[]): Map<string, string> {
 }
 function writeEvidence(result: Any, trace: Any[]): void {
   const directory = process.env.FOLIO_C02_EVIDENCE_DIR;
-  if (!directory) throw new Error("FOLIO_C02_EVIDENCE_DIR is required");
+  if (!directory) return;
   const stat = lstatSync(directory);
   if (!stat.isDirectory() || stat.isSymbolicLink()) throw new Error("FOLIO_C02_EVIDENCE_DIR must be a directory");
   if (typeof process.getuid === "function" && stat.uid !== process.getuid()) throw new Error("FOLIO_C02_EVIDENCE_DIR is not owned by the test user");

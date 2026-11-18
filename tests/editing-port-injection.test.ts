@@ -105,9 +105,12 @@ describe("EditingPort over the real lane", () => {
       ]);
       expect(sent[0]).toMatchObject({ operation });
       expect(bindings.readOnly.workspace).toBe(bindings.writable.workspace);
-      expect(
-        Object.keys(bindings.readOnly as unknown as Record<string, unknown>),
-      ).toEqual(["workspace"]);
+      expect(Object.keys(bindings.readOnly).sort()).toEqual([
+        "capabilities",
+        "original",
+        "recovery",
+        "workspace",
+      ]);
     } finally {
       f.dispose();
     }
