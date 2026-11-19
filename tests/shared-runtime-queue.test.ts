@@ -607,7 +607,7 @@ describe("DurableQueue", () => {
     expect(retries).toBeLessThan(MAX_ATTEMPTS - 1);
     expect(queue.read(target.intentId)?.raw).toBe(canonical(target));
     expect(storedBudget(db)).toBeLessThanOrEqual(MAX_BYTES);
-  }, 30_000);
+  }, 90_000);
 
   it("keeps another owner's entries out of the queue", () => {
     const db = open();

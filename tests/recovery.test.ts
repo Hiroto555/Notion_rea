@@ -1,6 +1,7 @@
-import { it, expect, afterEach } from "vitest";
-import { mkdtempSync, readFileSync, writeFileSync, mkdirSync } from "node:fs";
-import { resolve, join } from "node:path";
+import { it, expect, afterEach, onTestFinished } from "vitest";
+import { mkdtempSync, readFileSync, writeFileSync, mkdirSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { Store } from "../src/persistence/store";
 import { requestSchema } from "../src/shared/types";
 import { recoveryContent, parseRecovery } from "../src/shared/recovery";
@@ -9,9 +10,9 @@ import { writeRecoveryFile } from "../src/persistence/recovery-file";
 import { sizedRecovery } from "./recovery-fixture";
 const stores: Store[] = [];
 const make = () => {
-  const s = new Store(
-    join(mkdtempSync(resolve("output/next-round-unit-")), "workspace.sqlite"),
-  );
+  const directory = mkdtempSync(join(tmpdir(), "folio-recovery-"));
+  onTestFinished(() => rmSync(directory, { recursive: true, force: true }));
+  const s = new Store(join(directory, "workspace.sqlite"));
   stores.push(s);
   return s;
 };
