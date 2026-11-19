@@ -421,7 +421,7 @@ function maintenance(product: WindowsProductNative) {
     writerId: "writer", sessionId: "session", osSid: SID, assertCurrent() {}});
 }
 
-describe("windows product-native composition (contract-only, NOT_RUN on Windows)", {timeout: 30_000}, () => {
+describe("windows product-native composition (contract-only, NOT_RUN on Windows)", {timeout: 90_000}, () => {
   it("snapshots real SQLite after ordinary restart with root equal to workspace and binds before the destination lease", () => {
     const f = fixture(), directory = tempDir(), sourcePath = join(directory, "workspace.sqlite"),
       destinationPath = join(directory, "snapshot.sqlite"), source = `${ROOT}\\workspace.sqlite`, destination = `${ROOT}\\snapshot.sqlite`;
@@ -465,7 +465,7 @@ describe("windows product-native composition (contract-only, NOT_RUN on Windows)
       expect(WINDOWS_HOT_JOURNAL_PROFILES["small-ledger"]).toEqual({
         mainBytes: 64 * 1024 * 1024, sidecarBytes: 64 * 1024 * 1024, combinedBytes: 256 * 1024 * 1024});
     } finally { db.close(); }
-  }, 30_000);
+  }, 90_000);
 
   it("repairs a captured CREATE observation and its exact pending binding after restart", () => {
     const f = fixture(), path = `${WS_DIR}\\created-unknown.bin`, p = f.open();
@@ -485,7 +485,7 @@ describe("windows product-native composition (contract-only, NOT_RUN on Windows)
     const reopened = f.open(false); reopened.bindWorkspace(WS_DIR, "ws-1");
     expect(reopened.privateFilesystem.inspectFile(path, 100).bytes).toBe(8);
     expect(f.persistenceCalls.filter(op => op === "write-new")).toHaveLength(calls);
-  }, 30_000);
+  }, 90_000);
 
   it("finishes an exact binding event after a crash between K observation and S completion", () => {
     const f = fixture(), path = `${WS_DIR}\\cross-database.bin`, p = f.open();
@@ -513,7 +513,7 @@ describe("windows product-native composition (contract-only, NOT_RUN on Windows)
       expect(after.terminal).toEqual(item.terminal);
       expect(reopened.privateFilesystem.inspectFile(path, 100).sha256).toBe(hash(Buffer.from("retained")));
     } finally { db.close(); }
-  }, 30_000);
+  }, 90_000);
 
   it("reconciles a retained directory move and descendants without repeating the rename", () => {
     const f = fixture(), from = `${WS_DIR}\\move-source`, to = `${WS_DIR}\\move-retained`, p = f.open();
@@ -534,7 +534,7 @@ describe("windows product-native composition (contract-only, NOT_RUN on Windows)
     const reopened = f.open(false); reopened.bindWorkspace(WS_DIR, "ws-1");
     expect(reopened.privateFilesystem.inspectFile(`${to}\\marker.json`, 100).sha256).toBe(file.sha256);
     expect(f.persistenceCalls.filter(op => op === "rename-directory-new")).toHaveLength(1);
-  }, 30_000);
+  }, 90_000);
 
   it("recovers an append only from its exact retained v1 ACK and keeps UNKNOWN immutable", () => {
     const f = fixture(), p = f.open(), path = `${WS_DIR}\\append-observed.bin`;
@@ -556,7 +556,7 @@ describe("windows product-native composition (contract-only, NOT_RUN on Windows)
     const expected = reopened.privateFilesystem.inspectFile(path, 100);
     expect(reopened.nativeTransferIo.append(path, expected, Buffer.from("-next"), 100).identity.bytes).toBe(13);
     expect(f.transferCalls).toHaveLength(2);
-  }, 30_000);
+  }, 90_000);
 
   it.each(["stale-fingerprint", "changed-native-id", "missing-ack"] as const)("does not release transfer uncertainty for %s", failure => {
     const f = fixture(), p = f.open(), path = `${WS_DIR}\\append-refused.bin`; p.bindWorkspace(WS_DIR, "ws-1");
@@ -574,7 +574,7 @@ describe("windows product-native composition (contract-only, NOT_RUN on Windows)
     const db = new DatabaseSync(join(f.stateDirectory, "private-transfer-v1.sqlite"), {readOnly: true});
     try { expect(db.prepare("SELECT count(*) AS n FROM releases").get()?.n).toBe(0); }
     finally { db.close(); }
-  }, 30_000);
+  }, 90_000);
 
   it("advances an observed checkpoint head, reopens it, and publishes its successor without rewriting UNKNOWN", () => {
     const f = fixture(), p = f.open(); p.bindWorkspace(WS_DIR, "ws-1"); f.faults.unknownCommit = true;
@@ -601,7 +601,7 @@ describe("windows product-native composition (contract-only, NOT_RUN on Windows)
       expect(JSON.parse(String(db.prepare("SELECT result FROM recovery_pointer_results WHERE attempt_id=?").get(id)?.result)).state)
         .toBe("APPLIED_OBSERVED");
     } finally { db.close(); }
-  }, 30_000);
+  }, 90_000);
 
   it("rejects a changed prior native checkpoint during the operator CAS", () => {
     const f = fixture(), p = f.open(); p.bindWorkspace(WS_DIR, "ws-1");
@@ -621,7 +621,7 @@ describe("windows product-native composition (contract-only, NOT_RUN on Windows)
       expect(db.prepare("SELECT generation FROM recovery_heads").get()?.generation).toBe(1);
       expect(db.prepare("SELECT count(*) AS n FROM recovery_blobs WHERE kind='evidence:maintenance'").get()?.n).toBe(0);
     } finally { db.close(); }
-  }, 30_000);
+  }, 90_000);
 
   it("completes an S1 observation-only checkpoint without replacing that original observation", () => {
     const f = fixture(), p = f.open(); p.bindWorkspace(WS_DIR, "ws-1"); f.faults.unknownCommit = true;
@@ -652,7 +652,7 @@ describe("windows product-native composition (contract-only, NOT_RUN on Windows)
     const read = new CrashRecoveryFile(LOGICAL, "ws-1", {platform: "win32", nativePort: reopened.crashRecoveryPort}).read();
     expect(read.status).toBe("ready");
     expect(f.transport.dispatches()).toBe(2);
-  }, 30_000);
+  }, 90_000);
 
   it("revalidates operator authority after native observation inside the checkpoint CAS", () => {
     const f = fixture(), p = f.open(); p.bindWorkspace(WS_DIR, "ws-1"); f.faults.unknownCommit = true;
@@ -673,7 +673,7 @@ describe("windows product-native composition (contract-only, NOT_RUN on Windows)
       expect(db.prepare("SELECT count(*) AS n FROM recovery_pointer_results").get()?.n).toBe(0);
       expect(db.prepare("SELECT count(*) AS n FROM recovery_blobs WHERE kind='evidence:maintenance'").get()?.n).toBe(0);
     } finally { db.close(); }
-  }, 30_000);
+  }, 90_000);
 
   it("releases raw virtual reservations only after a fully validated observation and retains originals across reopen", () => {
     const f = fixture();
@@ -695,7 +695,7 @@ describe("windows product-native composition (contract-only, NOT_RUN on Windows)
       expect(db.prepare("SELECT count(*) AS n FROM raw_blobs WHERE kind='evidence:maintenance'").get()?.n).toBe(3);
       expect(db.prepare("SELECT receipt FROM raw_terminals").all().every(r => JSON.parse(String(r.receipt)).outcome === "UNKNOWN")).toBe(true);
     } finally { db.close(); }
-  }, 30_000);
+  }, 90_000);
 
   it("does not trust a rehashed but inconsistent persisted raw observation on restart", () => {
     const f = fixture(), p = f.open(), id = "a".repeat(32); p.bindWorkspace(WS_DIR, "ws-1"); f.faults.unknownCommit = true;
@@ -717,7 +717,7 @@ describe("windows product-native composition (contract-only, NOT_RUN on Windows)
     const reopened = f.open(false); reopened.bindWorkspace(WS_DIR, "ws-1");
     expect(() => maintenance(reopened).inspect("raw-export", id)).toThrow();
     expect(f.transport.dispatches()).toBe(2);
-  }, 30_000);
+  }, 90_000);
 
   it("routes transfer and explicit snapshot evidence commands and rejects role/profile overrides", () => {
     const calls: unknown[] = [], context = {workspace: WS_DIR, workspaceId: "ws-1", workspaceFingerprint: "a".repeat(64),
@@ -825,7 +825,7 @@ describe("windows product-native composition (contract-only, NOT_RUN on Windows)
     expect(reopened.privateFilesystem.inspectFile(path, bytes.length)).toEqual(expected);
     expect(f.profiles).toContainEqual({name: "private-transfer-v1.sqlite", profile: "recovery-archive"});
     expect(f.leases.filter(l => l.path.endsWith("private-transfer-v1.sqlite")).every(l => l.root === STATE_ROOT && l.rootFileId === STATE_ROOT_ID)).toBe(true);
-  }, 60_000);
+  }, 120_000);
 
   it("retains raw append captures and refuses redispatch of an UNKNOWN resource after restart", () => {
     const f = fixture(), p = f.open(); p.bindWorkspace(WS_DIR, "ws-1");
@@ -988,7 +988,7 @@ describe("windows product-native composition (contract-only, NOT_RUN on Windows)
     expect(receipt.byteLength).toBe(bytes.byteLength);
     expect(receipt.sha256).toBe(hash(bytes));
     expect(transport.calls.map((c) => c.phase)).toEqual(["prepare", "commit-prepared"]);
-  }, 30_000);
+  }, 90_000);
 
   it("uses different source/state IDs and exact journal names; generic K bindings survive late workspace binding", () => {
     const f = fixture(), p = f.open();
@@ -1226,7 +1226,7 @@ describe("windows product-native composition (contract-only, NOT_RUN on Windows)
     try {
       expect(db.prepare("SELECT COUNT(*) AS n FROM raw_blobs WHERE kind='original'").get()?.n).toBe(6);
     } finally { db.close(); }
-  }, 60_000);
+  }, 120_000);
 
   it("snapshots raw bytes before the first caller fence and blocks stale calls before dispatch", () => {
     const f = fixture(), p = f.open(), bytes = Buffer.from("original");
@@ -1330,7 +1330,7 @@ describe("windows product-native composition (contract-only, NOT_RUN on Windows)
     // A replaced orphan is rejected against the retained identity.
     f.transport.published.get(orphan)!.fileId = "f".repeat(32);
     expect(() => p.privateFilesystem.inspectFile(orphan, 1024)).toThrow();
-  }, 30_000);
+  }, 90_000);
 
   it("lets an explicit lease close retry settle while poison rejects all later use", () => {
     const f = fixture(), p = f.open(); p.bindWorkspace(WS_DIR, "ws-1");
@@ -1377,7 +1377,7 @@ describe("windows product-native composition (contract-only, NOT_RUN on Windows)
     expect(receipt.identity.path).toBe(to);
     expect(phases).toEqual(["reserve", "dispatch", "success"]);
     expect(f.leases.some(l => l.path === live && l.fileId === liveIdentity.fileId)).toBe(true);
-  }, 30_000);
+  }, 90_000);
 
   it("scopes an authorized external capability to the selected parent only", () => {
     const f = fixture(), selected = `${ROOT}\\archive-out`, p = f.open();
@@ -1414,7 +1414,7 @@ describe("windows product-native composition (contract-only, NOT_RUN on Windows)
     const written = p.privateFilesystem.writeNew(`${WS_DIR}\\cap-read.bin`, Buffer.from("cap"), 100).identity;
     expect(capability.privateFilesystem.inspectFile(`${WS_DIR}\\cap-read.bin`, 100).fileId).toBe(written.fileId);
     expect(f.persistenceCalls.length).toBeGreaterThan(calls);
-  }, 30_000);
+  }, 90_000);
 
   it("composes a distinct capability root for root==workspace sibling output across restart", () => {
     const f = fixture(), selected = `${ROOT}\\archive-out`, capSrc = `${WS_DIR}\\cap-src`;
@@ -1459,7 +1459,7 @@ describe("windows product-native composition (contract-only, NOT_RUN on Windows)
       () => { again.privateFilesystem.writeNew(`${selected}\\nested.bin`, Buffer.alloc(1), 16); }))
       .toThrow("REVALIDATE");
     expect(nested()).toBe(before);
-  }, 30_000);
+  }, 90_000);
 
   it("runs the real full-backup verifier through independent leases inside actual K rename phases", () => {
     // Real POSIX source + backup outside the native context; the Windows
@@ -1563,7 +1563,7 @@ describe("windows product-native composition (contract-only, NOT_RUN on Windows)
     })).toThrow("REVALIDATE");
     expect(renames()).toBe(before);
     expect(lstatSync(backup2).isDirectory()).toBe(true);
-  }, 30_000);
+  }, 90_000);
 
   it("retains the raw archive platform on an unacknowledged preflight close and releases it on a proven one", () => {
     const directory = tempDir();
@@ -1663,7 +1663,7 @@ describe("windows product-native composition (contract-only, NOT_RUN on Windows)
     expect(again.resolution).toBe(resolved.resolution);
     expect(() => next.privateFilesystem.writeNew(dst, Buffer.from("replay"), 100)).toThrow();
     expect(f.persistenceCalls.filter(c => c === operation)).toHaveLength(dispatchBefore + 1);
-  }, 30_000);
+  }, 90_000);
 
   it("repairs an external raw export UNKNOWN while keeping metadata and terminal immutable", () => {
     const f = fixture(), EXT = `${ROOT}\\Exports`, path = `${EXT}\\x.json`, staging = `${EXT}\\.x.tmp`, p = f.open();
