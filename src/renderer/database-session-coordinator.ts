@@ -59,6 +59,13 @@ export class DatabaseSessionCoordinator {
     this.notify();
     return handle;
   }
+  detachClean(id: string) {
+    const lane = this.lanes.get(id);
+    if (!lane) return;
+    if (lane.intents.length || lane.operation || lane.running) throw new Error("未保存のDB設定があります。");
+    this.lanes.delete(id);
+    this.notify();
+  }
   exportRecovery(includeClean = false): DatabaseSessionRecovery[] {
     return [...this.lanes.values()].filter((lane) => includeClean || lane.intents.length || lane.operation).map((lane) => ({
       sessionId: lane.handle.sessionId, base: structuredClone(lane.page), projection: structuredClone(lane.projection),
@@ -123,6 +130,10 @@ export class DatabaseSessionCoordinator {
   }
   createRecord(handle: EditSessionHandle, title: string, values: Record<string, FilterValue> = {}) {
     return this.add(this.lane(handle), {kind: "createRecord", title, values});
+  }
+  flushAll() {
+    return Promise.all([...this.lanes.values()].filter(lane => lane.running || lane.intents.length)
+      .map(lane => this.flush(lane.handle.pageId)));
   }
   flush(id: string): Promise<void> {
     const lane = this.lanes.get(id);

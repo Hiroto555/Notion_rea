@@ -35,6 +35,8 @@ export type ControlledRecordTableProps = {
     text: string,
   ) => void;
   onPatch: (pageId: string, patch: RecordPatch) => void;
+  onDuplicate?: (record: RecordProjection) => void;
+  onTrash?: (record: RecordProjection) => void;
   onOpenRecord: (pageId: string) => void;
   /** Keep a focused row in place while its filter/sort/group values change. */
   onEditingChange?: (pageId: string | null) => void;
@@ -71,7 +73,7 @@ export function ControlledRecordTable({
   inputTexts = {},
   onInputTextChange,
   onPatch,
-  onOpenRecord,
+  onDuplicate, onTrash, onOpenRecord,
   onEditingChange,
   onResolve,
 }: ControlledRecordTableProps) {
@@ -163,6 +165,8 @@ export function ControlledRecordTable({
                       <span role="status" title={state?.error}>
                         {state?.error || saveLabels[status]}
                       </span>
+                      {onDuplicate && <button disabled={locked} onClick={() => onDuplicate(record)}>複製</button>}
+                      {onTrash && <button disabled={locked} onClick={() => onTrash(record)}>ゴミ箱へ移動</button>}
                       {status === "unknown" && onResolve && (
                         <button
                           type="button"

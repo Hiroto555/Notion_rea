@@ -1,3 +1,4 @@
+import { SaveScheduler } from "./save-scheduler";
 import { reconcileEditRecovery } from "./crash-recovery-resume";
 import type { EditSessionRecovery } from "../shared/crash-recovery";
 import type { FilterValue, Page, PagePatch, RecordProjection } from "../shared/types";
@@ -41,16 +42,19 @@ type Lane = {
  * installed document; only this exact session's validated ACK advances base. */
 export class EditSessionCoordinator {
   private lanes = new Map<string, Lane>();
-  private listeners = new Set<() => void>();
+  private listeners = new Set<(draftOnly?: boolean) => void>();
+  private scheduler: SaveScheduler;
   constructor(private readonly send: SaveTransport = (request) => window.folio.request(request),
-    private readonly options: {timeoutMs?: number; uuid?: () => string; beforeSend?: () => Promise<void>} = {}) {}
+    private readonly options: {timeoutMs?: number; uuid?: () => string; beforeSend?: () => Promise<void>; debounceMs?: number; maxWaitMs?: number} = {}) {
+    this.scheduler = new SaveScheduler(options.debounceMs ?? 0, options.maxWaitMs);
+  }
 
   private uuid() {return this.options.uuid?.() ?? crypto.randomUUID();}
-  subscribe(callback: () => void): () => void {
+  subscribe(callback: (draftOnly?: boolean) => void): () => void {
     this.listeners.add(callback);
     return () => this.listeners.delete(callback);
   }
-  private notify() { for (const listener of this.listeners) listener(); }
+  private notify(draftOnly = false) { for (const listener of this.listeners) listener(draftOnly); }
   attach(page: Page, record?: RecordProjection): EditSessionHandle {
     const existing = this.lanes.get(page.id);
     if (existing) return existing.handle;
@@ -62,6 +66,13 @@ export class EditSessionCoordinator {
       seq: 0, intents: [], state: "saved"});
     this.notify();
     return handle;
+  }
+  detachCleanOwner(owner: string) {
+    const members = [...this.lanes.values()].filter(lane => lane.record?.databasePageId === owner);
+    if (members.some(lane => lane.intents.length || lane.operation || lane.running))
+      throw new Error("未保存のレコードがあります。");
+    for (const lane of members) this.lanes.delete(lane.handle.pageId);
+    if (members.length) this.notify();
   }
   exportRecovery(includeClean = false): EditSessionRecovery[] {
     return [...this.lanes.values()].filter((lane) => includeClean || lane.intents.length || lane.operation).map((lane) => ({
@@ -109,8 +120,20 @@ export class EditSessionCoordinator {
     const seq = ++lane.seq;
     lane.intents.push({seq, patch: structuredClone(patch), ...(values ? {values: structuredClone(values)} : {})});
     if (lane.state === "saved") lane.state = "pending";
-    this.notify();
+    this.notify(true);
     return seq;
+  }
+  scheduleFlush(id: string) {
+    this.scheduler.schedule(id, () => {
+      // Even an input behind a conflict/unknown ACK must reach recovery.
+      this.notify();
+      void this.flush(id);
+    });
+  }
+  flushAll() {
+    this.scheduler.flushAll();
+    return Promise.all([...this.lanes.values()].filter(lane => lane.running || lane.intents.length)
+      .map(lane => this.flush(lane.handle.pageId)));
   }
   flush(pageId: string): Promise<void> {
     const lane = this.lanes.get(pageId);

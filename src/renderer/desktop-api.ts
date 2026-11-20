@@ -349,6 +349,7 @@ function decodeStartupStatus(value: unknown): StartupStatus {
     !ownPlainData(value) ||
     (record.mode !== "writable" && record.mode !== "readOnly") ||
     (record.message !== undefined && typeof record.message !== "string") ||
+    (record.experimentalSharedUi !== undefined && typeof record.experimentalSharedUi !== "boolean") ||
     (record.syncMessage !== undefined &&
       typeof record.syncMessage !== "string")
   )
@@ -549,13 +550,18 @@ function propertyShape(value: unknown): boolean {
   return true;
 }
 
-/** The three-member change union carried by property previews and commands. */
+/** The five-member change union carried by property previews and commands. */
 function propertyChangeShape(value: unknown): boolean {
   const change = ownRecord(value);
   if (change === null) return false;
   if (change.kind === "add") return propertyShape(change.property);
   if (change.kind === "rename")
     return identifier(change.propertyId) && typeof change.name === "string";
+  if (change.kind === "remove") return identifier(change.propertyId);
+  if (change.kind === "reorder") {
+    const propertyIds = ownArray(change.propertyIds);
+    return propertyIds !== null && propertyIds.every((entry) => identifier(entry));
+  }
   if (change.kind === "changeType") {
     const type = change.type;
     if (
@@ -792,7 +798,9 @@ function decodePropertyOperationResult(
     !receiptIdentity(result) ||
     (result.commandKind !== "add" &&
       result.commandKind !== "rename" &&
-      result.commandKind !== "changeType") ||
+      result.commandKind !== "changeType" &&
+      result.commandKind !== "remove" &&
+      result.commandKind !== "reorder") ||
     !identifier(result.databasePageId) ||
     (result.page !== undefined && !snapshotPage(result.page)) ||
     (result.database !== undefined &&
@@ -1841,6 +1849,8 @@ export function createDesktopRootBindings(
       }),
   };
   const original: OriginalReadPort = {
+    exportWorkspaceMarkdown: () => request<string | null>({type: "exportWorkspaceMarkdown"}, decodeExportPath)
+      .catch((error: unknown) => { throw toStorageFailureError(error, "exportWorkspaceMarkdown"); }),
     readOriginal: (pageId: string) =>
       request<string>({ type: "pageSource", id: pageId }, decodePageSource).catch(
         (error: unknown) => {

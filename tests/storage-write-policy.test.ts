@@ -32,6 +32,7 @@ const EXPECTED = {
   "recovery:read": "read",
   import: "read",
   export: "read",
+  exportWorkspaceMarkdown: "read",
   exportRecovery: "read",
   exportPendingJournal: "read",
   downloadAttachment: "read",
@@ -89,6 +90,8 @@ const EXPECTED = {
   "database:settings": "write",
   "recovery:copy": "write",
   attach: "write",
+  attachBytes: "write",
+  purgeTrash: "maintenance",
   recover: "write",
   restoreVersion: "write",
   backup: "write",
@@ -99,9 +102,9 @@ const ROWS = Object.entries(EXPECTED) as [RequestType, StorageAction][];
 
 describe("request storage policy", () => {
   it("classifies every Request type exactly once", () => {
-    expect(ROWS).toHaveLength(90);
+    expect(ROWS).toHaveLength(93);
     expect(new Set(ROWS.map(([type]) => type)).size).toBe(ROWS.length);
-    expect(ROWS.filter(([, action]) => action === "write")).toHaveLength(28);
+    expect(ROWS.filter(([, action]) => action === "write")).toHaveLength(29);
     expect(ROWS.filter(([, action]) => action === "checkpoint")).toHaveLength(9);
     for (const [type, action] of ROWS)
       expect(storageActionForRequest(type)).toBe(action);

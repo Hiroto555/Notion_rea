@@ -16,6 +16,7 @@ import {
 /** Semantic commands carry the exact values and identifiers the user observed.
  * Create receives a fully prepared view; it never generates IDs during replay. */
 export type SettingsIntent =
+  | {kind: "replaceViews"; base: DatabaseSettings; next: DatabaseSettings}
   | {
       kind: "viewPatch";
       viewId: string;
@@ -90,6 +91,7 @@ export function applySettingsIntent(
   command: SettingsIntent,
 ): DatabaseSettings {
   const keysByKind: Record<string, readonly string[]> = {
+    replaceViews: ["kind", "base", "next"],
     viewPatch: ["kind", "viewId", "base", "patch"],
     activeView: ["kind", "base", "viewId"],
     createView: [
@@ -113,6 +115,11 @@ export function applySettingsIntent(
   const data: DatabaseData = { ...settings, rows: [] };
   let next: DatabaseData;
   switch (command.kind) {
+    case "replaceViews": {
+      if (!sameSettingsValue(settings, command.base) || !sameSettingsValue(settings.properties, command.next.properties))
+        throw new Error("ビュー設定の版が変わりました。");
+      return canonicalSettings(command.next);
+    }
     case "viewPatch": {
       const view = settings.views.find((v) => v.id === command.viewId);
       const keys = Object.keys(command.patch);

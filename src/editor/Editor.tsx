@@ -1,3 +1,7 @@
+import { HighlightedCodeBlock, codeLanguages } from "./code-language";
+import { useEditorState } from "@tiptap/react";
+import { attachmentNode } from "./external-attachments";
+import type { AttachedFile } from "../shared/assets";
 import { projectSharedDocument } from "./shared-projection";
 import {sharedImage,type SharedImageResolver} from "./shared-image";
 import { RichBlockControls } from "./RichBlockControls";
@@ -144,6 +148,7 @@ export function Editor({
   doc,
   onChange,
   onReady,
+  onAttachFile,
   onLink,
   onError,
   editable = true,
@@ -155,6 +160,7 @@ export function Editor({
   doc: Doc;
   onChange: (d: Doc) => void;
   onReady: (e: TiptapEditor) => void;
+  onAttachFile?: (file: File) => Promise<AttachedFile>;
   onLink: () => void;
   onError: (error: unknown) => void;
 }) {
@@ -275,7 +281,7 @@ export function Editor({
     setSlash(null);
   }
   const editor = useEditor({
-    extensions: [...(shared?.resolveImage?[...extensions({sharedHistory:true}).filter(extension=>extension.name!=="image"),sharedImage(shared.resolveImage)]:extensions({sharedHistory:!!shared})), RichStructureGuard.configure({onRejected: () => onError("この操作では表の形を保てません。内容を保持しています。")})],
+    extensions: [...(shared?.resolveImage?[...extensions({sharedHistory:true, highlightedCodeBlock: HighlightedCodeBlock}).filter(extension=>extension.name!=="image"),sharedImage(shared.resolveImage)]:extensions({sharedHistory:!!shared, highlightedCodeBlock: HighlightedCodeBlock})), RichStructureGuard.configure({onRejected: () => onError("この操作では表の形を保てません。内容を保持しています。")})],
     content: doc,
     editable,
     enableContentCheck: true,
@@ -911,10 +917,33 @@ export function Editor({
       onError(error instanceof Error ? error.message : String(error));
     }
   }
+  async function insertFiles(files: File[], point?: {left: number; top: number}) {
+    if (!editor || !onAttachFile || !editor.isEditable || invalid.current || editor.view.composing)
+      throw new Error("この位置にはファイルを添付できません。");
+    const state = editor.state, selection = state.selection;
+    const drop = point ? editor.view.posAtCoords(point) : null;
+    if (point && !drop) throw new Error("ドロップ位置を確認できません。");
+    const range = drop ? {from: drop.pos, to: drop.pos} : {from: selection.from, to: selection.to};
+    const stillCurrent = () => !editor.isDestroyed && editor.isEditable && !invalid.current &&
+      !editor.view.composing && editor.state.doc === state.doc && editor.state.selection.eq(selection);
+    const content = [];
+    for (const file of files) {
+      if (!stillCurrent()) throw new Error("入力位置が変わりました。改めて添付してください。");
+      content.push(attachmentNode(await onAttachFile(file)));
+    }
+    if (!stillCurrent() || !editor.chain().insertContentAt(range, content).run())
+      throw new Error("この位置に添付できませんでした。入力内容を確認してください。");
+  }
   function pasteBlocks(event: ReactClipboardEvent<HTMLDivElement>) {
     if (!editor) return;
     if (!event.clipboardData.types.includes(BLOCK_CLIPBOARD_TYPE)) {
       clipboard.forget();
+      if (event.clipboardData.files.length && onAttachFile) {
+        event.preventDefault();
+        event.stopPropagation();
+        void insertFiles(Array.from(event.clipboardData.files)).catch(onError);
+        return;
+      }
       try {
         const html = event.clipboardData.getData("text/html");
         assertSupportedRichHTML(html);
@@ -964,6 +993,8 @@ export function Editor({
       }
     }
   }
+  const codeLanguage = useEditorState({editor, selector: ({editor: current}) =>
+    current?.isActive("codeBlock") ? String(current.getAttributes("codeBlock").language ?? "") : null});
   if (!editor) return null;
   const runUiCommand = (command: EditorUiCommand, closeMenu = false) => {
     const ran = runEditorUiCommand(
@@ -989,6 +1020,16 @@ export function Editor({
   const filtered = matchingCommands(slash?.query ?? "");
   return (
     <div ref={root} className="editor-root">
+      {codeLanguage != null && <label className="code-block-language">コードの言語
+        <select value={codeLanguage} disabled={!editable} onChange={event => {
+          if (!invalid.current && editor.isEditable && !editor.view.composing && editor.isActive("codeBlock"))
+            editor.chain().focus().updateAttributes("codeBlock", {language: event.target.value || null}).run();
+        }}>
+          <option value="">指定なし</option>
+          {codeLanguage && !codeLanguages.includes(codeLanguage) && <option>{codeLanguage}</option>}
+          {codeLanguages.map(language => <option key={language}>{language}</option>)}
+        </select>
+      </label>}
       <details
         ref={editMenu}
         className="editor-edit"
@@ -1192,6 +1233,13 @@ export function Editor({
         onCut={(event) => copySelected(event, "cut")}
         onPasteCapture={pasteBlocks}
         onDropCapture={(event) => {
+          const transfer = event.dataTransfer;
+          if (onAttachFile && transfer.files.length && !transfer.types.some(type => type.startsWith("application/x-folio-"))) {
+            event.preventDefault();
+            event.stopPropagation();
+            void insertFiles(Array.from(transfer.files), {left: event.clientX, top: event.clientY}).catch(onError);
+            return;
+          }
           try {
             const html = event.dataTransfer.getData("text/html");
             assertSupportedRichHTML(html);

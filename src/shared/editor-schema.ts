@@ -80,7 +80,7 @@ const Toggle = Details.extend({
   },
 });
 import { getSchema } from "@tiptap/core";
-export const extensions = (options:{sharedHistory?:boolean}={}) => [
+export const extensions = (options:{sharedHistory?:boolean; highlightedCodeBlock?: import("@tiptap/core").AnyExtension}={}) => [
   BlockIdentity,
   Callout,
   SimpleTable,
@@ -88,12 +88,14 @@ export const extensions = (options:{sharedHistory?:boolean}={}) => [
   SimpleTableCell,
   SimpleTableHeader,
   StarterKit.configure({
+    codeBlock: options.highlightedCodeBlock ? false : {},
     undoRedo:options.sharedHistory?false:{},
     blockquote: false,
     paragraph: false,
     heading: false,
     link: { openOnClick: false, protocols: ["folio-page", "folio-asset"] },
   }),
+  ...(options.highlightedCodeBlock ? [options.highlightedCodeBlock] : []),
   FolioParagraph,
   FolioHeading,
   Placeholder.configure({ placeholder: "考えを書き留める…  / でコマンド" }),

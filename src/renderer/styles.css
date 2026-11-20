@@ -1707,6 +1707,19 @@ kbd {
   padding: 7px;
   border-radius: var(--radius-sm);
 }
+.icon-picker .icon-custom {
+  grid-column: 1 / -1;
+  display: flex;
+  gap: 4px;
+  margin-top: 4px;
+}
+.icon-picker .icon-custom input {
+  flex: 1;
+  min-width: 0;
+}
+.icon-picker .icon-custom button {
+  font-size: 12px;
+}
 @keyframes menu-in {
   from {
     opacity: 0;
@@ -1807,6 +1820,43 @@ kbd {
 }
 .search-input > button:hover {
   color: var(--text);
+}
+.link-current {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 20px;
+  border-bottom: 1px solid var(--line);
+  font-size: 11px;
+  color: var(--muted);
+}
+.link-current > span {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.link-current > button {
+  padding: 4px 8px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  font-size: 10.5px;
+  color: var(--muted);
+}
+.link-current > button:hover {
+  color: var(--text);
+}
+.link-web-candidate {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 10px 20px;
+  border-bottom: 1px solid var(--line);
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+.link-web-candidate:hover {
+  background: var(--hover);
 }
 .search-results {
   max-height: 380px;
@@ -2081,6 +2131,9 @@ kbd {
   border: 1px solid var(--line);
   border-radius: var(--radius-sm);
   background: var(--bg);
+}
+::highlight(folio-find) {
+  background: var(--accent-soft);
 }
 .empty-workspace,
 .loading {
@@ -2688,3 +2741,9 @@ kbd {
 .conflict-recovery-details > summary { cursor: pointer; }
 
 .conflict-recovery-details[open] { position: fixed; z-index: 80; top: 58px; right: 20px; bottom: 20px; width: min(880px, calc(100vw - 40px)); max-width: none; margin: 0; overflow: auto; background: var(--surface); color: var(--text); box-shadow: var(--shadow); }
+
+.code-block-language { display: flex; align-items: center; gap: .5rem; color: var(--text-soft); }
+.folio-editor pre .hljs-keyword, .folio-editor pre .hljs-literal { color: var(--accent-strong); font-weight: 600; }
+.folio-editor pre .hljs-string, .folio-editor pre .hljs-number { color: var(--code-text); }
+.folio-editor pre .hljs-comment { color: var(--text-soft); font-style: italic; }
+.folio-editor pre .hljs-title, .folio-editor pre .hljs-attr { color: var(--accent); }

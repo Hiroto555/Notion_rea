@@ -177,6 +177,7 @@ describe("createDesktopRootBindings factory shape", () => {
     ]);
     expect(Object.keys(bindings.readOnly.original).sort()).toEqual([
       "exportOriginal",
+      "exportWorkspaceMarkdown",
       "readOriginal",
     ]);
     expect(Object.keys(bindings.readOnly.recovery).sort()).toEqual([

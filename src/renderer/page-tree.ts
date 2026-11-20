@@ -21,6 +21,7 @@ export function createPageTree(
   pages: readonly Page[],
   recordIds: ReadonlySet<string>,
   databaseIds: ReadonlySet<string>,
+  revisionBound = false,
 ) {
   const byId = new Map(pages.map((page) => [page.id, page]));
   const byParent = new Map<string | null, Page[]>();
@@ -36,7 +37,7 @@ export function createPageTree(
 
   // Follow parent links from protected Pages, including trash and hidden
   // records. The Store also refuses moves that carry any of these descendants.
-  const fixed = new Set([...recordIds, ...databaseIds]);
+  const fixed = new Set([...recordIds, ...[...databaseIds].filter(id => !revisionBound || byId.get(id)?.deletedAt !== null)]);
   for (const id of fixed) {
     const parent = byId.get(id)?.parentId;
     if (parent) fixed.add(parent);

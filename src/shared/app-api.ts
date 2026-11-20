@@ -139,6 +139,7 @@ export type RawSalvageResult = {
  * authorized destination display path, or null when the picker is
  * cancelled. Neither method writes the original. */
 export interface OriginalReadPort {
+  exportWorkspaceMarkdown(): Promise<string | null>;
   readOriginal(pageId: string): Promise<string>;
   exportOriginal(input: {
     name: string;

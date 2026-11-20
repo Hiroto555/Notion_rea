@@ -68,7 +68,7 @@ import { randomUUID } from "node:crypto";
 import { spawn } from "node:child_process";
 import { Store } from "../persistence/store";
 import { seed } from "../persistence/seed";
-import { attachFile, resolveAsset } from "../persistence/assets";
+import { attachBuffer, decodeAttachment, attachFile, resolveAsset } from "../persistence/assets";
 import { workspacePath, migrateWorkspace } from "../persistence/workspace";
 import { FILE_MAX_BYTES } from "../shared/limits";
 import { parseRecovery } from "../shared/recovery";
@@ -76,6 +76,8 @@ import { writeRecoveryFile } from "../persistence/recovery-file";
 import { writePendingJournalFileV3 } from "../persistence/pending-journal-file-v3";
 import { createWindowsOperatorNative, windowsOperatorConfigFromEnvironment } from "../platform/windows/operator-native";
 import { parsePendingJournal } from "../shared/pending-journal";
+import { showSharedUi } from "../shared/startup-status";
+import { exportWorkspaceMarkdown } from "../persistence/workspace-markdown";
 import { assertExternalOutput } from "../persistence/output-path";
 import { previewPropertyOperation, commitPropertyOperation, resolvePropertyOperation } from "../persistence/property-operations";
 import { previewLegacyMigration, commitLegacyMigration, resolveLegacyMigration } from "../persistence/legacy-migration-operation";
@@ -416,7 +418,8 @@ if (startupError) {
         },
         maintenance: new TransferMaintenanceService(dirname(realpathSync(store.path)), activeScope, undefined, privateJournals, nativeTransfer)});
       const syncMessage = savedConnection.held ? "保存した接続の資格情報を確認できず同期を保留しています。同期設定から確認してください。" : startupSync.message;
-      const startupStatus = syncMessage ? { ...opened.status, syncMessage } : opened.status;
+      const startupStatus = {...opened.status, ...(syncMessage ? {syncMessage} : {}),
+        experimentalSharedUi: showSharedUi(process.env, savedConnection)};
       const workspaceBackups = storage.backups;
       let layoutBackupDone = false;
       const { protectValue: protectRichDocument, protectRequest: protectRichRequest } =
@@ -594,14 +597,11 @@ if (startupError) {
             }));
           return true;
         }
-        // R4 only opens fixed-owner record editing. Historical record/DB
-        // restore lacks the provenance needed to overwrite present contents.
         if (req.type === "restoreVersion") {
           protectRichDocument(store.versions(req.id).find(v => v.id === req.versionId));
-          const snapshot = store.load();
-          if (snapshot.records?.some((record) => record.pageId === req.id) ||
-            snapshot.recordDatabaseIds?.includes(req.id))
-            throw new Error("レコードと登録済みDBの履歴復元は未対応です。現在の内容を保持しています。");
+          if (!req.databasePageId && store.db.prepare("SELECT 1 FROM sqlite_master WHERE name='record_memberships' AND type='table'").get() &&
+              store.db.prepare("SELECT 1 FROM record_memberships WHERE page_id=?").get(req.id))
+            throw new Error("履歴復元にはレコードの所属確認が必要です。");
         }
         if (req.type === "openExternal") {
           await shell.openExternal(req.url);
@@ -634,6 +634,17 @@ if (startupError) {
         });
         }
         if (req.type === "migration:resolve") return resolveLegacyMigration(store, req.operation);
+        if (req.type === "exportWorkspaceMarkdown") {
+          const picked = await dialog.showOpenDialog(requestWindow, {title: "Markdown一括書き出し先", properties: ["openDirectory", "createDirectory"],
+            defaultPath: maintenanceSelection?.outputParent});
+          assertPrivateOperationAuthority();
+          const parent = picked.filePaths[0];
+          if (picked.canceled || !parent) return null;
+          if (nativeMaintenance && productNative && maintenanceSelection)
+            admitNativeSaveDirectory(productNative, maintenanceSelection, parent, assertPrivateOperationAuthority, readOnlyMaintenanceDirectory);
+          const write = () => exportWorkspaceMarkdown(store, assets, parent);
+          return nativeMaintenance ? nativeMaintenance.withScope({kind: "raw-rescue", parent}, assertPrivateOperationAuthority, write) : write();
+        }
         if (req.type === "downloadAttachment") {
           const asset = resolveAsset(store.db, assets, req.url);
           const result = await dialog.showSaveDialog(win, {
@@ -651,6 +662,9 @@ if (startupError) {
             assertPrivateOperationAuthority(); storage.admitSnapshot();
           }).directory;
         }
+        if (req.type === "attachBytes")
+          return attachBuffer(store.db, assets, req.name, req.mime, decodeAttachment(req.dataBase64),
+            bytes => storage.admitAttachment(bytes), privatePersistence);
         if (req.type === "attach") {
           const result = await dialog.showOpenDialog(win, {
             properties: ["openFile"],

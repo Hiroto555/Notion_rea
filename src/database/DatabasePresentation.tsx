@@ -641,6 +641,7 @@ function ReadOnlyDatabasePresentation({
 }
 
 function EditableDatabasePresentation({
+  hideNavigation = false, recordBodies,
   value,
   callbacks,
   databasePageId,
@@ -1195,6 +1196,7 @@ function EditableDatabasePresentation({
           {record.icon || "📄"}
         </span>
         <strong className="r3-card-title">{ui.recordTitle(record)}</strong>
+        {!compact && recordBodies?.[record.pageId] && <span className="r3-card-excerpt">{cardExcerpt(recordBodies[record.pageId])}</span>}
         {!compact && chips(record)}
       </button>
       {!compact && (
@@ -1558,7 +1560,7 @@ function EditableDatabasePresentation({
       ref={rootRef}
       onKeyDown={panelKeyDown}
     >
-      <div
+      {!hideNavigation && <><div
         className="r3-db-tabs"
         role="tablist"
         aria-label="データベースのビュー"
@@ -1823,6 +1825,7 @@ function EditableDatabasePresentation({
         </button>
       </div>
 
+      </>}
       {writer.error && (
         <div className="r3-db-alert" role="alert">
           <AlertTriangle size={15} aria-hidden="true" />
@@ -1879,7 +1882,7 @@ function EditableDatabasePresentation({
         </div>
       )}
 
-      {view.sorts.length > 1 && (
+      {!hideNavigation && view.sorts.length > 1 && (
         <div className="r3-db-sort-rules">
           {view.sorts.slice(1).map((sort, index) => (
             <div className="r3-sort-rule" key={sort.id}>

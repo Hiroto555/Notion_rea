@@ -21,6 +21,7 @@ export function assertReadOnlyRequest(request: Request): void {
     case "search":
     case "pageSource":
     case "versions":
+    case "exportWorkspaceMarkdown":
     case "export":
     case "exportRecovery":
     case "exportPendingJournal":

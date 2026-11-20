@@ -74,6 +74,8 @@ export function openWorkspaceAtStartup(
   };
   try {
     const store = open({
+      versionMinIntervalMs: 120_000,
+      maxRetainedReceipts: 200,
       beforeOpen: (bytes) => {
         try {
           admit(directory, bytes);

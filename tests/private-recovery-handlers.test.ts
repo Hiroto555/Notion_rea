@@ -496,8 +496,8 @@ describe("actual createPrivateRequestHandlers -> private recovery helper", () =>
 });
 
 describe("Main source lock and helper shape (static, no Electron import)", () => {
-  const acceptedMainSha256 = "3008a8fe8f0dbeb1fad79c0283ac94a592f587b3319593655bc7c42a259330d9";
-  const acceptedMainBytes = 49601;
+  const acceptedMainSha256 = "02d14fede9e465b6d93824b48f4ac8d346ca5e710a5710a8744a7771dffad04c";
+  const acceptedMainBytes = 50793;
   const indexSource = () => readFileSync(join(__dirname, "..", "src", "main", "index.ts"), "utf8");
 
   it("reconstructs the accepted Main bytes by removing the new import and restoring the old three lines", () => {

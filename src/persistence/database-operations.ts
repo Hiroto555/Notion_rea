@@ -86,6 +86,7 @@ export function commitDatabaseOperation(store: Store, input: DatabaseOperation):
     }
     store.db.prepare("INSERT INTO save_receipts(operation_id,fingerprint,result_json) VALUES(?,?,?)")
       .run(operation.operationId, hash, JSON.stringify(outcome));
+    store.pruneSaveReceipts();
     return outcome;
   });
 }

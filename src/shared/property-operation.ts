@@ -13,9 +13,15 @@ export const propertyChangeSchema = z.discriminatedUnion("kind", [
   z.object({kind: z.literal("add"), property: z.object({id, name: z.string().min(1).max(200), ...shape}).strict()}).strict(),
   z.object({kind: z.literal("rename"), propertyId: id, name: z.string().min(1).max(200)}).strict(),
   z.object({kind: z.literal("changeType"), propertyId: id, ...shape}).strict(),
-]).refine((change) => change.kind === "rename" || validOptions(change.kind === "add" ? change.property : change),
+  z.object({kind: z.literal("remove"), propertyId: id}).strict(),
+  z.object({kind: z.literal("reorder"), propertyIds: z.array(id).max(1000)}).strict(),
+]).refine((change) => change.kind === "add" ? validOptions(change.property)
+  : change.kind === "changeType" ? validOptions(change) : true,
   "セレクト型には重複のない選択肢が必要です。他の型に選択肢は指定できません。");
 export type PropertyChange = z.infer<typeof propertyChangeSchema>;
+export function propertyChangeRequiresBackup(kind: PropertyChange["kind"]): boolean {
+  return kind === "changeType" || kind === "remove";
+}
 export const propertyPreviewRequestSchema = z.object({type: z.literal("property:preview"),
   databasePageId: id, revision, change: propertyChangeSchema}).strict();
 export type PropertyPreviewRequest = z.infer<typeof propertyPreviewRequestSchema>;
