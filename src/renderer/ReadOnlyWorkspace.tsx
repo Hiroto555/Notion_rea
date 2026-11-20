@@ -77,6 +77,17 @@ export function ReadOnlyWorkspace({
       setBusy(false);
     }
   }
+  async function exportWorkspace() {
+    if (busy) return;
+    setBusy(true);
+    setMessage("");
+    try {
+      const path = await api.original.exportWorkspaceMarkdown();
+      if (path) setMessage("書き出し先 " + path);
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : String(error));
+    } finally { setBusy(false); }
+  }
   async function salvage() {
     if (busy) return;
     setBusy(true);
@@ -98,6 +109,7 @@ export function ReadOnlyWorkspace({
         <button disabled={busy} onClick={() => void salvage()}>
           DB・添付・復旧記録を救出
         </button>
+        <button disabled={busy} onClick={() => void exportWorkspace()}>Markdown一括書き出し</button>
         <p className="subtle">{rawSalvageNotice()}</p>
       </header>
       <label>

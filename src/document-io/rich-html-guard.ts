@@ -1,9 +1,11 @@
+import type { Doc } from "../shared/types";
 import { MarkdownManager } from "@tiptap/markdown";
 import { MAX_TABLE_COLUMNS, MAX_TABLE_ROWS } from "../shared/rich-document";
 /** Check HTML before ProseMirror can fit or repair an unsupported table. */
 export function assertSupportedRichHTML(html: string): void {
-  if (!/<(?:table|aside)\b/i.test(html)) return;
+  if (!/<(?:table|aside|img)\b/i.test(html)) return;
   const dom = new DOMParser().parseFromString(html, "text/html");
+  for (const img of dom.querySelectorAll("img[src]")) assertImageSource(img.getAttribute("src"));
   for (const callout of dom.querySelectorAll("aside[data-folio-callout]")) {
     const tone = callout.getAttribute("data-tone");
     if (tone !== null && !["note", "tip", "warning"].includes(tone))
@@ -58,6 +60,7 @@ export function assertSupportedRichMarkdown(markdown: string): void {
     const item = stack.pop();
     if (!item || typeof item !== "object") continue;
     const token = item as { type?: string; text?: string; raw?: string };
+    if (token.type === "image") assertImageSource((item as {href?: string}).href);
     if (token.type === "html")
       assertSupportedRichHTML(token.text ?? token.raw ?? "");
     else if (token.type !== "code" && token.type !== "codespan")
@@ -65,4 +68,16 @@ export function assertSupportedRichMarkdown(markdown: string): void {
         if (key !== "links" && value && typeof value === "object")
           stack.push(value);
   }
+}
+
+
+// Apply only to incoming content. Historical inline images retain their schema.
+export function assertImageSource(src: unknown) {
+  if (typeof src === "string" && /^data:/i.test(src.trim().replace(/[\t\n\r]/g, "")))
+    throw new Error("埋め込み画像は画像ファイルとして貼り付けるか、添付してください。");
+}
+
+export function assertImportedImages(doc: Doc): void {
+  if (doc.type === "image") assertImageSource(doc.attrs?.src);
+  for (const child of doc.content ?? []) assertImportedImages(child);
 }

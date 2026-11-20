@@ -1,3 +1,9 @@
+import { preparePageCreation } from "../src/shared/page-operation";
+import { WorkspaceLimitSettings } from "../src/persistence/workspace-limit-settings";
+import { onTestFinished } from "vitest";
+import { mkdtempSync, rmSync, statSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { randomUUID } from "node:crypto";
 import { join } from "node:path";
 import { expect, it, vi } from "vitest";
 import { Store } from "../src/persistence/store";
@@ -234,4 +240,55 @@ it("never serializes the transient diagnostic into the operation, fingerprint or
     expect(result.storageFailure).toMatchObject(localE("save:resolve"));
     expect(JSON.stringify(operation)).not.toContain("storageFailure");
   } finally {f.dispose();}
+});
+
+it("bounds sequential edit receipts and retains an independently unresolved full ACK", () => {
+  const dir = mkdtempSync(join(tmpdir(), "folio-receipts-"));
+  const store = new Store(join(dir, "workspace.sqlite"), {versionMinIntervalMs: 120_000});
+  onTestFinished(() => {store.close(); rmSync(dir, {recursive: true, force: true});});
+  const page = store.create(null, "page", "initial", {type: "doc", content: [
+    {type: "paragraph", content: [{type: "text", text: "原稿".repeat(2000)}]},
+  ]});
+  const held = {operationId: randomUUID(), sessionId: randomUUID(), seq: 1, pageId: page.id,
+    databasePageId: null, revision: 0, patch: {title: "held"}};
+  const heldAck = store.commitSave(held);
+  const sessionId = randomUUID();
+  function databaseBytes() {
+    store.db.exec("PRAGMA wal_checkpoint(TRUNCATE)");
+    return statSync(store.path).size;
+  }
+  let highWater = 0;
+  for (let seq = 1; seq <= 450; seq++) {
+    const op = {...held, sessionId, operationId: randomUUID(), revision: seq, seq, patch: {title: String(seq)}};
+    const ack = store.commitSave(op);
+    expect(ack.status).toBe("applied");
+    if (seq === 2) expect(store.resolveSave(op)).toMatchObject({page: {title: "2", revision: 3}});
+    if (seq === 225) highWater = databaseBytes();
+  }
+  expect(store.db.prepare("SELECT count(*) n FROM save_receipts").get()!.n).toBe(200);
+  const pageSize = Number(store.db.prepare("PRAGMA page_size").get()!.page_size);
+  expect(databaseBytes()).toBeLessThanOrEqual(highWater + 3 * pageSize);
+  expect(store.resolveSave(held)).toEqual(heldAck);
+});
+
+it("retains a create receipt across pruning and respects an explicit workspace receipt cap", () => {
+  const dir = mkdtempSync(join(tmpdir(), "folio-receipts-"));
+  const store = new Store(join(dir, "workspace.sqlite"), {maxRetainedReceipts: 2});
+  onTestFinished(() => {store.close(); rmSync(dir, {recursive: true, force: true});});
+  const create = preparePageCreation("only one", null);
+  const created = store.commitPageOperation(create);
+  const pageId = created.page!.id, sessionId = randomUUID();
+  function save(seq: number) {
+    expect(store.commitSave({pageId, sessionId, seq, databasePageId: null, operationId: randomUUID(),
+      revision: seq - 1, patch: {title: String(seq)}}).status).toBe("applied");
+  }
+  for (let seq = 1; seq <= 5; seq++) save(seq);
+  expect(store.commitPageOperation(create)).toEqual(created);
+  expect(store.pages()).toHaveLength(1);
+  const count = () => store.db.prepare("SELECT count(*) n FROM save_receipts").get()!.n;
+  expect(count()).toBe(2);
+  new WorkspaceLimitSettings(store.db, {}).apply(null, {maxReceiptRows: 4});
+  save(6);
+  save(7);
+  expect(count()).toBe(4);
 });

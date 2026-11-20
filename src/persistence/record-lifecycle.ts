@@ -58,9 +58,10 @@ export class RecordLifecycle {
     }
   }
 
-  trashRecord(pageId: string, revision: number): void {
+  trashRecord(pageId: string, revision: number, expectedOwner?: string): void {
     this.store.transaction(() => {
-      const member = this.member(pageId),
+      this.store.assertRecordWriteSchema();
+      const member = this.member(pageId, expectedOwner),
         page = this.record(pageId),
         database = this.database(member.database_page_id);
       this.requireRevision(page, revision);
@@ -76,9 +77,10 @@ export class RecordLifecycle {
     });
   }
 
-  restoreRecord(pageId: string, revision: number): RecordProjection {
+  restoreRecord(pageId: string, revision: number, expectedOwner?: string): RecordProjection {
     return this.store.transaction(() => {
-      const member = this.member(pageId),
+      this.store.assertRecordWriteSchema();
+      const member = this.member(pageId, expectedOwner),
         page = this.record(pageId),
         database = this.database(member.database_page_id);
       this.requireRevision(page, revision);
@@ -98,6 +100,7 @@ export class RecordLifecycle {
 
   trashDatabase(id: string, revision: number): void {
     this.store.transaction(() => {
+      this.store.assertRecordWriteSchema();
       this.createSchema();
       const db = this.database(id),
         members = this.members(id);
@@ -132,6 +135,7 @@ export class RecordLifecycle {
 
   restoreDatabase(id: string, revision: number): Page {
     return this.store.transaction(() => {
+      this.store.assertRecordWriteSchema();
       this.createSchema();
       const db = this.database(id);
       this.requireRevision(db, revision);
@@ -190,9 +194,10 @@ export class RecordLifecycle {
     });
   }
 
-  duplicateRecord(id: string, revision: number): RecordProjection {
+  duplicateRecord(id: string, revision: number, expectedOwner?: string): RecordProjection {
     return this.store.transaction(() => {
-      const member = this.member(id),
+      this.store.assertRecordWriteSchema();
+      const member = this.member(id, expectedOwner),
         source = this.record(id),
         database = this.database(member.database_page_id);
       this.requireRevision(source, revision);
@@ -233,6 +238,7 @@ export class RecordLifecycle {
 
   duplicateDatabase(id: string, revision: number): Page {
     return this.store.transaction(() => {
+      this.store.assertRecordWriteSchema();
       const source = this.database(id),
         members = this.members(id);
       this.requireRevision(source, revision);
@@ -260,7 +266,7 @@ export class RecordLifecycle {
           title,
           doc: rewriteDocument(source.doc, mapping),
           database: structuredClone(source.database),
-          position: source.position + 0.5,
+          position: this.store.nextSiblingPosition(source.parentId),
           revision: 0,
           createdAt: now,
           updatedAt: now,
@@ -324,13 +330,13 @@ export class RecordLifecycle {
       throw new Error("Unsupported database; original retained");
     return page;
   }
-  private member(id: string): Membership {
+  private member(id: string, expectedOwner?: string): Membership {
     const value = this.store.db
       .prepare(
         "SELECT page_id,database_page_id,position,values_json FROM record_memberships WHERE page_id=?",
       )
       .get(id) as Membership | undefined;
-    if (!value) throw new Error("Record membership not found");
+    if (!value || (expectedOwner !== undefined && value.database_page_id !== expectedOwner)) throw new Error("Record membership not found");
     return value;
   }
   private members(id: string): Membership[] {

@@ -1,3 +1,4 @@
+import { ATTACHMENT_MAX_BASE64 } from "./assets";
 import { archiveTargetSchema, archiveCursorSchema } from "./conflict-recovery";
 import type { PageWidth } from "./page-layout";
 import { z } from "zod";
@@ -111,6 +112,7 @@ export type RecordRequest =
     }
   | {
       type: "record:trash" | "record:restore" | "record:duplicate";
+      databasePageId?: string;
       pageId: string;
       revision: number;
     }
@@ -510,6 +512,7 @@ export const requestSchema = z.discriminatedUnion("type", [
   z
     .object({
       type: z.enum(["record:trash", "record:restore", "record:duplicate"]),
+      databasePageId: z.string().min(1).max(500).optional(),
       pageId: z.string().min(1).max(500),
       revision: z.number().int().nonnegative().safe(),
     })
@@ -554,11 +557,12 @@ export const requestSchema = z.discriminatedUnion("type", [
   }),
   z.object({
     type: z.literal("move"),
+    expectedRevision: z.number().int().nonnegative().optional(),
     id: z.string(),
     parentId: z.string().nullable(),
     beforeId: z.string().nullable(),
   }),
-  z.object({ type: z.enum(["duplicate", "trash", "restore"]), id: z.string() }),
+  z.object({ type: z.enum(["duplicate", "trash", "restore"]), id: z.string(), revision: z.number().int().nonnegative().optional() }),
   z.object({
     type: z.literal("setting"),
     key: z.enum(["activePage", "theme", "sidebar", "expanded"]),
@@ -586,6 +590,7 @@ export const requestSchema = z.discriminatedUnion("type", [
   }).strict(),
   z.object({
     type: z.literal("restoreVersion"),
+    databasePageId: z.string().min(1).max(500).optional(),
     id: z.string(),
     versionId: z.number().int(),
     revision: z.number().int().nonnegative().safe().optional(),
@@ -595,6 +600,11 @@ export const requestSchema = z.discriminatedUnion("type", [
   z.object({ type: z.literal("workspaceBackup:choose") }).strict(),
   z.object({ type: z.literal("workspaceBackup:restore"), ticket: z.string().uuid() }).strict(),
   z.object({ type: z.literal("workspaceBackup:open"), ticket: z.string().uuid() }).strict(),
+  z.object({type: z.literal("purgeTrash"), id: z.string().min(1).max(500).optional(),
+    expected: z.array(z.object({id: z.string().min(1).max(500), revision: z.number().int().nonnegative().safe()}).strict()).max(100_000).optional()}).strict(),
+  z.object({type: z.literal("attachBytes"), name: z.string().min(1).max(500), mime: z.string().max(255),
+    dataBase64: z.string().max(ATTACHMENT_MAX_BASE64)}).strict(),
+  z.object({type: z.literal("exportWorkspaceMarkdown")}).strict(),
   z.object({ type: z.literal("attach") }),
   z.object({
     type: z.literal("downloadAttachment"),

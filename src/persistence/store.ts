@@ -1,3 +1,5 @@
+import { purgeTrash } from "./purge-trash";
+import { WorkspaceLimitSettings } from "./workspace-limit-settings";
 import { searchPages } from "./search-query";
 import { DatabaseSync } from "node:sqlite";
 import { createHash, randomUUID } from "node:crypto";
@@ -7,6 +9,7 @@ import type { NativePrivateSqliteLease } from "../platform/private-persistence";
 import {closeStartupConnection, startupRetainsNativeLease, assertStartupOwnerCapacity} from "./startup-connection-owner";
 import {
   blankDoc,
+  textOf,
   isDocument,
   requestSchema,
   saveOperationSchema,
@@ -56,6 +59,8 @@ function failedInitialization(connection: DatabaseSync, original: unknown, lease
 class PageDataError extends Error {}
 export class Store {
   private readonly connection: DatabaseSync;
+  private readonly versionMinIntervalMs: number;
+  private readonly maxRetainedReceipts: number;
   private unusable = false;
   private connectionClosed = false;
   private nativeLease?: NativePrivateSqliteLease;
@@ -96,6 +101,10 @@ export class Store {
     readonly path: string,
     options: StoreStartupOptions = {},
   ) {
+    this.versionMinIntervalMs = options.versionMinIntervalMs ?? 0;
+    this.maxRetainedReceipts = options.maxRetainedReceipts ?? 200;
+    if (!Number.isSafeInteger(this.maxRetainedReceipts) || this.maxRetainedReceipts < 1)
+      throw new Error("Invalid receipt retention limit");
     assertStartupOwnerCapacity(options.nativeLease);
     this.nativeLease = options.nativeLease;
     this.nativeLease?.assertHeld();
@@ -403,6 +412,56 @@ export class Store {
       );
     return page;
   }
+  private quarantineRecordOwners(byId: Map<string, Page>, memberships: {page_id: string; database_page_id: string}[]) {
+    const blockedOwners = new Set<string>();
+    for (const row of memberships) {
+      const page = byId.get(row.page_id), owner = byId.get(row.database_page_id);
+      if (!page || !owner || page.documentError || owner.documentError) blockedOwners.add(row.database_page_id);
+    }
+    // Never present an incomplete record collection as editable. Healthy
+    // unrelated pages remain accessible; affected owners and rows keep their
+    // IDs and raw-export route but become read-only in this snapshot.
+    for (const row of memberships) {
+      if (!blockedOwners.has(row.database_page_id)) continue;
+      for (const id of [row.page_id, row.database_page_id]) {
+        const page = byId.get(id);
+        if (page && !page.documentError) page.documentError = "関連するレコードまたはデータベースを読めません。原本を保全し、編集を停止しています。";
+      }
+    }
+    return blockedOwners;
+  }
+  private searchCache?: {stamp: string; pages: Page[]; values: Map<string, string>; bodies: Map<string, string>};
+  search(query: string) {
+    // A caller-owned transaction can still roll back. Its view must never
+    // populate (or reuse) the committed workspace index.
+    const cacheable = !this.db.isTransaction;
+    return this.readSnapshot(() => {
+      const version = this.db.prepare("SELECT data_version, schema_version, total_changes() AS writes FROM pragma_data_version, pragma_schema_version").get()!;
+      const stamp = [version.data_version, version.schema_version, version.writes].join("/");
+      let index = cacheable ? this.searchCache : undefined;
+      if (!index || index.stamp !== stamp) {
+        const pages = this.pages({quarantineCorrupt: true});
+        const values = new Map<string, string>();
+        if (this.db.prepare("SELECT 1 FROM sqlite_master WHERE type='table' AND name='record_memberships'").get()) {
+          const members = this.db.prepare("SELECT page_id,database_page_id,values_json FROM record_memberships").all() as
+            {page_id: string; database_page_id: string; values_json: string}[];
+          const byId = new Map(pages.map(page => [page.id, page]));
+          const blocked = this.quarantineRecordOwners(byId, members);
+          const repo = new RecordRepository(this);
+          for (const member of members) {
+            if (!blocked.has(member.database_page_id))
+              values.set(member.page_id, Object.values(repo.parseValues(member.values_json)).join(" "));
+          }
+        }
+        const live = pages.filter(page => page.deletedAt === null);
+        const bodies = new Map(live.map(page => [page.id, page.documentError ? "" : textOf(page.doc)]));
+        index = {stamp, pages: live, values, bodies};
+        if (cacheable) this.searchCache = index;
+      }
+      // Consumers may edit their result; keep the cached source private.
+      return structuredClone(searchPages(index.pages, query, index.values, index.bodies));
+    });
+  }
   load(): Snapshot {
     const read = (): Snapshot => {
       const hasRecords = !!this.db
@@ -415,21 +474,7 @@ export class Store {
       const memberships = hasRecords ? this.db.prepare(
         "SELECT page_id,database_page_id FROM record_memberships ORDER BY database_page_id,position,page_id",
       ).all() as { page_id: string; database_page_id: string }[] : [];
-      const blockedOwners = new Set<string>();
-      for (const row of memberships) {
-        const page = byId.get(row.page_id), owner = byId.get(row.database_page_id);
-        if (!page || !owner || page.documentError || owner.documentError) blockedOwners.add(row.database_page_id);
-      }
-      // Never present an incomplete record collection as editable. Healthy
-      // unrelated pages remain accessible; affected owners and rows keep their
-      // IDs and raw-export route but become read-only in this snapshot.
-      for (const row of memberships) {
-        if (!blockedOwners.has(row.database_page_id)) continue;
-        for (const id of [row.page_id, row.database_page_id]) {
-          const page = byId.get(id);
-          if (page && !page.documentError) page.documentError = "関連するレコードまたはデータベースを読めません。原本を保全し、編集を停止しています。";
-        }
-      }
+      const blockedOwners = this.quarantineRecordOwners(byId, memberships);
       const records = hasRecords ? memberships
         .filter((row) => !blockedOwners.has(row.database_page_id))
         .map((row) => new RecordRepository(this).projection(row.page_id)) : undefined;
@@ -577,6 +622,32 @@ export class Store {
     }
     throw new Error("Unable to allocate a unique page ID");
   }
+  nextSiblingPosition(parentId: string | null) {
+    const siblings = this.pages().filter((page) => page.parentId === parentId);
+    const hasRecordSchema = !!this.db.prepare(
+      "SELECT 1 FROM sqlite_master WHERE type='table' AND name='record_memberships'",
+    ).get();
+    let position: number;
+    if (hasRecordSchema) {
+      const recordIds = new Set((this.db.prepare("SELECT page_id FROM record_memberships").all() as { page_id: string }[]).map((entry) => entry.page_id));
+      // Reserve every non-record sibling's position, including trash, so
+      // later restoration cannot collide with a newly created Page.
+      const anchors = siblings.filter((page) => !recordIds.has(page.id));
+      if (anchors.some((page) => !Number.isFinite(page.position) || page.documentError))
+        throw new Error("ページの安全な並び順を確認できません。原本を保持しています。");
+      const positions = anchors.map((page) => page.position).sort((a, b) => a - b);
+      for (let i = 1; i < positions.length; i++)
+        if (positions[i - 1] >= positions[i])
+          throw new Error("ページの並び順が重複しています。原本を保持しています。");
+      const maximum = positions.reduce((max, value) => Math.max(max, value), 0);
+      position = maximum + 1;
+      if (!Number.isFinite(position) || position <= maximum || !Object.is(JSON.parse(JSON.stringify(position)), position))
+        throw new Error("ページの並び順に空きがありません。原本を保持しています。");
+    } else {
+      position = Math.max(0, ...siblings.map((page) => page.position)) + 1;
+    }
+    return position;
+  }
   create(
     parentId: string | null,
     kind: Page["kind"] = "page",
@@ -601,29 +672,7 @@ export class Store {
         this.db.prepare("SELECT 1 FROM record_databases WHERE database_page_id=?").get(parentId)
       ))
         throw new Error("レコードまたは登録済みデータベースに子ページを追加できません。");
-      const siblings = this.pages().filter((page) => page.parentId === parentId);
-      const hasRecordSchema = !!this.db.prepare(
-        "SELECT 1 FROM sqlite_master WHERE type='table' AND name='record_memberships'",
-      ).get();
-      let position: number;
-      if (hasRecordSchema) {
-        const recordIds = new Set((this.db.prepare("SELECT page_id FROM record_memberships").all() as { page_id: string }[]).map((entry) => entry.page_id));
-        // Reserve every non-record sibling's position, including trash, so
-        // later restoration cannot collide with a newly created Page.
-        const anchors = siblings.filter((page) => !recordIds.has(page.id));
-        if (anchors.some((page) => !Number.isFinite(page.position) || page.documentError))
-          throw new Error("ページの安全な並び順を確認できません。原本を保持しています。");
-        const positions = anchors.map((page) => page.position).sort((a, b) => a - b);
-        for (let i = 1; i < positions.length; i++)
-          if (positions[i - 1] >= positions[i])
-            throw new Error("ページの並び順が重複しています。原本を保持しています。");
-        const maximum = positions.reduce((max, value) => Math.max(max, value), 0);
-        position = maximum + 1;
-        if (!Number.isFinite(position) || position <= maximum || !Object.is(JSON.parse(JSON.stringify(position)), position))
-          throw new Error("ページの並び順に空きがありません。原本を保持しています。");
-      } else {
-        position = Math.max(0, ...siblings.map((page) => page.position)) + 1;
-      }
+      const position = this.nextSiblingPosition(parentId);
       const now = Date.now();
       return this.write(
         {
@@ -674,7 +723,7 @@ export class Store {
       throw error;
     }
   }
-  update(id: string, revision: number, patch: PagePatch): Page {
+  update(id: string, revision: number, patch: PagePatch, forceVersion = false): Page {
     // Validate the untransformed input before requestSchema normalizes it.
     if (patch?.database != null && !isLosslessDatabaseData(patch.database))
       throw new Error(
@@ -684,9 +733,9 @@ export class Store {
     if (parsed.type !== "update")
       throw new Error("Unsupported storage request");
     const cleanPatch: PagePatch = parsed.patch;
-    return this.transaction(() => this.updatePageInTransaction(id, revision, cleanPatch));
+    return this.transaction(() => this.updatePageInTransaction(id, revision, cleanPatch, forceVersion));
   }
-  private updatePageInTransaction(id: string, revision: number, cleanPatch: PagePatch): Page {
+  private updatePageInTransaction(id: string, revision: number, cleanPatch: PagePatch, forceVersion = false): Page {
       this.assertRecordWriteSchema();
       const p = this.get(id);
       if (p.revision !== revision)
@@ -734,7 +783,7 @@ export class Store {
         cleanPatch.database !== undefined ||
         cleanPatch.title !== undefined
       )
-        this.recordVersion(p);
+        this.recordVersion(p, {force: forceVersion});
       return this.write({
         ...p,
         ...cleanPatch,
@@ -885,8 +934,30 @@ export class Store {
       }
       this.db.prepare("INSERT INTO save_receipts(operation_id,fingerprint,result_json) VALUES(?,?,?)")
         .run(operation.operationId, fingerprint, JSON.stringify(result));
+      if (result.status === "applied") {
+        // A later applied revision in this lane proves its earlier ACK arrived.
+        this.db.prepare(`UPDATE save_receipts SET result_json=json_remove(result_json,'$.page','$.record')
+          WHERE json_valid(result_json) AND json_extract(result_json,'$.sessionId')=? AND json_extract(result_json,'$.pageId')=?
+          AND json_extract(result_json,'$.seq')<? AND json_extract(result_json,'$.status')='applied'
+          AND json_type(result_json,'$.page')='object' AND json_type(result_json,'$.commandKind') IS NULL`)
+          .run(operation.sessionId, operation.pageId, operation.seq);
+      }
+      this.pruneSaveReceipts();
       return result;
     });
+  }
+  pruneSaveReceipts() {
+    // A create/duplicate has no old page revision to fence a delayed retry.
+    // Only evict superseded, acknowledged edits. Keep unresolved operations,
+    // terminal rejections and non-repeatable command receipts independently.
+    const excess = Number(this.db.prepare("SELECT count(*) AS n FROM save_receipts").get()!.n) - this.maxRetainedReceipts;
+    if (excess <= 0 || process.env.FOLIO_MAX_RECEIPT_ROWS !== undefined ||
+        new WorkspaceLimitSettings(this.db, {}).read().configured.maxReceiptRows !== undefined) return;
+    this.db.prepare(`DELETE FROM save_receipts WHERE rowid IN (
+      SELECT rowid FROM save_receipts WHERE json_valid(result_json)
+        AND json_extract(result_json,'$.status')='applied' AND json_type(result_json,'$.pageId')='text'
+        AND json_type(result_json,'$.page') IS NULL AND json_type(result_json,'$.commandKind') IS NULL
+      ORDER BY rowid LIMIT ?)`).run(excess);
   }
   private saveResult(operation: SaveOperation, fingerprint: string, status: SaveResult["status"], message?: string): SaveResult {
     return { status, operationId: operation.operationId, sessionId: operation.sessionId, seq: operation.seq, pageId: operation.pageId, fingerprint, ...(message ? {message} : {}) };
@@ -953,14 +1024,19 @@ export class Store {
     if (names.has("folio_record_schema"))
       validateRecordStoreVersion(this.db);
   }
-  recordVersion(p: Page) {
+  recordVersion(p: Page, options?: {force?: boolean}) {
+    const now = Date.now();
+    if (!options?.force && this.versionMinIntervalMs > 0) {
+      const last = this.db.prepare("SELECT createdAt FROM versions WHERE pageId=? ORDER BY id DESC LIMIT 1").get(p.id);
+      if (last && now >= Number(last.createdAt) && now - Number(last.createdAt) < this.versionMinIntervalMs) return;
+    }
     this.db
       .prepare(
         "INSERT INTO versions(pageId,createdAt,title,doc,database) VALUES(?,?,?,?,?)",
       )
       .run(
         p.id,
-        Date.now(),
+        now,
         p.title,
         JSON.stringify(p.doc),
         JSON.stringify(p.database),
@@ -1102,7 +1178,7 @@ export class Store {
       throw new Error("ページの更新結果を確認できません。原本を保持しています。");
     return written;
   }
-  move(id: string, parentId: string | null, beforeId: string | null) {
+  move(id: string, parentId: string | null, beforeId: string | null, expectedRevision?: number) {
     return this.transaction(() => {
       this.assertRecordWriteSchema();
       const hasMemberships = !!this.db
@@ -1125,14 +1201,16 @@ export class Store {
           : [],
       );
       const protectedIds = new Set([...recordIds, ...registeredDatabases]);
-      if (protectedIds.has(id))
+      if (recordIds.has(id) || (expectedRevision === undefined && registeredDatabases.has(id)))
         throw new Error("レコードまたは登録済みデータベースの移動は未対応です。");
       if ((parentId !== null && protectedIds.has(parentId)) || (beforeId !== null && recordIds.has(beforeId)))
         throw new Error("レコードまたは登録済みデータベースを移動先には指定できません。");
       const subtree = this.descendants(id);
-      if ([...subtree].some((childId) => protectedIds.has(childId)))
+      if ([...subtree].some((childId) => recordIds.has(childId) ||
+          (registeredDatabases.has(childId) && (expectedRevision === undefined || this.get(childId).deletedAt !== null))))
         throw new Error("レコードまたは登録済みデータベースを含むページの移動は未対応です。");
       const p = this.get(id);
+      if (expectedRevision !== undefined && p.revision !== expectedRevision) throw new Error("移動前に版が変わりました。");
       if (hasMemberships) this.assertLosslessMovePage(id);
       if (parentId !== null) {
         const parent = this.get(parentId);
@@ -1386,17 +1464,17 @@ export class Store {
       case "record:patch":
         return new RecordRepository(this).patch(r.pageId, r.databasePageId, r.revision, r.patch);
       case "record:trash":
-        return new RecordLifecycle(this).trashRecord(r.pageId, r.revision);
+        return new RecordLifecycle(this).trashRecord(r.pageId, r.revision, r.databasePageId);
       case "record:restore":
-        return new RecordLifecycle(this).restoreRecord(r.pageId, r.revision);
+        return new RecordLifecycle(this).restoreRecord(r.pageId, r.revision, r.databasePageId);
       case "record:duplicate":
-        return new RecordLifecycle(this).duplicateRecord(r.pageId, r.revision);
+        return new RecordLifecycle(this).duplicateRecord(r.pageId, r.revision, r.databasePageId);
       case "create":
         return this.create(r.parentId, r.kind, r.title);
       case "update":
         return this.update(r.id, r.revision, r.patch);
       case "move":
-        return this.move(r.id, r.parentId, r.beforeId);
+        return this.move(r.id, r.parentId, r.beforeId, r.expectedRevision);
       case "duplicate":
       case "trash":
       case "restore": {
@@ -1417,7 +1495,7 @@ export class Store {
             .get(r.id);
         if (database || record) {
           const lifecycle = new RecordLifecycle(this),
-            revision = this.get(r.id).revision;
+            revision = r.revision ?? this.get(r.id).revision;
           if (r.type === "trash")
             return database
               ? lifecycle.trashDatabase(r.id, revision)
@@ -1434,6 +1512,7 @@ export class Store {
         if (r.type === "trash") return this.trash(r.id);
         return this.restore(r.id);
       }
+      case "purgeTrash": return purgeTrash(this, r.id, r.expected);
       case "setting":
         this.db
           .prepare(
@@ -1441,13 +1520,8 @@ export class Store {
           )
           .run(r.key, r.value);
         return true;
-      case "search": {
-        const snapshot = this.load();
-        const values = new Map<string, string>();
-        for (const record of snapshot.records ?? [])
-          values.set(record.pageId, Object.values(record.values).join(" "));
-        return searchPages(snapshot.pages, r.query, values);
-      }
+      case "search":
+        return this.search(r.query);
       case "pageSource":
         return (
           this.db.prepare("SELECT data FROM pages WHERE id=?").get(r.id) as
@@ -1456,6 +1530,7 @@ export class Store {
       case "versions":
         return this.versions(r.id);
       case "restoreVersion": {
+        this.assertRecordWriteSchema();
         if (
           this.db
             .prepare(
@@ -1470,7 +1545,9 @@ export class Store {
             r.id,
             r.versionId,
             r.revision,
+            r.databasePageId,
           );
+        if (r.databasePageId !== undefined) throw new Error("レコードの所属が変わりました。");
         if (
           this.db
             .prepare(
@@ -1488,7 +1565,7 @@ export class Store {
           doc: v.doc,
           title: v.title,
           ...(v.database === undefined ? {} : { database: v.database }),
-        });
+        }, true);
       }
       default:
         throw new Error("Unsupported storage request");

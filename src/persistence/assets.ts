@@ -2,7 +2,7 @@ import { readFileSync, statSync, lstatSync } from "node:fs";
 import { join, basename, extname } from "node:path";
 import { randomUUID, createHash } from "node:crypto";
 import type { DatabaseSync } from "node:sqlite";
-import { parseAssetURL } from "../shared/assets";
+import { ATTACHMENT_MAX_BYTES, ATTACHMENT_MAX_BASE64, parseAssetURL } from "../shared/assets";
 import { writeNewFileDurably } from "./durable-file";
 import { privatePersistencePort, type PrivatePersistenceOptions } from "../platform/private-persistence";
 const mimes: Record<string, string> = {
@@ -25,20 +25,33 @@ export type Asset = {
 };
 export function attachFile(db: DatabaseSync, assets: string, file: string, beforeWrite?: (actualBytes: number) => void,
   options?: PrivatePersistenceOptions) {
+  if (statSync(file).size > ATTACHMENT_MAX_BYTES) throw new Error("添付の上限は20MBです");
+  return attachBuffer(db, assets, basename(file), "", readFileSync(file), beforeWrite, options);
+}
+
+export function decodeAttachment(data: string): Buffer {
+  if (data.length > ATTACHMENT_MAX_BASE64 || data.length % 4 !== 0)
+    throw new Error("添付データの長さが不正です。");
+  const bytes = Buffer.from(data, "base64");
+  if (bytes.length > ATTACHMENT_MAX_BYTES || bytes.toString("base64") !== data)
+    throw new Error("添付データが不正です。");
+  return bytes;
+}
+
+export function attachBuffer(db: DatabaseSync, assets: string, name: string, mediaType: string, bytes: Buffer,
+  beforeWrite?: (actualBytes: number) => void, options?: PrivatePersistenceOptions) {
   const native = privatePersistencePort(options);
-  const size = statSync(file).size;
-  if (size > 20_000_000) throw new Error("添付の上限は20MBです");
-  const bytes = readFileSync(file);
-  if (bytes.length > 20_000_000) throw new Error("添付の上限は20MBです");
+  if (bytes.length > ATTACHMENT_MAX_BYTES) throw new Error("添付の上限は20MBです");
+  if (!name || name === "." || name === ".." || /[\/\\\x00-\x1f]/.test(name)) throw new Error("添付名が不正です。");
   // Admission runs after the exact bytes are known but before the asset file
   // or its metadata row is changed. A refusal therefore leaves no trace.
   beforeWrite?.(bytes.length);
   const id = randomUUID(),
-    extension = extname(file),
-    mime = mimes[extension.toLowerCase()] || "application/octet-stream";
+    extension = extname(name),
+    mime = mimes[extension.toLowerCase()] || (Object.values(mimes).includes(mediaType) ? mediaType : "application/octet-stream");
   const metadata: Asset = {
     id,
-    name: basename(file),
+    name,
     extension,
     mime,
     storageName: id,
@@ -49,7 +62,7 @@ export function attachFile(db: DatabaseSync, assets: string, file: string, befor
   // The attachment body and its directory entry must be durable before the
   // metadata row can reference them. An existing file is never replaced
   // (exclusive create), and a failed write/fsync removes only this new file.
-  if (native) native.writeNew(dest, bytes, 20_000_000);
+  if (native) native.writeNew(dest, bytes, ATTACHMENT_MAX_BYTES);
   else writeNewFileDurably(dest, bytes, {
     mode: 0o600,
     syncParentDirectory: true,

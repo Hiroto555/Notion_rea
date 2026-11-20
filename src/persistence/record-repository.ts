@@ -394,9 +394,11 @@ export class RecordRepository {
     pageId: string,
     versionId: number,
     expectedRevision: number | undefined,
+    expectedOwner?: string,
   ): Page {
     return this.store.transaction(() => {
       const member = this.member(pageId);
+      if (expectedOwner !== undefined && member.database_page_id !== expectedOwner) throw new Error("レコードの所属が変わりました。");
       const page = this.store.get(pageId);
       const database = this.store.get(member.database_page_id);
       if (expectedRevision === undefined || page.revision !== expectedRevision)
@@ -432,7 +434,7 @@ export class RecordRepository {
         patch: { title: row.title, doc },
       });
       if (request.type !== "update") throw new Error("Invalid history request");
-      this.store.recordVersion(page);
+      this.store.recordVersion(page, {force: true});
       this.store.db
         .prepare("UPDATE record_memberships SET values_json=? WHERE page_id=?")
         .run(JSON.stringify(values), pageId);
@@ -457,7 +459,7 @@ export class RecordRepository {
     return row;
   }
 
-  private parseValues(raw: string): Record<string, FilterValue> {
+  parseValues(raw: string): Record<string, FilterValue> {
     let parsed: unknown;
     try {
       parsed = JSON.parse(raw);

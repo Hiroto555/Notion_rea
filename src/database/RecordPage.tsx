@@ -1,5 +1,5 @@
 import type { PageWidth } from "../shared/page-layout";
-import { useEffect, useRef, type KeyboardEvent, type ReactNode } from "react";
+import { useEffect, useRef, type KeyboardEvent, type MouseEvent, type ReactNode } from "react";
 import {
   AlertTriangle,
   ArrowLeft,
@@ -56,13 +56,18 @@ export type RecordPageProps = {
   onTitleChange: (title: string) => void;
   onValueChange: (propertyId: string, value: FilterValue | null) => void;
   onRetry?: () => void;
+  onHistory?: () => void;
   onDuplicate?: () => void;
   onTrash?: () => void;
   onRestore?: () => void;
   /** Focus the Editor body for Core's Enter/Tab handoff. */
   focusBody?: () => void;
+  /** Shared document-link click handling for links inside the body. */
+  onBodyClick?: (event: MouseEvent<HTMLElement>) => void;
   /** Core mounts the single active Editor here. */
   body: ReactNode;
+  /** Core-owned page-find bar, rendered above the icon and title. */
+  findBar?: ReactNode;
   /**
    * Parent-owned display controls (for example the existing width control).
    * Mounted in the header's "… → 表示" disclosure. The disclosure only
@@ -99,11 +104,14 @@ export function RecordPage({
   onTitleChange,
   onValueChange,
   onRetry,
+  onHistory,
   onDuplicate,
   onTrash,
   onRestore,
   focusBody,
   body,
+  onBodyClick,
+  findBar,
   displayOptions,
   autoFocusTitle = true,
 }: RecordPageProps) {
@@ -317,6 +325,7 @@ export function RecordPage({
             <X size={17} aria-hidden="true" />
           </button>
         )}
+        {onHistory && <button type="button" className="r3-record-action" onClick={onHistory}>変更履歴</button>}
         {onDuplicate && (
           <button
             type="button"
@@ -404,6 +413,7 @@ export function RecordPage({
         </div>
       )}
 
+      {findBar}
       <div className="r3-record-icon" aria-hidden="true">
         {record.icon || "📄"}
       </div>
@@ -474,6 +484,7 @@ export function RecordPage({
         aria-label="本文"
         data-record-body
         tabIndex={-1}
+        onClick={onBodyClick}
       >
         {body}
       </section>

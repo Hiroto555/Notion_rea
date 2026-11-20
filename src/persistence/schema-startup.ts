@@ -43,6 +43,8 @@ export type StoreStartupOptions = PrivatePersistenceOptions & {
    * only after SQLite is known closed. Never a PID or marker-file lease. */
   nativeLease?: NativePrivateSqliteLease;
   nativeHotJournalSnapshot?: HotJournalSnapshot;
+  versionMinIntervalMs?: number;
+  maxRetainedReceipts?: number;
   allowIncompleteRecovery?: boolean;
   /**
    * Called before a writable database is opened and before its directory is

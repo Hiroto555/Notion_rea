@@ -23,10 +23,12 @@ export function WorkspaceTools({
   storage,
   onRepairOrder,
   conflictRecovery,
+  markdownExport,
 }: {
   storage: StorageReadPort;
   onRepairOrder?: () => void;
   conflictRecovery?: ReactNode;
+  markdownExport?: ReactNode;
 }) {
   const [pressure, setPressure] = useState<StoragePressureObservation>();
   const pressureLabel =
@@ -48,6 +50,7 @@ export function WorkspaceTools({
       <div className="workspace-tools-body">
         <StoragePressurePanel storage={storage} onObservation={setPressure} />
         <WorkspaceMaintenancePanel onRepairOrder={onRepairOrder} />
+        {markdownExport}
         {conflictRecovery}
       </div>
     </details>

@@ -58,6 +58,7 @@ export function searchPages(
   pages: readonly Page[],
   query: string,
   values: ReadonlyMap<string, string> = new Map(),
+  bodies?: ReadonlyMap<string, string>,
 ): SearchResultPage[] {
   const term = query.trim();
   if (!term) return pages.filter((page) => page.deletedAt == null);
@@ -84,7 +85,7 @@ export function searchPages(
       return;
     }
 
-    const body = page.documentError ? "" : textOf(page.doc);
+    const body = page.documentError ? "" : bodies?.get(page.id) ?? textOf(page.doc);
     const bodyMatch = body ? buildSnippet(body, term) : null;
     if (bodyMatch) {
       ranked.push({

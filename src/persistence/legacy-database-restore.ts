@@ -47,7 +47,7 @@ export function restoreDatabaseVersion(
       inspectLegacyRecords(store.db).issues.length
     )
       throw new Error("未対応の履歴です。原本は保持されています。");
-    const legacy = !!store.db
+    const legacy = !!store.db.prepare("SELECT 1 FROM sqlite_master WHERE type='table' AND name='legacy_database_versions'").get() && !!store.db
       .prepare(
         "SELECT 1 FROM legacy_database_versions WHERE version_id=? AND database_page_id=?",
       )
@@ -103,7 +103,7 @@ export function restoreDatabaseVersion(
           const record = store.get(pageId);
           if (record.documentError || record.kind !== "page")
             throw new Error("レコード原本を保護しています。");
-          store.recordVersion(record);
+          store.recordVersion(record, {force: true});
           store.db
             .prepare(
               "UPDATE record_memberships SET values_json=?,position=? WHERE page_id=?",
@@ -132,7 +132,7 @@ export function restoreDatabaseVersion(
         if (!record.deletedAt) {
           if (store.pages().some((child) => child.parentId === record.id))
             throw new Error("子ページのあるレコードは履歴から削除できません。");
-          store.recordVersion(record);
+          store.recordVersion(record, {force: true});
           store.write({
             ...record,
             deletedAt: Date.now(),
@@ -141,7 +141,7 @@ export function restoreDatabaseVersion(
         }
       }
     }
-    store.recordVersion(page);
+    store.recordVersion(page, {force: true});
     return store.write({
       ...page,
       title: raw.title,
